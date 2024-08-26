@@ -91,7 +91,9 @@ import fitz
 import pandas as pd
 from twilio.rest import Client as tw
 import re
+import math
 from django.utils.timezone import now
+import boto3
 
 def login(request):
     if request.method == 'POST':
@@ -2281,27 +2283,21 @@ def upload_xray_pdf(request):
             if not pdf_file:
                 return JsonResponse({'error': 'No PDF file provided.'}, status=400)
 
-            # Specify the upload path and create a folder if it doesn't exist
-            upload_path = os.path.join('uploads', 'xray_pdfs')
-            os.makedirs(upload_path, exist_ok=True)
-  
+            # Upload the file to s3 bucket
+            s3_client = boto3.client ('s3', region_name=settings.AWS_S3_REGION_NAME)
+            s3_file_path = f'uploads/xray_pdfs/{pdf_file.name}'
+
+            s3_client.upload_fileobj(pdf_file, settings.AWS_STORAGE_BUCKET_NAME, s3_file_path)
             
 
-            # Save the PDF file to the specified path
-            pdf_file_path = os.path.join(upload_path, pdf_file.name)
-            print("PDF file path:", pdf_file_path)
-
-            with open(pdf_file_path, 'wb+') as destination:
-                for chunk in pdf_file.chunks():
-                    destination.write(chunk)
-
             # Convert report_date_str to a datetime object
+            print(datetime)
             test_date = datetime.strptime(test_date_str, "%Y-%m-%d").date()
             report_date = datetime.strptime(report_date_str, "%Y-%m-%d").date()
 
             # Save the PDF file path and additional data to the database
             pdf_model_instance = XrayReport(
-                pdf_file=pdf_file_path,
+                pdf_file=s3_file_path,
                 name=patient_name,
                 patient_id=patient_id,
                 location=location,
@@ -2311,21 +2307,28 @@ def upload_xray_pdf(request):
             )
             pdf_model_instance.save()
 
+            #Generate Presigned URL for the PDF file
+            presigned_url = generate_presigned_url(pdf_model_instance.pdf_file.name)
+            if presigned_url is None:
+                return JsonResponse({'error': 'Failed to generate presigned URL.'}, status=500)
+
             if re.fullmatch(r'\d{10}', accession_number):
                 account_sid = settings.TWILIO_ACCOUNT_SID
                 auth_token = settings.TWILIO_AUTH_TOKEN
                 client = tw(account_sid, auth_token)
-                #patient_name = 'Jangra'
-                # media_url = 'media/uploads/xray_pdfs/RUCH1234_RUCHI%20JANGRA_IQ%20CITY%20ROAD.pdf'
-                prefix = "media/uploads/xray_pdfs/"
-                encoded_filename = pdf_file.name.replace(" ", "%20")
-                media_url = prefix + encoded_filename
+                
+                # Generate the S3 media URL
+                media_url = f'https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{s3_file_path}'
+                print("Media_url:", media_url)
+
                 message = client.messages.create(
                     content_sid='HXff6a8bf74ca42c765eefe580fb5b376b',
                     from_='MG228f0104ea3ddfc780cfcc1a0ca561d9',
                     to=f'whatsapp:+91{accession_number}',
                     content_variables=json.dumps({'1': patient_name, '2': media_url}),
                 )
+                print(message)
+                print(patient_name, presigned_url)
             
             return JsonResponse({'message': 'PDF successfully uploaded and processed.'})
         except Exception as e:
@@ -2344,6 +2347,24 @@ def get_csrf_token(request):
     return JsonResponse(csrf_token)
 
 
+def generate_presigned_url (key):
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name=settings.AWS_REGION
+    )
+    try:
+        response = s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': settings.AWS_STORAGE_BUCKET_NAME, 'Key': key},
+            ExpiresIn=3600
+        )
+        return response
+    except Exception as e:
+        print(f"Error generating presigned URL: {e}")
+        return None    
+
 @user_type_required('xraycoordinator')
 ############################ To retrive data
 # def xray_pdf_report(request):
@@ -2353,6 +2374,10 @@ def get_csrf_token(request):
 
 def xray_pdf_report(request):
     pdfs = XrayReport.objects.all().order_by('-report_date')
+
+    #Generate signed URLs for each PDF file
+    for pdf in pdfs:
+        pdf.signed_url = generate_presigned_url(pdf.pdf_file.name)
 
     # Collect unique dates and locations from the PDFs
     test_dates = set(pdf.test_date for pdf in pdfs)
