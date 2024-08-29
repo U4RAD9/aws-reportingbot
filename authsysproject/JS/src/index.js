@@ -175,7 +175,14 @@ class App extends Component {
     console.log("componentDidMount executed.");
     try {
       const urlSearchParams = new URLSearchParams(window.location.search);
-      const imageUrl = urlSearchParams.get("data-reportimage");
+      // const imageUrl = urlSearchParams.get("data-reportimage");
+
+       // Decode the reportimage URL
+      let imageUrl = urlSearchParams.get("data-reportimage");
+      if (imageUrl) {
+        imageUrl = decodeURIComponent(imageUrl);
+      }
+            
 
       //cornerstone
       const element = document.getElementById("viewport");
