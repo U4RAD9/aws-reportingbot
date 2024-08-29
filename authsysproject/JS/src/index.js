@@ -187,10 +187,10 @@ class App extends Component {
       //cornerstone
       const element = document.getElementById("viewport");
       //const dcmimageId =
-      const new_imageId = "https:" + imageUrl;
+      //const new_imageId = "https:" + imageUrl;
+      const new_imageId = imageUrl;
       cornerstone.enable(element);
       cornerstone.registerImageLoader(
-        "https",
         cornerstoneWebImageLoader.loadImage
       );
 
