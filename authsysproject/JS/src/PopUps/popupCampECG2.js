@@ -207,7 +207,13 @@ export default class PopupCampECG extends React.Component {
     const PRInterval = urlSearchParams.get("data-printerval");
     const testDate = urlSearchParams.get("data-testdate");
     const reportDate = urlSearchParams.get("data-reportdate");
-    const reportimage = urlSearchParams.get("data-reportimage");
+    //const reportimage = urlSearchParams.get("data-reportimage");
+
+    // Decode the reportimage URL
+    let reportimage = urlSearchParams.get("data-reportimage");
+    if (reportimage) {
+      reportimage = decodeURIComponent(reportimage);
+    }
 
     const formData = {
       NameTextFR21: patientName,
