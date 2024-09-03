@@ -19,7 +19,7 @@ class PatientDetails(models.Model):
     ReportDate = models.CharField(max_length=20)
     PRInterval = models.CharField(max_length=30, null=True, blank=True)
     date = models.ForeignKey(Date, on_delete=models.CASCADE, default=None)
-    image = models.ImageField(upload_to='ecg_graphs/', null=True, blank=True)
+    image = models.ImageField(upload_to='ecg_jpgs/', null=True, blank=True)
     reportimage = models.FileField(upload_to='ecg_graphs/', null=True, blank=True)
     cardiologist = models.ForeignKey(PersonalInfo, on_delete=models.SET_NULL, null=True, blank=True)
     location = models.ForeignKey(Location, on_delete=models.CASCADE, null=True, blank=True)

@@ -1,5 +1,6 @@
 from collections import defaultdict
 import math
+from urllib.parse import urlparse, parse_qs
 from tkinter import Tk, filedialog
 from django.shortcuts import get_object_or_404, render, redirect
 from django.http import JsonResponse
@@ -94,6 +95,13 @@ import re
 import math
 from django.utils.timezone import now
 import boto3
+from botocore.exceptions import NoCredentialsError, PartialCredentialsError
+import webbrowser
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+import time
+from users.forms import PersonalInfoForm
 
 def login(request):
     if request.method == 'POST':
@@ -129,6 +137,35 @@ def login(request):
             messages.add_message(request, messages.ERROR, "Invalid credentials")
             return render(request, 'users/login.html')
     return render(request, 'users/login.html')
+
+
+def upload_files(request):
+    if request.method == 'POST':
+        personal_info = PersonalInfo.objects.get(id=request.POST.get('id'))
+        
+        signature = request.FILES.get('signature')
+        companylogo = request.FILES.get('companylogo')
+
+        if signature:
+            # Save file to static folder
+            signature_path = os.path.join(settings.STATICFILES_DIRS[0], 'signatures', signature.name)
+            with default_storage.open(signature_path, 'wb+') as destination:
+                for chunk in signature.chunks():
+                    destination.write(chunk)
+            personal_info.signature = signature_path
+
+        if companylogo:
+            # Save file to static folder
+            companylogo_path = os.path.join(settings.STATICFILES_DIRS[0], 'companylogos', companylogo.name)
+            with default_storage.open(companylogo_path, 'wb+') as destination:
+                for chunk in companylogo.chunks():
+                    destination.write(chunk)
+            personal_info.companylogo = companylogo_path
+
+        personal_info.save()
+
+        return JsonResponse({'status': 'success'}, status=200)
+    return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
 def user_type_required(user_type):
@@ -748,12 +785,22 @@ def ecgallocation(request):
     yesterday = today - timedelta(days=1)
 
     allocated_to_current_user = PatientDetails.objects.filter(cardiologist=current_user_personal_info, isDone=False, status=False).order_by('TestDate')
-
     # Set up pagination
     paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
     page_number = request.GET.get('page', 1)  # Get the page number from the request
     page_obj = paginator.get_page(page_number)
 
+    # Generate presigned URLs for JPEG files in S3
+    bucket_name = 'u4rad-s3-reporting-bot'
+    patient_urls = []
+    for patient in page_obj:
+        if patient.image:
+           image_url = presigned_url(bucket_name, patient.image.name)
+           patient_urls.append({
+              'patient': patient,
+              'url': image_url
+           })
+           #patient_urls[patient.id] = image_url
     # Get unique dates for patients in the current page
     unique_dates = set()
     for patient in page_obj.object_list:
@@ -768,8 +815,25 @@ def ecgallocation(request):
                       'patients': page_obj,
                       'Date': formatted_dates,
                       'Location': unique_location,
-                      'page_obj': page_obj
+                      'page_obj': page_obj,
+                      'patient_urls': patient_urls
                   })
+
+def presigned_url(bucket_name, object_name, operation='get_object'):
+    try:
+        s3_client = boto3.client('s3', region_name='ap-south-1', config=boto3.session.Config(signature_version='s3v4'))
+        url = s3_client.generate_presigned_url(
+            ClientMethod=operation,
+            Params={'Bucket': bucket_name, 'Key': object_name},
+            ExpiresIn=3600
+        )
+    except (NoCredentialsError, PartialCredentialsError):
+        print("Credentials not available.")
+        return None
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+    return url
 
 
 @user_type_required('cardiologist2')
@@ -787,6 +851,19 @@ def xrayallocation(request):
     paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
     page_number = request.GET.get('page', 1)  # Get the page number from the request
     page_obj = paginator.get_page(page_number)
+    
+   
+    # Generate presigned URLs for JPEG files in S3
+    bucket_name = 'u4rad-s3-reporting-bot'
+    patient_urls = []
+    for patient in page_obj:
+        jpeg_files = patient.jpeg_files.all()
+        urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
+        patient_urls.append({
+           'patient': patient,
+           'urls': urls
+        })
+        print(jpeg_files)
 
     location = XLocation.objects.all()
     unique_dates = set()
@@ -795,10 +872,11 @@ def xrayallocation(request):
     sorted_unique_dates = sorted(unique_dates, reverse=False)
     return render(request, 'users/xrayallocation.html',
                   {'reported': total_reported, 'patients': page_obj, 'Date': sorted_unique_dates,
-                   'locations': location, 'page_obj': page_obj})
+                   'locations': location, 'page_obj': page_obj, 'patient_urls': patient_urls})
 
 
-@user_type_required('audiometrist')
+
+user_type_required('audiometrist')
 def audiometry(request):
     patients = audioPatientDetails.objects.all()
     return render(request, 'users/audiometry.html', {'patients': patients})
@@ -911,14 +989,23 @@ def PersonalInfo(request):
                     exportlist]):
             return JsonResponse(status=400, data={"message": "Missing required fields"})
 
+
         user = User.objects.create_user(username=email, email=email, password=password, first_name=name)
         insti_group, _ = Group.objects.get_or_create(name="radiologist")
         insti_group.user_set.add(user)
 
+        # Upload signature and company logo to S3
+        signature_path = upload_to_s3(signature, f'signatures/{signature.name}') if signature else None
+        companylogo_path = upload_to_s3(companylogo, f'company_logos/{companylogo.name}') if companylogo else None
+
+        # Ensure paths were uploaded successfully
+        if not signature_path or not companylogo_path:
+            return JsonResponse(status=500, data={"message": "Failed to upload files to S3"})
+
         personal_info = PersonalInfoModel.objects.create(user=user, phone=phone, altphone=altphone,
                                                          reference=reference, resume=resume,
-                                                         uploadpicture=uploadpicture, signature=signature,
-                                                         companylogo=companylogo)
+                                                         uploadpicture=uploadpicture, signature=signature_s3_path,
+                                                         companylogo=companylogo_s3_path)
         personal_info.serviceslist.set(serviceslist)  # Set the ManyToManyField with the selected
         personal_info.exportlist.set(exportlist)
 
@@ -1501,38 +1588,21 @@ def GoogleDrive(location, date):
     SCOPES = ['https://www.googleapis.com/auth/drive']
 
     def create_service():
-        # Create the credentials.
-        creds = None
-        if os.path.exists('token.pickle'):
-            with open('token.pickle', 'rb') as token:
-                creds = pickle.load(token)
-
-        # If the credentials don't exist or are invalid, then create new ones.
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                # Create the flow object.
-                flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
-
-                # Run the flow to obtain the credentials.
-                creds = flow.run_local_server(port=0)
-
-                # Save the credentials for future use.
-                with open('token.pickle', 'wb') as token:
-                    pickle.dump(creds, token)
+        credentials = service_account.Credentials.from_service_account_file(
+            CLIENT_SECRET_FILE, scopes=SCOPES)
         # Create the service object.
-        service = build(API_NAME, API_VERSION, credentials=creds)
+        service = build(API_NAME, API_VERSION, credentials=credentials)
         return service
 
-    # folder_id = '1RjxYJcv4vbv1WFfcUtCWm-qh0N3KRd0n'
-    folder_id = '1DweRTm3gIqnbbYQxi-0gCtO-0IDLyTY1'
+    folder_id = '1DxGHd2ttH1_TlgATQ0frQpZ6add2ZwL2'
+    #folder_id = '1DweRTm3gIqnbbYQxi-0gCtO-0IDLyTY1'
     service = create_service()
 
     existing_patient_ids = set(PatientDetails.objects.values_list('PatientId', flat=True))
     fetch_patient_data_from_folder(service, folder_id, existing_patient_ids, location, date)
-
+    print("existing_patient_ids", existing_patient_ids)
 def fetch_patient_data_from_folder(service, folder_id, existing_patient_ids, selected_location, date):
+    print("Inside fetch_patient_data_from_folder")
     stack = [(folder_id, None)]
     patient_data_by_date = {}
 
@@ -1551,16 +1621,19 @@ def fetch_patient_data_from_folder(service, folder_id, existing_patient_ids, sel
             location_id = None
 
             if technician_name:
+                print("Inside if technician_name:")
                 location = Location.objects.filter(technician_name=technician_name).first()
                 if location:
                     location_id = location.id
 
                 query = f"'{subfolder_id}' in parents"
                 subfolder_files = service.files().list(q=query).execute().get('files', [])
+                print(" At subfolder files", subfolder_files)
 
                 for data in subfolder_files:
                     if data['mimeType'] == 'application/pdf':
                         file_id = data['id']
+                        print("File ID: ", file_id)
                         request = service.files().get_media(fileId=file_id)
                         pdf_files = io.BytesIO()
                         downloader = MediaIoBaseDownload(pdf_files, request)
@@ -1609,8 +1682,13 @@ def fetch_patient_data_from_folder(service, folder_id, existing_patient_ids, sel
                                         patient_data_by_date[formatted_date] = []
                                     patient_data_by_date[formatted_date].append((patient_id, patient_name, patient_age, patient_gender, int(heart_rate),int(pr_interval), report_time))
 
-                                    reportimage = os.path.join('ecg_graphs', f"{patient_id}_{patient_name}.pdf")
-
+                                    #reportimage = os.path.join('ecg_graphs', f"{patient_id}_{patient_name}.pdf")
+                                    
+                                    pdf_filename = f"{patient_id}_{patient_name}.pdf"
+                                    print("pdf file name: ",pdf_filename)
+                                    pdf_file_path = f"ecg_graphs/{pdf_filename}"
+                                    print("pdf file path: ",pdf_file_path)
+                                    reportimage = f'ecg_graphs/{patient_id}_{patient_name}.pdf'  # Define reportimage correctly
                                     if location_id is not None:
                                         existing_patient_ids.add(patient_id)
 
@@ -1630,6 +1708,7 @@ def fetch_patient_data_from_folder(service, folder_id, existing_patient_ids, sel
                                             reportimage=reportimage,
                                             location=location
                                         )
+                                        print("patient save hone wala hai", patient)
                                         patient.save()
                                         print(f"Patient saved: {patient}")
                                         total_cases, created = Total_Cases.objects.get_or_create(id=1, defaults={
@@ -1639,25 +1718,55 @@ def fetch_patient_data_from_folder(service, folder_id, existing_patient_ids, sel
 
                                         # Convert PDF page to image using PyMuPDF
                                         try:
-                                            images = []
+                                            #images = []
+                                            pdf_files.seek(0)
                                             pdf_stream = io.BytesIO(pdf_files.getvalue())
                                             doc = fitz.open(stream=pdf_stream, filetype='pdf')
                                             page = doc.load_page(page_number)
+                                            # Generate the file name based on patient_id and patient_name
+                                            image_file_name = f"{patient_id}_{patient_name}.jpg"
+                                            # Check if an image with the same name already exists in the database
+                                            if patient.image:
+                                               if patient.image.name != f"ecg_graphs/{image_file_name}":
+                                                  # Delete the existing image
+                                                  patient.image.delete(save=False)
+                                            # Convert the PDF page to image
                                             image_bytes = page.get_pixmap().tobytes()
                                             image_buffer = io.BytesIO(image_bytes)
-                                            image_file = ContentFile(image_buffer.getvalue(),
-                                                                     name=f"{patient_id}_{patient_name}.jpg")
+    
+                                            # Create a Django ContentFile for the image
+                                            image_file = ContentFile(image_buffer.getvalue(), name=f"{patient_id}_{patient_name}.jpg")
+    
+                                            # Upload the image to S3 with the same name
+                                            image_file_path = f"ecg_jpgs/{patient_id}_{patient_name}.jpg"
+                                            upload_to_s3(image_file, image_file_path)
                                             # Save image data to the image field
+                                            #patient.image = image_file
                                             patient.image = image_file
                                             patient.save()
                                         except Exception as e:
                                             print(f"Error converting PDF page to image: {e}")
 
                                         try:
-                                            pdf_filename = f"{patient_id}_{patient_name}.pdf"
-                                            pdf_filepath = os.path.join('ecg_graphs', pdf_filename)
-                                            with open(pdf_filepath, 'wb') as pdf_file:
-                                                pdf_file.write(pdf_files.getvalue())
+                                            #pdf_files.seek(0)
+                                            #upload_to_s3(pdf_files, pdf_file_path)
+                                            # Generate the PDF file name based on patient_id and patient_name
+                                            pdf_file_name = f"{patient_id}_{patient_name}.pdf"
+
+                                            # Check if a report image with the same name already exists in the database
+                                            if patient.reportimage:
+                                               if patient.reportimage.name != f"ecg_graphs/{pdf_file_name}":
+                                                  # Delete the existing report image
+                                                  patient.reportimage.delete(save=False)
+    
+                                            # Upload the PDF to S3
+                                            pdf_file_path = f"ecg_graphs/{pdf_file_name}"
+                                            upload_to_s3(pdf_files, pdf_file_path)
+    
+                                            # Save the PDF file name in the database (if applicable)
+                                            #patient.reportimage = ContentFile(pdf_files.getvalue(), name=pdf_file_name)
+                                            patient.reportimage.save(pdf_file_name, ContentFile(pdf_files.getvalue()))
+                                            patient.save()
                                         except Exception as e:
                                             print(f"Error saving PDF file: {e}")
 
@@ -1812,6 +1921,42 @@ def patientDetails(request):
 #         'rejected_details': rejected_details,
 #     })
 
+
+#def upload_to_s3(file, s3_file_path):
+#    s3_client = boto3.client('s3', region_name=settings.AWS_S3_REGION_NAME)
+#    s3_client.upload_fileobj(file, settings.AWS_STORAGE_BUCKET_NAME, s3_file_
+
+
+def upload_to_s3(file, s3_file_path):
+    try:
+        # Check if the file object is empty
+        if file.size == 0:
+            print(f"File '{file.name}' is empty and cannot be uploaded.")
+            return
+        # Replace spaces with underscores in the file path
+        s3_file_path = s3_file_path.replace(' ', '_')
+
+        # Initialize S3 client
+        s3_client = boto3.client('s3', region_name=settings.AWS_S3_REGION_NAME)
+
+        # Debug: Check file content before uploading
+        file.seek(0)  # Reset file pointer to the beginning
+        content = file.read()
+        print(f"File '{file.name}' content size: {len(content)} bytes")
+
+        # Upload file
+        file.seek(0)  # Reset file pointer to the beginning
+        s3_client.upload_fileobj(file, settings.AWS_STORAGE_BUCKET_NAME, s3_file_path)
+        print(f"Successfully uploaded '{file.name}' to '{s3_file_path}'.")
+
+    except NoCredentialsError:
+        print("Credentials not available.")
+    except PartialCredentialsError:
+        print("Incomplete credentials provided.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
 @user_type_required('technician')
 def upload_dicom(request):
     form = DICOMDataForm()
@@ -1904,14 +2049,23 @@ def handle_single_file_per_person_upload(request, form, locations):
                                 location=location,
                                 accession_number=accession_number
                             )
+                            # Generate the file name in the format patient_id_patient_name
+                            patient_id = dicom_instance.patient_id.replace(" ", "_")
+                            patient_name = dicom_instance.patient_name.replace(" ", "_")
+                            dicom_file_name = f"{patient_id}_{patient_name}.dcm"
+                            jpeg_file_name = f"{patient_id}_{patient_name}.jpg"
                             if dicom_instance.notes == '':
                                 dicom_instance.notes = 'No Clinical History.'
 
                             # Save the DICOM file
                             dicom_file_obj = DICOMFile.objects.create(
                                 dicom_data=dicom_instance,
-                                dicom_file=dicom_file
+                                dicom_file=ContentFile(dicom_file.read(), name=dicom_file_name)
                             )
+
+                            # Upload DICOM file to S3
+                            dicom_s3_path = f'dicom_files/{dicom_file.name}'
+                            upload_to_s3(ContentFile(dicom_file.read(), name=dicom_file_name), dicom_s3_path)
 
                             # Convert DICOM image to JPEG-compatible format
                             pixel_data = dicom_data.pixel_array
@@ -1924,10 +2078,15 @@ def handle_single_file_per_person_upload(request, form, locations):
                                 Image.fromarray(pixel_data).convert('L').save(output, format='JPEG')
 
                                 # Save the JPEG file with the correct DICOM instance
-                                jpeg_file_name = f"{dicom_file.name.split('.')[0]}.jpg"
+                                #jpeg_file_name = f"{dicom_file.name.split('.')[0]}.jpg"
                                 jpeg_file = ContentFile(output.getvalue(), name=jpeg_file_name)
                                 jpeg_instance = JPEGFile.objects.create(dicom_data=dicom_instance, jpeg_file=jpeg_file)
-                                dicom_instance.save()
+                                #dicom_instance.save()
+
+                                # Upload JPEG file to S3
+                                jpeg_s3_path = f'jpeg_files/{jpeg_file_name}'
+                                upload_to_s3(jpeg_file, jpeg_s3_path)
+
 
                             dicom_instances.append(dicom_instance)
 
@@ -2060,6 +2219,10 @@ def handle_multiple_file_single_person_upload(request, form, locations):
 
                     # Create a DICOMFile instance for the DICOMData instance
                     dicom_file_obj = DICOMFile.objects.create(dicom_data=dicom_instance, dicom_file=dicom_file)
+                    
+                    # Upload DICOM file to S3
+                    dicom_s3_path = f'dicom_files/{dicom_file.name}'
+                    upload_to_s3(dicom_file, dicom_s3_path)
 
                     # Convert DICOM image to JPEG-compatible format
                     pixel_data = dicom_data.pixel_array
@@ -2075,7 +2238,9 @@ def handle_multiple_file_single_person_upload(request, form, locations):
                         jpeg_file_name = f"{dicom_file.name.split('.')[0]}.jpg"  # Assuming DICOM file name is unique
                         jpeg_file = ContentFile(output.getvalue(), name=jpeg_file_name)
                         jpeg_instance = JPEGFile.objects.create(dicom_data=dicom_instance, jpeg_file=jpeg_file)
-
+                        # Upload JPEG file to S3
+                        jpeg_s3_path = f'jpeg_files/{jpeg_file_name}'
+                        upload_to_s3(jpeg_file, jpeg_s3_path)
                     # Keep track of successfully processed instances
                     if patient_id not in dicom_instances:
                         dicom_instances[patient_id] = dicom_instance
@@ -2194,17 +2359,23 @@ def upload_ecg_pdf(request):
             if not pdf_file:
                 return JsonResponse({'error': 'No PDF file provided.'}, status=400)
 
+            # Upload the file to s3 bucket
+            s3_client = boto3.client ('s3', region_name=settings.AWS_S3_REGION_NAME)
+            s3_file_path = f'uploads/ecg_pdfs/{pdf_file.name}'
+
+            s3_client.upload_fileobj(pdf_file, settings.AWS_STORAGE_BUCKET_NAME, s3_file_path)
+
             # Specify the upload path and create a folder if it doesn't exist
-            upload_path = os.path.join('uploads', 'ecg_pdfs')
-            os.makedirs(upload_path, exist_ok=True)
+            #upload_path = os.path.join('uploads', 'ecg_pdfs')
+            #os.makedirs(upload_path, exist_ok=True)
 
             # Save the PDF file to the specified path
-            pdf_file_path = os.path.join(upload_path, pdf_file.name)
-            print("PDF file path:", pdf_file_path)
+            #pdf_file_path = os.path.join(upload_path, pdf_file.name)
+            #print("PDF file path:", pdf_file_path)
 
-            with open(pdf_file_path, 'wb+') as destination:
-                for chunk in pdf_file.chunks():
-                    destination.write(chunk)
+            #with open(pdf_file_path, 'wb+') as destination:
+            #    for chunk in pdf_file.chunks():
+            #        destination.write(chunk)
 
             # Convert report_date_str to a datetime object
             test_date = datetime.strptime(test_date_str, "%Y-%m-%d").date()
@@ -2212,7 +2383,7 @@ def upload_ecg_pdf(request):
 
             # Save the PDF file path and additional data to the database
             pdf_model_instance = EcgReport(
-                pdf_file=pdf_file_path,
+                pdf_file=s3_file_path,
                 name=patient_name,
                 patient_id=patient_id,
                 location=location,
@@ -2243,6 +2414,19 @@ def get_csrf_token(request):
 ############################ To retrive data
 def ecg_pdf_report(request):
     pdfs = EcgReport.objects.all().order_by('-report_date')
+
+    # Generate presigned URLs for each PDF file
+    bucket_name = 'u4rad-s3-reporting-bot'
+    pdf_urls = []
+
+    #Generate signed URLs for each PDF file
+    for pdf in pdfs:
+        if pdf.pdf_file:  # Ensure the file exists
+            pdf.signed_url = presigned_url(bucket_name, pdf.pdf_file.name)
+        else:
+            pdf.signed_url = None
+
+
     # Collect unique dates and locations from the PDFs
     test_dates = set(pdf.test_date for pdf in pdfs)
     formatted_dates = [date.strftime('%Y-%m-%d') for date in test_dates]
@@ -2374,10 +2558,21 @@ def generate_presigned_url (key):
 
 def xray_pdf_report(request):
     pdfs = XrayReport.objects.all().order_by('-report_date')
+    # Generate presigned URLs for each PDF file
+    bucket_name = 'u4rad-s3-reporting-bot'
+    pdf_urls = []
 
     #Generate signed URLs for each PDF file
     for pdf in pdfs:
-        pdf.signed_url = generate_presigned_url(pdf.pdf_file.name)
+        if pdf.pdf_file:  # Ensure the file exists
+            pdf.signed_url = presigned_url(bucket_name, pdf.pdf_file.name)
+        else:
+            pdf.signed_url = None
+       # Add each pdf and its corresponding signed URL to the list
+        #pdf_urls.append({
+        #    'pdf': pdf,
+        #    'signed_url': signed_url
+        #})
 
     # Collect unique dates and locations from the PDFs
     test_dates = set(pdf.test_date for pdf in pdfs)
@@ -2387,6 +2582,7 @@ def xray_pdf_report(request):
 
     context = {
         'pdfs': pdfs,
+        #'pdf_urls': pdf_urls,
         'Test_Date': sorted(formatted_dates),
         'Report_Date': sorted(report_dates),  # Ensure dates are sorted for dropdown
         'Location': unique_locations  # Ensure locations are sorted for dropdown

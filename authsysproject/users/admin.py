@@ -31,6 +31,9 @@ from .models.AudiometryPdfReport import AudiometryReport
 from .models.DailyCount import SetCount
 from .models.DailyCountECG import ECGSetCount
 
+
+
+
 admin.site.register(PersonalInfo)
 admin.site.register(WorkExp)
 admin.site.register(QualificationDetails)

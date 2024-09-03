@@ -81,8 +81,11 @@ urlpatterns = [
     path('add_patient_for_vaccination', views.add_patient_for_vaccination, name='add_patient_for_vaccination'),
     path('uploadcsvforvaccination', views.uploadcsvforvaccination, name='uploadcsvforvaccination'),
     path('VaccinationPatientData', views.vaccinationpatientDetails, name='VaccinationPatientData'),
-
+    path('upload/', views.upload_files, name='upload_files'),
     # path('auto_sync/', views.Auto_Sync, name='get_dcm_files'),
 
 
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+] 
+#+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

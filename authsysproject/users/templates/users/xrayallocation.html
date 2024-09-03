@@ -511,36 +511,44 @@
             </td>
 
             <td>
-                  {% for jpeg_file in patient.jpeg_files.all %}
-                    <a class="imageButton" target="_blank" href="{% get_media_prefix %}{{ jpeg_file.jpeg_file }}">
-                      Image {{ forloop.counter }}
-                    </a>
-                  {% endfor %}
-                </td>
-                <td>
-                  {% if patient.jpeg_files.exists %}
-                      <a class="reportButton"
-                          href="reporting-bot?data-patientid={{ patient.patient_id }}&data-patientname={{ patient.patient_name }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-testdate={{ patient.study_date }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={% get_media_prefix %}{{ patient.jpeg_files.first.jpeg_file }}&data-location={{ patient.location }}&data-accession={{ patient.accession_number }}"
-                          data-patient-id="{{ patient.patient_id }}" data-patientname="{{ patient.patient_name }}"
-                          data-age="{{ patient.age }}" data-gender="{{ patient.gender }}"
-                          data-testdate="{{ patient.study_date }}" data-reportdate="{% now 'Y-m-d' %}"
-                          data-reportimage="{% get_media_prefix %}{{ patient.jpeg_files.first.jpeg_file }}"
-                          data-dicom-file="{% get_media_prefix %}{{ patient.dicom_file }}"
-                          data-location="{{ patient.location }}"
-                          data-accession="{{ patient.accession_number }}" onclick="changeButtonColor(this);">
-                          {% if patient.isDone %}
-                              Reported
-                          {% else %}
-                              Report
-                          {% endif %}
-                      </a>
+               {% for patient_url in patient_urls %}
+                  {% if patient_url.patient.id == patient.id %}
+                     {% for url in patient_url.urls %}
+                        <a class="imageButton" href="{{ url }}" target="_blank">
+                          View Image
+                        </a>
+                     {% endfor %}
                   {% endif %}
-                </td>
+               {% endfor %}
+            </td>
+
+            <td>
+              {% for patient_url in patient_urls %}
+                 {% if patient_url.patient.id == patient.id %}
+                    <a class="reportButton"
+                       href="reporting-bot?data-patientid={{ patient.patient_id }}&data-patientname={{ patient.patient_name }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-testdate={{ patient.study_date }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ patient.dicom_file }}&data-location={{ patient.location }}&data-accession={{ patient.accession_number }}"
+                       data-patient-id="{{ patient.patient_id }}" data-patientname="{{ patient.patient_name }}"
+                       data-age="{{ patient.age }}" data-gender="{{ patient.gender }}"
+                       data-testdate="{{ patient.study_date }}" data-reportdate="{% now 'Y-m-d' %}"
+                       data-reportimage="{{ patient_url.urls.0|urlencode }}"
+                       data-dicom-file="{% get_media_prefix %}{{ patient.dicom_file }}"
+                       data-location="{{ patient.location }}"
+                       data-accession="{{ patient.accession_number }}" onclick="changeButtonColor(this);">
+                        {% if patient.isDone %}
+                           Reported
+                        {% else %}
+                           Report
+                        {% endif %}
+                    </a>
+                 {% endif %}
+              {% endfor %}
+            </td>
+
           </tr>
           {% endfor %}
         </tbody>
         </table>
-      </div>
+      </div> 
       <div id="reportingBotContainer"></div>
       <div id="dicomViewer"></div>
 

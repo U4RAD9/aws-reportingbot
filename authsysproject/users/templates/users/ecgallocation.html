@@ -505,29 +505,38 @@
                 <td>{{ patient.TestDate }}</td>
                 <td>{{ patient.date.location.name }}</td>
                 <td>
-                    <a class="imageButton" target="_blank" href="{% get_media_prefix %}{{ patient.image }}">
-                      Image
-                    </a>
+                   {% for patient_url in patient_urls %}
+                     {% if patient_url.patient.id == patient.id %}
+                         <a class="imageButton" target="_blank" href="{{ patient_url.url }}">
+                          Image
+                         </a>
+                       {% endif %}
+                   {% endfor %} 
                 </td>
                 <td>
-                  <a class="reportButton"
-                    href="reporting-bot?data-patientid={{ patient.PatientId }}&data-patientname={{ patient.PatientName }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-heartrate={{ patient.HeartRate }}&data-printerval={{patient.PRInterval}}&data-testdate={{ patient.TestDate }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={% get_media_prefix %}{{ patient.image }}&data-location={{ patient.date.location.name }}"
-                    data-patient-id="{{ patient.PatientId }}" data-patientname="{{ patient.PatientName }}"
-                    data-age="{{ patient.age }}" data-gender="{{ patient.gender }}"
-                    data-heartrate="{{ patient.HeartRate }}" data-printerval="{{ patient.PRInterval }}"
-                    data-testdate="{{ patient.TestDate }}" data-reportdate="{% now 'Y-m-d' %}"
-                    data-reportimage="{% get_media_prefix %}{{ patient.image }}" data-location="{{ patient.date.location.name }}" data-is-done="{{ patient.isDone }}"
-                    onclick="changeButtonColor(this);">
-                    {% if patient.isDone == False %}
-                      {% if patient.status == True %}
-                        Rejected
-                      {% else %}
-                        Report
-                      {% endif %}
-                    {% else %}
-                      Reported
-                    {% endif %}
-                  </a>
+                   {% for patient_url in patient_urls %}
+                     {% if patient_url.patient.id == patient.id %}
+                       <a class="reportButton"
+                         href="reporting-bot?data-patientid={{ patient.PatientId }}&data-patientname={{ patient.PatientName }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-heartrate={{ patient.HeartRate }}&data-printerval={{patient.PRInterval}}&data-testdate={{ patient.TestDate }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.url|urlencode }}&data-location={{ patient.date.location.name }}"
+                         data-patient-id="{{ patient.PatientId }}" data-patientname="{{ patient.PatientName }}"
+                         data-age="{{ patient.age }}" data-gender="{{ patient.gender }}"
+                         data-heartrate="{{ patient.HeartRate }}" data-printerval="{{ patient.PRInterval }}"
+                         data-testdate="{{ patient.TestDate }}" data-reportdate="{% now 'Y-m-d' %}"
+                         data-reportimage="{{ patient_url.url|urlencode }}" data-location="{{ patient.date.location.name }}" data-is-done="{{ patient.isDone }}"
+                         onclick="changeButtonColor(this);">
+                         {% if patient.isDone == False %}
+                           {% if patient.status == True %}
+                             Rejected
+                           {% else %}
+                             Report
+                           {% endif %}
+                         {% else %}
+                           Reported
+                         {% endif %}
+                       </a>
+                     {% endif %}
+                   {% endfor %}
+
                 </td>
               </tr>
               {% endfor %}
