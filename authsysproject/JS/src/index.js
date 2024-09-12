@@ -502,7 +502,6 @@ class App extends Component {
       var image = new Image();
       //image.setAttribute("crossOrigin", "anonymous"); //getting images from external domain
       image.crossOrigin = "anonymous"; // This should be used to fetch images from external domains
-      
       image.onload = function () {
         var canvas = document.createElement("canvas");
         canvas.width = this.naturalWidth;
@@ -949,6 +948,258 @@ class App extends Component {
   }
 
   ////////////////////////////////////////////////////////////////////////// UPLOAD ECG PDF //////////////////////////////////////////////////////////////////////////
+  // uploadEcgPDF = async () => {
+  //   const showLoader = () => {
+  //     console.log("Showing loader");
+  //     const loader = document.querySelector(".loader");
+  //     if (loader) {
+  //       loader.style.display = "block";
+  //     }
+  //   };
+
+  //   const hideLoader = () => {
+  //     console.log("Hiding loader");
+  //     const loader = document.querySelector(".loader");
+  //     if (loader) {
+  //       loader.style.display = "none";
+  //     }
+  //   };
+
+  //   const extractDataFromURL = () => {
+  //     const urlParams = new URLSearchParams(window.location.search);
+  //     const patientId = urlParams.get("data-patientid");
+  //     const patientName = urlParams.get("data-patientname");
+  //     const testDate = urlParams.get("data-testdate");
+  //     const reportDate = urlParams.get("data-reportdate");
+  //     const location = urlParams.get("data-location");
+
+  //     return { patientId, patientName, testDate, reportDate, location };
+  //   };
+
+  //   const showNotification = (message) => {
+  //     const notification = document.getElementById("notification");
+  //     const notificationText = document.getElementById("notification-text");
+
+  //     if (notification && notificationText) {
+  //       notificationText.innerText = message;
+  //       notification.style.display = "block";
+
+  //       // Hide the notification after 3 seconds (adjust the delay as needed)
+  //       setTimeout(() => {
+  //         notification.style.display = "none";
+  //       }, 1000);
+  //     }
+  //   };
+
+  //   const getCSRFToken = async () => {
+  //     try {
+  //       const response = await fetch("/get-csrf-token/");
+  //       const data = await response.json();
+  //       return data.csrf_token;
+  //     } catch (error) {
+  //       console.error("Error fetching CSRF token:", error);
+  //       throw error;
+  //     }
+  //   };
+
+  //   // Show the loader before starting the PDF generation
+  //   showLoader();
+  //   const filename = this.createFilename();
+  //   const data = document.getElementsByClassName("ck-editor__editable")[0];
+  //   const table = data.querySelector("table");
+  //   data.classList.add("ck-blurred");
+  //   data.classList.remove("ck-focused");
+  //   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  //   // Create a function to load images and render PDF
+  //   const loadImageAndRenderPDF = async () => {
+  //     try {
+  //       let graphSrc = Array.from(data.children).pop().children[0].currentSrc;
+  //       let graphElement = document.querySelector(
+  //         "figure.image:nth-last-of-type(1)"
+  //       );
+  //       graphElement.remove();
+
+  //       if (data != undefined) {
+  //         var a4Width = 595.28; // A4 width in points (1 point = 1/72 inch)
+  //         var a4Height = 841.89; // A4 height in points
+
+  //         var canvasWidth = a4Width; // Adjusted width to leave some margin
+  //         var canvasHeight = a4Height; // Adjusted height to maintain aspect ratio and leave margin
+
+  //         const canvas = await html2canvas(data, {
+  //           scale: 2, // Adjust the scale if needed for better quality
+  //           useCORS: true, // Enable CORS to capture images from external URLs
+  //         });
+
+  //         const imgData = canvas.toDataURL("image/png", 1.0);
+  //         const pdf = new jsPDF("p", "pt", [a4Width, a4Height], true);
+
+  //         // Calculate the image dimensions to fit within the PDF dimensions
+  //         const canvasAspectRatio = canvas.width / canvas.height;
+  //         const pdfAspectRatio = a4Width / a4Height;
+
+  //         let pdfImageWidth = canvasWidth;
+  //         let pdfImageHeight = canvasHeight;
+
+  //         if (canvasAspectRatio > pdfAspectRatio) {
+  //           pdfImageWidth = canvasWidth;
+  //           pdfImageHeight = canvasWidth / canvasAspectRatio;
+  //         } else {
+  //           pdfImageHeight = canvasHeight;
+  //           pdfImageWidth = canvasHeight * canvasAspectRatio;
+  //         }
+
+  //         // Calculate the positioning to center the image
+  //         const xPosition = (pdf.internal.pageSize.width - pdfImageWidth) / 2;
+  //         const yPosition = (pdf.internal.pageSize.height - pdfImageHeight) / 2;
+
+  //         // Create a separate canvas for the rotated graph image
+  //         const graphCanvas = document.createElement("canvas");
+  //         graphCanvas.width = 1024;
+  //         graphCanvas.height = 1024;
+  //         const graphCtx = graphCanvas.getContext("2d");
+  //         let graphImg = await this.getDataUri(graphSrc);
+  //         const image = new Image();
+  //         image.src = graphImg;
+
+  //         await new Promise((resolve) => {
+  //           image.onload = resolve;
+  //         });
+
+  //         graphCtx.translate(graphCanvas.width / 2, graphCanvas.height / 2);
+  //         graphCtx.rotate(Math.PI / 2); // Rotate the image by 90 degrees
+  //         graphCtx.drawImage(
+  //           image,
+  //           -graphCanvas.height / 2,
+  //           -graphCanvas.width / 2,
+  //           graphCanvas.height,
+  //           graphCanvas.width
+  //         );
+
+  //         pdf.addImage(
+  //           graphCanvas.toDataURL("image/png"),
+  //           "PNG",
+  //           0,
+  //           0,
+  //           a4Width,
+  //           a4Height
+  //         );
+
+  //         pdf.addPage("a4", "portrait"); // Add a new portrait-oriented page
+  //         pdf.addImage(
+  //           imgData,
+  //           "PNG",
+  //           xPosition,
+  //           yPosition,
+  //           pdfImageWidth,
+  //           pdfImageHeight
+  //         );
+
+  //         pdf.setTextColor(255, 255, 255);
+
+  //         // Calculate the position to place the text at the bottom
+  //         const textX = 40;
+  //         const textY = 841.89 - 2; // 20 points from the bottom
+
+  //         // If a table exists within the ck-editor__editable div, capture its text content
+  //         if (table) {
+  //           const tableText = table.textContent || "";
+
+  //           // Add the table text as text (preserve original formatting)
+  //           pdf.setFontSize(2); // Adjust the font size as needed
+  //           pdf.text(textX, textY, tableText);
+  //         }
+
+  //         // Iterate through all paragraphs in the ck-editor__editable div
+  //         const paragraphs = data.querySelectorAll("p");
+  //         paragraphs.forEach((paragraph) => {
+  //           const paragraphText = paragraph.textContent || "";
+
+  //           // Add each paragraph text as text (preserve original formatting)
+  //           pdf.setFontSize(2); // Adjust the font size as needed
+  //           pdf.text(textX, textY - 2, paragraphText); // Place it above the table text
+  //         });
+
+  //         // Convert the PDF to a Blob
+  //         const pdfBlob = pdf.output("blob");
+
+  //         // Extract data from URL
+  //         const { patientId, patientName, testDate, reportDate, location } =
+  //           extractDataFromURL();
+
+  //         // Send the FormData to Django backend using fetch
+  //         const csrfToken = await getCSRFToken();
+  //         console.log("CSRF Token:", csrfToken);
+
+  //         // Create FormData and append the PDF Blob
+  //         const formData = new FormData();
+  //         formData.append(
+  //           "pdf",
+  //           pdfBlob,
+  //           filename ? filename + ".pdf" : "download.pdf"
+  //         );
+  //         formData.append("patientId", patientId);
+  //         formData.append("patientName", patientName);
+  //         formData.append("testDate", testDate);
+  //         formData.append("reportDate", reportDate);
+  //         formData.append("location", location);
+
+  //         console.log("FormData:", formData);
+
+  //         try {
+  //           const response = await axios.post("/upload_ecg_pdf/", formData, {
+  //             headers: {
+  //               "Content-Type": "multipart/form-data",
+  //               "X-CSRFToken": csrfToken,
+  //             },
+  //           });
+
+  //           console.log(
+  //             "PDF successfully sent to Django backend.",
+  //             response.data
+  //           );
+  //           // Hide the loader when the PDF is ready
+  //           hideLoader();
+  //           // Show the success notification
+  //           showNotification("PDF successfully uploaded!");
+  //         } catch (error) {
+  //           console.error("Error sending PDF to Django backend.", error);
+  //           // Show the error notification
+  //           showNotification("Error uploading PDF. Please try again.");
+  //         }
+
+  //         //alert("Report Uploaded successfully!");
+
+  //         // Save the current URL before going back in the history
+  //         const currentURL = window.location.href;
+
+  //         // Redirect to the previous page after a short delay
+  //         await delay(200);
+
+  //         // Navigate back to the previous page with a cache-busting query parameter
+  //         window.location.href = document.referrer + "?nocache=" + Date.now();
+
+  //         // Listen for the popstate event to know when the history state changes
+  //         window.addEventListener("popstate", () => {
+  //           // Check if the URL has changed
+  //           if (window.location.href !== currentURL) {
+  //             // Reload the current page after a short delay
+  //             setTimeout(() => {
+  //               window.location.reload(true);
+  //             }, 200);
+  //           }
+  //         });
+  //       }
+  //     } catch (error) {
+  //       console.error("Error generating PDF:", error);
+  //       // Hide the loader when the PDF is ready
+  //     }
+  //   };
+
+  //   loadImageAndRenderPDF();
+  // };
+
   uploadEcgPDF = async () => {
     const showLoader = () => {
       console.log("Showing loader");
@@ -1060,9 +1311,8 @@ class App extends Component {
           graphCanvas.width = 1024;
           graphCanvas.height = 1024;
           const graphCtx = graphCanvas.getContext("2d");
-          let graphImg = await this.getDataUri(graphSrc);
           const image = new Image();
-          image.src = graphImg;
+          image.src = graphSrc;
 
           await new Promise((resolve) => {
             image.onload = resolve;
@@ -1170,8 +1420,6 @@ class App extends Component {
             showNotification("Error uploading PDF. Please try again.");
           }
 
-          //alert("Report Uploaded successfully!");
-
           // Save the current URL before going back in the history
           const currentURL = window.location.href;
 
@@ -1200,6 +1448,8 @@ class App extends Component {
 
     loadImageAndRenderPDF();
   };
+
+
   //***************************************///////////////////// upload ECG pdf to database (END) ///////////////**********************************************/
 
   ////////////////////////////////////////////////////////////////////////// UPLOAD XRAY PDF //////////////////////////////////////////////////////////////////////////
