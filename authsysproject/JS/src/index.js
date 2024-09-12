@@ -500,8 +500,9 @@ class App extends Component {
   getDataUri(url) {
     return new Promise((resolve) => {
       var image = new Image();
-      image.setAttribute("crossOrigin", "anonymous"); //getting images from external domain
-
+      //image.setAttribute("crossOrigin", "anonymous"); //getting images from external domain
+      image.crossOrigin = "anonymous"; // This should be used to fetch images from external domains
+      
       image.onload = function () {
         var canvas = document.createElement("canvas");
         canvas.width = this.naturalWidth;
