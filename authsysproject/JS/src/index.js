@@ -521,31 +521,31 @@ class App extends Component {
   //   });
   // }
 
-  getDataUri(e) {
-    return new Promise((resolve, reject) => {
-        var img = new Image();
-        img.setAttribute("crossOrigin", "anonymous");
+  // getDataUri(e) {
+  //   return new Promise((resolve, reject) => {
+  //       var img = new Image();
+  //       img.setAttribute("crossOrigin", "anonymous");
 
-        img.onload = function() {
-            var canvas = document.createElement("canvas");
-            canvas.width = this.naturalWidth;
-            canvas.height = this.naturalHeight;
+  //       img.onload = function() {
+  //           var canvas = document.createElement("canvas");
+  //           canvas.width = this.naturalWidth;
+  //           canvas.height = this.naturalHeight;
 
-            var ctx = canvas.getContext("2d");
-            ctx.fillStyle = "#fff"; // Fill background with white
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+  //           var ctx = canvas.getContext("2d");
+  //           ctx.fillStyle = "#fff"; // Fill background with white
+  //           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            ctx.drawImage(this, 0, 0); // Draw the image
-            resolve(canvas.toDataURL("image/jpeg")); // Return data URI
-        };
+  //           ctx.drawImage(this, 0, 0); // Draw the image
+  //           resolve(canvas.toDataURL("image/jpeg")); // Return data URI
+  //       };
 
-        img.onerror = function() {
-            reject(new Error("Failed to load image: " + e));
-        };
+  //       img.onerror = function() {
+  //           reject(new Error("Failed to load image: " + e));
+  //       };
 
-        img.src = e; // Set image source
-    });
-  }
+  //       img.src = e; // Set image source
+  //   });
+  // }
 
 
   ///////////////////////////////// PDF GENERATION CODE /////////////////////////////////////////
