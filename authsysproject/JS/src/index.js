@@ -1293,11 +1293,15 @@ class App extends Component {
     // Create a function to load images and render PDF
     const loadImageAndRenderPDF = async () => {
       try {
-        let graphSrc = Array.from(data.children).pop().children[0].currentSrc;
-        let graphElement = document.querySelector(
-          "figure.image:nth-last-of-type(1)"
-        );
-        graphElement.remove();
+        // Extract all images and get the source of the last image
+        const images = data.querySelectorAll("img");
+        const lastImage = images[images.length - 1];
+        const lastImageSrc = lastImage ? lastImage.currentSrc : '';
+
+        // Remove the last image from the editor
+        if (lastImage) {
+          lastImage.remove();
+        }
 
         if (data != undefined) {
           var a4Width = 595.28; // A4 width in points (1 point = 1/72 inch)
@@ -1339,7 +1343,7 @@ class App extends Component {
           graphCanvas.height = 1024;
           const graphCtx = graphCanvas.getContext("2d");
           const image = new Image();
-          image.src = graphSrc;
+          image.src = lastImageSrc;
 
           await new Promise((resolve) => {
             image.onload = resolve;
@@ -1470,11 +1474,13 @@ class App extends Component {
       } catch (error) {
         console.error("Error generating PDF:", error);
         // Hide the loader when the PDF is ready
+        hideLoader();
       }
     };
 
     loadImageAndRenderPDF();
   };
+
 
 
   //***************************************///////////////////// upload ECG pdf to database (END) ///////////////**********************************************/
