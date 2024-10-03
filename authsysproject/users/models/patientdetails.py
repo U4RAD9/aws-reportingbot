@@ -10,14 +10,14 @@ class PatientDetails(models.Model):
         ('Female', 'Female'),
         ('Other', 'Other'),
     ]
-    PatientId = models.CharField(max_length=50)
-    PatientName = models.CharField(max_length=30)
-    age = models.CharField(max_length=30)
-    gender = models.CharField(max_length=15)
-    HeartRate = models.CharField(max_length=30, null=True, blank=True)
-    TestDate = models.CharField(max_length=20)
-    ReportDate = models.CharField(max_length=20)
-    PRInterval = models.CharField(max_length=30, null=True, blank=True)
+    PatientId = models.CharField(max_length=255)
+    PatientName = models.CharField(max_length=255)
+    age = models.CharField(max_length=230)
+    gender = models.CharField(max_length=215)
+    HeartRate = models.CharField(max_length=230, null=True, blank=True)
+    TestDate = models.CharField(max_length=220)
+    ReportDate = models.CharField(max_length=220)
+    PRInterval = models.CharField(max_length=230, null=True, blank=True)
     date = models.ForeignKey(Date, on_delete=models.CASCADE, default=None)
     image = models.ImageField(upload_to='ecg_jpgs/', null=True, blank=True)
     reportimage = models.FileField(upload_to='ecg_graphs/', null=True, blank=True)

@@ -274,6 +274,7 @@
       var successDetails = document.getElementById('successDetails');
       var rejectedDetails = document.getElementById('rejectedDetails');
       var messageDetails = document.getElementById('messageDetails');
+      var alertMessage = document.getElementById('alertMessage');
 
       function showDetails(detailsList, detailsData) {
         var details = JSON.parse(detailsData);
@@ -295,13 +296,13 @@
       }
 
       // Check for success message
-      if (successMessage.textContent.trim() !== '') {
+      if (successMessage && successMessage.textContent.trim() !== '') {
         successMessage.style.display = 'block';
         showDetails(successDetails, successMessage.dataset.details);
       }
 
       // Check for rejected message
-      if (rejectedMessage.textContent.trim() !== '') {
+      if (rejectedMessage && rejectedMessage.textContent.trim() !== '') {
         rejectedMessage.style.display = 'block';
         showDetails(rejectedDetails, rejectedMessage.dataset.details);
       }
@@ -310,11 +311,12 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         var alertMessage = document.getElementById('alertMessage');
-
-        // Hide the alert message after 3 seconds
-        setTimeout(function () {
-            alertMessage.style.display = 'none';
-        }, 3000); // 3000 milliseconds = 3 seconds
+        if (alertMessage) {
+           // Hide the alert message after 3 seconds
+           setTimeout(function () {
+               alertMessage.style.display = 'none';
+           }, 3000); // 3000 milliseconds = 3 seconds
+        }
     });
 
   </script>

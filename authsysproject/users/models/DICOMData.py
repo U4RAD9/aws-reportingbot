@@ -5,19 +5,19 @@ from .Xray_Location import XLocation
 
 
 class DICOMData(models.Model):
-    patient_name = models.CharField(max_length=50, blank=True)
-    patient_id = models.CharField(max_length=20, blank=True)
-    age = models.CharField(max_length=50, blank=True)
-    gender = models.CharField(max_length=50, blank=True)
-    study_date = models.CharField(max_length=50, blank=True)
-    study_description = models.CharField(max_length=100, blank=True)
+    patient_name = models.CharField(max_length=250, blank=True)
+    patient_id = models.CharField(max_length=250, blank=True)
+    age = models.CharField(max_length=250, blank=True)
+    gender = models.CharField(max_length=250, blank=True)
+    study_date = models.CharField(max_length=250, blank=True)
+    study_description = models.CharField(max_length=200, blank=True)
     isDone = models.BooleanField(default=False)
     NonReportable = models.BooleanField(default=False)
     notes = models.CharField(max_length=50000, default=True)
     location = models.ForeignKey(XLocation, on_delete=models.CASCADE, null=True, blank=True)
     radiologist = models.ManyToManyField(PersonalInfo, blank=True)
-    body_part_examined = models.CharField(max_length=100, blank=True, null=True)
-    accession_number = models.CharField(max_length=20, null=True, blank=True)
+    body_part_examined = models.CharField(max_length=200, blank=True, null=True)
+    accession_number = models.CharField(max_length=50, null=True, blank=True)
 
     def __str__(self):
         return str(self.patient_name)

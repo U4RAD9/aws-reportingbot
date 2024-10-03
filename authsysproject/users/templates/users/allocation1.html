@@ -605,8 +605,8 @@
             </td>
 
             <td>
-              {% for jpeg_file in patient.jpeg_files.all %}
-                <a class="imageButton" target="_blank" href="{% get_media_prefix %}{{ jpeg_file.jpeg_file }}">
+              {% for jpeg_url in patient.presigned_jpeg_urls %}
+                <a class="imageButton" target="_blank" href="{{ jpeg_url }}">
                   Image {{ forloop.counter }}
                 </a>
               {% endfor %}

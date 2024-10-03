@@ -438,6 +438,23 @@
           </div>
         </div>
         <div class="card">
+        <div class="pagination">
+           <span class="step-links">
+             {% if page_obj.has_previous %}
+               <a href="?page=1">&laquo; first</a>
+               <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+             {% endif %}
+
+             <span class="current">
+               Page {{ page_obj.number }} of {{ paginator.num_pages }}.
+             </span>
+
+             {% if page_obj.has_next %}
+               <a href="?page={{ page_obj.next_page_number }}">next</a>
+               <a href="?page={{ paginator.num_pages }}">last &raquo;</a>
+             {% endif %}
+           </span>
+         </div>
       <div class="card-body">
         <div class="table-container">
           <table id="patientTable">
@@ -473,7 +490,7 @@
                 <td>{{ pdf.report_date }}</td>
                 <td>{{ pdf.location }}</td>
                 <td>
-                  <a class="reportButton" href="{{ pdf.get_pdf_url }}" download>DOWNLOAD</a>
+                  <a class="reportButton" href="{{ pdf.signed_url }}" download>DOWNLOAD</a>
                 </td>
                 <td><input type="checkbox" class="rowCheckbox" /></td>
               </tr>

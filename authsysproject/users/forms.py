@@ -5,7 +5,7 @@ from .models.EcgPdfReport import EcgReport
 from .models.XrayPdfReport import XrayReport
 from .models.personalinfo import PersonalInfo
 from django.contrib.auth.models import User
-
+from .models.Location import Location
 
 class DICOMDataForm(forms.ModelForm):
     dicom_file = MultiFileField(min_num=1, max_num=10, max_file_size=1024 * 1024 * 25)
@@ -32,3 +32,8 @@ class PersonalInfoForm(forms.ModelForm):
         widgets = {
             'user': forms.Select(),  # This creates a dropdown for users
         }
+
+
+class ECGUploadForm(forms.Form):
+    ecg_file = MultiFileField(min_num=1, max_num=50, max_file_size=1024 * 1024 * 5)
+    location = forms.ModelChoiceField(queryset=Location.objects.all(), label="Select Location", required=True)

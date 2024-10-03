@@ -35,6 +35,7 @@ from users.models.XrayPdfReport import XrayReport
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from users.forms import DICOMDataForm
+from users.forms import ECGUploadForm
 from users.models.DailyCount import SetCount
 from users.models.DailyCountECG import ECGSetCount
 from django.contrib import messages
@@ -139,6 +140,285 @@ def login(request):
     return render(request, 'users/login.html')
 
 
+def extract_patient_id(text):
+    id = '' # initialising id to a default value.
+    if "Id :" in str(text):
+        id = str(text).split("Id :")[1].split(" ")[1].split("\n")[0].strip().lower()
+        # print("This is the first fetched id :", id)
+        if id == '':
+            fetched_id = str(text).split("Id :")[1].split("Name :")[0].strip().lower()
+            id = fetched_id.replace(" ", "")
+            if id == '':
+                id = str(text).split("Comments")[1].split("HR")[0].strip()
+                # print("comments", id)
+                if id == '':
+                    print("Id is not mentioned in the file. ")
+                    print("Id :" , id)
+    if "Id:" in str(text):
+        id = str(text).split("Id:")[1].split(" ")[1].split("\n")[0].strip().lower()
+        # print("This is the first fetched id :", id)
+        if id == '':
+            fetched_id = str(text).split("Id:")[1].split("Name :")[0].strip().lower()
+            id = fetched_id.replace(" ", "")
+            if id == '':
+                id = str(text).split("Comments")[1].split("HR")[0].strip()
+                # print("comments", id)
+                if id == '':
+                    print("Id is not mentioned in the file. ")
+                    print("Id :" , id)
+        
+    return id
+    # try:
+        # id = str(text).split("Id")[1].split("\n")[0]
+        # print(id)
+        # if ":" in id:
+        #     return id.split(":")[1].strip()
+        # else:
+        #     return id.strip()
+    # except IndexError:
+        # Handle cases where the expected format is not found
+        # if text.count('Comments') > 1:
+        #     return str(text).split("Comments\nComments")[1].split("HR")[0].split('\n')[1].split('\n')[0]
+        # else:
+        #     return str(text).split("Comments")[1].split("HR")[0].strip()
+        
+
+def extract_patient_name(text):
+    try:
+        return str(text).split("Name")[1].split("\n")[0].split(":")[1].strip()
+    except IndexError:
+        return 'None'
+
+def extract_patient_age(text):
+    try:
+        return str(text).split("Age")[1].split("\n")[0].split(":")[1].strip()
+    except IndexError:
+        return '0'  # Default age if not found
+
+def extract_patient_gender(text):
+    try:
+        return str(text).split("Gender")[1].split("\n")[0].split(":")[1].strip()
+    except IndexError:
+        return 'Missing'
+
+def extract_heart_rate(text):
+    try:
+        return str(text).split("HR:")[1].split(" ")[1].split("/")[0].strip()
+    except IndexError:
+        return '0'  # Default heart rate if not found
+
+def extract_pr_interval(text):
+    try:
+        return str(text).split("PR:")[1].split("QRS:")[0].split("ms")[0].strip()
+    except IndexError:
+        return '0'  # Default PR interval if not found
+
+def extract_report_time(text):
+    try:
+        return str(text).split("Acquired on:")[1][12:17].strip()
+    except IndexError:
+        return '00:00'  # Default time if not found
+
+def extract_date(text):
+    try:
+        raw_date = str(text).split("Acquired on:")[1][0:11].strip()
+        if isinstance(raw_date, str):
+            return datetime.strptime(raw_date, '%Y-%m-%d').date()
+        else:
+            return raw_date  # If raw_date is already a datetime.date, return it as is
+    except (IndexError, ValueError):
+        return datetime.now().date()  # Default to current date if not found
+
+# To fix the duplicate extraction of some ecg graph pdf's.
+def deduplicate_text(text):
+    lines = text.split('\n')
+    unique_lines = list(dict.fromkeys(lines))
+    return '\n'.join(unique_lines)
+
+def upload_ecg(request):
+    success_message = ''
+    success_details = []
+    rejected_message = ''
+    rejected_details = []
+    if len(rejected_details) != 0:
+        rejected_details.clear()
+
+    if request.method == 'POST':
+        form = ECGUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            print("Form is valid.")
+            ecg_files = form.cleaned_data['ecg_file']  # This will be a list of files.
+            location = form.cleaned_data['location']
+            print("Selected location:", location)
+
+            for ecg_file in ecg_files:
+                try:
+                    pdf_bytes = ecg_file.read()
+                except Exception as e:
+                    print(f"Error reading ECG file: {str(e)}")
+                    rejected_details.append({'id': None, 'name': ecg_file.name})
+                    continue
+
+                pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
+
+                for page_number, page in enumerate(pdf_reader.pages):
+                    first_page_text = page.extract_text()
+                    first_page_text = deduplicate_text(first_page_text)
+
+                    patient_id = extract_patient_id(first_page_text)
+                    print("This is the patient id:", patient_id)
+
+                    if not patient_id:
+                        print(f"Skipping file {ecg_file.name} - Id is not present in the uploaded file.")
+                        rejected_details.append({'id': patient_id, 'name': ecg_file.name})
+                        break
+
+                    if PatientDetails.objects.filter(PatientId=patient_id).exists():
+                        print(f"Skipping file {ecg_file.name} - Duplicate data found.")
+                        rejected_details.append({'id': patient_id, 'name': ecg_file.name})
+                        break
+
+                    if not PatientDetails.objects.filter(PatientId=patient_id).exists():
+                        patient_name = extract_patient_name(first_page_text)
+                        patient_age = extract_patient_age(first_page_text)
+                        patient_gender = extract_patient_gender(first_page_text)
+                        heart_rate = extract_heart_rate(first_page_text)
+                        pr_interval = extract_pr_interval(first_page_text)
+                        report_time = extract_report_time(first_page_text)
+                        formatted_date = extract_date(first_page_text)
+
+                        date, created = Date.objects.get_or_create(date_field=formatted_date, location_id=location.id)
+
+                        patient = PatientDetails(
+                            PatientId=patient_id,
+                            PatientName=patient_name,
+                            age=patient_age,
+                            gender=patient_gender,
+                            HeartRate=heart_rate,
+                            PRInterval=pr_interval,
+                            TestDate=formatted_date,
+                            ReportDate=formatted_date,
+                            date=date,
+                            location=location
+                        )
+                        patient.save()
+                        new_patient_name = patient_name.replace(" ", "_")
+                        # Convert PDF page to image and upload to S3
+                        doc = fitz.open(stream=pdf_bytes, filetype='pdf')
+                        page = doc.load_page(page_number)
+                        image_bytes = page.get_pixmap().tobytes()
+                        image_buffer = io.BytesIO(image_bytes)
+                        image_file = ContentFile(image_buffer.getvalue(), name=f"{patient_id}_{new_patient_name}.jpg")
+
+                        # Upload image to S3
+                        s3_image_path = f"ecg_jpgs/{image_file.name}"
+                        upload_to_s3(image_file, s3_image_path)
+                        patient.image = s3_image_path  # Save S3 path in the database
+
+                        # Save PDF file to S3
+                        reportimage_file = ContentFile(pdf_bytes, name=f"{patient_id}_{new_patient_name}.pdf")
+                        s3_pdf_path = f"ecg_pdfs/{reportimage_file.name}"
+                        upload_to_s3(reportimage_file, s3_pdf_path)
+                        patient.reportimage = s3_pdf_path  # Save S3 path in the database
+                        patient.save()
+                        print("Patient saved successfully.")
+                        success_details.append({'id': patient_id, 'name': ecg_file.name})
+
+            # Updating the total ecg cases.
+
+            # Retrieving total_cases
+            total_cases, created = Total_Cases.objects.get_or_create(id=1, defaults={'total_uploaded_ecg': 0})
+
+            # Update total cases count
+            total_cases.total_uploaded_ecg += len(success_details)
+            total_cases.save()
+
+
+            if rejected_details:
+                rejected_message = f"{len(rejected_details)} files were rejected. Please check and try again."
+                rejected_details = [{'id': item['id'], 'name': item['name']} for item in rejected_details]
+
+            if success_details:
+                success_message = f"{len(success_details)} Images uploaded successfully."
+                success_details = [{'id': item['id'], 'name': item['name']} for item in success_details]
+
+            # Fetch and order patients
+            patients = PatientDetails.objects.all().order_by('-TestDate')
+
+            # Total counts for statistics
+            total_current_uploaded = PatientDetails.objects.all().count()
+            total_uploaded_ecg = Total_Cases.objects.values_list('total_uploaded_ecg', flat=True).first()
+            total_reported_ecg = Total_Cases.objects.values_list('total_reported_ecg', flat=True).first()
+            # total_nonreported_ecg = Total_Cases.objects.values_list('total_nonreported_ecg', flat=True).first()
+
+            total_reported_patients = PatientDetails.objects.filter(cardiologist__isnull=False, isDone=True).count()
+            total_rejected_patients = PatientDetails.objects.filter(cardiologist__isnull=False, status=True).count()
+            # total_nonreported_patients = PatientDetails.objects.filter(NonReportable=True).count()
+            total_unreported_and_unallocated_patients = PatientDetails.objects.filter(cardiologist=None, isDone=False).count()
+            total_unreported_and_allocated_patients = PatientDetails.objects.filter(cardiologist__isnull=False, isDone=False).count()
+            total_unreported_patients = total_unreported_and_unallocated_patients + total_unreported_and_allocated_patients
+
+            total_cases = {
+                'current_reported_cases': total_reported_patients,
+                'total_unreported': total_unreported_patients,
+                'unallocated': total_unreported_and_unallocated_patients
+            }
+
+            cardiologist_group = Group.objects.get(name='cardiologist')
+            cardiologists_objects = cardiologist_group.user_set.all()
+
+            paginator = Paginator(patients, 400)  # 200 patients per page
+            page_number = request.GET.get('page', 1)  # Get the page number from the request
+            try:
+                page_obj = paginator.get_page(page_number)
+            except PageNotAnInteger:
+                page_obj = paginator.get_page(1)
+            except EmptyPage:
+                page_obj = paginator.get_page(paginator.num_pages)
+
+            unique_dates = set(patient.date.date_field for patient in page_obj.object_list)
+            sorted_unique_dates = sorted(unique_dates, reverse=False)
+            formatted_dates = [date.strftime('%Y-%m-%d') for date in sorted_unique_dates]
+
+            unique_cities = [f"{x.name}" for x in City.objects.all()]
+            unique_locations = [f"{y.name}" for y in Location.objects.all()]
+
+            form = ECGUploadForm()
+            locations = Location.objects.all()
+
+            messages.success(request, 'PDF uploaded and processed successfully!')
+
+            return render(request, 'users/allocation.html', {
+                'total_cases': total_cases,
+                'total': total_current_uploaded,
+                'count': total_uploaded_ecg,
+                'total_reported': total_reported_ecg,
+                'patients': page_obj,
+                'cardiologists': cardiologists_objects,
+                'Date': formatted_dates,
+                'Location': unique_locations,
+                'Cities': unique_cities,
+                'rejected': total_rejected_patients,
+                'page_obj': page_obj,
+                'form': form,
+                'location': locations,
+                'success_message': success_message,
+                'success_details': success_details,
+                'rejected_message': rejected_message,
+                'rejected_details': rejected_details,
+            })
+        else:
+            print("Form is not valid.")
+            print("Form errors:", form.errors)
+            return redirect('ecgcoordinator')
+    else:
+        print("There was no post request, so redirecting to the coordinator page.")
+        form = ECGUploadForm()
+
+    return redirect('ecgcoordinator')
+
+
+
 def upload_files(request):
     if request.method == 'POST':
         personal_info = PersonalInfo.objects.get(id=request.POST.get('id'))
@@ -182,6 +462,36 @@ def user_type_required(user_type):
     return decorator
 
 #@user_type_required('client')
+#def client_dashboard(request):
+#    try:
+#        current_user_personal_info = Client.objects.get(user=request.user)
+#    except Client.DoesNotExist:
+#        return HttpResponse("Client object does not exist for this user.", status=404)
+
+#    pdfs_list = []
+#    test_dates_set = set()
+#    report_dates_set = set()
+
+#    if current_user_personal_info.location:
+#        location = current_user_personal_info.location
+#        pdfs = XrayReport.objects.filter(location=location.name)  # Matching location name
+#        pdfs_list.extend(pdfs)
+#        test_dates_set.update(pdf.test_date for pdf in pdfs)
+#        report_dates_set.update(pdf.report_date for pdf in pdfs)
+
+#    formatted_test_dates = sorted(test_date.strftime('%Y-%m-%d') for test_date in test_dates_set)
+#    formatted_report_dates = sorted(report_date.strftime('%Y-%m-%d') for report_date in report_dates_set)
+
+#    context = {
+#        'pdfs': pdfs_list,
+#        'Test_Dates': formatted_test_dates,
+#        'Report_Dates': formatted_report_dates,
+#        'Location': current_user_personal_info.location
+#    }
+
+#    return render(request, 'users/client.html', context)
+
+
 def client_dashboard(request):
     try:
         current_user_personal_info = Client.objects.get(user=request.user)
@@ -194,22 +504,40 @@ def client_dashboard(request):
 
     if current_user_personal_info.location:
         location = current_user_personal_info.location
-        pdfs = XrayReport.objects.filter(location=location.name)  # Matching location name
+        pdfs = XrayReport.objects.filter(location=location.name).order_by('-report_date')  # Matching location name
         pdfs_list.extend(pdfs)
         test_dates_set.update(pdf.test_date for pdf in pdfs)
         report_dates_set.update(pdf.report_date for pdf in pdfs)
+
+    
+        # Pagination
+        paginator = Paginator(pdfs, 50)  # Show 10 PDFs per page
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        # Generate presigned URLs for each PDF file
+        bucket_name = 'u4rad-s3-reporting-bot'
+        for pdf in page_obj:
+            if pdf.pdf_file:  # Ensure the file exists
+                pdf.signed_url = presigned_url(bucket_name, f'uploads/xray_pdfs/{pdf.pdf_file.name}')
+            else:
+                pdf.signed_url = None
+
 
     formatted_test_dates = sorted(test_date.strftime('%Y-%m-%d') for test_date in test_dates_set)
     formatted_report_dates = sorted(report_date.strftime('%Y-%m-%d') for report_date in report_dates_set)
 
     context = {
-        'pdfs': pdfs_list,
+        'pdfs': page_obj,
         'Test_Dates': formatted_test_dates,
         'Report_Dates': formatted_report_dates,
-        'Location': current_user_personal_info.location
+        'Location': current_user_personal_info.location,
+        'paginator': paginator,
+        'page_obj': page_obj
     }
 
     return render(request, 'users/client.html', context)
+
 
 user_type_required('client')
 def update_clinical_history(request):
@@ -328,6 +656,14 @@ def allocation(request):
         # If page is out of range, deliver last page of results
         page_obj = paginator.get_page(paginator.num_pages)
 
+    # Generate presigned URLs for images on the current page
+    #bucket_name = 'u4rad-s3-reporting-bot'
+    #for patient in page_obj:
+    #    if patient.image:
+    #        patient.presigned_image_url = presigned_url(bucket_name, patient.image.name)
+    #    else:
+    #        patient.presigned_image_url = None
+
     # Get unique dates from the patients on the current page
     unique_dates = set(patient.date.date_field for patient in page_obj.object_list)
     sorted_unique_dates = sorted(unique_dates, reverse=False)
@@ -336,6 +672,14 @@ def allocation(request):
     # Get unique cities and locations
     unique_cities = [f"{x.name}" for x in City.objects.all()]
     unique_locations = [f"{y.name}" for y in Location.objects.all()]
+    
+    # Everything related to the uploading of the ecg file to the database from the modal.
+    form = ECGUploadForm()
+    locations = Location.objects.all()
+    success_message = ''
+    success_details = []            
+    rejected_message = ''
+    rejected_details = [] 
 
     return render(request, 'users/allocation.html', {
         'total_cases': total_cases,
@@ -348,7 +692,13 @@ def allocation(request):
         'Location': unique_locations,
         'Cities': unique_cities,
         'rejected': total_rejected_patients,
-        'page_obj': page_obj  # Pass page_obj for pagination controls
+        'page_obj': page_obj,
+        'form': form,
+        'location': locations,
+        'success_message': success_message,
+        'success_details': success_details,
+        'rejected_message': rejected_message,
+        'rejected_details': rejected_details,
     })
 
 @user_type_required('xraycoordinator')
@@ -432,6 +782,15 @@ def allocation1(request):
     except EmptyPage:
         # If page is out of range, deliver last page of results
         page_obj = paginator.get_page(paginator.num_pages)
+
+    # Generate presigned URLs for JPEG files on the current page
+    bucket_name = 'u4rad-s3-reporting-bot'
+    for patient in page_obj:
+        jpeg_files = patient.jpeg_files.all()
+        patient.presigned_jpeg_urls = [
+            presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files
+        ]    
+
 
     # Get unique dates from the patients on the current page
     unique_dates = set(patient.study_date for patient in page_obj.object_list)
@@ -824,7 +1183,7 @@ def presigned_url(bucket_name, object_name, operation='get_object'):
         s3_client = boto3.client('s3', region_name='ap-south-1', config=boto3.session.Config(signature_version='s3v4'))
         url = s3_client.generate_presigned_url(
             ClientMethod=operation,
-            Params={'Bucket': bucket_name, 'Key': object_name},
+            Params={'Bucket': bucket_name, 'Key': object_name, 'ResponseContentDisposition': 'attachment'},
             ExpiresIn=3600
         )
     except (NoCredentialsError, PartialCredentialsError):
@@ -2057,15 +2416,25 @@ def handle_single_file_per_person_upload(request, form, locations):
                             if dicom_instance.notes == '':
                                 dicom_instance.notes = 'No Clinical History.'
 
+                            # Read the DICOM file content once
+                            dicom_file_content = dicom_file.read()
                             # Save the DICOM file
                             dicom_file_obj = DICOMFile.objects.create(
                                 dicom_data=dicom_instance,
-                                dicom_file=ContentFile(dicom_file.read(), name=dicom_file_name)
+                                dicom_file=ContentFile(dicom_file_content, name=dicom_file_name)
                             )
+                            saved_dicom_filename = dicom_file_obj.dicom_file.name
+
+                            # Reset file pointer for S3 upload
+                            dicom_file.seek(0)
 
                             # Upload DICOM file to S3
-                            dicom_s3_path = f'dicom_files/{dicom_file.name}'
-                            upload_to_s3(ContentFile(dicom_file.read(), name=dicom_file_name), dicom_s3_path)
+                            #dicom_s3_path = f'dicom_files/{dicom_file_name}'
+                            dicom_s3_path = saved_dicom_filename  # Use the same name as saved in the database
+                            try:
+                               upload_to_s3(ContentFile(dicom_file_content, name=saved_dicom_filename), dicom_s3_path)
+                            except Exception as e:
+                               print(f"Error uploading DICOM file: {e}")
 
                             # Convert DICOM image to JPEG-compatible format
                             pixel_data = dicom_data.pixel_array
@@ -2082,11 +2451,15 @@ def handle_single_file_per_person_upload(request, form, locations):
                                 jpeg_file = ContentFile(output.getvalue(), name=jpeg_file_name)
                                 jpeg_instance = JPEGFile.objects.create(dicom_data=dicom_instance, jpeg_file=jpeg_file)
                                 #dicom_instance.save()
-
+                                saved_jpeg_filename = jpeg_instance.jpeg_file.name
                                 # Upload JPEG file to S3
-                                jpeg_s3_path = f'jpeg_files/{jpeg_file_name}'
-                                upload_to_s3(jpeg_file, jpeg_s3_path)
-
+                                #jpeg_s3_path = f'jpeg_files/{jpeg_file_name}'
+                                jpeg_s3_path = saved_jpeg_filename
+                                # upload_to_s3(jpeg_file, jpeg_s3_path)
+                                try:
+                                    upload_to_s3(jpeg_file, jpeg_s3_path)
+                                except Exception as e:
+                                    print(f"Error uploading JPEG file: {e}")
 
                             dicom_instances.append(dicom_instance)
 
@@ -2162,9 +2535,11 @@ def handle_multiple_file_single_person_upload(request, form, locations):
                 for dicom_file in request.FILES.getlist('dicom_file'):
                     try:
                         dicom_data = dcmread(dicom_file)
-                        print(dicom_data)
+                        #print(dicom_data)
+                        print(f"Processing file: {dicom_file.name}")
                     except Exception as e:
-                        print(f"Error reading DICOM file: {str(e)}")
+                        #print(f"Error reading DICOM file: {str(e)}")
+                        print(f"Error reading DICOM file {dicom_file.name}: {str(e)}")
                         rejected_files.append({'id': None, 'name': dicom_file.name})
                         continue
 
@@ -2175,7 +2550,7 @@ def handle_multiple_file_single_person_upload(request, form, locations):
                         accession_number = None
 
                     # Get the unique identifier for the patient
-                    patient_id = str(dicom_data.PatientID)
+                    patient_id = str(dicom_data.PatientID).replace(" ", "_")  # Replace spaces with underscores
 
                     # Get the body part examined
                     if dicom_data.BodyPartExamined:
@@ -2204,7 +2579,7 @@ def handle_multiple_file_single_person_upload(request, form, locations):
                         dicom_instance.client = client
                         dicom_instance.city = city
                         dicom_instance.location = location
-                        dicom_instance.patient_name = str(dicom_data.PatientName)
+                        dicom_instance.patient_name = str(dicom_data.PatientName).replace(" ", "_")  # Replace spaces with underscores
                         # if
                         dicom_instance.age = str(dicom_data.PatientAge)
                         dicom_instance.gender = 'Male' if dicom_data.PatientSex.upper() == 'M' else 'Female'
@@ -2218,10 +2593,12 @@ def handle_multiple_file_single_person_upload(request, form, locations):
                         dicom_instance.save()
 
                     # Create a DICOMFile instance for the DICOMData instance
+                    dicom_file_name = f"{patient_id}_{dicom_instance.patient_name}.dcm"
                     dicom_file_obj = DICOMFile.objects.create(dicom_data=dicom_instance, dicom_file=dicom_file)
                     
                     # Upload DICOM file to S3
-                    dicom_s3_path = f'dicom_files/{dicom_file.name}'
+                    dicom_s3_path = f'{dicom_file_obj.dicom_file.name}'
+                    print(f"Uploading DICOM file to S3: {dicom_s3_path}")
                     upload_to_s3(dicom_file, dicom_s3_path)
 
                     # Convert DICOM image to JPEG-compatible format
@@ -2235,11 +2612,14 @@ def handle_multiple_file_single_person_upload(request, form, locations):
                         Image.fromarray(pixel_data).convert('L').save(output, format='JPEG')  # 'L' for grayscale
 
                         # Save the JPEG file with the correct DICOM instance
-                        jpeg_file_name = f"{dicom_file.name.split('.')[0]}.jpg"  # Assuming DICOM file name is unique
+                        #jpeg_file_name = f"{dicom_file.name.split('.')[0]}.jpg"  # Assuming DICOM file name is unique
+                        jpeg_file_name = f"{patient_id}_{dicom_instance.patient_name}.jpg"  # Use the modified patient_id and patient_name
                         jpeg_file = ContentFile(output.getvalue(), name=jpeg_file_name)
                         jpeg_instance = JPEGFile.objects.create(dicom_data=dicom_instance, jpeg_file=jpeg_file)
+                        
                         # Upload JPEG file to S3
-                        jpeg_s3_path = f'jpeg_files/{jpeg_file_name}'
+                        jpeg_s3_path = f'{jpeg_instance.jpeg_file.name}'
+                        print(f"Uploading JPEG file to S3: {jpeg_s3_path}")
                         upload_to_s3(jpeg_file, jpeg_s3_path)
                     # Keep track of successfully processed instances
                     if patient_id not in dicom_instances:
@@ -2346,38 +2726,24 @@ def handle_ecg_pdf_upload(pdf_file):
 
 
 def upload_ecg_pdf(request):
+    print("Inside upload_ecg_pdf")
     if request.method == 'POST':
         try:
             print("Inside upload_pdf view")
             pdf_file = request.FILES.get('pdf')
-            patient_id = request.POST.get('patientId')
-            patient_name = request.POST.get('patientName')
+            patient_id = request.POST.get('patientId').replace(' ', '_')
+            patient_name = request.POST.get('patientName').replace(' ', '_')
             location = request.POST.get('location')
             test_date_str = request.POST.get('testDate')
             report_date_str = request.POST.get('reportDate')
 
             if not pdf_file:
                 return JsonResponse({'error': 'No PDF file provided.'}, status=400)
+            filename = f"{patient_id}_{patient_name}.pdf"
 
-            # Upload the file to s3 bucket
-            s3_client = boto3.client ('s3', region_name=settings.AWS_S3_REGION_NAME)
-            s3_file_path = f'uploads/ecg_pdfs/{pdf_file.name}'
-
-            s3_client.upload_fileobj(pdf_file, settings.AWS_STORAGE_BUCKET_NAME, s3_file_path)
-
-            # Specify the upload path and create a folder if it doesn't exist
-            #upload_path = os.path.join('uploads', 'ecg_pdfs')
-            #os.makedirs(upload_path, exist_ok=True)
-
-            # Save the PDF file to the specified path
-            #pdf_file_path = os.path.join(upload_path, pdf_file.name)
-            #print("PDF file path:", pdf_file_path)
-
-            #with open(pdf_file_path, 'wb+') as destination:
-            #    for chunk in pdf_file.chunks():
-            #        destination.write(chunk)
-
-            # Convert report_date_str to a datetime object
+            # Use the same filename to upload the file to S3 bucket
+            s3_file_path = f'uploads/ecg_pdfs/{filename}'
+            upload_to_s3(pdf_file, s3_file_path)
             test_date = datetime.strptime(test_date_str, "%Y-%m-%d").date()
             report_date = datetime.strptime(report_date_str, "%Y-%m-%d").date()
 
@@ -2413,18 +2779,34 @@ def get_csrf_token(request):
 @user_type_required('ecgcoordinator')
 ############################ To retrive data
 def ecg_pdf_report(request):
-    pdfs = EcgReport.objects.all().order_by('-report_date')
+    pdfs = EcgReport.objects.all()[::-1]
 
-    # Generate presigned URLs for each PDF file
+    # Set up pagination: 10 items per page (you can adjust this number)
+    paginator = Paginator(pdfs, 150)  # Show 10 PDF reports per page
+
+    # Get the current page number from the query string
+    page_number = request.GET.get('page')
+    
+    # Get the page of PDF reports for the current page number
+    page_obj = paginator.get_page(page_number)
+
+    # Generate presigned URLs only for the PDFs on the current page (page_obj)
     bucket_name = 'u4rad-s3-reporting-bot'
-    pdf_urls = []
-
-    #Generate signed URLs for each PDF file
-    for pdf in pdfs:
+    for pdf in page_obj:
         if pdf.pdf_file:  # Ensure the file exists
             pdf.signed_url = presigned_url(bucket_name, pdf.pdf_file.name)
         else:
             pdf.signed_url = None
+    # Generate presigned URLs for each PDF file
+    #bucket_name = 'u4rad-s3-reporting-bot'
+    #pdf_urls = []
+
+    #Generate signed URLs for each PDF file
+    #for pdf in pdfs:
+    #    if pdf.pdf_file:  # Ensure the file exists
+    #        pdf.signed_url = presigned_url(bucket_name, pdf.pdf_file.name)
+    #    else:
+    #        pdf.signed_url = None
 
 
     # Collect unique dates and locations from the PDFs
@@ -2434,10 +2816,13 @@ def ecg_pdf_report(request):
     unique_locations = set(pdf.location for pdf in pdfs)
 
     context = {
-        'pdfs': pdfs,
+        #'pdfs': pdfs,
+        'pdfs': page_obj,  # Use page_obj instead of pdfs
         'Test_Date': sorted(formatted_dates),
         'Report_Date': sorted(report_dates),  # Ensure dates are sorted for dropdown
         'Location': sorted(unique_locations),  # Ensure locations are sorted for dropdown
+        'paginator': paginator,  # Include the paginator object
+        'page_obj': page_obj,  # Include the current page object
     }
 
     return render(request, 'users/ecg_pdf_report.html', context)
@@ -2451,14 +2836,13 @@ def handle_xray_pdf_upload(pdf_file):
     your_pdf_model_instance = XrayReport(pdf_file=pdf_file)
     your_pdf_model_instance.save()
 
-
 def upload_xray_pdf(request):
     if request.method == 'POST':
         try:
             print("Inside upload_xray_pdf view")
             pdf_file = request.FILES.get('pdf')
-            patient_id = request.POST.get('patientId')
-            patient_name = request.POST.get('patientName')
+            patient_id = request.POST.get('patientId').replace(' ', '_')  # Replace spaces with underscores
+            patient_name = request.POST.get('patientName').replace(' ', '_')  # Replace spaces with underscores
             location = request.POST.get('location')
             accession_number = request.POST.get('accession')
             test_date_str = request.POST.get('testDate')
@@ -2467,59 +2851,126 @@ def upload_xray_pdf(request):
             if not pdf_file:
                 return JsonResponse({'error': 'No PDF file provided.'}, status=400)
 
-            # Upload the file to s3 bucket
-            s3_client = boto3.client ('s3', region_name=settings.AWS_S3_REGION_NAME)
-            s3_file_path = f'uploads/xray_pdfs/{pdf_file.name}'
+            # Create filename using sanitized patient_id and patient_name
+            filename = f"{patient_id}_{patient_name}.pdf"
 
-            s3_client.upload_fileobj(pdf_file, settings.AWS_STORAGE_BUCKET_NAME, s3_file_path)
-            
-
-            # Convert report_date_str to a datetime object
-            print(datetime)
-            test_date = datetime.strptime(test_date_str, "%Y-%m-%d").date()
-            report_date = datetime.strptime(report_date_str, "%Y-%m-%d").date()
-
-            # Save the PDF file path and additional data to the database
+            # Save the filename in the database
             pdf_model_instance = XrayReport(
-                pdf_file=s3_file_path,
+                pdf_file=filename,
                 name=patient_name,
                 patient_id=patient_id,
                 location=location,
-                test_date=test_date,
-                report_date=report_date,
+                test_date=datetime.strptime(test_date_str, "%Y-%m-%d").date(),
+                report_date=datetime.strptime(report_date_str, "%Y-%m-%d").date(),
                 accession_number=accession_number
             )
             pdf_model_instance.save()
 
-            #Generate Presigned URL for the PDF file
-            presigned_url = generate_presigned_url(pdf_model_instance.pdf_file.name)
+            # Use the same filename to upload the file to S3 bucket
+            s3_file_path = f'uploads/xray_pdfs/{filename}'
+            upload_to_s3(pdf_file, s3_file_path)
+
+            # Generate Presigned URL for the PDF file
+            presigned_url = generate_presigned_url(s3_file_path)
+            print("presigned_url", presigned_url)
             if presigned_url is None:
                 return JsonResponse({'error': 'Failed to generate presigned URL.'}, status=500)
 
+            # Send WhatsApp message if the accession_number is a valid phone number
             if re.fullmatch(r'\d{10}', accession_number):
                 account_sid = settings.TWILIO_ACCOUNT_SID
                 auth_token = settings.TWILIO_AUTH_TOKEN
                 client = tw(account_sid, auth_token)
-                
-                # Generate the S3 media URL
+
                 media_url = f'https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{s3_file_path}'
                 print("Media_url:", media_url)
 
                 message = client.messages.create(
-                    content_sid='HXff6a8bf74ca42c765eefe580fb5b376b',
+                    content_sid='HX1a91399a3722754fdab9c0a1a3edf43f',
                     from_='MG228f0104ea3ddfc780cfcc1a0ca561d9',
                     to=f'whatsapp:+91{accession_number}',
-                    content_variables=json.dumps({'1': patient_name, '2': media_url}),
+                    content_variables=json.dumps({'1': patient_name, '2': presigned_url}),
                 )
                 print(message)
                 print(patient_name, presigned_url)
-            
+
             return JsonResponse({'message': 'PDF successfully uploaded and processed.'})
         except Exception as e:
             print("Error processing PDF:", e)
             return JsonResponse({'error': 'Internal server error.'}, status=500)
 
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
+
+#def upload_xray_pdf(request):
+#    if request.method == 'POST':
+#        try:
+#            print("Inside upload_xray_pdf view")
+#            pdf_file = request.FILES.get('pdf')
+#            patient_id = request.POST.get('patientId')
+#            patient_name = request.POST.get('patientName')
+#            location = request.POST.get('location')
+#            accession_number = request.POST.get('accession')
+#            test_date_str = request.POST.get('testDate')
+#            report_date_str = request.POST.get('reportDate')
+
+#            if not pdf_file:
+#                return JsonResponse({'error': 'No PDF file provided.'}, status=400)
+
+            # Upload the file to s3 bucket
+#            s3_client = boto3.client ('s3', region_name=settings.AWS_S3_REGION_NAME)
+#            s3_file_path = f'uploads/xray_pdfs/{pdf_file.name}'
+
+#            s3_client.upload_fileobj(pdf_file, settings.AWS_STORAGE_BUCKET_NAME, s3_file_path)
+            
+
+            # Convert report_date_str to a datetime object
+#            print(datetime)
+#            test_date = datetime.strptime(test_date_str, "%Y-%m-%d").date()
+#            report_date = datetime.strptime(report_date_str, "%Y-%m-%d").date()
+
+            # Save the PDF file path and additional data to the database
+#            pdf_model_instance = XrayReport(
+#                pdf_file=s3_file_path,
+#                name=patient_name,
+#                patient_id=patient_id,
+#                location=location,
+#                test_date=test_date,
+#                report_date=report_date,
+#                accession_number=accession_number
+#            )
+#            pdf_model_instance.save()
+
+            #Generate Presigned URL for the PDF file
+#            presigned_url = generate_presigned_url(pdf_model_instance.pdf_file.name)
+#            if presigned_url is None:
+#                return JsonResponse({'error': 'Failed to generate presigned URL.'}, status=500)
+
+#            if re.fullmatch(r'\d{10}', accession_number):
+#                account_sid = settings.TWILIO_ACCOUNT_SID
+#                auth_token = settings.TWILIO_AUTH_TOKEN
+#                client = tw(account_sid, auth_token)
+                
+                # Generate the S3 media URL
+#                media_url = f'https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{s3_file_path}'
+#                print("Media_url:", media_url)
+
+#                message = client.messages.create(
+                    #content_sid='HXff6a8bf74ca42c765eefe580fb5b376b',
+#                    content_sid='HX1a91399a3722754fdab9c0a1a3edf43f',
+#                    from_='MG228f0104ea3ddfc780cfcc1a0ca561d9',
+#                    to=f'whatsapp:+91{accession_number}',
+#                    content_variables=json.dumps({'1': patient_name, '2': media_url}),
+#                )
+#                print(message)
+#                print(patient_name, presigned_url)
+            
+#            return JsonResponse({'message': 'PDF successfully uploaded and processed.'})
+#        except Exception as e:
+#            print("Error processing PDF:", e)
+#            return JsonResponse({'error': 'Internal server error.'}, status=500)
+
+#    return JsonResponse({'error': 'Invalid request method.'}, status=400)
 
 
 def get_csrf_token(request):
@@ -2550,30 +3001,22 @@ def generate_presigned_url (key):
         return None    
 
 @user_type_required('xraycoordinator')
-############################ To retrive data
-# def xray_pdf_report(request):
-#     pdfs = XrayReport.objects.all()
-#     print([pdf.get_pdf_url() for pdf in pdfs])
-#     return render(request, 'users/xray_pdf_report.html', {'pdfs': pdfs})
-
 def xray_pdf_report(request):
-    pdfs = XrayReport.objects.all().order_by('-report_date')
-    # Generate presigned URLs for each PDF file
-    bucket_name = 'u4rad-s3-reporting-bot'
-    pdf_urls = []
+    pdfs = XrayReport.objects.all()[::-1]
+    #pdfs = XrayReport.objects.all()
+    paginator = Paginator(pdfs, 200)  # Show 10 PDF reports per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
-    #Generate signed URLs for each PDF file
-    for pdf in pdfs:
+    # Generate presigned URLs for each PDF file on the current page
+    bucket_name = 'u4rad-s3-reporting-bot'
+    for pdf in page_obj:
+        print(f'{pdf.patient_id} - {pdf.name} - {pdf.pdf_file}')
         if pdf.pdf_file:  # Ensure the file exists
-            pdf.signed_url = presigned_url(bucket_name, pdf.pdf_file.name)
+            pdf.signed_url = presigned_url(bucket_name, f'uploads/xray_pdfs/{pdf.pdf_file.name}')
         else:
             pdf.signed_url = None
-       # Add each pdf and its corresponding signed URL to the list
-        #pdf_urls.append({
-        #    'pdf': pdf,
-        #    'signed_url': signed_url
-        #})
-
+        print(pdf.name, pdf.signed_url)
     # Collect unique dates and locations from the PDFs
     test_dates = set(pdf.test_date for pdf in pdfs)
     formatted_dates = [date.strftime('%Y-%m-%d') for date in test_dates]
@@ -2581,14 +3024,17 @@ def xray_pdf_report(request):
     unique_locations = XLocation.objects.all()
 
     context = {
-        'pdfs': pdfs,
+        'pdfs': page_obj,
         #'pdf_urls': pdf_urls,
         'Test_Date': sorted(formatted_dates),
         'Report_Date': sorted(report_dates),  # Ensure dates are sorted for dropdown
-        'Location': unique_locations  # Ensure locations are sorted for dropdown
+        'Location': unique_locations,  # Ensure locations are sorted for dropdown
+        'paginator': paginator,  # Include the paginator object
+        'page_obj': page_obj,  # Include the current page object
     }
 
     return render(request, 'users/xray_pdf_report.html', context)
+
 
 
 @login_required

@@ -83,6 +83,7 @@ urlpatterns = [
     path('VaccinationPatientData', views.vaccinationpatientDetails, name='VaccinationPatientData'),
     path('upload/', views.upload_files, name='upload_files'),
     # path('auto_sync/', views.Auto_Sync, name='get_dcm_files'),
+    path('upload-ecg/', views.upload_ecg, name='upload_ecg'),
 
 
 ] 

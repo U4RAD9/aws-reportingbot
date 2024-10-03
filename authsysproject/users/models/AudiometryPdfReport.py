@@ -3,7 +3,7 @@ from django.db import models
 class AudiometryReport(models.Model):
     pdf_file = models.FileField(upload_to='uploads/audiometry_pdfs/')
     name = models.CharField(max_length=255, blank=True, null=True)
-    patient_id = models.CharField(max_length=20, blank=True, null=True)
+    patient_id = models.CharField(max_length=255, blank=True, null=True)
     test_date = models.DateField(blank=True, null=True)
     report_date = models.DateField(blank=True, null=True)
 
