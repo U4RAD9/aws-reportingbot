@@ -2550,7 +2550,7 @@ def handle_multiple_file_single_person_upload(request, form, locations):
                         accession_number = None
 
                     # Get the unique identifier for the patient
-                    patient_id = str(dicom_data.PatientID).replace(" ", "_")  # Replace spaces with underscores
+                    patient_id = str(dicom_data.PatientID)
 
                     # Get the body part examined
                     if dicom_data.BodyPartExamined:
@@ -2579,7 +2579,7 @@ def handle_multiple_file_single_person_upload(request, form, locations):
                         dicom_instance.client = client
                         dicom_instance.city = city
                         dicom_instance.location = location
-                        dicom_instance.patient_name = str(dicom_data.PatientName).replace(" ", "_")  # Replace spaces with underscores
+                        dicom_instance.patient_name = str(dicom_data.PatientName)
                         # if
                         dicom_instance.age = str(dicom_data.PatientAge)
                         dicom_instance.gender = 'Male' if dicom_data.PatientSex.upper() == 'M' else 'Female'
@@ -2593,13 +2593,14 @@ def handle_multiple_file_single_person_upload(request, form, locations):
                         dicom_instance.save()
 
                     # Create a DICOMFile instance for the DICOMData instance
-                    dicom_file_name = f"{patient_id}_{dicom_instance.patient_name}.dcm"
                     dicom_file_obj = DICOMFile.objects.create(dicom_data=dicom_instance, dicom_file=dicom_file)
                     
                     # Upload DICOM file to S3
-                    dicom_s3_path = f'{dicom_file_obj.dicom_file.name}'
-                    print(f"Uploading DICOM file to S3: {dicom_s3_path}")
-                    upload_to_s3(dicom_file, dicom_s3_path)
+                    #dicom_s3_path = f'dicom_files/{dicom_file_name}'
+                    #dicom_s3_path = f'{dicom_file_obj.dicom_file.name}'
+                    #print(f"Uploading DICOM file to S3: {dicom_s3_path}")
+                    #upload_to_s3(dicom_file, dicom_s3_path)
+
 
                     # Convert DICOM image to JPEG-compatible format
                     pixel_data = dicom_data.pixel_array
@@ -2612,15 +2613,17 @@ def handle_multiple_file_single_person_upload(request, form, locations):
                         Image.fromarray(pixel_data).convert('L').save(output, format='JPEG')  # 'L' for grayscale
 
                         # Save the JPEG file with the correct DICOM instance
-                        #jpeg_file_name = f"{dicom_file.name.split('.')[0]}.jpg"  # Assuming DICOM file name is unique
-                        jpeg_file_name = f"{patient_id}_{dicom_instance.patient_name}.jpg"  # Use the modified patient_id and patient_name
+                        jpeg_file_name = f"{dicom_file.name.split('.')[0]}.jpg"  # Assuming DICOM file name is unique
+                        #jpeg_file_name = f"{patient_id}_{dicom_instance.patient_name}.jpg"  # Use the modified patient_id and patient_name
                         jpeg_file = ContentFile(output.getvalue(), name=jpeg_file_name)
                         jpeg_instance = JPEGFile.objects.create(dicom_data=dicom_instance, jpeg_file=jpeg_file)
                         
                         # Upload JPEG file to S3
-                        jpeg_s3_path = f'{jpeg_instance.jpeg_file.name}'
-                        print(f"Uploading JPEG file to S3: {jpeg_s3_path}")
-                        upload_to_s3(jpeg_file, jpeg_s3_path)
+                        #jpeg_s3_path = f'{jpeg_instance.jpeg_file.name}'
+                        #print(f"Uploading JPEG file to S3: {jpeg_s3_path}")
+                        #upload_to_s3(jpeg_file, jpeg_s3_path)
+                    # Track success
+                    #dicom_instances[patient_id].append(dicom_instance)
                     # Keep track of successfully processed instances
                     if patient_id not in dicom_instances:
                         dicom_instances[patient_id] = dicom_instance
@@ -2634,11 +2637,12 @@ def handle_multiple_file_single_person_upload(request, form, locations):
 
                 # Collect success details
                 success_message = f"{len(dicom_instances)} Images uploaded successfully."
-                success_details = [{'id': None, 'name': file_obj.dicom_file.name} for dicom_instance in
-                                   dicom_instances.values() for file_obj in dicom_instance.dicom_files.all()]
+                success_details = [{'id': None, 'name': file_obj.dicom_file.name} for dicom_instance in dicom_instances.values() for file_obj in dicom_instance.dicom_files.all()]
+                #success_details = [{'id': instance.id, 'name': instance.patient_name} for instances in dicom_instances.values() for instance in instances]
                 if rejected_files:
                     rejected_message = f"{len(rejected_files)} files were rejected. Please check and try again."
                     rejected_details = [{'id': item['id'], 'name': item['name']} for item in rejected_files]
+                    #rejected_details = rejected_files
 
         else:
             print("No location found with the name:", location_name)

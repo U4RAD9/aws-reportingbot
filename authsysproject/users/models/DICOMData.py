@@ -1,6 +1,7 @@
 from django.db import models
 from .personalinfo import PersonalInfo
 from .Xray_Location import XLocation
+from storages.backends.s3boto3 import S3Boto3Storage
 
 
 
@@ -27,9 +28,10 @@ class DICOMData(models.Model):
 
 class DICOMFile(models.Model):
     dicom_data = models.ForeignKey(DICOMData, related_name='dicom_files', on_delete=models.CASCADE)
-    dicom_file = models.FileField(upload_to='dicom_files/')
-
+    dicom_file = models.FileField(upload_to='dicom_files/', storage=S3Boto3Storage())
+    #dicom_file = models.CharField(max_length=500)
 
 class JPEGFile(models.Model):
     dicom_data = models.ForeignKey(DICOMData, related_name='jpeg_files', on_delete=models.CASCADE)
-    jpeg_file = models.ImageField(upload_to='jpeg_files/')
+    jpeg_file = models.ImageField(upload_to='jpeg_files/', storage=S3Boto3Storage())
+    #jpeg_file = models.CharField(max_length=500)
