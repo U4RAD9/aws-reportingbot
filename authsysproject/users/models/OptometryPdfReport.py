@@ -1,7 +1,8 @@
 from django.db import models
+from storages.backends.s3boto3 import S3Boto3Storage
 
 class OptometryReport(models.Model):
-    pdf_file = models.FileField(upload_to='uploads/optometry_pdfs/')
+    pdf_file = models.FileField(upload_to='uploads/optometry_pdfs/', storage=S3Boto3Storage())
     name = models.CharField(max_length=255, blank=True, null=True)
     patient_id = models.CharField(max_length=255, blank=True, null=True)
     test_date = models.DateField(blank=True, null=True)

@@ -703,26 +703,9 @@
           }
         }
 
-        function callGoogleDrive(location, date) {
-            $.ajax({
-                type: 'GET',
-                url: '/googledrive/',
-                data: { location: location, date: date },
-                success: function (response) {
-                    console.log(response.message); // Handle the response from the server if needed
-                },
-                error: function () {
-                    console.error('Failed to call GoogleDrive() function.');
-                }
-            });
-        }
-
         function refreshPage() {
             var selectedLocation = document.getElementById("filter-location-select-location").value;
             var selectedDate = document.getElementById("filter-date-select-date").value;
-
-            // Call GoogleDrive() before reloading the page
-            callGoogleDrive(selectedLocation, selectedDate);
 
             // Reload the page
             location.reload();

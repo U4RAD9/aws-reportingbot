@@ -939,22 +939,8 @@
     </script>
 
     <script>
-        function callGoogleDrive() {
-            $.ajax({
-                type: 'GET',
-                url: '/googledrive1/',
-                success: function (response) {
-                    console.log(response.message); // Handle the response from the server if needed
-                },
-                error: function () {
-                    console.error('Failed to call GoogleDrive() function.');
-                }
-            });
-        }
 
         function refreshPage() {
-            // Call GoogleDrive() before reloading the page
-            callGoogleDrive();
 
             // Reload the page
             location.reload();

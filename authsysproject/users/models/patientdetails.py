@@ -2,6 +2,7 @@ from django.db import models
 from .Date import Date
 from .personalinfo import PersonalInfo
 from .Location import Location
+from storages.backends.s3boto3 import S3Boto3Storage
 
 
 class PatientDetails(models.Model):
@@ -19,8 +20,8 @@ class PatientDetails(models.Model):
     ReportDate = models.CharField(max_length=220)
     PRInterval = models.CharField(max_length=230, null=True, blank=True)
     date = models.ForeignKey(Date, on_delete=models.CASCADE, default=None)
-    image = models.ImageField(upload_to='ecg_jpgs/', null=True, blank=True)
-    reportimage = models.FileField(upload_to='ecg_graphs/', null=True, blank=True)
+    image = models.ImageField(upload_to='ecg_jpgs/', storage=S3Boto3Storage(), null=True, blank=True)
+    reportimage = models.FileField(upload_to='ecg_graphs/', storage=S3Boto3Storage(), null=True, blank=True)
     cardiologist = models.ForeignKey(PersonalInfo, on_delete=models.SET_NULL, null=True, blank=True)
     location = models.ForeignKey(Location, on_delete=models.CASCADE, null=True, blank=True)
     isDone = models.BooleanField(default=False)

@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from storages.backends.s3boto3 import S3Boto3Storage
 
 
 class WorkExp(models.Model):
@@ -17,7 +18,7 @@ class WorkExp(models.Model):
     pii = models.CharField(max_length=15, null=True, default=None, blank=True)
     msname = models.CharField(max_length=15, null=True, default=None, blank=True)
     mcirgno = models.CharField(max_length=15, null=True, default=None, blank=True)
-    regcecr = models.FileField(upload_to='uploads/', null=True, default=None, blank=True)
+    regcecr = models.FileField(upload_to='uploads/', storage=S3Boto3Storage(), null=True, default=None, blank=True)
 
     def __str__(self):
         return str(self.user)
