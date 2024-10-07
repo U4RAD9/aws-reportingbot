@@ -2364,7 +2364,7 @@ def xray_pdf_report(request):
     for pdf in page_obj:
         print(f'{pdf.patient_id} - {pdf.name} - {pdf.pdf_file}')
         if pdf.pdf_file:  # Ensure the file exists
-            pdf.signed_url = presigned_url(bucket_name, f'uploads/xray_pdfs/{pdf.pdf_file.name}')
+            pdf.signed_url = presigned_url(bucket_name, f'{pdf.pdf_file.name}')
         else:
             pdf.signed_url = None
         print(pdf.name, pdf.signed_url)
