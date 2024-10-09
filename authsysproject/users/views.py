@@ -2216,7 +2216,7 @@ def get_csrf_token(request):
 @user_type_required('ecgcoordinator')
 ############################ To retrive data
 def ecg_pdf_report(request):
-    pdfs = EcgReport.objects.all()[::-1]
+    pdfs = EcgReport.objects.all().order_by('-id')
 
     # Set up pagination: 10 items per page (you can adjust this number)
     paginator = Paginator(pdfs, 150)  # Show 10 PDF reports per page
@@ -2353,7 +2353,7 @@ def generate_presigned_url (key):
 
 @user_type_required('xraycoordinator')
 def xray_pdf_report(request):
-    pdfs = XrayReport.objects.all()[::-1]
+    pdfs = XrayReport.objects.all().order_by('-id')
     #pdfs = XrayReport.objects.all()
     paginator = Paginator(pdfs, 200)  # Show 10 PDF reports per page
     page_number = request.GET.get('page')
