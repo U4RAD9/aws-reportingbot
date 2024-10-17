@@ -202,9 +202,7 @@ def extract_patient_gender(text):
 
 def extract_heart_rate(text):
     try:
-        hr = str(text).split("HR:")[1].split(" ")[1].split("/")[0].strip()
-        if hr == '':
-            hr = str(text).split("HR:")[1].split("/")[0].strip()
+        hr = str(text).split("HR:")[1].split("/")[0].strip()
         return hr
     except IndexError:
         return '0'  # Default heart rate if not found
