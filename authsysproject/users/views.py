@@ -222,7 +222,13 @@ def extract_report_time(text):
 
 def extract_date(text):
     try:
-        raw_date = str(text).split("Acquired on:")[1][0:11].strip()
+        if "Acquired on:" in str(text):
+            raw_date = str(text).split("Acquired on:")[1][0:11].strip()
+        
+        # To resolve the extra space issue.
+        if "Acquiredon:" in str(text):
+            raw_date = str(text).split("Acquiredon:")[1][0:10].strip()
+
         if isinstance(raw_date, str):
             return datetime.strptime(raw_date, '%Y-%m-%d').date()
         else:
@@ -257,15 +263,23 @@ def clean_page_data(first_page_text):
 
 
 def upload_ecg(request):
-    success_message = ''
     success_details = []
-    rejected_message = ''
     rejected_details = []
+    missing_id = []
+    processing_error = []
     if len(rejected_details) != 0:
         rejected_details.clear()
 
     if request.method == 'POST':
         form = ECGUploadForm(request.POST, request.FILES)
+
+        # Getting the maximum number of files from the form field
+        max_files = ECGUploadForm.base_fields['ecg_file'].max_num
+
+        # Checking if the number of files exceeds the maximum limit
+        if 'ecg_file' in request.FILES and len(request.FILES.getlist('ecg_file')) > max_files:
+            form.add_error('ecg_file', f'Maximum limit of selection is {max_files}.')
+
         if form.is_valid():
             print("Form is valid.")
             ecg_files = form.cleaned_data['ecg_file']  # This will be a list of files.
@@ -277,7 +291,7 @@ def upload_ecg(request):
                     pdf_bytes = ecg_file.read()
                 except Exception as e:
                     print(f"Error reading ECG file: {str(e)}")
-                    rejected_details.append({'id': None, 'name': ecg_file.name})
+                    processing_error.append({'id': None, 'name': ecg_file.name})
                     continue
 
                 pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
@@ -308,7 +322,7 @@ def upload_ecg(request):
 
                     if not patient_id:
                         print(f"Skipping file {ecg_file.name} - Id is not present in the uploaded file.")
-                        rejected_details.append({'id': patient_id, 'name': ecg_file.name})
+                        missing_id.append({'id': patient_id, 'name': ecg_file.name})
                         break
 
                     if PatientDetails.objects.filter(PatientId=patient_id).exists():
@@ -373,12 +387,16 @@ def upload_ecg(request):
 
 
             if rejected_details:
-                rejected_message = f"{len(rejected_details)} files were rejected. Please check and try again."
                 rejected_details = [{'id': item['id'], 'name': item['name']} for item in rejected_details]
 
             if success_details:
-                success_message = f"{len(success_details)} Images uploaded successfully."
                 success_details = [{'id': item['id'], 'name': item['name']} for item in success_details]
+
+            if processing_error:
+                processing_error = [{'id': item['id'], 'name': item['name']} for item in processing_error]
+
+            if missing_id:
+                missing_id = [{'id': item['id'], 'name': item['name']} for item in missing_id]
 
             # Fetch and order patients
             patients = PatientDetails.objects.all().order_by('-TestDate')
@@ -440,14 +458,16 @@ def upload_ecg(request):
                 'page_obj': page_obj,
                 'form': form,
                 'location': locations,
-                'success_message': success_message,
                 'success_details': success_details,
-                'rejected_message': rejected_message,
                 'rejected_details': rejected_details,
+                'missing_id':missing_id,
+                'processing_error':processing_error,
             })
         else:
             print("Form is not valid.")
             print("Form errors:", form.errors)
+            # Adding a error message of exceeding limit.
+            messages.error(request, f'Maximum limit of selection is {max_files}.')
             return redirect('ecgcoordinator')
     else:
         print("There was no post request, so redirecting to the coordinator page.")

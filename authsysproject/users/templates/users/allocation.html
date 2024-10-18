@@ -411,11 +411,13 @@
             <button class="btn btn-primary" type="submit">Upload</button>
           </form>
           
-          <!-- Add these alert containers inside the modal body if needed -->
-          {% if success_message %}
+          <!-- Success Details. -->
+          {% if success_details %}
           <div class="alert alert-success mt-3" role="alert">
-            <strong>Success!</strong> {{ success_message }}
+            <strong>Success!</strong> 
+            <br>
             {% if success_details %}
+            {{ success_details|length }} Files Uploaded Successfully.
             <ul>
               {% for detail in success_details %}
               <li>ID: {{ detail.id }}, Name: {{ detail.name }}</li>
@@ -425,20 +427,50 @@
           </div>
           {% endif %}
   
-          {% if rejected_message %}
+          <!-- For Rejected Details. -->
+          {% if rejected_details %}
           <div class="alert alert-danger mt-3" role="alert">
-            <strong>Rejected! Duplicate Data Alert</strong><br> {{ rejected_message }}
+            <strong>Rejected!</strong>
+            <br>
             {% if rejected_details %}
+            {{ rejected_details|length}} Files are having Duplicate Id's.
             <ul>
               {% for detail in rejected_details %}
               <li>ID: {{ detail.id }}, Name: {{ detail.name }}</li>
               {% endfor %}
             </ul>
             {% endif %}
+
+            {% if missing_id %}
+            {{missing_id|length}} Files are rejected because of Missing Id's.
+            <ul>
+              {% for detail in missing_id %}
+              <li>ID: {{ detail.id }}, Name: {{ detail.name }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+
+            {% if processing_error %}
+            {{ processing_error|length }} Files faced Processing Error.
+            <br>Please Contact the Admin for more support.
+            <ul>
+              {% for detail in processing_error %}
+              <li>ID: {{ detail.id }}, Name: {{ detail.name }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
           </div>
           {% endif %}
+
+          <!-- For any type of messages. -->
+          {% if messages %}
+          <ul class="messages mt-3">
+            {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
   
-          
         </div>
       </div>
     </div>
