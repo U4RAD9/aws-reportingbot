@@ -26,6 +26,12 @@ import jsPDF from "jspdf";
 import { Test } from "@jsonforms/core";
 import html2pdf from "html2pdf.js";
 import axios from "axios";
+// These are the imports for pdf fixing - Himanshu.
+import Pica from 'pica';
+import { PDFDocument } from 'pdf-lib';
+import pako from 'pako';
+import Compress from 'compress.js';
+
 
 import * as cornerstone from "cornerstone-core";
 import * as cornerstoneMath from "cornerstone-math";
@@ -2145,185 +2151,642 @@ class App extends Component {
   ////////////////////////////////// Upload XRAY PDF without IMAGE (END) ////////////////////////
 
   ////////////////////////////////// Upload XRAY PDF with IMAGE (START) ////////////////////////
-  UploadDivContentOnPDF() {
-    const showLoader = () => {
-      console.log("Showing loader");
-      const loader = document.querySelector(".loader");
-      if (loader) {
+  ////////////////////////////////// EVERYTHING RELATED TO REPORT FORMAT //////////////////////////// 
+  // This will contain all the new functionalities which i have changed in the code which runs in backend which 
+  // supports the PDF generation in all the required formats. - Himanshu. ( 01-10-2024 ).
+
+  // These are all the functions that are common.
+
+  // This will show the loader at the starting of the Report Generation Logic.
+
+  showLoader = () => {
+    console.log("Showing loader");
+    const loader = document.querySelector(".loader");
+    if (loader) {
         loader.style.display = "block";
-      }
-    };
+    }
+  };
 
-    const hideLoader = () => {
-      console.log("Hiding loader");
-      const loader = document.querySelector(".loader");
-      if (loader) {
+  // This will hide the loader after report generation and doing respective task.
+  hideLoader = () => {
+    console.log("Hiding loader");
+    const loader = document.querySelector(".loader");
+    if (loader) {
         loader.style.display = "none";
-      }
-    };
+    }
+  };
 
-    const extractDataFromURL = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const patientId = urlParams.get("data-patientid");
-      const patientName = urlParams.get("data-patientname");
-      const testDate = urlParams.get("data-testdate");
-      const reportDate = urlParams.get("data-reportdate");
-      const location = urlParams.get("data-location");
-      const accession = urlParams.get("data-accession");
+  // This is the function to extract the data that is passed in the url. 
+  extractDataFromURL = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const patientId = urlParams.get("data-patientid");
+    const patientName = urlParams.get("data-patientname");
+    const age = urlParams.get("data-age");
+    const gender = urlParams.get("data-gender");
+    const testDate = urlParams.get("data-testdate");
+    const reportDate = urlParams.get("data-reportdate");
+    const location = urlParams.get("data-location");
+    const accession = urlParams.get("data-accession");
+    const reportImageUrl = urlParams.get("data-reportimage");
 
-      return { patientId, patientName, testDate, reportDate, location, accession };
-    };
+    return { patientId, patientName, age, gender, testDate, reportDate, location, accession, reportImageUrl };
+  };
 
-    const showNotification = (message) => {
+  // Showing the notification on the browser.
+  showNotification = (message) => {
       const notification = document.getElementById("notification");
       const notificationText = document.getElementById("notification-text");
 
       if (notification && notificationText) {
-        notificationText.innerText = message;
-        notification.style.display = "block";
+          notificationText.innerText = message;
+          notification.style.display = "block";
 
-        // Hide the notification after 3 seconds (adjust the delay as needed)
-        setTimeout(() => {
-          notification.style.display = "none";
-        }, 1000);
+          setTimeout(() => {
+              notification.style.display = "none";
+          }, 1500);
       }
-    };
+  };
 
-    const getCSRFToken = async () => {
+  // getting the csrf token for much better and secured processing.
+  getCSRFToken = async () => {
       try {
-        const response = await fetch("/get-csrf-token/");
-        const data = await response.json();
-        return data.csrf_token;
+          const response = await fetch("/get-csrf-token/");
+          const data = await response.json();
+          return data.csrf_token;
       } catch (error) {
-        console.error("Error fetching CSRF token:", error);
-        throw error;
+          console.error("Error fetching CSRF token:", error);
+          throw error;
       }
-    };
-    // Show the loader before starting the PDF generation
-    showLoader();
-    var filename = this.createFilename();
-    const data = document.getElementsByClassName("ck-editor__editable")[0];
-    const table = data.querySelector("table");
-    data.classList.add("ck-blurred");
-    data.classList.remove("ck-focused");
-    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  };
 
-    if (data != undefined) {
-      // Create a new jsPDF instance
-      const pdf = new jsPDF("p", "pt", [595.28, 841.89], true); // A4 dimensions
-
-      // Capture the entire content, including text and images
-      html2canvas(data, {
-        scale: 2, // Adjust the scale if needed for better image quality
-        useCORS: true, // Added to address potential CORS issues
-      }).then(async (canvas) => {
-        const imgData = canvas.toDataURL("image/png", 1.0);
-
-        // Calculate the position to center the image
-        const imgWidth = 595.28 - 40; // Adjusted width to leave some margin
-        const imgHeight = imgWidth * 1.5 - 40; // Adjusted height to maintain aspect ratio and leave margin
-        const imgX = (595.28 - imgWidth) / 2;
-        const imgY = (841.89 - imgHeight) / 2;
-
-        // Hide the loader when the PDF is ready
-        hideLoader();
-        // Add the image to the PDF
-        pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth, imgHeight);
-        pdf.setTextColor(255, 255, 255);
-        // Calculate the position to place the text at the bottom
-        const textX = 40;
-        const textY = 841.89 - 2; // 20 points from the bottom
-
-        // If a table exists within the ck-editor__editable div, capture its text content
-        if (table) {
-          const tableText = table.textContent || "";
-
-          // Add the table text as text (preserve original formatting)
-          pdf.setFontSize(2); // Adjust the font size as needed
-          pdf.text(textX, textY, tableText);
-        }
-
-        // If the ck-editor__editable div contains paragraphs, capture the text from the first paragraph
-        const paragraphs = data.querySelectorAll("p");
-        paragraphs.forEach((paragraph) => {
-          const paragraphText = paragraph.textContent || "";
-
-          // Add each paragraph text as text (preserve original formatting)
-          pdf.setFontSize(2); // Adjust the font size as needed
-          pdf.text(textX, textY - 2, paragraphText); // Place it above the table text
+  // Fetching the image and converting it to a Base 64 data so that it can be added to the pdf correctly.
+  fetchImageAsBase64 = async (imageUrl) => {
+    try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        return new Promise((resolve, reject) => {
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
         });
+    } catch (error) {
+        console.error("Error fetching image:", error);
+        throw error;
+    }
+};
 
-        // Convert the PDF to a Blob
-        const pdfBlob = pdf.output("blob");
+// Adding the logo on the pdf.
+addLogo = async (pdf, logoUrl, currentYPosition) => {
+    if (logoUrl) {
+        try {
+            const imageData = await this.fetchImageAsBase64(logoUrl);
+            const pageWidth = pdf.internal.pageSize.width;
+            const imgWidth = pageWidth - 80;
+            const imgHeight = 50;
+            const imgX = 40;
+            const imgY = currentYPosition;
 
-        // Extract data from URL
-        const { patientId, patientName, testDate, reportDate, location, accession } =
-          extractDataFromURL();
+            pdf.addImage(imageData, "PNG", imgX, imgY, imgWidth, imgHeight);
+            currentYPosition = imgY + imgHeight + 20;
+            return currentYPosition;
+        } catch (error) {
+            console.log("Error adding logo image to PDF:", error);
+            throw error;
+        }
+    }
+    return currentYPosition;
+};
 
-        // Send the FormData to Django backend using fetch
-        const csrfToken = await getCSRFToken();
-        console.log("CSRF Token:", csrfToken);
+// Adding the doctor signature on the pdf.
+addSignature = async (pdf, signatureUrl, currentYPosition) => {
+    if (signatureUrl) {
+        try {
+            const imageData = await this.fetchImageAsBase64(signatureUrl);
+            const pageWidth = pdf.internal.pageSize.width;
+            const imgWidth = pageWidth - 80;
+            const imgHeight = 40;
+            const imgX = 40;
+            const imgY = currentYPosition ;
 
-        // Create FormData and append the PDF Blob
-        const formData = new FormData();
-        formData.append(
-          "pdf",
-          pdfBlob,
-          filename ? filename + ".pdf" : "download.pdf"
-        );
-        formData.append("patientId", patientId);
-        formData.append("patientName", patientName);
-        formData.append("testDate", testDate);
-        formData.append("reportDate", reportDate);
-        formData.append("location", location);
-        formData.append("accession", accession);
+            pdf.addImage(imageData, "PNG", imgX, imgY, imgWidth, imgHeight);
+            currentYPosition = imgY + imgHeight + 20;
+            return currentYPosition;
+        } catch (error) {
+            console.log("Error adding signature image to PDF:", error);
+            throw error;
+        }
+    }
+    return currentYPosition;
+  };
 
-        console.log("FormData:", formData);
+  // This is for adding the image on the single page of an pdf.
+  addReportImage = async (pdf, reportImageUrl, currentYPosition) => {
+    const A4_HEIGHT = 841.89; // A4 height in points (for "pt" unit used in jsPDF)
+
+    if (reportImageUrl) {
+        try {
+            const imageData = await this.fetchImageAsBase64(reportImageUrl);
+            const pageWidth = pdf.internal.pageSize.width;
+            const imgWidth = 300;
+            const imgHeight = 200;
+            const imgX = (pageWidth - imgWidth) / 2;
+            const imgY = currentYPosition;
+
+            // Calculate the new Y position after adding the image
+            const newYPosition = imgY + imgHeight + 20;
+
+            // Check if the new Y position exceeds the A4 page height
+            if (newYPosition > A4_HEIGHT) {
+                // Add a new page to the PDF
+                pdf.addPage();
+                // Reset currentYPosition for the new page
+                currentYPosition = 40; // Start at a margin from the top of the new page
+            }
+
+            // Add the image
+            pdf.addImage(imageData, "PNG", imgX, currentYPosition, imgWidth, imgHeight);
+
+            // Update currentYPosition for the next content
+            currentYPosition = imgY + imgHeight + 20; // Update the position for the next content
+            return currentYPosition;
+        } catch (error) {
+            console.error("Error adding image to PDF:", error);
+            this.hideLoader();
+            this.showNotification("Error processing image. Please try again.");
+            throw error;
+        }
+    }
+    return currentYPosition;
+  };
+  
+  UploadDivContentOnPDF() {
+
+    (async () => {
+        this.showLoader();
+        const filename = this.createFilename();
+        const data = document.getElementsByClassName("ck-editor__editable")[0];
+        
+        const images = data.querySelectorAll("img");
+        const signatureElement = images[1];
+        const signatureUrl = signatureElement ? signatureElement.src : null;
+        const logoElement = images[0];
+        const logoUrl = logoElement ? logoElement.src : null;
+        console.log("This is the signature Url:", signatureUrl);
+        console.log("This is the logo Url:", logoUrl);
+
+        const { patientId, patientName, age, gender, testDate, reportDate, location, accession, reportImageUrl } = this.extractDataFromURL();
+
+        const pdf = new jsPDF("p", "pt", "a4");
+
+        let currentYPosition = 40;
 
         try {
-          const response = await axios.post("/upload_xray_pdf/", formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              "X-CSRFToken": csrfToken,
-            },
-          });
+            currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
 
-          console.log(
-            "PDF successfully sent to Django backend.",
-            response.data
-          );
-          // Hide the loader when the PDF is ready
-          hideLoader();
-          // Show the success notification
-          showNotification("PDF successfully uploaded and sent to WhatsApp!");
-        } catch (error) {
-          console.error("Error sending PDF to Django backend.", error);
-          // Show the error notification
-          showNotification("Error uploading PDF. Please try again.");
-        }
+            const tableData = [
+                ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+                ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+                ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"]
+            ];
 
-        // Save the current URL before going back in the history
-        const currentURL = window.location.href;
+            currentYPosition += 20;
 
-        // Redirect to the previous page after a short delay
-        await delay(200);
+            pdf.autoTable({
+                startY: currentYPosition,
+                body: tableData,
+                theme: 'grid',
+                styles: {
+                    cellPadding: 3,
+                    fontSize: 10,
+                },
+            });
+            currentYPosition = pdf.previousAutoTable.finalY + 20;
 
-        // Navigate back to the previous page with a cache-busting query parameter
-        window.location.href = document.referrer + "?nocache=" + Date.now();
+            const paragraphs = data.querySelectorAll("p");
+            const columnWidth = (pdf.internal.pageSize.width - 80) / 2; // 80 = 40px margin on each side
+            let isLeftColumn = true; // Start with left column
+            let leftColumnY = 0;
+            let rightColumnY = 0;
+            const marginX = 40; // Margin from left side
+            const columnGap = 10; // Gap between columns
+            const bullet = "\u2022 ";
+            // For fixing the ckeditor problem i am using this logic - Himanshu.
+            const observationArray = [];
+            console.log("This is the complete fetched paragraph tag from ckeditor:");
+            console.log(paragraphs)
+            console.log("End of the paragraphs tag.")
+            
 
-        // Listen for the popstate event to know when the history state changes
-        window.addEventListener("popstate", () => {
-          // Check if the URL has changed
-          if (window.location.href !== currentURL) {
-            // Reload the current page after a short delay
+            for (const paragraph of paragraphs) {
+                const paragraphText = paragraph.textContent || "";
+                console.log("These is the paragraph text :", paragraphText);
+
+                pdf.setFontSize(12);
+                pdf.setFont("helvetica", "bold");
+
+                if (paragraphText.includes("OBSERVATIONS:")) {
+                    pdf.text(paragraphText, marginX, currentYPosition);
+                    pdf.setFontSize(13);
+                    pdf.setFont("helvetica", "normal");
+                    currentYPosition += 20;
+                } else if (paragraphText.includes("IMPRESSION:")) {
+                    // Adding the logic if the lines are lesser than 6 than they will get printed in the normal manner.
+                    if (observationArray.length > 5){
+                      // Adding the logic to add the observation lines just before the Impression line.
+                      // setting the font size and the font family back to normal.
+                      pdf.setFontSize(12); 
+                      pdf.setFont("helvetica", "normal");
+                      const totallines = observationArray.length;
+                      const halflines = Math.ceil(totallines / 2);
+                      console.log("This is the observation array :", observationArray);
+
+                      // Adding the bullet point to the lines before printing them  on the pdf.
+                      const addBulletPoint = (line) => {
+                        if (line.startsWith(bullet)) {
+                            return line;
+                        }
+                        return bullet + line;
+                      };
+
+                      // setting the left column and right column logic (left one is not needed, i can optimise it later.)
+                      rightColumnY = currentYPosition;
+                      leftColumnY = currentYPosition;
+
+                      // Processing the texts which will fix the line text width greater than the column width issue.
+                      const processTextColumn = (text, x, y, columnWidth) => {
+                        let currentY = y;
+                        const textWidth = pdf.getTextWidth(text);
+                        const maxWidth = columnWidth - 20; // Padding for each column
+                        console.log("This is the current y (at the beginning of processing the new line of array ) :", currentY);
+                        console.log("This is the textWidth :", textWidth);
+                        console.log("This is the maxwidth :", maxWidth);
+                
+                        if (textWidth > maxWidth) {
+                          let remainingText = text;
+                          pdf.setFont("helvetica", "normal");
+                          let currentLine = '';
+                      
+                          // Split text into words
+                          const words = remainingText.split(' ');
+                      
+                          for (const word of words) {
+                              // Construct a test line with the next word
+                              const testLine = currentLine.length > 0 ? currentLine + ' ' + word : word;
+                              console.log("This is the testline :", testLine);
+                              const testLineWidth = pdf.getTextWidth(testLine);
+                      
+                              if (testLineWidth > maxWidth) {
+                                  // If it exceeds the width, print the current line
+                                  if (currentLine.length > 0) {
+                                      console.log("if the current line is greater than the maxwidth and is having some data:");
+                                      console.log("This is the current line", currentLine);
+                                      pdf.text(currentLine, x, currentY);
+                                      currentY += 15; // Move down for the next line
+                                      console.log("This is the current y :", currentY);
+                                  }
+                                  // Start a new line with the current word
+                                  currentLine = "  " + word; // Reset current line to the word that caused overflow
+                                  console.log("This is the remaining word or sentence added with a space here :", currentLine);
+                                  
+                              } else {
+                                  // If it fits, update the current line
+                                  currentLine = testLine;
+                              }
+                          }
+                      
+                          // Print any remaining text in currentLine
+                          if (currentLine.length > 0) {
+                              pdf.text(currentLine, x, currentY);
+                              console.log("Printing any current line if left :", currentLine);
+                              console.log("This is the current y updated on the remaining text code :", currentY);
+                          }
+                        } else {
+                            pdf.text(text, x, currentY);
+                            console.log("Adding the text directly because it doesn't need separation :", text);
+                            console.log("the current y for directly added text:", currentY);
+                        }
+
+                        console.log("This is the current Y before just coming out of the process (return currenty +15) :", currentY);
+                        
+                        return currentY + 15;
+                      
+                      };
+
+                      // Adding the lines to the respective side along with the bullet points. 
+                      for (let i = 0; i < totallines; i++) {
+                        const lineWithBullet = addBulletPoint(observationArray[i]);
+                        console.log("These are the observation array lines given one by one :");
+                        console.log(lineWithBullet);
+                        console.log("End of the observation array separated lines.");
+                        if (i < halflines) {
+                            leftColumnY = processTextColumn(lineWithBullet, marginX, leftColumnY, columnWidth);
+                        } else {
+                            rightColumnY = processTextColumn(lineWithBullet, marginX + columnWidth + columnGap, rightColumnY, columnWidth);
+                        }
+                      }
+                      currentYPosition = Math.max(leftColumnY, rightColumnY);
+                      console.log("This is the right Column y :", rightColumnY);
+                      console.log("This is the left column y :", leftColumnY);
+                      console.log("This is the current y position :", currentYPosition);
+                    } else {
+
+                      // Adding the bullet point.
+                      const addBulletPoint = (line) => {
+                        if (line.startsWith(bullet)) {
+                            return line;
+                        }
+                        return bullet + line;
+                      };
+
+                      // Now adding the texts in normal manner.
+                      for (const line of observationArray){
+                        const lineWithBullet = addBulletPoint(line);
+                        pdf.text(lineWithBullet, marginX, currentYPosition);
+                        currentYPosition += 15;
+                      }
+
+                    }
+                    
+                    // End of the observation text's logic.
+                    currentYPosition += 20;
+                    pdf.setFontSize(13);
+                    pdf.setFont("helvetica", "bold");
+                    pdf.text(paragraphText, marginX, currentYPosition);
+                    pdf.setFontSize(10);
+                    pdf.setFont("helvetica", "normal");
+                    currentYPosition += 20;
+                } else if (paragraphText.includes("Dr.")) {
+                    currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+                    pdf.setFontSize(12);
+                    pdf.setFont("helvetica", "normal");
+                    const drdatalines = paragraphText.split(',').map(line => line.trim()).filter(line => line.length > 0);
+                    for (const drdata of drdatalines){
+                      pdf.text(drdata, marginX, currentYPosition);
+                      currentYPosition += 15;
+                    }
+                    currentYPosition += 10;
+                } else if (paragraphText.includes("X-RAY")) {
+                    pdf.setFontSize(13);
+                    pdf.setFont("helvetica", "bold");
+                    pdf.text(paragraphText, marginX, currentYPosition);
+                    currentYPosition += 20;
+                } else if (paragraphText.includes(bullet)) {
+                    pdf.setFontSize(12);
+                    pdf.setFont("helvetica", "bold");
+                    const impressionlines = paragraphText.split('.').map(line => line.trim()).filter(line => line.length > 0);
+                    for (const line of impressionlines) {
+                      pdf.text(line, marginX, currentYPosition);
+                    }
+                    currentYPosition += 20;
+                } else {
+                  // Handle text in columnar structure
+                  const lines = paragraphText.split('.').map(line => line.trim()).filter(line => line.length > 0);
+                  console.log("These are the lines of the observation :")
+                  console.log(lines)
+                  console.log("End of lines of the observation.")
+                  // Adding the observation text in the array. 
+                  for (const observationtext of lines){
+                    observationArray.push(observationtext);
+                  }
+                  // End of the observation text logic.
+                  
+              }
+            }              
+
+            currentYPosition = await this.addReportImage(pdf, reportImageUrl, currentYPosition);
+
+            const pdfBlob = pdf.output("blob");
+
+            try {
+                const csrfToken = await this.getCSRFToken();
+                const formData = new FormData();
+                formData.append("pdf", pdfBlob, filename ? filename + ".pdf" : "download.pdf");
+                formData.append("patientId", patientId);
+                formData.append("patientName", patientName);
+                formData.append("age", age);
+                formData.append("gender", gender);
+                formData.append("testDate", testDate);
+                formData.append("reportDate", reportDate);
+                formData.append("location", location);
+                formData.append("accession", accession);
+
+                await axios.post("/upload_xray_pdf/", formData, {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                        "X-CSRFToken": csrfToken,
+                    },
+                });
+
+                console.log("PDF successfully sent to Django backend.");
+                this.showNotification("PDF successfully uploaded!");
+            } catch (error) {
+                console.error("Error sending PDF to Django backend.", error);
+                this.showNotification("Error uploading PDF. Please try again.");
+            }
+
+            const currentURL = window.location.href;
+
             setTimeout(() => {
-              window.location.reload(true);
+                window.location.href = document.referrer + "?nocache=" + Date.now();
             }, 200);
-          }
-        });
-      });
-    }
+
+            window.addEventListener("popstate", () => {
+                if (window.location.href !== currentURL) {
+                    setTimeout(() => {
+                        window.location.reload(true);
+                    }, 200);
+                }
+            });
+
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            this.showNotification("Error generating PDF. Please try again.");
+        } finally {
+            this.hideLoader();
+        }
+    })();
   }
+
+  // UploadDivContentOnPDF() {
+  //   const showLoader = () => {
+  //     console.log("Showing loader");
+  //     const loader = document.querySelector(".loader");
+  //     if (loader) {
+  //       loader.style.display = "block";
+  //     }
+  //   };
+
+  //   const hideLoader = () => {
+  //     console.log("Hiding loader");
+  //     const loader = document.querySelector(".loader");
+  //     if (loader) {
+  //       loader.style.display = "none";
+  //     }
+  //   };
+
+  //   const extractDataFromURL = () => {
+  //     const urlParams = new URLSearchParams(window.location.search);
+  //     const patientId = urlParams.get("data-patientid");
+  //     const patientName = urlParams.get("data-patientname");
+  //     const testDate = urlParams.get("data-testdate");
+  //     const reportDate = urlParams.get("data-reportdate");
+  //     const location = urlParams.get("data-location");
+  //     const accession = urlParams.get("data-accession");
+
+  //     return { patientId, patientName, testDate, reportDate, location, accession };
+  //   };
+
+  //   const showNotification = (message) => {
+  //     const notification = document.getElementById("notification");
+  //     const notificationText = document.getElementById("notification-text");
+
+  //     if (notification && notificationText) {
+  //       notificationText.innerText = message;
+  //       notification.style.display = "block";
+
+  //       // Hide the notification after 3 seconds (adjust the delay as needed)
+  //       setTimeout(() => {
+  //         notification.style.display = "none";
+  //       }, 1000);
+  //     }
+  //   };
+
+  //   const getCSRFToken = async () => {
+  //     try {
+  //       const response = await fetch("/get-csrf-token/");
+  //       const data = await response.json();
+  //       return data.csrf_token;
+  //     } catch (error) {
+  //       console.error("Error fetching CSRF token:", error);
+  //       throw error;
+  //     }
+  //   };
+  //   // Show the loader before starting the PDF generation
+  //   showLoader();
+  //   var filename = this.createFilename();
+  //   const data = document.getElementsByClassName("ck-editor__editable")[0];
+  //   const table = data.querySelector("table");
+  //   data.classList.add("ck-blurred");
+  //   data.classList.remove("ck-focused");
+  //   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  //   if (data != undefined) {
+  //     // Create a new jsPDF instance
+  //     const pdf = new jsPDF("p", "pt", [595.28, 841.89], true); // A4 dimensions
+
+  //     // Capture the entire content, including text and images
+  //     html2canvas(data, {
+  //       scale: 2, // Adjust the scale if needed for better image quality
+  //       useCORS: true, // Added to address potential CORS issues
+  //     }).then(async (canvas) => {
+  //       const imgData = canvas.toDataURL("image/png", 1.0);
+
+  //       // Calculate the position to center the image
+  //       const imgWidth = 595.28 - 40; // Adjusted width to leave some margin
+  //       const imgHeight = imgWidth * 1.5 - 40; // Adjusted height to maintain aspect ratio and leave margin
+  //       const imgX = (595.28 - imgWidth) / 2;
+  //       const imgY = (841.89 - imgHeight) / 2;
+
+  //       // Hide the loader when the PDF is ready
+  //       hideLoader();
+  //       // Add the image to the PDF
+  //       pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth, imgHeight);
+  //       pdf.setTextColor(255, 255, 255);
+  //       // Calculate the position to place the text at the bottom
+  //       const textX = 40;
+  //       const textY = 841.89 - 2; // 20 points from the bottom
+
+  //       // If a table exists within the ck-editor__editable div, capture its text content
+  //       if (table) {
+  //         const tableText = table.textContent || "";
+
+  //         // Add the table text as text (preserve original formatting)
+  //         pdf.setFontSize(2); // Adjust the font size as needed
+  //         pdf.text(textX, textY, tableText);
+  //       }
+
+  //       // If the ck-editor__editable div contains paragraphs, capture the text from the first paragraph
+  //       const paragraphs = data.querySelectorAll("p");
+  //       paragraphs.forEach((paragraph) => {
+  //         const paragraphText = paragraph.textContent || "";
+
+  //         // Add each paragraph text as text (preserve original formatting)
+  //         pdf.setFontSize(2); // Adjust the font size as needed
+  //         pdf.text(textX, textY - 2, paragraphText); // Place it above the table text
+  //       });
+
+  //       // Convert the PDF to a Blob
+  //       const pdfBlob = pdf.output("blob");
+
+  //       // Extract data from URL
+  //       const { patientId, patientName, testDate, reportDate, location, accession } =
+  //         extractDataFromURL();
+
+  //       // Send the FormData to Django backend using fetch
+  //       const csrfToken = await getCSRFToken();
+  //       console.log("CSRF Token:", csrfToken);
+
+  //       // Create FormData and append the PDF Blob
+  //       const formData = new FormData();
+  //       formData.append(
+  //         "pdf",
+  //         pdfBlob,
+  //         filename ? filename + ".pdf" : "download.pdf"
+  //       );
+  //       formData.append("patientId", patientId);
+  //       formData.append("patientName", patientName);
+  //       formData.append("testDate", testDate);
+  //       formData.append("reportDate", reportDate);
+  //       formData.append("location", location);
+  //       formData.append("accession", accession);
+
+  //       console.log("FormData:", formData);
+
+  //       try {
+  //         const response = await axios.post("/upload_xray_pdf/", formData, {
+  //           headers: {
+  //             "Content-Type": "multipart/form-data",
+  //             "X-CSRFToken": csrfToken,
+  //           },
+  //         });
+
+  //         console.log(
+  //           "PDF successfully sent to Django backend.",
+  //           response.data
+  //         );
+  //         // Hide the loader when the PDF is ready
+  //         hideLoader();
+  //         // Show the success notification
+  //         showNotification("PDF successfully uploaded and sent to WhatsApp!");
+  //       } catch (error) {
+  //         console.error("Error sending PDF to Django backend.", error);
+  //         // Show the error notification
+  //         showNotification("Error uploading PDF. Please try again.");
+  //       }
+
+  //       // Save the current URL before going back in the history
+  //       const currentURL = window.location.href;
+
+  //       // Redirect to the previous page after a short delay
+  //       await delay(200);
+
+  //       // Navigate back to the previous page with a cache-busting query parameter
+  //       window.location.href = document.referrer + "?nocache=" + Date.now();
+
+  //       // Listen for the popstate event to know when the history state changes
+  //       window.addEventListener("popstate", () => {
+  //         // Check if the URL has changed
+  //         if (window.location.href !== currentURL) {
+  //           // Reload the current page after a short delay
+  //           setTimeout(() => {
+  //             window.location.reload(true);
+  //           }, 200);
+  //         }
+  //       });
+  //     });
+  //   }
+  // }
 
   //////////////////// Upload XRAY PDF with IMAGE (END) ////////////////////////////////////
 
