@@ -18,6 +18,16 @@ https://github.com/nodeca/pica
 */
 
 /*!
+ * 
+ *               jsPDF AutoTable plugin v3.8.3
+ *
+ *               Copyright (c) 2024 Simon Bengtsson, https://github.com/simonbengtsson/jsPDF-AutoTable
+ *               Licensed under the MIT License.
+ *               http://opensource.org/licenses/mit-license
+ *
+ */
+
+/*!
  * @license Copyright (c) 2003-2021, CKSource - Frederico Knabben. All rights reserved.
  * For licensing, see LICENSE.md.
  */
@@ -31,14 +41,10 @@ https://github.com/nodeca/pica
  */
 
 /*!
- * Sizzle CSS Selector Engine v2.3.6
- * https://sizzlejs.com/
+ * The buffer module from node.js, for the browser.
  *
- * Copyright JS Foundation and other contributors
- * Released under the MIT license
- * https://js.foundation/
- *
- * Date: 2021-02-16
+ * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
+ * @license  MIT
  */
 
 /*!
@@ -55,23 +61,20 @@ https://github.com/nodeca/pica
  */
 
 /*!
- * html2pdf.js v0.10.1
- * Copyright (c) 2021 Erik Koopmans
+ * html2pdf.js v0.10.2
+ * Copyright (c) 2024 Erik Koopmans
  * Released under the MIT License.
  */
 
 /*!
- * jQuery JavaScript Library v3.6.0
+ * jQuery JavaScript Library v3.7.1
  * https://jquery.com/
- *
- * Includes Sizzle.js
- * https://sizzlejs.com/
  *
  * Copyright OpenJS Foundation and other contributors
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2021-03-02T17:08Z
+ * Date: 2023-08-28T13:37Z
  */
 
 /*! *****************************************************************************
@@ -1854,7 +1857,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*! html2canvas */
 
-/*! https://mths.be/punycode v1.3.2 by @mathias */
+/*! https://mths.be/punycode v1.4.1 by @mathias */
 
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 
@@ -1867,6 +1870,8 @@ PERFORMANCE OF THIS SOFTWARE.
 /*! pako 2.1.0 https://github.com/nodeca/pako @license (MIT AND Zlib) */
 
 /*! regenerator-runtime */
+
+/*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE */
 
 /*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 
@@ -4204,6 +4209,17 @@ PERFORMANCE OF THIS SOFTWARE.
  */
 
 /**
+ * @param {Object[]} nodes
+ * @param {number[]} lines
+ * @param {Object} settings
+ * @preserve Knuth and Plass line breaking algorithm in JavaScript
+ *
+ * Licensed under the new BSD License.
+ * Copyright 2009-2010, Bram Stein
+ * All rights reserved.
+ */
+
+/**
  * A better abstraction over CSS.
  *
  * @copyright Oleg Isonen (Slobodskoi) / Isonen 2014-present
@@ -4333,8 +4349,26 @@ PERFORMANCE OF THIS SOFTWARE.
  * LICENSE file in the root directory of this source tree.
  */
 
-/** @license React v0.13.6
+/** @license React v0.17.0
  * scheduler.production.min.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/** @license React v0.19.1
+ * scheduler.production.min.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/** @license React v0.23.0
+ * react-reconciler.production.min.js
  *
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
@@ -4351,7 +4385,7 @@ PERFORMANCE OF THIS SOFTWARE.
  * LICENSE file in the root directory of this source tree.
  */
 
-/** @license React v16.8.0
+/** @license React v16.14.0
  * react-dom.production.min.js
  *
  * Copyright (c) Facebook, Inc. and its affiliates.
@@ -4360,7 +4394,7 @@ PERFORMANCE OF THIS SOFTWARE.
  * LICENSE file in the root directory of this source tree.
  */
 
-/** @license React v16.8.0
+/** @license React v16.14.0
  * react.production.min.js
  *
  * Copyright (c) Facebook, Inc. and its affiliates.
