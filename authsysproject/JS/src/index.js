@@ -1613,6 +1613,7 @@ class App extends Component {
           // Add the table text
           if (table) {
             const tableText = table.textContent || "";
+            pdf.setTextColor(255, 255, 255); // Set white color before adding table text
             pdf.setFontSize(10); // Adjust the font size as needed
             pdf.text(40, a4Height - 20, tableText);
           }
@@ -1621,6 +1622,7 @@ class App extends Component {
           const paragraphs = data.querySelectorAll("p");
           paragraphs.forEach((paragraph) => {
             const paragraphText = paragraph.textContent || "";
+            pdf.setTextColor(255, 255, 255); // Set white color before adding table text
             pdf.setFontSize(10);
             pdf.text(40, a4Height - 30, paragraphText); // Adjust position for paragraphs
           });
