@@ -442,7 +442,7 @@ def upload_ecg(request):
             form = ECGUploadForm()
             locations = Location.objects.all()
 
-            messages.success(request, 'PDF uploaded and processed successfully!')
+            # messages.success(request, 'PDF uploaded and processed successfully!')
 
             return render(request, 'users/allocation.html', {
                 'total_cases': total_cases,

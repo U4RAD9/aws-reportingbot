@@ -1602,6 +1602,13 @@ class App extends Component {
             pdfImageWidth,
             pdfImageHeight
           );
+
+          // this was missing = Himanshu (8 nov 24)
+          pdf.setTextColor(255, 255, 255);
+
+          // Calculate the position to place the text at the bottom
+          const textX = 40;
+          const textY = 841.89 - 2; // 20 points from the bottom
   
           // Add the table text
           if (table) {
