@@ -2,7 +2,7 @@
 <link rel="stylesheet" href="{% static 'resource/css/main.css' %}" />
 <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script> -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.4/jspdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
   var currentIndex = 0; // Index of currently selected patient
@@ -54,7 +54,7 @@
             border: 2px solid black;
             height: 35px;
             padding: 2px;
-            font-size: 16px;
+            font-size: 18px;
             width: auto; /* Adjust this value as needed */
             text-align: center;
           }
@@ -67,6 +67,13 @@
             margin: 15px;
             background-color: white;
           }
+
+          #patient-image {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            width: 50%; /* Adjust width as needed */
+          }
         </style>
     `;
 
@@ -75,14 +82,19 @@
       tableStyle + selectedDataContainer.innerHTML;
 
     html2canvas(selectedDataContainer, {
-      onrendered: function (canvas) {
+        scale: 2, // Increase the scale for higher resolution
+        useCORS: true, // Use CORS to handle cross-origin images
+        allowTaint: true, // Allow tainted canvas if needed
+        logging: true,  // Enable logging for debugging
+    }).then(function (canvas) {
         // Convert the canvas to PDF
         var pdf = new jsPDF("p", "mm", "a4");
-        var imgData = canvas.toDataURL("image/jpeg", 1.0);
+        var imgData = canvas.toDataURL("image/png", 1.0); // Use PNG format at full quality
         var imgWidth = 210; // A4 size: 210 x 297 mm
         var imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-        pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
+        // Add the image to the PDF with high resolution
+        pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight, undefined, 'FAST');
 
         // Get the patient ID and patient name
         var patientId = document
@@ -97,125 +109,117 @@
         // Construct the file name
         var fileName = patientId + "_" + patientName + ".pdf";
 
-        // Include text content in PDF
-        var textContent = selectedDataContainer.innerText;
-
-        // Set text color to white
-        pdf.setTextColor("#FFFFFF");
-
-        // Calculate position for text at the bottom of the page
-        var textX = 10;
-        var textY = pdf.internal.pageSize.height - 10;
-
-        // Add text to the PDF
-        pdf.text(textContent, textX, textY, {
-          align: "left",
-          baseline: "bottom",
-        });
-
         // Save the PDF with the constructed file name
         pdf.save(fileName);
 
         // Delay selection of next patient after PDF generation is complete
         setTimeout(selectNextPatient, 1000); // Change the delay time as needed
-      },
     });
-  }
+}
 
-  function displaySelectedData(checkbox) {
+
+function displaySelectedData(checkbox) {
     var row = checkbox.parentElement.getElementsByTagName("label");
+    var imageUrl = checkbox.getAttribute('data-image-url');
     var selectedDataContainer = document.getElementById("selected-data");
     selectedDataContainer.innerHTML = ""; // Clear previous data
+
+    // Process observations text to split by period and add line breaks
+    var observations = row[7].innerText;
+    var observationsArray = observations.split('.').filter(line => line.trim() !== '');
+
+    // Create columns for alternating text display
+    var leftColumnContent = '';
+    var rightColumnContent = '';
+
+    observationsArray.forEach((line, index) => {
+    // Format the line with a period at the beginning
+    var formattedLine = `. ${line.trim()}.`;
+
+    // Add to the appropriate column based on index
+    if (index % 2 === 0) {
+        leftColumnContent += `<p>${formattedLine}</p>`;
+    } else {
+        rightColumnContent += `<p>${formattedLine}</p>`;
+    }
+    });
+
+    // Processing the impressions data.
+    var impression = row[6].innerText;
+    var impressionArray = impression.split('.').filter(line => line.trim() !== '');
+
+    // Creating columns for displaying the impression data in separated columns.
+    var leftColumnImpressionContent = '';
+    var rightColumnImpressionContent = '';
+
+    impressionArray.forEach((line, index) => {
+      // Adding the appropriate column based on the index.
+      if (index % 2 === 0) {
+          leftColumnImpressionContent += `<p>. ${line.trim()}.</p>`;
+      } else {
+          rightColumnImpressionContent += `<p>. ${line.trim()}.</p>`
+      }
+      });
+
     selectedDataContainer.innerHTML += `
-                <div id="main-container">
-                  <br>
-                  <br>
-                  <br>
-                  <h4 id = "heading">CERTIFICATE OF VACCINATION</h4>
-                  <br>
-                  Date : ${row[10].innerText}
-                  <br>
-                  <br>
-                  <h5>Patient Details</h5>
-                  
-                    <table>
-                        <tr>
-                            <td id="patient-id">
-                                Patient ID: ${row[1].innerText}
-                            </td>
-                            <td id="patient-name">    
-                                Patient Name: ${row[0].innerText}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>    
-                                Age: ${row[2].innerText}
-                            </td>
-                            <td>    
-                                Gender: ${row[3].innerText}
-                            </td>
-                        </tr>
-                    </table>
-                    <br>
-                    <br>
-                    <h5>VACCINATION REPORT</h5>
-                    
-                    <table>
-                        <tr>
-                            <td>    
-                                Vaccination
-                            </td>
-                            <td>    
-                                Batch No.
-                            </td>
-                            <td>    
-                                Manufacturing Date
-                            </td>
-                            <td>    
-                                Expiry Date
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>    
-                                Hepatitis B 
-                            </td>
-                            <td>    
-                              ${row[4].innerText}
-                            </td>
-                            <td>    
-                              ${row[5].innerText}
-                            </td>
-                            <td>    
-                              ${(row[6].innerText)}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>    
-                              Typhoid  
-                            </td>
-                            <td>    
-                              ${row[7].innerText}  
-                            </td>
-                            <td>    
-                                ${row[8].innerText}
-                            </td>
-                            <td>    
-                                ${row[9].innerText}
-                            </td>
-                        </tr>
-                    </table>
-                    <br>
-                    <br>
-                    <img id = "sign" src="static/image/dr-koushal.png" alt="Dr. Koushal">
-                    <br>
-                       Dr. Koushal Yadav
-                    <br>
-                       MBBS | General Physician
-                    <br>
-                       Kmc :- 156768
+        <div id="main-container">
+            <br><br><br>
+            <table>
+                <tr>
+                    <td id="patient-id">
+                        Name: ${row[0].innerText}
+                    </td>
+                    <td id="patient-name">    
+                        Patient ID: ${row[1].innerText}
+                    </td>
+                    <td>
+                        Age: ${row[2].innerText}
+                    </td>
+                </tr>
+                <tr>
+                    <td>    
+                        Gender: ${row[3].innerText}
+                    </td>
+                    <td>    
+                        Test Date: ${row[4].innerText}
+                    </td>
+                    <td>    
+                        Report Date: ${row[5].innerText}
+                    </td>
+                </tr>
+            </table>
+            <br>
+            <h5 class="text-decoration-underline">X-RAY - CHEST PA VIEW</h5>
+            <h5 class="text-decoration-underline">OBSERVATIONS:</h5>
+            <div class="observations-formatted-text-container">
+                <div class="left-column">
+                    ${leftColumnContent}
                 </div>
-            `;
-  }
+                <div class="right-column">
+                    ${rightColumnContent}
+                </div>
+            </div>
+            <h5 class="text-decoration-underline">IMPRESSION:</h5>
+            <div class="impressions-formatted-text-container">
+                <div class="left-column">
+                    ${leftColumnImpressionContent}
+                </div>
+                <div class="right-column">
+                    ${rightColumnImpressionContent}
+                </div>
+            </div>
+            <div class="image-container">
+                <img src="static/image/sandeep.jpg" alt="Dr. Sandeep" class="scaled-image left-image">
+            </div>
+            <div class="image-container2">
+                ${imageUrl !== 'None' ? `<img src="${imageUrl}" alt="Patient Xray Image" class="scaled-image2 patient-image">` : '<span>No image available</span>'}
+            </div>
+            <p class="footer-text">Powered by www.u4rad.com</p>
+        </div>
+    `;
+}
+
+
 
 //   function calculateBMI(height, weight) {
 //     // Convert height from cm to meters
@@ -236,6 +240,12 @@
 </script>
 
 <style>
+  #patient-image {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%; /* Adjust width as needed */
+  }
   #selected-data {
     padding: 10px;
     width: 210mm;
@@ -300,7 +310,6 @@
     /* Adjust the right position as needed */
   }
 
-  /* Adjusted css. - Himanshu. */
   #routeContainer {
     position: absolute;
     top: 20px;
@@ -317,21 +326,19 @@
     /*  Adjust the right position as needed */
   }
 
-  /* CSS for the ECG list. */
   #route3Container {
     position: absolute;
     top: 20px;
     /* Adjust the top position as needed */
-    right: 303px;
+    right: 305px;
     /*  Adjust the right position as needed */
   }
 
-  /* CSS for the xray list. */
   #route4Container {
     position: absolute;
     top: 20px;
     /* Adjust the top position as needed */
-    right: 362px;
+    right: 365px;
     /*  Adjust the right position as needed */
   }
 
@@ -409,21 +416,95 @@
   .card-title {
     margin-bottom: 0;
   }
+
+.image-container,
+.image-container2 {
+    display: flex;
+    box-sizing: border-box;
+    margin: 0; /* Remove any default margins */
+    padding: 0; /* Remove any default padding */
+}
+
+.image-container {
+    /* Adjust margins or padding as needed to shift up */
+    margin-bottom: 10px; /* Example adjustment */
+}
+
+.image-container2 {
+    margin-top: 10px; /* Example adjustment */
+    margin-bottom: 20px; /* Example adjustment */
+}
+
+.scaled-image {
+    max-width: 30%; /* Adjust width as needed */
+    max-height: 30%; /* Adjust height as needed */
+    width: auto; /* Maintain aspect ratio */
+    height: auto; /* Maintain aspect ratio */
+}
+
+.scaled-image2 {
+    max-width: 50%; /* Adjust width as needed */
+    max-height: 50%; /* Adjust height as needed */
+    width: auto; /* Maintain aspect ratio */
+    height: auto; /* Maintain aspect ratio */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.left-image {
+    margin-left: 0; /* Remove or adjust margin */
+}
+
+.right-image {
+    margin-left: 10px; /* Adjust spacing between images */
+}
+
+.observations-formatted-text-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.impressions-formatted-text-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.left-column, .right-column {
+    width: 48%;
+}
+
+.left-column p, .right-column p {
+    margin: 5px 0;
+}
+
+.footer-text {
+    position: absolute;
+    bottom: 25px;
+    right: 10px;
+    font-style: italic;
+    color: gray;
+    text-align: right;
+}
+
 </style>
 
 <div id="Layout">
   <div class="row" id="tools">
     <div class="col-lg-8">
-      <form class="row" method="POST" enctype="multipart/form-data" action="{% url 'uploadcsvforvaccination' %}">
+      <form class="row" method="POST" enctype="multipart/form-data" action="{% url 'uploadcsvforxray' %}">
         {% csrf_token %}
         <input class="form-control col-lg-10" type="file" name="csv_file" accept=".csv" />
-        <button class="btn btn-success col-lg-2" type="submit">Upload</button>
+        <button class="btn btn-success col-lg-4" type="submit">Upload CSV</button>
       </form>
     </div>
     <button class="btn btn-success col-lg-2" onclick="startProcess()">
       Start
     </button>
-    <form class="col-lg-2" method="post" action="{% url 'delete_all_patients_for_vaccination' %}">
+    <form class="col-lg-2" method="post" action="{% url 'delete_all_patients_for_xray' %}">
       {% csrf_token %}
       <button class="btn btn-danger" type="submit">Delete</button>
     </form>
@@ -431,19 +512,16 @@
   </div>
   <!-- Start button -->
   
-  <form method="POST" id="tools" action="{% url 'add_patient_for_vaccination' %}">
+  <form method="POST" id="tools" enctype="multipart/form-data"  action="{% url 'add_patient_for_xray' %}">
     {% csrf_token %}
     <div class="row mb-3">
-      <div class="col-lg-3">
-        <input class="form-control" type="text" name="Date" placeholder="Date" required>
-      </div>
-      <div class="col-lg-3">
+      <div class="col-lg-4">
         <input class="form-control" type="text" name="PatientName" placeholder="Patient Name" required>
       </div>
-      <div class="col-lg-3">
+      <div class="col-lg-4">
         <input class="form-control" type="text" name="PatientId" placeholder="Patient ID" required>
       </div>
-      <div class="col-lg-3">
+      <div class="col-lg-4">
         <input class="form-control" type="text" name="age" placeholder="Age" required>
       </div>
     </div>
@@ -452,54 +530,58 @@
         <input class="form-control" type="text" name="gender" placeholder="Gender" required>
       </div>
       <div class="col-lg-4">
-        <input class="form-control" type="text" name="Hepatitis_E_Batch_No" placeholder="H. Batch No" required>
+        <input class="form-control" type="text" name="Test Date" placeholder="Test Date" required>
       </div>
       <div class="col-lg-4">
-        <input class="form-control" type="text" name="Hepatitis_E_Manufacturing_Date" placeholder="H. Manufacturing Date" required>
+        <input class="form-control" type="text" name="Report Date" placeholder="Report Date" required>
       </div>
     </div>
     <div class="row mb-3">
       <div class="col-lg-3">
-        <input class="form-control" type="text" name="Hepatitis_E_Expiry_Date" placeholder="H. Expiry Date" required>
+        <input class="form-control" type="text" name="Findings" placeholder="Findings" required>
       </div>
       <div class="col-lg-3">
-        <input class="form-control" type="text" name="Typhoid_Batch_No" placeholder="T. Batch No" required>
+        <input class="form-control" type="text" name="Impression" placeholder="Impression" required>
       </div>
-      <div class="col-lg-3">
-        <input class="form-control" type="text" name="Typhoid_Manufacturing_Date" placeholder="T. Manufacturing Date" required>
-      </div>
-      <div class="col-lg-3">
-        <input class="form-control" type="text" name="Typhoid_Expiry_Date" placeholder="T. Expiry Date" required>
+      <br>
+      <br>
+      <div class="col-lg-10 row" style="margin-left: 0px;">
+        <input class="form-control col-lg-10" type="file" name="xray_image" placeholder="Xray Image" required/>
+        <button class="btn btn-success col-lg-4" >Upload Xray Image</button>
       </div>
     </div>
     <div class="row">
       <!-- Add input fields for other patient attributes as needed -->
-      <button id="add_patient_for_vaccination" class="btn btn-success col-lg-12" type="submit">Add Patient</button>
+      <button id="add_patient_for_xray" class="btn btn-success col-lg-12" type="submit">Add Patient</button>
     </div>
   </form>
-  <h5 id="center">Vaccination Patient Details</h5>
+  <h5 id="center">XRAY Patient Details</h5>
   <form>
     <ul>
       {% for patient in patients %}
       <li>
-        <input type="checkbox" onchange="displaySelectedData(this)" />
+        <input type="checkbox" onchange="displaySelectedData(this)" data-image-url="{% if patient.jpeg_file %}{{ patient.jpeg_file.url }}{% else %}None{% endif %}" />
         <label class="label1">{{ patient.PatientName }}</label>
         <label>{{ patient.PatientId }}</label>
         <label>{{ patient.age }}</label>
         <label>{{ patient.gender }}</label>
-        <label class="hidden">{{ patient.Hepatitis_E_Batch_No }}</label>
-        <label class="hidden">{{ patient.Hepatitis_E_Manufacturing_Date }}</label>
-        <label class="hidden">{{ patient.Hepatitis_E_Expiry_Date }}</label>
-        <label class="hidden">{{ patient.Typhoid_Batch_No }}</label>
-        <label class="hidden">{{ patient.Typhoid_Manufacturing_Date }}</label>
-        <label class="hidden">{{ patient.Typhoid_Expiry_Date }}</label>
-        <label class="hidden">{{ patient.Date }}</label>
+        <label>{{ patient.testdate }}</label>
+        <label>{{ patient.reportdate }}</label>
+        <label>{{patient.impressions }}</label>
+        <label>{{ patient.findings }}</label>
+        <!-- I need to add the image here at the respective place. -->
+         <!-- Conditionally display the image if it's present -->
+        {% if patient.jpeg_file %}
+        <img src="{{ patient.jpeg_file.url }}" alt="X-ray Image" style="max-width: 100px; max-height: 100px;">
+        {% else %}
+        <span>No image available</span>
+        {% endif %}
+        
       </li>
       {% endfor %}
     </ul>
   </form>
 </div>
-<!-- Fixed routing. - himanshu. -->
 <div id="logoutContainer">
   <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
 </div>
@@ -513,7 +595,7 @@
   <a href="{% url 'ecglist' %}" class="btn btn-warning">ECG</a>
 </div>
 <div id="route4Container">
-  <a href="{% url 'xraylist' %}" class="btn btn-warning">XRAY</a>
+  <a href="{% url 'vaccinationlist' %}" class="btn btn-warning">VACCINATION</a>
 </div>
 
 

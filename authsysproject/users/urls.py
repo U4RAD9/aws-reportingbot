@@ -79,6 +79,18 @@ urlpatterns = [
     path('add_patient_for_vaccination', views.add_patient_for_vaccination, name='add_patient_for_vaccination'),
     path('uploadcsvforvaccination', views.uploadcsvforvaccination, name='uploadcsvforvaccination'),
     path('VaccinationPatientData', views.vaccinationpatientDetails, name='VaccinationPatientData'),
+    # Adding all the paths and routes for the ecg and xray automation. - Himanshu.
+    path('ecglist', views.ecglist, name='ecglist'),
+    path('xraylist', views.xraylist, name='xraylist'),
+    path('delete_all_patients_for_ecg', views.delete_all_patients_for_ecg, name='delete_all_patients_for_ecg'),
+    path('delete_all_patients_for_xray', views.delete_all_patients_for_xray, name='delete_all_patients_for_xray'),
+    path('add_patient_for_ecg', views.add_patient_for_ecg, name='add_patient_for_ecg'),
+    path('add_patient_for_xray', views.add_patient_for_xray, name='add_patient_for_xray'),
+    path('uploadcsvforecg', views.uploadcsvforecg, name='uploadcsvforecg'),
+    path('uploadcsvforxray', views.uploadcsvforxray, name='uploadcsvforxray'),
+    path('ecgPatientData', views.ecgpatientDetails, name='ecgPatientData'),
+    path('xrayPatientData', views.xraypatientDetails, name='xrayPatientData'),
+    # End of ecg and xray routes. - Himanshu.
     path('upload/', views.upload_files, name='upload_files'),
     # path('auto_sync/', views.Auto_Sync, name='get_dcm_files'),
     path('upload-ecg/', views.upload_ecg, name='upload_ecg'),

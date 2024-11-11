@@ -289,6 +289,7 @@
     /* Adjust the right position as needed */
   }
   
+  /* Adjusted css. - Himanshu. */
   #routeContainer {
     position: absolute;
     top: 20px;
@@ -297,12 +298,30 @@
     /* Adjust the right position as needed */
   }
   
-/* css for the vaccination list button : */
-#route2Container {
+  /* css for the vaccination list button : */
+  #route2Container {
     position: absolute;
     top: 20px;
     /* Adjust the top position as needed */
-    right: 215px;
+    right: 240px;
+    /*  Adjust the right position as needed */
+  }
+
+  /* css for the ECG list button : */
+  #route3Container {
+    position: absolute;
+    top: 20px;
+    /* Adjust the top position as needed */
+    right: 372px;
+    /*  Adjust the right position as needed */
+  }
+
+  /* css for the XRAY list button : */
+  #route4Container {
+    position: absolute;
+    top: 20px;
+    /* Adjust the top position as needed */
+    right: 432px;
     /*  Adjust the right position as needed */
   }
 
@@ -466,14 +485,21 @@
     </ul>
   </form>
 </div>
+<!-- Fixed routing. - Himanshu. -->
 <div id="logoutContainer">
   <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
 </div>
 <div id="routeContainer">
-  <a href="{% url 'optometrylist' %}" class="btn btn-warning">Optometry</a>
+  <a href="{% url 'optometrylist' %}" class="btn btn-warning">OPTOMETRY</a>
 </div>
 <div id="route2Container">
-  <a href="{% url 'vaccinationlist' %}" class="btn btn-warning">Vaccination</a>
+  <a href="{% url 'vaccinationlist' %}" class="btn btn-warning">VACCINATION</a>
+</div>
+<div id="route3Container">
+  <a href="{% url 'ecglist' %}" class="btn btn-warning">ECG</a>
+</div>
+<div id="route4Container">
+  <a href="{% url 'xraylist' %}" class="btn btn-warning">XRAY</a>
 </div>
 
 {% if messages %}

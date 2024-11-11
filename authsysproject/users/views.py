@@ -2872,6 +2872,8 @@ def add_patient_for_vaccination(request):
             typhoid_batch_no = request.POST.get('Typhoid_Batch_No')
             typhoid_manufacturing_date = request.POST.get('Typhoid_Manufacturing_Date')
             typhoid_expiry_date = request.POST.get('Typhoid_Expiry_Date')
+            # Getting the date also. - Himanshu.
+            date = request.POST.get('Date')
             # Create a new Patient object and save it to the database
             patient = vaccinationPatientDetails(
                 PatientId=patient_id,
@@ -2884,6 +2886,7 @@ def add_patient_for_vaccination(request):
                 Typhoid_Batch_No=typhoid_batch_no,
                 Typhoid_Manufacturing_Date=typhoid_manufacturing_date,
                 Typhoid_Expiry_Date=typhoid_expiry_date,
+                Date=date,
 
             )
             patient.save()
@@ -2985,6 +2988,279 @@ def uploadcsvforvaccination(request):
 
 # end for vaccination list.
 
+# Everything Related to ECG List.
+
+@user_type_required('campautomation')
+def ecglist(request):
+    patients = ecgPatientDetails.objects.all()
+    return render(request, 'users/ecglist.html', {'patients': patients})
+
+def delete_all_patients_for_ecg(request):
+    if request.method == 'POST':
+        ecgPatientDetails.objects.all().delete()
+        return redirect('ecglist')
+    return render(request, 'users/ecglist.html')
+
+def ecgpatientDetails(request):
+    if request.method == 'GET':
+        query = request.GET.get('query', None)
+        patients = ecgPatientDetails.objects.all()
+        if query is not None:
+            patients = patients.filter(Q(PatientId_icontains=query) | Q(PatientName_icontains=query))
+        # response = {"patients": patients}
+        response = serialize("json", patients)
+        response = json.loads(response)
+        return JsonResponse(status=200, data=response, safe=False)
+
+
+def add_patient_for_ecg(request):
+    if request.method == 'POST':
+        try:
+            # Retrieve patient details from the POST request
+            patient_id = request.POST.get('PatientId')
+            patient_name = request.POST.get('PatientName')
+            age = request.POST.get('age')
+            gender = request.POST.get('gender')
+            testdate = request.POST.get('Test Date')
+            reportdate = request.POST.get('Report Date')
+            heartrate = request.POST.get('Heart Rate')
+            findings = request.POST.get('Findings')
+            # Create a new Patient object and save it to the database
+            patient = ecgPatientDetails(
+                PatientId=patient_id,
+                PatientName=patient_name,
+                age=age,
+                gender=gender,
+                testdate=testdate,
+                reportdate=reportdate,
+                heartrate=heartrate,
+                findings=findings
+
+                # TestDate=test_date,
+                # ReportDate=report_date,
+                # height=height,
+                # weight=weight,
+                # blood=blood,
+                # pulse=pulse,
+            )
+            patient.save()
+
+            return redirect('ecglist')
+        except Exception as e:
+            print("Error adding patient:", e)
+            return JsonResponse({'error': 'Internal server error'}, status=500)
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=400)
+    
+def uploadcsvforecg(request):
+    if request.method == 'POST' and request.FILES['csv_file']:
+        csv_file = request.FILES['csv_file']
+
+        # Adjust the field names according to your CSV file structure
+        field_names = ['PatientId', 'PatientName', 'Age', 'Gender', 'TestDate', 'ReportDate', 'HeartRate', 'Findings']
+    
+        try:
+            # Decode the CSV file data and split it into lines
+            decoded_file = csv_file.read().decode('utf-8').splitlines()
+            reader = csv.DictReader(decoded_file, fieldnames=field_names)
+
+            if reader.fieldnames == field_names:
+                next(reader)
+
+            # Initialize a list to store missing data logs
+            missing_data_logs = []
+            total_rows = 0
+            saved_rows = 0
+
+            # Store the CSV data in a variable
+            csv_data = list(reader)
+
+            # Check for missing data in each row
+            for idx, row in enumerate(csv_data, start=1):
+                total_rows += 1
+                missing_fields = [field for field in field_names if not row.get(field)]
+                if missing_fields:
+                    # Append each missing data message separately for each row
+                    error_message = f"Missing data for ID: {row.get('PatientId')} and Name: {row.get('PatientName')} in row {idx}: {', '.join(missing_fields)}"
+                    missing_data_logs.append(error_message)
+                    messages.error(request, error_message)
+                else:
+                    saved_rows += 1
+                    # # Extract date and time from Timestamp
+                     # Convert date strings to datetime objects
+                    
+
+                    ecgPatientDetails.objects.create(
+                        PatientId=row['PatientId'],
+                        PatientName=row['PatientName'],
+                        age=row['Age'],
+                        gender=row['Gender'],
+                        testdate=row['TestDate'],
+                        reportdate=row['ReportDate'],
+                        heartrate=row['HeartRate'],
+                        findings=row['Findings']
+                    )
+
+            if missing_data_logs:
+                # Include total rows and saved rows in the error message
+                error_message = f'\nTotal rows: {total_rows}, Saved rows: {saved_rows}'
+                messages.error(request, error_message)
+                return redirect('ecglist')
+            else:
+                # Redirect to the vaccinationlist page after successful upload
+                messages.success(request, 'CSV data uploaded successfully.')
+                return redirect('ecglist')
+
+        except Exception as e:
+            return HttpResponse(f'Error: {str(e)}')
+    else:
+        # return HttpResponse('Please upload a CSV file.')
+        return render(request, 'users/uploadcsv.html')
+    
+
+
+# End of ECG list. - Himanshu.
+
+# Everything Related to xray List.
+
+@user_type_required('campautomation')
+def xraylist(request):
+    patients = xrayPatientDetails.objects.all()
+    return render(request, 'users/xraylist.html', {'patients': patients})
+
+def delete_all_patients_for_xray(request):
+    if request.method == 'POST':
+        xrayPatientDetails.objects.all().delete()
+        return redirect('xraylist')
+    return render(request, 'users/xraylist.html')
+
+def xraypatientDetails(request):
+    if request.method == 'GET':
+        query = request.GET.get('query', None)
+        patients = xrayPatientDetails.objects.all()
+        if query is not None:
+            patients = patients.filter(Q(PatientId_icontains=query) | Q(PatientName_icontains=query))
+        # response = {"patients": patients}
+        response = serialize("json", patients)
+        response = json.loads(response)
+        return JsonResponse(status=200, data=response, safe=False)
+
+
+def add_patient_for_xray(request):
+    if request.method == 'POST':
+        print(request.POST)
+        
+        try:
+            # Retrieve patient details from the POST request
+            patient_id = request.POST.get('PatientId')
+            patient_name = request.POST.get('PatientName')
+            age = request.POST.get('age')
+            gender = request.POST.get('gender')
+            testdate = request.POST.get('Test Date')
+            reportdate = request.POST.get('Report Date')
+            impressions = request.POST.get('Impression')
+            findings = request.POST.get('Findings')
+            jpeg_file = request.FILES.get('xray_image')
+            # Create a new Patient object and save it to the database
+            patient = xrayPatientDetails(
+                PatientId=patient_id,
+                PatientName=patient_name,
+                age=age,
+                gender=gender,
+                testdate=testdate,
+                reportdate=reportdate,
+                impressions=impressions,
+                findings=findings,
+                jpeg_file=jpeg_file
+            )
+            patient.save()
+
+            return redirect('xraylist')
+        except Exception as e:
+            print("Error adding patient:", e)
+            return JsonResponse({'error': 'Internal server error'}, status=500)
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=400)
+    
+def uploadcsvforxray(request):
+    if request.method == 'POST' and request.FILES['csv_file']:
+        csv_file = request.FILES['csv_file']
+
+        # Adjust the field names according to your CSV file structure
+        field_names = ['PatientId', 'PatientName', 'Age', 'Gender', 'TestDate', 'ReportDate', 'Findings', 'Impression']
+    
+        try:
+            # Decode the CSV file data and split it into lines
+            decoded_file = csv_file.read().decode('utf-8').splitlines()
+            reader = csv.DictReader(decoded_file, fieldnames=field_names)
+
+            if reader.fieldnames == field_names:
+                next(reader)
+
+            # Initialize a list to store missing data logs
+            missing_data_logs = []
+            total_rows = 0
+            saved_rows = 0
+
+            # Store the CSV data in a variable
+            csv_data = list(reader)
+
+            # Check for missing data in each row
+            for idx, row in enumerate(csv_data, start=1):
+                total_rows += 1
+                missing_fields = [field for field in field_names if not row.get(field)]
+                if missing_fields:
+                    # Append each missing data message separately for each row
+                    error_message = f"Missing data for ID: {row.get('PatientId')} and Name: {row.get('PatientName')} in row {idx}: {', '.join(missing_fields)}"
+                    missing_data_logs.append(error_message)
+                    messages.error(request, error_message)
+                else:
+                    # Search for the corresponding image in the JPEGFile model
+                    dicom_data = DICOMData.objects.filter(patient_id=row['PatientId']).first()
+                    jpeg_file_instance = None
+                    if dicom_data:
+                        jpeg_file_instance = JPEGFile.objects.filter(dicom_data=dicom_data).first()
+
+                    # This is the log to check whether the image is getting fetched or not . - Himanshu.
+                    # if jpeg_file_instance:
+                    #     # Print the image name for debugging
+                    #     print(f"Image found for Patient ID {row['PatientId']}: {jpeg_file_instance.jpeg_file.name}")
+                    # else:
+                    #     print(f"No image found for Patient ID {row['PatientId']}")
+
+                    # Save the xrayPatientDetails object with the associated image if found
+                    saved_rows += 1
+                    xrayPatientDetails.objects.create(
+                        PatientId=row['PatientId'],
+                        PatientName=row['PatientName'],
+                        age=row['Age'],
+                        gender=row['Gender'],
+                        testdate=row['TestDate'],
+                        reportdate=row['ReportDate'],
+                        impressions=row['Impression'],
+                        findings=row['Findings'],
+                        jpeg_file=jpeg_file_instance.jpeg_file if jpeg_file_instance else None
+                    )
+
+            if missing_data_logs:
+                # Include total rows and saved rows in the error message
+                error_message = f'\nTotal rows: {total_rows}, Saved rows: {saved_rows}'
+                messages.error(request, error_message)
+                return redirect('xraylist')
+            else:
+                # Redirect to the xraylist page after successful upload
+                messages.success(request, 'CSV data uploaded successfully.')
+                return redirect('xraylist')
+
+        except Exception as e:
+            return HttpResponse(f'Error: {str(e)}')
+    else:
+        # return HttpResponse('Please upload a CSV file.')
+        return render(request, 'users/uploadcsv.html')
+    
+
+
+# End of Xray list. - Himanshu.
 
 def delete_all_patients_opto(request):
     if request.method == 'POST':
