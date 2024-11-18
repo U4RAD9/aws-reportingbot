@@ -21,6 +21,7 @@ import XraySpineDorsal from "./Utils/XraySpineDorsal";
 import Vitals from "./Utils/Vitals";
 import CtHead from "./Utils/CtHead";
 import CtAbdomen from "./Utils/CtAbdomen";
+import Blanks from "./Utils/Blanks"
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { Test } from "@jsonforms/core";
@@ -2945,7 +2946,14 @@ class App extends Component {
                   generateReport={this.generateReport}
                   generatePatientTable={this.generatePatientTable()}
                 />
-              ) : this.state.modal && options_label === "CT PNS" ? (
+              ): this.state.modal && options_label === "Blanks" ? (
+                <Blanks
+                  handleClick={this.handleClick}
+                  reportFrmData={reportFrmData}
+                  generateReport={this.generateReport}
+                  generatePatientTable={this.generatePatientTable()}
+                />
+              ) :   this.state.modal && options_label === "CT PNS" ? (
                 <PnsAbnormal
                   handleClick={this.handleClick}
                   reportFrmData={reportFrmData}
