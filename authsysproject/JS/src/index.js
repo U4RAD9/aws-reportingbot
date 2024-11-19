@@ -35,7 +35,6 @@ import * as cornerstoneWADOImageLoader from "cornerstone-wado-image-loader";
 import * as cornerstoneWebImageLoader from "cornerstone-web-image-loader";
 import dicomParser from "dicom-parser";
 import Hammer from "hammerjs";
-
 //cornerstone init
 cornerstoneTools.external.cornerstone = cornerstone;
 cornerstoneTools.external.Hammer = Hammer;
