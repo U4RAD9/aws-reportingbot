@@ -1,4 +1,5 @@
-import React, { Component } from "react";
+import React, { Component, useState } from "react";
+import { useRef } from "react";
 import { render } from "react-dom";
 import "./style.css";
 import CKEditor from "@ckeditor/ckeditor5-react";
@@ -21,49 +22,156 @@ import XraySpineDorsal from "./Utils/XraySpineDorsal";
 import Vitals from "./Utils/Vitals";
 import CtHead from "./Utils/CtHead";
 import CtAbdomen from "./Utils/CtAbdomen";
-import Blanks from "./Utils/Blanks"
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { Test } from "@jsonforms/core";
 import html2pdf from "html2pdf.js";
 import axios from "axios";
+import $ from 'jquery';
+import { AiOutlineZoomIn } from 'react-icons/ai';
+import { AiOutlineDrag } from 'react-icons/ai'; // Pan (Drag) icon from Ant Design
+//cornerstone imports - core, tools, dicom-image-loader, streaming-image-loader, dicomParser
+import { FaRedoAlt } from 'react-icons/fa'; // Import rotate icon
+import { FaSearch } from 'react-icons/fa'; // Import search/probe icon
+import { FaAdjust } from 'react-icons/fa'; // Import adjust/contrast icon
+import { FaRuler } from 'react-icons/fa'; // Import measurement ruler icon
+import { FaEraser } from 'react-icons/fa'; // Import eraser icon
+import { FaCube } from 'react-icons/fa'; // Import 3D cube icon
+import { FaBars } from 'react-icons/fa'; // Import bars icon for slab thickness
+import { FaThLarge } from 'react-icons/fa'; // Import grid layout icon
+import { FaUndo } from 'react-icons/fa'; // Import undo/reset icon
+import { FaCamera } from 'react-icons/fa'; // Import camera icon
+import { FaExpand } from 'react-icons/fa'; // Import expand icon
 
-import * as cornerstone from "cornerstone-core";
-import * as cornerstoneMath from "cornerstone-math";
-import * as cornerstoneTools from "cornerstone-tools";
-import * as cornerstoneWADOImageLoader from "cornerstone-wado-image-loader";
-import * as cornerstoneWebImageLoader from "cornerstone-web-image-loader";
-import dicomParser from "dicom-parser";
-import Hammer from "hammerjs";
-//cornerstone init
-cornerstoneTools.external.cornerstone = cornerstone;
-cornerstoneTools.external.Hammer = Hammer;
-cornerstoneTools.external.cornerstoneMath = cornerstoneMath;
-cornerstoneTools.init({ showSVGCursors: true });
+import * as cornerstone from '@cornerstonejs/core';
+import * as cornerstoneTools from '@cornerstonejs/tools';
+import cornerstoneDICOMImageLoader from '@cornerstonejs/dicom-image-loader';
+import { cornerstoneStreamingImageVolumeLoader, cornerstoneStreamingDynamicImageVolumeLoader } from '@cornerstonejs/streaming-image-volume-loader';
+import dicomParser from 'dicom-parser';
 
-//web image loader
-cornerstoneWebImageLoader.external.cornerstone = cornerstone;
+//VERY IMPORTANT IMPORT
+//all the associated JS files that this function requires are stored in Utils folder
+//ensure that the following files are present in Utils
+//removeInvalidTags.js
+//ptScalingMetaDataProvider.js
+//getPixelSpacingInformation.js
+//createImageIdsAndCacheMetaData.js
+//convertMultiframeImageIds.js
 
-//dcm viewer
-// cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
-// cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
-// cornerstoneWADOImageLoader.webWorkerManager.initialize({
-//   maxWebWorkers: navigator.hardwareConcurrency || 1,
-//   startWebWorkersOnDemand: true,
-//   taskConfiguration: {
-//     decodeTask: {
-//       initializeCodecsOnStartup: false,
-//       usePDFJS: false,
-//       strict: false,
-//     }
-//   }
-// })
+//when adding functionality for PET scans, uncomment the last IF statement from createImageIdsAndCacheMetaData.js
+//allow typescript files in the project and place https://github.com/cornerstonejs/cornerstone3D/blob/main/utils/demo/helpers/getPTImageIdInstanceMetadata.ts in Utils
+import createImageIdsAndCacheMetaData from './Utils/createImageIdsAndCacheMetaData';
 
-// const options = [{ label: 'X-RAY CHEST', id: 1 }, { label: "X-RAY KNEE", id: 2 }, { label: "X-RAY SPINE(DORSAL)", id: 3 }, { label: "X-RAY SPINE(CERVICAL)", id: 4 }, { label: "X-RAY SPINE(LUMBER)", id: 5 }, { label: "X-RAY RIGHT-SHOULDER", id: 6 }, { label: "X-RAY LEFT-SHOULDER", id: 7 }, { label: "X-RAY TEMPLATE", id: 8 }, { label: 'CT HEAD', id: 9 }, { label: 'CT PNS', id: 10 }, { label: 'CT ABDOMEN', id: 11 }, { label: 'MRI BRAIN', id: 12 }, { label: 'AUDIOMETRY', id: 13 }, { label: 'ECG', id: 14 }, { label: 'CAMP ECG', id: 15 }]
+
+
+//cornerstone inits - core, tools
+await cornerstone.init();
+cornerstoneTools.init();
+
+
+//cornerstone metadata providers, adds generic metadata provider and calibrated pixel spacing metadata provider
+cornerstone.metaData.addProvider(
+  cornerstone.utilities.calibratedPixelSpacingMetadataProvider.get.bind(
+    cornerstone.utilities.calibratedPixelSpacingMetadataProvider
+  ),
+  11000);
+
+cornerstone.metaData.addProvider(
+  cornerstone.utilities.genericMetadataProvider.get.bind(
+    cornerstone.utilities.genericMetadataProvider
+  ),
+  10000
+);
+
+
+const { preferSizeOverAccuracy, useNorm16Texture } =
+  cornerstone.getConfiguration().rendering;
+
+window.cornerstone = cornerstone;
+window.cornerstoneTools = cornerstoneTools;
+
+//Register and set up cornerstone volume loader
+cornerstone.volumeLoader.registerVolumeLoader('cornerstoneStreamingImageVolume', cornerstoneStreamingImageVolumeLoader);
+cornerstone.volumeLoader.registerUnknownVolumeLoader(cornerstoneStreamingImageVolumeLoader);
+cornerstone.volumeLoader.registerVolumeLoader('cornerstoneStreamingDynamicImageVolume', cornerstoneStreamingDynamicImageVolumeLoader);
+
+
+//Register and set up cornerstone dicom image loader
+cornerstoneDICOMImageLoader.external.cornerstone = cornerstone;
+cornerstoneDICOMImageLoader.external.dicomParser = dicomParser;
+cornerstoneDICOMImageLoader.configure({
+    useWebWorkers: true,
+    decodeConfig: {
+      convertFloatPixelDataToInt: false,
+      use16BitDataType: preferSizeOverAccuracy || useNorm16Texture,
+    },
+});
+
+let maxWebWorkers = 1;
+
+if (navigator.hardwareConcurrency) {
+  maxWebWorkers = Math.min(navigator.hardwareConcurrency, 7);
+}
+
+
+//dicom image loader configuration settings
+var config = {
+  maxWebWorkers,
+  startWebWorkersOnDemand: false,
+  taskConfiguration: {
+    decodeTask: {
+      initializeCodecsOnStartup: false,
+      strict: false,
+    },
+  },
+};
+
+cornerstoneDICOMImageLoader.webWorkerManager.initialize(config);
+
+//create a toolgroup id and a variable for the toolgroup created in componentWillMount()
+const toolGroupId = 'myToolGroup';
+var toolGroup
+
+//create a rendering engine and define viewport ids
+const renderingEngineId = 'myRenderingEngine';
+const renderingEngine = new cornerstone.RenderingEngine(renderingEngineId);
+const viewportIds = ['first', 'second', 'third', 'fourth']
+
+//viewport variables
+let first_viewport;
+let second_viewport;
+let third_viewport;
+let fourth_viewport;
+let viewport_list = {};
+
+//map for storing the image ID display divs in accordance with viewport id
+let indexMap = {first: 'viewport1Index', second: 'viewport2Index', third: 'viewport3Index', fourth: 'viewport4Index'}
+
+//previously selected element and viewport
+var selected_viewport;
+var prev_selected_element;
+
+//non CT image Id list
+var nonCT_ImageIds = [];
+
+var curr_tool = null;
+var prev_layout = 'one';
+
+//Dict of all cornerstone tools 
+const Tools = {"Length": cornerstoneTools.LengthTool, "Angle": cornerstoneTools.AngleTool, "CobbAngle": cornerstoneTools.CobbAngleTool, 
+  "RectangleROI": cornerstoneTools.RectangleROITool, "CircleROI": cornerstoneTools.CircleROITool, "EllipticalROI": cornerstoneTools.EllipticalROITool,
+  "FreehandROI": cornerstoneTools.PlanarFreehandROITool, "Bidirectional": cornerstoneTools.BidirectionalTool, "Zoom": cornerstoneTools.ZoomTool, 
+  "Pan": cornerstoneTools.PanTool, "Contrast": cornerstoneTools.WindowLevelTool, "Probe": cornerstoneTools.ProbeTool,"Eraser": cornerstoneTools.EraserTool, 
+  "PlanarRotate": cornerstoneTools.PlanarRotateTool, "Height": cornerstoneTools.HeightTool, "SplineROI": cornerstoneTools.SplineROITool, 
+  "StackScroll": cornerstoneTools.StackScrollMouseWheelTool, "ArrowAnnotate": cornerstoneTools.ArrowAnnotateTool
+}
+
 
 var current_user = JSON.parse(
   document.getElementById("current-user").textContent
 );
+
+
 
 ///////////// Dynamic lists by aman gupta on 07/07/2023 ///////////////
 const options = JSON.parse(current_user.serviceslist).map((service) => ({
@@ -91,62 +199,590 @@ class App extends Component {
     this.handleSeletion = this.handleSeletion.bind(this);
     this.generateReport = this.generateReport.bind(this);
     this.GetDivContentOnPDF = this.GetDivContentOnPDF.bind(this);
-    this.GetDivContentOnPDFWithoutImage =
-      this.GetDivContentOnPDFWithoutImage.bind(this);
-    this.GetDivContentAsJSON = this.GetDivContentAsJSON.bind(this);
+    this.GetDivContentOnPDFWithoutImage = this.GetDivContentOnPDFWithoutImage.bind(this);
     this.GetEcgContentOnPDF = this.GetEcgContentOnPDF.bind(this);
     this.uploadEcgPDF = this.uploadEcgPDF.bind(this);
     this.uploadXrayPDF = this.uploadXrayPDF.bind(this);
-    this.UploadDivContentOnPDFVitals =
-      this.UploadDivContentOnPDFVitals.bind(this);
+    this.UploadDivContentOnPDFVitals = this.UploadDivContentOnPDFVitals.bind(this);
     this.GetDivContentOnWord = this.GetDivContentOnWord.bind(this);
     this.onclickDiv = this.onclickDiv.bind(this);
-    this.enableTool = this.enableTool.bind(this);
+    this.viewportSettings = this.viewportSettings.bind(this);
+    this.toggleTool = this.toggleTool.bind(this);
+    this.orientationSettings = this.orientationSettings.bind(this);
+    this.windowingSettings = this.windowingSettings.bind(this);
+    this.alignmentSettings = this.alignmentSettings.bind(this);
+    this.layoutSettings = this.layoutSettings.bind(this);
+    this.cornerstone = this.cornerstone.bind(this);
+    this.volumeOrientation = this.volumeOrientation.bind(this);
+    this.slabThickness = this.slabThickness.bind(this);
+    this.capture = this.capture.bind(this);
+    this.fullScreen = this.fullScreen.bind(this);
+    this.drop = this.drop.bind(this);
+    this.allowDrop = this.allowDrop.bind(this);  
+    this.toggleDivs = this.toggleDivs.bind(this); // New method for toggling divs
+    
+  }
+  allowDrop(event){
+    event.preventDefault();
+  }
+  toggleDivs() {
+    this.setState((prevState) => ({
+      isDiv2Visible: !prevState.isDiv2Visible,
+    }));
   }
 
-  enableTool(tool) {
-    const element = document.getElementById("viewport");
-    const viewport = cornerstone.getViewport(element);
-    switch (tool) {
-      case "Zoom":
-        cornerstoneTools.setToolActive("Zoom", { mouseButtonMask: 1 });
+   //function to capture selected viewport and download it as image
+  capture(element) {
+    html2canvas(element, { allowTaint: true }).then(function (canvas) {
+      // Get the base64 image URL from the canvas
+      const imageUrl = canvas.toDataURL('image/png');
+  
+      if (window.editor) {
+        window.editor.model.change(writer => {
+          // Get the end position of the document root to insert the image at the end
+          const root = window.editor.model.document.getRoot();
+          const endPosition = writer.createPositionAt(root, 'end');
+  
+          // Create an image element with the captured image URL
+          const imageElement = writer.createElement('image', {
+            src: imageUrl,
+            alt: 'Captured Screenshot'
+          });
+  
+          // Insert the image at the end position of the document
+          writer.insert(imageElement, endPosition);
+        });
+      } else {
+        console.error("CKEditor instance not found.");
+      }
+    });
+  }
+  
+  //function to toggle full screen settings for viewer, changes css settings for div with ID page-content and for CKEditor
+  fullScreen(call){
+    const mainPage = document.getElementById('page-content');
+    const reportEditor = document.getElementById('reportEditor');
+    const valueChange = document.getElementById('fullScreen')
+    switch(call){
+      case 'small':
+        mainPage.style.gridTemplateColumns = '20% 80%';
+        reportEditor.style.display = 'none'
+        valueChange.value = 'full'
         break;
-      case "Contrast":
-        cornerstoneTools.setToolActive("Wwwc", { mouseButtonMask: 1 });
-        break;
-      case "Length":
-        cornerstoneTools.setToolActive("Length", { mouseButtonMask: 1 });
-        break;
-      case "Rotate":
-        viewport.rotation -= 90;
-        cornerstone.setViewport(element, viewport);
-        break;
-      case "Markers":
-        cornerstoneTools.setToolActive("TextMarker", { mouseButtonMask: 1 });
-        break;
-      case "Magnify":
-        cornerstoneTools.setToolActive("Magnify", { mouseButtonMask: 1 });
-        break;
-      case "Pan":
-        cornerstoneTools.setToolActive("Pan", { mouseButtonMask: 1 });
-        break;
-      case "Invert":
-        viewport.invert = !viewport.invert;
-        cornerstone.setViewport(element, viewport);
-        break;
-      case "Disable":
-        cornerstoneTools.setToolDisabled("Zoom");
-        cornerstoneTools.setToolDisabled("Wwwc");
-        cornerstoneTools.setToolDisabled("Length");
-        cornerstoneTools.setToolDisabled("TextMarker");
-        cornerstoneTools.setToolDisabled("Magnify");
-        cornerstoneTools.setToolDisabled("Pan");
-        break;
-
-      default:
+      case 'full':
+        mainPage.style.gridTemplateColumns = '25% 15% 60%';
+        reportEditor.style.display = 'block'
+        valueChange.value = 'small'
         break;
     }
+
+    //important, resizes the image inside the viewport when the viewport size changes
+    renderingEngine.resize(true, false);
+  }  
+  drop(event) {
+    event.preventDefault();
+  
+    // newViewport needed for volume viewport
+    let newViewport;
+  
+    // Get volume ID/image IDs and modality
+    const obj = JSON.parse(event.dataTransfer.getData('text'));
+    const ID = obj[0];
+    const modality = obj[1];
+    const description = obj[2];
+  
+    // Determine orientation based on description (sag, cor, axial)
+    let orientation = cornerstone.Enums.OrientationAxis.AXIAL; // Default to axial
+    if (description.toLowerCase().includes('sag')) {
+      orientation = cornerstone.Enums.OrientationAxis.SAGITTAL;
+    } else if (description.toLowerCase().includes('cor')) {
+      orientation = cornerstone.Enums.OrientationAxis.CORONAL;
+    }
+  
+    // Get all related elements
+    const parentElement = event.target.parentElement;
+    const viewport_ID = parentElement.getAttribute('data-value');
+    var viewport = renderingEngine.getViewport(viewport_ID);
+  
+    // Clear previous image/volume cache
+    if (viewport.type === cornerstone.Enums.ViewportType.STACK) {
+      viewport.setStack([]);  // Clear the stack
+      viewport.render();
+    } else if (viewport.type === cornerstone.Enums.ViewportType.VOLUME) {
+      viewport.setVolumes([]);  // Clear the volume
+      viewport.render();
+    }
+  
+    // Check if the ID is a URL (i.e., the dataTransfer contains an image URL)
+    if (ID && ID.includes('http')) {
+      // If ID is a URL, fetch the image and display it
+      this.getDataUri(ID).then((dataUri) => {
+        // Upload the image as a DataURI directly into the viewer
+        const imageId = cornerstone.imageCache.putImage(dataUri);
+        
+        // Set the image in the viewport (for stack view)
+        if (viewport.type === cornerstone.Enums.ViewportType.STACK) {
+          viewport.setStack([imageId]);  // Use the image ID as the stack
+          viewport.render();
+        }
+      });
+  
+    } else if (modality === 'CT' || modality === 'MR') {
+  
+      // Condition for if the viewport is a stack viewport
+      if (viewport.type === cornerstone.Enums.ViewportType.STACK) {
+  
+        // Change the viewport to a volume viewport asynchronously
+        (async () => {
+          newViewport = await cornerstone.utilities.convertStackToVolumeViewport({
+            options: { volumeId: ID, viewportId: viewport_ID, orientation: orientation },
+            viewport: viewport
+          });
+          newViewport.setProperties({ rotation: 0 });
+          toolGroup.addViewport(newViewport.id, renderingEngineId);
+          newViewport.render();
+  
+          let currElement = newViewport.element;
+          let elementID = '#' + currElement.id;
+  
+          // Remove previous event listeners and add new event listener for capturing image index
+          $(elementID).off();
+          currElement.addEventListener(cornerstone.EVENTS.VOLUME_NEW_IMAGE, () => {
+            let index = newViewport.getSliceIndex() + 1;
+  
+            // Update image index div
+            let indexElem = document.getElementById(indexMap[newViewport.id]);
+            indexElem.innerHTML = 'Image: ' + index;
+          });
+        })();
+      }
+  
+      // Condition for if the viewport is already a volume viewport
+      else {
+        viewport.setVolumes([{ volumeId: ID }]);
+        viewport.render();
+      }
+    }
+  
+    // Condition for non-CT modalities
+    if (modality !== 'CT' && modality !== 'MR') {
+  
+      // Condition for if the viewport is a volume viewport
+      if (viewport.type === cornerstone.Enums.ViewportType.ORTHOGRAPHIC) {
+  
+        // Get the viewport input and change it to stack viewport asynchronously
+        (async () => {
+          renderingEngine.disableElement(viewport_ID);
+          let curr = viewport_list[viewport_ID];
+          curr.type = cornerstone.Enums.ViewportType.STACK;
+          delete curr.defaultOptions;
+          renderingEngine.enableElement(curr);
+          viewport = renderingEngine.getViewport(viewport_ID);
+          viewport.setProperties({ rotation: 0 });
+          toolGroup.addViewport(viewport.id, renderingEngineId);
+          viewport.setStack(nonCT_ImageIds[Number(ID)]);
+          viewport.render();
+  
+          // Remove previous event listeners and add new event listener for capturing image index
+          let currElement = viewport.element;
+          let elementID = '#' + currElement.id;
+          $(elementID).off(); // jQuery for removing event listeners
+          currElement.addEventListener(cornerstone.EVENTS.STACK_NEW_IMAGE, () => {
+            let index = viewport.getCurrentImageIdIndex() + 1;
+  
+            // Update image index
+            let indexElem = document.getElementById(indexMap[viewport.id]);
+            indexElem.innerHTML = index;
+          });
+        })();
+      }
+  
+      // Condition for if the viewport is already a stack viewport
+      else {
+        viewport.setStack(nonCT_ImageIds[Number(ID)]);
+        viewport.render();
+      }
+    }
+  };
+  
+  getDataUri(url) {
+    return new Promise((resolve) => {
+      var image = new Image();
+      image.crossOrigin = "anonymous"; // Fetch images from external domains
+      image.onload = function () {
+        var canvas = document.createElement("canvas");
+        canvas.width = this.naturalWidth;
+        canvas.height = this.naturalHeight;
+  
+        // Set white background in case PNG has a transparent background
+        var ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#fff"; // White fill style
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+        canvas.getContext("2d").drawImage(this, 0, 0);
+        resolve(canvas.toDataURL("image/jpeg"));
+      };
+  
+      image.src = url;
+      
+    });
   }
+  
+  
+  
+  // When dropping a preview image onto a viewport
+  async cornerstone(PARAM) {
+    try {
+      const previewTab = document.getElementById('previewTab');
+      const viewport = document.querySelector('.patientdata');
+      const studyid = PARAM;
+  
+      // get csrf token for POST request
+      const re = await fetch("/get-csrf-token/");
+      const FI = await re.json();
+      const token = FI.csrf_token;
+  
+      // fetch study details from view that accesses orthanc server, pass studyid as a parameter
+      const response = await fetch('/data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          "X-CSRFToken": token
+        },
+        body: studyid
+      });
+      const data = await response.json();
+  
+      // patient + study details
+      const study_uid = data.study_uid;
+      const series = data.series;
+      const name = data.name;
+      const id = data.id;
+      const study_date = data.date;
+      const study_time = data.time;
+      const centre_name = data.centre_name;
+  
+      let k = 0;
+      let imageIdIndex = 0;
+            // Assuming study_time is in a format like "hhmmss" (e.g., "134520" for 13:45:20)
+            function formatTime(study_time) {
+              const hours = study_time.slice(0, 2); // First two digits as hours
+              const minutes = study_time.slice(2, 4); // Next two digits as minutes
+              const seconds = study_time.slice(4, 6); // Last two digits as seconds
+              return `${hours} hours ${minutes} minutes ${seconds} seconds`;
+            }
+            const formattedTime = formatTime(study_time);
+      // Function to format the date as YYYY/MM/DD
+      function formatDate(date) {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+          const [year, month, day] = date.split("-");
+          return `${year}/${month}/${day}`;
+        } else if (/^\d{8}$/.test(date)) {
+          const year = date.slice(0, 4);
+          const month = date.slice(4, 6);
+          const day = date.slice(6, 8);
+          return `${year}/${month}/${day}`;
+        }
+      
+        console.error("Invalid date format:", date);
+        return "Invalid Date";
+      }
+      const formattedDate = formatDate(study_date);
+      
+             viewport.innerHTML += `<p style="margin-bottom:0">Name: ${name}<br>ID: ${id}<br>Study Date: ${formattedDate}<br>Study Time: ${formattedTime}<br>Centre Name : ${centre_name}<br></p>`
+      
+  
+      
+  
+      for (let item of series) {
+  
+        // create IDS and cache metadata of dicom files
+        let imageId = await createImageIdsAndCacheMetaData({
+          StudyInstanceUID: study_uid,
+          SeriesInstanceUID: item[0],
+  
+          // put the url of the orthanc server with /dicom-web
+          // example http://127.0.0.1:2002/dicom-web
+          wadoRsRoot: 'http://13.202.103.243:2002/dicom-web',
+        });
+  
+        // populate preview tab
+        let image = document.createElement('img');
+        image.src = item[3];
+        image.style.height = '150px';
+        image.style.width = '150px';
+        image.style.marginBottom = '0px';
+  
+        // conditional to check whether modality is CT or anything else 
+        if (item[1] == 'CT' || item[1] == 'MR') {
+          // create unique volume id
+          let volumeId = 'cornerstoneStreamingImageVolume: myVolume' + k;
+          k += 1;
+          image.dataset.value = volumeId;
+  
+          // create volume object and put it in cache if the modality is CT
+          let volume = await cornerstone.volumeLoader.createAndCacheVolume(volumeId, { imageIds: imageId, });
+  
+          // cache optimization
+          cornerstone.utilities.cacheUtils.performCacheOptimizationForVolume(volumeId);
+  
+          // load the created volume
+          volume.load();
+  
+        } else {
+  
+          nonCT_ImageIds.push(imageId);
+          // store the index of the imageIDs for nonCT_Images
+          // the corresponding index in the list is stored as the data-value attribute in the preview image
+          image.dataset.value = imageIdIndex;
+          imageIdIndex += 1;
+        }
+  
+        // add previews to previewTab.innerHTML
+        image.dataset.modality = item[1];
+        image.dataset.description = item[2]; 
+        image.draggable = true;
+        
+        // Log the modality and description to the console
+        //console.log(`Modality: ${item[1]}, Description: ${item[2]}`);
+        
+        previewTab.innerHTML += `
+          <p style='margin-bottom: 0px'>
+            ${item[1]}<br>${item[2]}
+          </p>
+        `;
+        
+        previewTab.appendChild(image);
+      }
+  
+      // event delegation to attach event listener to each preview image in the preview tab
+      previewTab.addEventListener('dragstart', (event) => {
+        if (event.target.tagName === 'IMG') {
+            const transferData = [event.target.dataset.value, event.target.dataset.modality, event.target.dataset.description];
+            //console.log("Transferred Data: ", transferData); // Log the data being transferred
+            event.dataTransfer.setData("text", JSON.stringify(transferData));
+        }
+    });
+    
+  
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  
+
+
+
+  //function to set new tool active and previous tool passive
+  toggleTool(newTool){
+    var tool = Tools[newTool].toolName;
+    if(curr_tool != null){
+      toolGroup.setToolPassive(curr_tool);
+    };
+    toolGroup.setToolActive(tool, {
+      bindings: [
+        {
+          mouseButton: cornerstoneTools.Enums.MouseBindings.Primary,
+        },
+      ],
+    });
+    curr_tool = tool;
+  }
+  //viewport layout settings for single viewport, 2 viewports, or 4 viewports
+  layoutSettings(event){
+    const call = event.target.value;
+    const container = document.getElementById('viewport-container');
+    const viewport2 = document.getElementById('viewport2');
+    const viewport3 = document.getElementById('viewport3');
+    const viewport4 = document.getElementById('viewport4');
+
+    switch(call){
+      case 'one':
+        if (prev_layout == 'four'){
+          renderingEngine.disableElement(viewportIds[2]);
+          renderingEngine.disableElement(viewportIds[3]);
+          toolGroup.removeViewports(renderingEngineId, viewportIds[2]);
+          toolGroup.removeViewports(renderingEngineId, viewportIds[3]);
+          viewport3.style.display = 'none';
+          viewport4.style.display = 'none';
+        }
+        renderingEngine.disableElement(viewportIds[1]);
+        toolGroup.removeViewports(renderingEngineId, viewportIds[1]);
+        viewport2.style.display = 'none';
+        container.style.gridTemplateColumns = 'none';
+        container.style.gridTemplateRows = 'none'
+        break;
+      case 'two':
+        if (prev_layout == 'four'){
+          renderingEngine.disableElement(viewportIds[2]);
+          renderingEngine.disableElement(viewportIds[3]);
+          toolGroup.removeViewports(renderingEngineId, viewportIds[2]);
+          toolGroup.removeViewports(renderingEngineId, viewportIds[3]);
+          viewport3.style.display = 'none';
+          viewport4.style.display = 'none';
+        } else{
+          renderingEngine.enableElement(second_viewport);
+          toolGroup.addViewport(viewportIds[1], renderingEngineId);
+          viewport2.style.display = 'block';
+        }
+        container.style.gridTemplateColumns = '50% 50%';
+        container.style.gridTemplateRows = 'none'
+        
+        break;
+      case 'four':
+        if (prev_layout == 'one'){
+          renderingEngine.enableElement(second_viewport);
+          viewport2.style.display = 'block';
+          toolGroup.addViewport(viewportIds[1], renderingEngineId);
+        }
+        renderingEngine.enableElement(third_viewport);
+        renderingEngine.enableElement(fourth_viewport);
+        toolGroup.addViewport(viewportIds[2], renderingEngineId);
+        toolGroup.addViewport(viewportIds[3], renderingEngineId);
+
+        viewport3.style.display = 'block';
+        viewport4.style.display = 'block';
+        container.style.gridTemplateColumns = '50% 50%';
+        container.style.gridTemplateRows = '50% 50%';
+        break;
+    }
+    renderingEngine.resize(true, false);
+    prev_layout = call;
+    event.target.value = ''
+  }
+
+  //volume slab thickness settings for volume viewports
+  slabThickness(val, id){
+    const viewport = renderingEngine.getViewport(id);
+    viewport.setBlendMode(cornerstone.Enums.BlendModes.MAXIMUM_INTENSITY_BLEND);
+    viewport.setProperties({ slabThickness: Number(val)});
+    viewport.render();
+  }
+
+  //function for image alignment in viewport, uses viewport display area
+  alignmentSettings(call, id){
+    const viewport = renderingEngine.getViewport(id);
+    var display;
+    switch(call){
+      case 'AlignLeft':
+        display = {"imageArea": [1.1, 1.1], "imageCanvasPoint": {'imagePoint':[0, 0.5], 'canvasPoint':[0, 0.5]}}
+        viewport.setDisplayArea(display)
+        break;
+      case 'AlignRight':
+        display = {"imageArea": [1.1, 1.1], "imageCanvasPoint": {'imagePoint':[1, 0.5], 'canvasPoint':[1, 0.5]}}
+        viewport.setDisplayArea(display)
+        break;
+      case 'AlignCenter':
+        display = {"imageArea": [1.1, 1.1], "imageCanvasPoint": {'imagePoint':[0.5, 0.5], 'canvasPoint':[0.5, 0.5]}}
+        viewport.setDisplayArea(display)
+        break;
+    }
+    viewport.render();
+  }
+
+  //volume orientation settings - coronal, sagittal, axial 
+  volumeOrientation(event, id){
+    const call = event.target.value
+    const viewport = renderingEngine.getViewport(id);
+    switch(call){
+      case 'axial':
+        viewport.setOrientation(cornerstone.Enums.OrientationAxis.AXIAL);
+        break;
+      
+      case 'sagittal':
+        viewport.setOrientation(cornerstone.Enums.OrientationAxis.SAGITTAL)
+        break;
+      
+      case 'coronal':
+        viewport.setOrientation(cornerstone.Enums.OrientationAxis.CORONAL)
+        break;
+    }
+    event.target.value = ''
+  }
+
+  //function for orientation settings - right rotate, left rotate, horizontal flip, vertical flip
+  orientationSettings(event, id){
+    const call = event.target.value
+    const viewport = renderingEngine.getViewport(id);
+    const { rotation } = viewport.getProperties();
+    switch(call){
+      case 'Rleft':
+        viewport.setProperties({rotation: rotation - 90});
+        break; 
+
+      case 'Rright':
+        viewport.setProperties({rotation: rotation + 90});
+        break;
+
+      case 'Hflip':
+        const { flipHorizontal } = viewport.getCamera();
+        viewport.setCamera({ flipHorizontal: !flipHorizontal })
+        break;
+
+      case 'Vflip':
+        const { flipVertical } = viewport.getCamera();
+        viewport.setCamera({ flipVertical: !flipVertical })
+        break;
+    }
+    viewport.render();
+    event.target.value = '';
+  }
+
+  //function for windowing settings (for any changes, change the upper and lower voiRange for specific windowing) and invert
+  //might need to fix some value
+  windowingSettings(event, id){
+    const call = event.target.value
+    const viewport = renderingEngine.getViewport(id);
+    switch(call){
+      case 'Invert':
+        const { invert } = viewport.getProperties()
+        viewport.setProperties({invert: !invert});
+        break;
+
+      case 'Lungs':
+        viewport.setProperties({voiRange: {upper: 1600,lower: -600}});
+        break;
+
+      case 'Brain':
+        viewport.setProperties({voiRange: {upper: 70,lower: 30}});
+        break;
+
+      case 'Bone':
+        viewport.setProperties({voiRange: {upper: 2000,lower: 500}});
+        break;
+
+      case 'ST':
+        viewport.setProperties({voiRange: {upper: 350,lower: 50}});
+        break;
+
+      case 'Abdomen':
+        viewport.setProperties({voiRange: {upper: 400,lower: 40}});
+        break;
+          
+      case 'Liver':
+        viewport.setProperties({voiRange: {upper: 160,lower: 60}});
+        break;
+          
+      case 'Mediastinal':
+        viewport.setProperties({voiRange: {upper: 500,lower: 50}});
+        break;
+    };
+    event.target.value = '';
+    viewport.render();
+  }
+
+  //function to reset to regular viewport settings
+  viewportSettings(call, id){ 
+    const viewport = renderingEngine.getViewport(id);
+    switch(call){
+        case 'Reset':
+          viewport.resetCamera();
+          viewport.resetProperties();
+          break;
+    };
+    viewport.render()
+  }
+  
 
   onclickDiv(e) {
     var ctrlDown = false,
@@ -172,75 +808,110 @@ class App extends Component {
 
   ///////////ecg image by aman on 21/08/23
   componentDidMount() {
-    console.log("componentDidMount executed.");
+    
     try {
       const urlSearchParams = new URLSearchParams(window.location.search);
-      // const imageUrl = urlSearchParams.get("data-reportimage");
+      const imageUrl = urlSearchParams.get("data-reportimage");
+      const studyid = urlSearchParams.get("data-study-id")
 
-       // Decode the reportimage URL
-      let imageUrl = urlSearchParams.get("data-reportimage");
-      if (imageUrl) {
-        imageUrl = decodeURIComponent(imageUrl);
+      //setting cache size
+      cornerstone.cache.setMaxCacheSize(32000000000);
+
+      //use normal array buffer
+      cornerstone.setUseSharedArrayBuffer(false);
+      const elements = [document.getElementById('viewport1'), document.getElementById('viewport2'), document.getElementById('viewport3'), document.getElementById('viewport4')]
+      
+      //create tool groups for storing all tools
+      toolGroup = cornerstoneTools.ToolGroupManager.createToolGroup(toolGroupId);
+  
+           
+      
+      //adding tools to toolGroup
+      for (const [key, value] of Object.entries(Tools)){
+        cornerstoneTools.addTool(value);
+        toolGroup.addTool(value.toolName);
       }
-            
 
-      //cornerstone
-      const element = document.getElementById("viewport");
-      //const dcmimageId =
-      //const new_imageId = "https:" + imageUrl;
-      const new_imageId = imageUrl;
-      cornerstone.enable(element);
-      cornerstone.registerImageLoader(
-        cornerstoneWebImageLoader.loadImage
-      );
+      //set scroll active
+      toolGroup.setToolActive(cornerstoneTools.StackScrollMouseWheelTool.toolName);
 
-      cornerstone.loadImage(new_imageId).then(function (Image) {
-        console.log(Image);
-        cornerstone.displayImage(element, Image);
+     
+      toolGroup.setToolConfiguration(cornerstoneTools.PlanarFreehandROITool.toolName, {
+        calculateStats: true
       });
-
-      //cornerstoneWADOImageLoader.webWorkerManager.terminate()
-
-      //tools
-      cornerstoneTools.addTool(cornerstoneTools.ZoomTool, {
-        configuration: {
-          invert: false,
-          preventZoomOutsideImage: false,
-          minScale: 0.1,
-          maxScale: 20.0,
-        },
+      toolGroup.setToolConfiguration(cornerstoneTools.HeightTool.toolName, {
+        calculateStats: true
       });
-      cornerstoneTools.addTool(cornerstoneTools.RotateTool);
-      cornerstoneTools.addTool(cornerstoneTools.LengthTool);
-      cornerstoneTools.addTool(cornerstoneTools.WwwcTool);
-      cornerstoneTools.addTool(cornerstoneTools.MagnifyTool);
-      cornerstoneTools.addTool(cornerstoneTools.PanTool);
-      cornerstoneTools.addTool(cornerstoneTools.TextMarkerTool, {
-        configuration: {
-          markers: ["F5", "F4", "F3", "F2", "F1"],
-          current: "F1",
-          ascending: true,
-          loop: true,
-        },
+      
+      //define 4 stack viewports with viewport id, viewport type, DOM element to be used
+      first_viewport = {
+        viewportId: viewportIds[0],
+        type: cornerstone.Enums.ViewportType.STACK,
+        element: elements[0],
+        };
+
+      second_viewport = {
+        viewportId: viewportIds[1],
+        type: cornerstone.Enums.ViewportType.STACK,
+        element: elements[1],
+      };
+
+      third_viewport = {
+        viewportId: viewportIds[2],
+        type: cornerstone.Enums.ViewportType.STACK,
+        element: elements[2],
+      };
+      
+      fourth_viewport = {
+        viewportId: viewportIds[3],
+        type: cornerstone.Enums.ViewportType.STACK,
+        element: elements[3],
+      };
+
+      viewport_list = {first: first_viewport, second: second_viewport, third: third_viewport, fourth: fourth_viewport}
+
+      //enable first_viewport, make it the previously selected viewport, set its properties, add the toolgroup
+      renderingEngine.enableElement(first_viewport);
+      selected_viewport = viewportIds[0];
+      prev_selected_element = elements[0];
+
+      const viewport = renderingEngine.getViewport(selected_viewport);
+
+      //need to set rotation to 0 in order to use it as a property for any rotation specific settings
+      viewport.setProperties({rotation: 0});
+      toolGroup.addViewport(viewportIds[0], renderingEngineId);
+
+      //function to cache images and metadata, create volumes if needed
+      //PUT REFRESH CONDITION SO THAT THIS FUNCTION DOES NOT RUN ON REFRESH
+      this.cornerstone(studyid);
+
+      let i = 0
+      //event listeners for viewports
+      elements.forEach((item) => {
+
+        //initial event listener for stack viewport to capture image index
+        item.addEventListener(cornerstone.EVENTS.STACK_NEW_IMAGE, function(){
+          let currViewport = renderingEngine.getViewport(viewportIds[i]);
+          let index = currViewport.getCurrentImageIdIndex() + 1;
+
+          //update image index
+          let indexElem = document.getElementById(indexMap[currViewport.id])
+          indexElem.innerHTML = index
+          
+        })
+
+        i += 1;
+        
+
+        //event listener for selecting a viewport
+        item.addEventListener('click', function(){
+          selected_viewport = viewportIds[elements.indexOf(item)];
+          prev_selected_element.style.borderColor = 'white';
+          item.style.borderColor = 'red';
+          prev_selected_element = item;
+        });
+
       });
-
-      if (imageUrl) {
-        const imageElement = document.createElement("img");
-        imageElement.src = imageUrl;
-        imageElement.className = "content-image"; // Add the class to the image element
-
-        const editorContent = document.querySelector(
-          "#root > div > div > div > div.document-editor__editable-container > div"
-        );
-        if (editorContent) {
-          editorContent.appendChild(imageElement);
-          console.log("Image appended successfully.");
-        } else {
-          console.log("Editor content element not found.");
-        }
-      } else {
-        console.log("Image URL not found in query parameters.");
-      }
 
       this.setState({
         reportFrmData: this.generatePatientTable(),
@@ -249,6 +920,7 @@ class App extends Component {
       console.error("Error in componentDidMount:", error);
     }
   }
+
 
   ////////////////////////////////////////
 
@@ -262,6 +934,7 @@ class App extends Component {
       modal: !modal,
     });
   }
+
 
   generatePatientTable() {
     let params = new URL(document.location).searchParams;
@@ -286,20 +959,22 @@ class App extends Component {
     tableBody += "</tr>";
     tableBody += "</tbody>";
     tableBody += "</table>";
-
     return this.companyLogo(current_user);
   }
+
+
+
   companyLogo(user) {
-    return "<img src='" + user.companylogo + "' height='' width='300' />";
+    return "<img src='" + user.companylogo + "' height='' width='500' />";
   }
 
-  ///////////// Dynamic lists by aman gupta on 07/07/2023 ///////////////
+ //////////// Dynamic lists by aman gupta on 07/07/2023 ///////////////
   choose() {
     var list = document.createElement("select");
     list.id = "choose_scan";
     var optionSelect = document.createElement("option");
     optionSelect.value = 0;
-    optionSelect.text = "Reporting BOT";
+    optionSelect.text = "Generate report";
     list.appendChild(optionSelect);
     options.forEach(({ label, id }) => {
       var option = document.createElement("option");
@@ -310,13 +985,10 @@ class App extends Component {
     list.onchange = this.handleSeletion;
     return list;
   }
-
   actionDropDown() {
     var list = document.createElement("select");
     list.id = "export_data";
 
-    // Logging exportOptions to check if it's populated correctly
-    console.log("Export Options:", exportOptions);
     var optionSelect = document.createElement("option");
     optionSelect.value = 0;
     optionSelect.text = "Export Report";
@@ -324,10 +996,10 @@ class App extends Component {
 
     // Iterate over exportOptions array to create options dynamically
     exportOptions.forEach(({ label, id }) => {
-      var option = document.createElement("option");
-      option.value = id;
-      option.text = label;
-      list.appendChild(option);
+        var option = document.createElement("option");
+        option.value = id;
+        option.text = label;
+        list.appendChild(option);
     });
 
     list.onchange = this.ActionEvents.bind(this); // bind 'this' to ActionEvents
@@ -342,7 +1014,6 @@ class App extends Component {
     btn.className = "report-here";
     btn.id = "copy_data";
     btn.addEventListener("click", this.GetCopiedEvents.bind(this));
-    console.log("btn copy");
     return btn;
   }
 
@@ -433,40 +1104,6 @@ class App extends Component {
     }
   }
 
-  //Aman(searchfield for IDs)
-
-  // createFilename() {
-  //   //Aman
-  //   const urlSearchParams = new URLSearchParams(window.location.search);
-  //   var patientName = document.querySelector(
-  //     "#root > div > div > div.document-editor__editable-container > div > figure.table.ck-widget.ck-widget_with-selection-handle > table > tbody > tr:nth-child(1) > td:nth-child(1) > span > strong"
-  //   )?.innerHTML;
-  //   var PatientId = document.querySelector(
-  //     "#root > div > div > div.document-editor__editable-container > div > figure.table.ck-widget.ck-widget_with-selection-handle > table > tbody > tr:nth-child(1) > td:nth-child(2) > span > strong"
-  //   )?.innerHTML;
-  //   var location = urlSearchParams.get("data-location");
-  //   //   filename = ["Patient", "0", "Test", "Date"];
-  //   // }
-  //   var filename = [patientName, PatientId];
-  //   if (
-  //     patientName == undefined ||
-  //     patientName == null ||
-  //     PatientId == undefined
-  //   ) {
-  //     filename = ["Patient", "0"];
-  //   } else {
-  //     filename = [
-  //       PatientId.replace("Patient ID:", "").replace(" ", "_"),
-  //       patientName.replace("Name:", " "),
-  //       location,
-  //     ];
-  //   }
-
-  //   //return filename.join('_').toUpperCase();
-  //   filename = filename.filter(Boolean).join("_").toUpperCase();
-  //   filename = filename.replace(/^_/, ""); // Remove leading underscore if present
-  //   return filename;
-  // }
 
   createFilename() {
     const urlSearchParams = new URLSearchParams(window.location.search);
@@ -500,8 +1137,8 @@ class App extends Component {
   getDataUri(url) {
     return new Promise((resolve) => {
       var image = new Image();
-      //image.setAttribute("crossOrigin", "anonymous"); //getting images from external domain
-      image.crossOrigin = "anonymous"; // This should be used to fetch images from external domains
+      image.setAttribute("crossOrigin", "anonymous"); //getting images from external domain
+
       image.onload = function () {
         var canvas = document.createElement("canvas");
         canvas.width = this.naturalWidth;
@@ -518,102 +1155,14 @@ class App extends Component {
       };
 
       image.src = url;
-      console.log("Image SRC", image.src);
     });
   }
 
 
-  ///////////////////////////////// PDF GENERATION CODE /////////////////////////////////////////
-  GetDivContentAsJSON() {
-    const showLoader = () => {
-      console.log("Showing loader");
-      const loader = document.querySelector(".loader");
-      if (loader) {
-        loader.style.display = "block";
-      }
-    };
-
-    const hideLoader = () => {
-      console.log("Hiding loader");
-      const loader = document.querySelector(".loader");
-      if (loader) {
-        loader.style.display = "none";
-      }
-    };
-
-    // Show the loader before starting the JSON generation
-    showLoader();
-
-    const data = document.getElementsByClassName("ck-editor__editable")[0];
-    const table = data.querySelector("table");
-    data.classList.add("ck-blurred");
-    data.classList.remove("ck-focused");
-    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-    // Remove the last image element from the capture
-    const images = data.querySelectorAll("img");
-    if (images.length > 0) {
-      const lastImage = images[images.length - 1];
-      lastImage.style.display = "none"; // Hide the last image
-    }
-
-    if (data != undefined) {
-      // Create an object to hold the JSON report
-      const jsonReport = {
-        content: [],
-        table: "",
-        paragraphs: [],
-      };
-
-      // Extract table text content
-      if (table) {
-        jsonReport.table = table.textContent.trim();
-      }
-
-      // Extract paragraph text content
-      const paragraphs = data.querySelectorAll("p");
-      paragraphs.forEach((paragraph) => {
-        const paragraphText = paragraph.textContent.trim();
-        jsonReport.paragraphs.push(paragraphText);
-      });
-
-      // Collect all text content into the main content array
-      jsonReport.content = data.textContent.trim();
-
-      // Show the last image again
-      if (images.length > 0) {
-        const lastImage = images[images.length - 1];
-        lastImage.style.display = "block";
-      }
-
-      // Hide the loader when the JSON report is ready
-      hideLoader();
-
-      // Save the JSON report as a file
-      const filename = this.createFilename() || "report";
-      const jsonString = JSON.stringify(jsonReport, null, 2);
-      const blob = new Blob([jsonString], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename + ".json";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
-      // Redirect to the previous page after a short delay
-      delay(200).then(() => {
-        window.location.reload(true);
-      });
-    }
-  }
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-
-  ///////////////////////////////// Download PDF without Image /////////////////////////////
+///////////////////////////////// Download PDF without Image /////////////////////////////
   GetDivContentOnPDFWithoutImage() {
     const showLoader = () => {
-      console.log("Showing loader");
+      //console.log("Showing loader");
       const loader = document.querySelector(".loader");
       if (loader) {
         loader.style.display = "block";
@@ -621,7 +1170,7 @@ class App extends Component {
     };
 
     const hideLoader = () => {
-      console.log("Hiding loader");
+      //console.log("Hiding loader");
       const loader = document.querySelector(".loader");
       if (loader) {
         loader.style.display = "none";
@@ -710,7 +1259,7 @@ class App extends Component {
   ////////////////////////////////// Another one upgraded on 05/01/2024 ////////////////////////
   GetDivContentOnPDF() {
     const showLoader = () => {
-      console.log("Showing loader");
+      //console.log("Showing loader");
       const loader = document.querySelector(".loader");
       if (loader) {
         loader.style.display = "block";
@@ -718,7 +1267,7 @@ class App extends Component {
     };
 
     const hideLoader = () => {
-      console.log("Hiding loader");
+      //console.log("Hiding loader");
       const loader = document.querySelector(".loader");
       if (loader) {
         loader.style.display = "none";
@@ -792,7 +1341,7 @@ class App extends Component {
 
   GetEcgContentOnPDF() {
     const showLoader = () => {
-      console.log("Showing loader");
+      //console.log("Showing loader");
       const loader = document.querySelector(".loader");
       if (loader) {
         loader.style.display = "block";
@@ -800,7 +1349,7 @@ class App extends Component {
     };
 
     const hideLoader = () => {
-      console.log("Hiding loader");
+      //console.log("Hiding loader");
       const loader = document.querySelector(".loader");
       if (loader) {
         loader.style.display = "none";
@@ -949,763 +1498,12 @@ class App extends Component {
     loadImageAndRenderPDF();
   }
 
+  
+
   ////////////////////////////////////////////////////////////////////////// UPLOAD ECG PDF //////////////////////////////////////////////////////////////////////////
-  // uploadEcgPDF = async () => {
-  //   const showLoader = () => {
-  //     console.log("Showing loader");
-  //     const loader = document.querySelector(".loader");
-  //     if (loader) {
-  //       loader.style.display = "block";
-  //     }
-  //   };
-
-  //   const hideLoader = () => {
-  //     console.log("Hiding loader");
-  //     const loader = document.querySelector(".loader");
-  //     if (loader) {
-  //       loader.style.display = "none";
-  //     }
-  //   };
-
-  //   const extractDataFromURL = () => {
-  //     const urlParams = new URLSearchParams(window.location.search);
-  //     const patientId = urlParams.get("data-patientid");
-  //     const patientName = urlParams.get("data-patientname");
-  //     const testDate = urlParams.get("data-testdate");
-  //     const reportDate = urlParams.get("data-reportdate");
-  //     const location = urlParams.get("data-location");
-
-  //     return { patientId, patientName, testDate, reportDate, location };
-  //   };
-
-  //   const showNotification = (message) => {
-  //     const notification = document.getElementById("notification");
-  //     const notificationText = document.getElementById("notification-text");
-
-  //     if (notification && notificationText) {
-  //       notificationText.innerText = message;
-  //       notification.style.display = "block";
-
-  //       // Hide the notification after 3 seconds (adjust the delay as needed)
-  //       setTimeout(() => {
-  //         notification.style.display = "none";
-  //       }, 1000);
-  //     }
-  //   };
-
-  //   const getCSRFToken = async () => {
-  //     try {
-  //       const response = await fetch("/get-csrf-token/");
-  //       const data = await response.json();
-  //       return data.csrf_token;
-  //     } catch (error) {
-  //       console.error("Error fetching CSRF token:", error);
-  //       throw error;
-  //     }
-  //   };
-
-  //   // Show the loader before starting the PDF generation
-  //   showLoader();
-  //   const filename = this.createFilename();
-  //   const data = document.getElementsByClassName("ck-editor__editable")[0];
-  //   const table = data.querySelector("table");
-  //   data.classList.add("ck-blurred");
-  //   data.classList.remove("ck-focused");
-  //   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  //   // Create a function to load images and render PDF
-  //   const loadImageAndRenderPDF = async () => {
-  //     try {
-  //       let graphSrc = Array.from(data.children).pop().children[0].currentSrc;
-  //       let graphElement = document.querySelector(
-  //         "figure.image:nth-last-of-type(1)"
-  //       );
-  //       graphElement.remove();
-
-  //       if (data != undefined) {
-  //         var a4Width = 595.28; // A4 width in points (1 point = 1/72 inch)
-  //         var a4Height = 841.89; // A4 height in points
-
-  //         var canvasWidth = a4Width; // Adjusted width to leave some margin
-  //         var canvasHeight = a4Height; // Adjusted height to maintain aspect ratio and leave margin
-
-  //         const canvas = await html2canvas(data, {
-  //           scale: 2, // Adjust the scale if needed for better quality
-  //           useCORS: true, // Enable CORS to capture images from external URLs
-  //         });
-
-  //         const imgData = canvas.toDataURL("image/png", 1.0);
-  //         const pdf = new jsPDF("p", "pt", [a4Width, a4Height], true);
-
-  //         // Calculate the image dimensions to fit within the PDF dimensions
-  //         const canvasAspectRatio = canvas.width / canvas.height;
-  //         const pdfAspectRatio = a4Width / a4Height;
-
-  //         let pdfImageWidth = canvasWidth;
-  //         let pdfImageHeight = canvasHeight;
-
-  //         if (canvasAspectRatio > pdfAspectRatio) {
-  //           pdfImageWidth = canvasWidth;
-  //           pdfImageHeight = canvasWidth / canvasAspectRatio;
-  //         } else {
-  //           pdfImageHeight = canvasHeight;
-  //           pdfImageWidth = canvasHeight * canvasAspectRatio;
-  //         }
-
-  //         // Calculate the positioning to center the image
-  //         const xPosition = (pdf.internal.pageSize.width - pdfImageWidth) / 2;
-  //         const yPosition = (pdf.internal.pageSize.height - pdfImageHeight) / 2;
-
-  //         // Create a separate canvas for the rotated graph image
-  //         const graphCanvas = document.createElement("canvas");
-  //         graphCanvas.width = 1024;
-  //         graphCanvas.height = 1024;
-  //         const graphCtx = graphCanvas.getContext("2d");
-  //         let graphImg = await this.getDataUri(graphSrc);
-  //         const image = new Image();
-  //         image.src = graphImg;
-
-  //         await new Promise((resolve) => {
-  //           image.onload = resolve;
-  //         });
-
-  //         graphCtx.translate(graphCanvas.width / 2, graphCanvas.height / 2);
-  //         graphCtx.rotate(Math.PI / 2); // Rotate the image by 90 degrees
-  //         graphCtx.drawImage(
-  //           image,
-  //           -graphCanvas.height / 2,
-  //           -graphCanvas.width / 2,
-  //           graphCanvas.height,
-  //           graphCanvas.width
-  //         );
-
-  //         pdf.addImage(
-  //           graphCanvas.toDataURL("image/png"),
-  //           "PNG",
-  //           0,
-  //           0,
-  //           a4Width,
-  //           a4Height
-  //         );
-
-  //         pdf.addPage("a4", "portrait"); // Add a new portrait-oriented page
-  //         pdf.addImage(
-  //           imgData,
-  //           "PNG",
-  //           xPosition,
-  //           yPosition,
-  //           pdfImageWidth,
-  //           pdfImageHeight
-  //         );
-
-  //         pdf.setTextColor(255, 255, 255);
-
-  //         // Calculate the position to place the text at the bottom
-  //         const textX = 40;
-  //         const textY = 841.89 - 2; // 20 points from the bottom
-
-  //         // If a table exists within the ck-editor__editable div, capture its text content
-  //         if (table) {
-  //           const tableText = table.textContent || "";
-
-  //           // Add the table text as text (preserve original formatting)
-  //           pdf.setFontSize(2); // Adjust the font size as needed
-  //           pdf.text(textX, textY, tableText);
-  //         }
-
-  //         // Iterate through all paragraphs in the ck-editor__editable div
-  //         const paragraphs = data.querySelectorAll("p");
-  //         paragraphs.forEach((paragraph) => {
-  //           const paragraphText = paragraph.textContent || "";
-
-  //           // Add each paragraph text as text (preserve original formatting)
-  //           pdf.setFontSize(2); // Adjust the font size as needed
-  //           pdf.text(textX, textY - 2, paragraphText); // Place it above the table text
-  //         });
-
-  //         // Convert the PDF to a Blob
-  //         const pdfBlob = pdf.output("blob", { type: 'application/pdf' });
-
-  //         // Extract data from URL
-  //         const { patientId, patientName, testDate, reportDate, location } =
-  //           extractDataFromURL();
-
-  //         // Send the FormData to Django backend using fetch
-  //         const csrfToken = await getCSRFToken();
-  //         console.log("CSRF Token:", csrfToken);
-
-  //         // Create FormData and append the PDF Blob
-  //         const formData = new FormData();
-  //         formData.append(
-  //           "pdf",
-  //           pdfBlob,
-  //           filename ? filename + ".pdf" : "download.pdf"
-  //         );
-  //         formData.append("patientId", patientId);
-  //         formData.append("patientName", patientName);
-  //         formData.append("testDate", testDate);
-  //         formData.append("reportDate", reportDate);
-  //         formData.append("location", location);
-
-  //         console.log("FormData:", formData);
-
-  //         try {
-  //           const response = await axios.post("/upload_ecg_pdf/", formData, {
-  //             headers: {
-  //               "Content-Type": "multipart/form-data",
-  //               "X-CSRFToken": csrfToken,
-  //             },
-  //           });
-
-  //           console.log(
-  //             "PDF successfully sent to Django backend.",
-  //             response.data
-  //           );
-  //           // Hide the loader when the PDF is ready
-  //           hideLoader();
-  //           // Show the success notification
-  //           showNotification("PDF successfully uploaded!");
-  //         } catch (error) {
-  //           console.error("Error sending PDF to Django backend.", error);
-  //           // Show the error notification
-  //           showNotification("Error uploading PDF. Please try again.");
-  //         }
-
-  //         //alert("Report Uploaded successfully!");
-
-  //         // Save the current URL before going back in the history
-  //         const currentURL = window.location.href;
-
-  //         // Redirect to the previous page after a short delay
-  //         await delay(200);
-
-  //         // Navigate back to the previous page with a cache-busting query parameter
-  //         window.location.href = document.referrer + "?nocache=" + Date.now();
-
-  //         // Listen for the popstate event to know when the history state changes
-  //         window.addEventListener("popstate", () => {
-  //           // Check if the URL has changed
-  //           if (window.location.href !== currentURL) {
-  //             // Reload the current page after a short delay
-  //             setTimeout(() => {
-  //               window.location.reload(true);
-  //             }, 200);
-  //           }
-  //         });
-  //       }
-  //     } catch (error) {
-  //       console.error("Error generating PDF:", error);
-  //       // Hide the loader when the PDF is ready
-  //     }
-  //   };
-
-  //   loadImageAndRenderPDF();
-  // };
-
-  // uploadEcgPDF = async () => {
-  //   const showLoader = () => {
-  //     console.log("Showing loader");
-  //     const loader = document.querySelector(".loader");
-  //     if (loader) {
-  //       loader.style.display = "block";
-  //     }
-  //   };
-
-  //   const hideLoader = () => {
-  //     console.log("Hiding loader");
-  //     const loader = document.querySelector(".loader");
-  //     if (loader) {
-  //       loader.style.display = "none";
-  //     }
-  //   };
-
-  //   const extractDataFromURL = () => {
-  //     const urlParams = new URLSearchParams(window.location.search);
-  //     const patientId = urlParams.get("data-patientid");
-  //     const patientName = urlParams.get("data-patientname");
-  //     const testDate = urlParams.get("data-testdate");
-  //     const reportDate = urlParams.get("data-reportdate");
-  //     const location = urlParams.get("data-location");
-
-  //     return { patientId, patientName, testDate, reportDate, location };
-  //   };
-
-  //   const showNotification = (message) => {
-  //     const notification = document.getElementById("notification");
-  //     const notificationText = document.getElementById("notification-text");
-
-  //     if (notification && notificationText) {
-  //       notificationText.innerText = message;
-  //       notification.style.display = "block";
-
-  //       // Hide the notification after 3 seconds (adjust the delay as needed)
-  //       setTimeout(() => {
-  //         notification.style.display = "none";
-  //       }, 1000);
-  //     }
-  //   };
-
-  //   const getCSRFToken = async () => {
-  //     try {
-  //       const response = await fetch("/get-csrf-token/");
-  //       const data = await response.json();
-  //       return data.csrf_token;
-  //     } catch (error) {
-  //       console.error("Error fetching CSRF token:", error);
-  //       throw error;
-  //     }
-  //   };
-
-  //   // Show the loader before starting the PDF generation
-  //   showLoader();
-  //   const filename = this.createFilename();
-  //   const data = document.getElementsByClassName("ck-editor__editable")[0];
-  //   const table = data.querySelector("table");
-  //   data.classList.add("ck-blurred");
-  //   data.classList.remove("ck-focused");
-  //   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  //   // Create a function to load images and render PDF
-  //   const loadImageAndRenderPDF = async () => {
-  //     try {
-  //       // Extract all images and get the source of the last image
-  //       const images = data.querySelectorAll("img");
-  //       const lastImage = images[images.length - 1];
-  //       const lastImageSrc = lastImage ? lastImage.currentSrc : '';
-
-  //       // Remove the last image from the editor
-  //       if (lastImage) {
-  //         lastImage.remove();
-  //       }
-
-  //       if (data != undefined) {
-  //         var a4Width = 595.28; // A4 width in points (1 point = 1/72 inch)
-  //         var a4Height = 841.89; // A4 height in points
-
-  //         var canvasWidth = a4Width; // Adjusted width to leave some margin
-  //         var canvasHeight = a4Height; // Adjusted height to maintain aspect ratio and leave margin
-
-  //         const canvas = await html2canvas(data, {
-  //           scale: 2, // Adjust the scale if needed for better quality
-  //           useCORS: true, // Enable CORS to capture images from external URLs
-  //         });
-
-  //         const imgData = canvas.toDataURL("image/png", 1.0);
-  //         const pdf = new jsPDF("p", "pt", [a4Width, a4Height], true);
-
-  //         // Calculate the image dimensions to fit within the PDF dimensions
-  //         const canvasAspectRatio = canvas.width / canvas.height;
-  //         const pdfAspectRatio = a4Width / a4Height;
-
-  //         let pdfImageWidth = canvasWidth;
-  //         let pdfImageHeight = canvasHeight;
-
-  //         if (canvasAspectRatio > pdfAspectRatio) {
-  //           pdfImageWidth = canvasWidth;
-  //           pdfImageHeight = canvasWidth / canvasAspectRatio;
-  //         } else {
-  //           pdfImageHeight = canvasHeight;
-  //           pdfImageWidth = canvasHeight * canvasAspectRatio;
-  //         }
-
-  //         // Calculate the positioning to center the image
-  //         const xPosition = (pdf.internal.pageSize.width - pdfImageWidth) / 2;
-  //         const yPosition = (pdf.internal.pageSize.height - pdfImageHeight) / 2;
-
-  //         // Create a separate canvas for the rotated graph image
-  //         const graphCanvas = document.createElement("canvas");
-  //         graphCanvas.width = 1024;
-  //         graphCanvas.height = 1024;
-  //         const graphCtx = graphCanvas.getContext("2d");
-  //         const image = new Image();
-  //         image.src = lastImageSrc;
-
-  //         await new Promise((resolve) => {
-  //           image.onload = resolve;
-  //         });
-
-  //         graphCtx.translate(graphCanvas.width / 2, graphCanvas.height / 2);
-  //         graphCtx.rotate(Math.PI / 2); // Rotate the image by 90 degrees
-  //         graphCtx.drawImage(
-  //           image,
-  //           -graphCanvas.height / 2,
-  //           -graphCanvas.width / 2,
-  //           graphCanvas.height,
-  //           graphCanvas.width
-  //         );
-
-  //         pdf.addImage(
-  //           graphCanvas.toDataURL("image/png"),
-  //           "PNG",
-  //           0,
-  //           0,
-  //           a4Width,
-  //           a4Height
-  //         );
-
-  //         pdf.addPage("a4", "portrait"); // Add a new portrait-oriented page
-  //         pdf.addImage(
-  //           imgData,
-  //           "PNG",
-  //           xPosition,
-  //           yPosition,
-  //           pdfImageWidth,
-  //           pdfImageHeight
-  //         );
-
-  //         pdf.setTextColor(255, 255, 255);
-
-  //         // Calculate the position to place the text at the bottom
-  //         const textX = 40;
-  //         const textY = 841.89 - 2; // 20 points from the bottom
-
-  //         // If a table exists within the ck-editor__editable div, capture its text content
-  //         if (table) {
-  //           const tableText = table.textContent || "";
-
-  //           // Add the table text as text (preserve original formatting)
-  //           pdf.setFontSize(2); // Adjust the font size as needed
-  //           pdf.text(textX, textY, tableText);
-  //         }
-
-  //         // Iterate through all paragraphs in the ck-editor__editable div
-  //         const paragraphs = data.querySelectorAll("p");
-  //         paragraphs.forEach((paragraph) => {
-  //           const paragraphText = paragraph.textContent || "";
-
-  //           // Add each paragraph text as text (preserve original formatting)
-  //           pdf.setFontSize(2); // Adjust the font size as needed
-  //           pdf.text(textX, textY - 2, paragraphText); // Place it above the table text
-  //         });
-
-  //         // Convert the PDF to a Blob
-  //         const pdfBlob = pdf.output("blob", { type: 'application/pdf' });
-
-  //         // Extract data from URL
-  //         const { patientId, patientName, testDate, reportDate, location } =
-  //           extractDataFromURL();
-
-  //         // Send the FormData to Django backend using fetch
-  //         const csrfToken = await getCSRFToken();
-  //         console.log("CSRF Token:", csrfToken);
-
-  //         // Create FormData and append the PDF Blob
-  //         const formData = new FormData();
-  //         formData.append(
-  //           "pdf",
-  //           pdfBlob,
-  //           filename ? filename + ".pdf" : "download.pdf"
-  //         );
-  //         formData.append("patientId", patientId);
-  //         formData.append("patientName", patientName);
-  //         formData.append("testDate", testDate);
-  //         formData.append("reportDate", reportDate);
-  //         formData.append("location", location);
-
-  //         console.log("FormData:", formData);
-
-  //         try {
-  //           const response = await axios.post("/upload_ecg_pdf/", formData, {
-  //             headers: {
-  //               "Content-Type": "multipart/form-data",
-  //               "X-CSRFToken": csrfToken,
-  //             },
-  //           });
-
-  //           console.log(
-  //             "PDF successfully sent to Django backend.",
-  //             response.data
-  //           );
-  //           // Hide the loader when the PDF is ready
-  //           hideLoader();
-  //           // Show the success notification
-  //           showNotification("PDF successfully uploaded!");
-  //         } catch (error) {
-  //           console.error("Error sending PDF to Django backend.", error);
-  //           // Show the error notification
-  //           showNotification("Error uploading PDF. Please try again.");
-  //         }
-
-  //         // Save the current URL before going back in the history
-  //         const currentURL = window.location.href;
-
-  //         // Redirect to the previous page after a short delay
-  //         await delay(200);
-
-  //         // Navigate back to the previous page with a cache-busting query parameter
-  //         window.location.href = document.referrer + "?nocache=" + Date.now();
-
-  //         // Listen for the popstate event to know when the history state changes
-  //         window.addEventListener("popstate", () => {
-  //           // Check if the URL has changed
-  //           if (window.location.href !== currentURL) {
-  //             // Reload the current page after a short delay
-  //             setTimeout(() => {
-  //               window.location.reload(true);
-  //             }, 200);
-  //           }
-  //         });
-  //       }
-  //     } catch (error) {
-  //       console.error("Error generating PDF:", error);
-  //       // Hide the loader when the PDF is ready
-  //       hideLoader();
-  //     }
-  //   };
-
-  //   loadImageAndRenderPDF();
-  // };
-
-
   uploadEcgPDF = async () => {
     const showLoader = () => {
-      console.log("Showing loader");
-      const loader = document.querySelector(".loader");
-      if (loader) {
-        loader.style.display = "block";
-      }
-    };
-  
-    const hideLoader = () => {
-      console.log("Hiding loader");
-      const loader = document.querySelector(".loader");
-      if (loader) {
-        loader.style.display = "none";
-      }
-    };
-  
-    const extractDataFromURL = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const patientId = urlParams.get("data-patientid");
-      const patientName = urlParams.get("data-patientname");
-      const testDate = urlParams.get("data-testdate");
-      const reportDate = urlParams.get("data-reportdate");
-      const location = urlParams.get("data-location");
-  
-      return { patientId, patientName, testDate, reportDate, location };
-    };
-  
-    const showNotification = (message) => {
-      const notification = document.getElementById("notification");
-      const notificationText = document.getElementById("notification-text");
-  
-      if (notification && notificationText) {
-        notificationText.innerText = message;
-        notification.style.display = "block";
-  
-        // Hide the notification after 3 seconds (adjust the delay as needed)
-        setTimeout(() => {
-          notification.style.display = "none";
-        }, 3000);
-      }
-    };
-  
-    const getCSRFToken = async () => {
-      try {
-        const response = await fetch("/get-csrf-token/");
-        if (!response.ok) throw new Error("Failed to fetch CSRF token.");
-        const data = await response.json();
-        return data.csrf_token;
-      } catch (error) {
-        console.error("Error fetching CSRF token:", error);
-        throw error;
-      }
-    };
-  
-    // Show the loader before starting the PDF generation
-    showLoader();
-    const filename = this.createFilename();
-    const data = document.getElementsByClassName("ck-editor__editable")[0];
-    const table = data.querySelector("table");
-    data.classList.add("ck-blurred");
-    data.classList.remove("ck-focused");
-    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  
-    // Create a function to load images and render PDF
-    const loadImageAndRenderPDF = async () => {
-      try {
-        let graphSrc = Array.from(data.children).pop().children[0].currentSrc;
-        let graphElement = document.querySelector(
-          "figure.image:nth-last-of-type(1)"
-        );
-        graphElement.remove();
-  
-        if (data) {
-          var a4Width = 595.28; // A4 width in points (1 point = 1/72 inch)
-          var a4Height = 841.89; // A4 height in points
-  
-          const canvas = await html2canvas(data, {
-            scale: 2, // Adjust the scale if needed for better quality
-            useCORS: true, // Enable CORS to capture images from external URLs
-          });
-  
-          const imgData = canvas.toDataURL("image/png", 1.0);
-          const pdf = new jsPDF("p", "pt", [a4Width, a4Height], true);
-  
-          // Calculate dimensions to fit within the PDF
-          const canvasAspectRatio = canvas.width / canvas.height;
-          const pdfAspectRatio = a4Width / a4Height;
-  
-          let pdfImageWidth = a4Width;
-          let pdfImageHeight = a4Height;
-  
-          if (canvasAspectRatio > pdfAspectRatio) {
-            pdfImageHeight = a4Height;
-            pdfImageWidth = a4Height * canvasAspectRatio;
-          } else {
-            pdfImageWidth = a4Width;
-            pdfImageHeight = a4Width / canvasAspectRatio;
-          }
-  
-          // Centering the image
-          const xPosition = (pdf.internal.pageSize.width - pdfImageWidth) / 2;
-          const yPosition = (pdf.internal.pageSize.height - pdfImageHeight) / 2;
-  
-          // Create a separate canvas for the rotated graph image
-          const graphCanvas = document.createElement("canvas");
-          graphCanvas.width = 1024;
-          graphCanvas.height = 1024;
-          const graphCtx = graphCanvas.getContext("2d");
-          let graphImg = await this.getDataUri(graphSrc);
-          const image = new Image();
-          image.src = graphImg;
-  
-          await new Promise((resolve) => {
-            image.onload = resolve;
-          });
-  
-          graphCtx.translate(graphCanvas.width / 2, graphCanvas.height / 2);
-          graphCtx.rotate(Math.PI / 2); // Rotate the image by 90 degrees
-          graphCtx.drawImage(
-            image,
-            -graphCanvas.height / 2,
-            -graphCanvas.width / 2,
-            graphCanvas.height,
-            graphCanvas.width
-          );
-  
-          pdf.addImage(
-            graphCanvas.toDataURL("image/png"),
-            "PNG",
-            0,
-            0,
-            a4Width,
-            a4Height
-          );
-  
-          pdf.addPage("a4", "portrait"); // Add a new portrait-oriented page
-          pdf.addImage(
-            imgData,
-            "PNG",
-            xPosition,
-            yPosition,
-            pdfImageWidth,
-            pdfImageHeight
-          );
-
-          // this was missing = Himanshu (8 nov 24)
-          pdf.setTextColor(255, 255, 255);
-
-          // Calculate the position to place the text at the bottom
-          const textX = 40;
-          const textY = 841.89 - 2; // 20 points from the bottom
-  
-          // Add the table text
-          if (table) {
-            const tableText = table.textContent || "";
-            pdf.setTextColor(255, 255, 255); // Set white color before adding table text
-            pdf.setFontSize(10); // Adjust the font size as needed
-            pdf.text(40, a4Height - 20, tableText);
-          }
-  
-          // Add paragraphs
-          const paragraphs = data.querySelectorAll("p");
-          paragraphs.forEach((paragraph) => {
-            const paragraphText = paragraph.textContent || "";
-            pdf.setTextColor(255, 255, 255); // Set white color before adding table text
-            pdf.setFontSize(10);
-            pdf.text(40, a4Height - 30, paragraphText); // Adjust position for paragraphs
-          });
-  
-          // Convert the PDF to a Blob
-          const pdfBlob = pdf.output("blob");
-  
-          // Extract data from URL
-          const { patientId, patientName, testDate, reportDate, location } =
-            extractDataFromURL();
-  
-          // Send the FormData to Django backend using fetch
-          const csrfToken = await getCSRFToken();
-          console.log("CSRF Token:", csrfToken);
-  
-          // Create FormData and append the PDF Blob
-          const formData = new FormData();
-          formData.append(
-            "pdf",
-            pdfBlob,
-            filename ? filename + ".pdf" : "download.pdf"
-          );
-          formData.append("patientId", patientId);
-          formData.append("patientName", patientName);
-          formData.append("testDate", testDate);
-          formData.append("reportDate", reportDate);
-          formData.append("location", location);
-  
-          console.log("FormData:", formData);
-  
-          try {
-            const response = await axios.post("/upload_ecg_pdf/", formData, {
-              headers: {
-                "Content-Type": "multipart/form-data",
-                "X-CSRFToken": csrfToken,
-              },
-            });
-  
-            console.log("PDF successfully sent to Django backend.", response.data);
-            // Hide the loader when the PDF is ready
-            hideLoader();
-            // Show the success notification
-            showNotification("PDF successfully uploaded!");
-          } catch (error) {
-            console.error("Error sending PDF to Django backend.", error);
-            // Show the error notification
-            showNotification("Error uploading PDF. Please try again.");
-          }
-  
-          // Redirect to the previous page after a short delay
-          const currentURL = window.location.href;
-          await delay(200);
-          window.location.href = document.referrer + "?nocache=" + Date.now();
-  
-          // Listen for the popstate event to know when the history state changes
-          window.addEventListener("popstate", () => {
-            if (window.location.href !== currentURL) {
-              setTimeout(() => {
-                window.location.reload(true);
-              }, 200);
-            }
-          });
-        }
-      } catch (error) {
-        console.error("Error generating PDF:", error);
-        // Hide the loader when the PDF is ready
-        hideLoader();
-        showNotification("Error generating PDF. Please try again.");
-      }
-    };
-  
-    loadImageAndRenderPDF();
-  };
-  
-
-
-
-  //***************************************///////////////////// upload ECG pdf to database (END) ///////////////**********************************************/
-
-  ////////////////////////////////////////////////////////////////////////// UPLOAD XRAY PDF //////////////////////////////////////////////////////////////////////////
-  uploadXrayPDF = async () => {
-    const showLoader = () => {
-      console.log("Showing loader");
+      //console.log("Showing loader");
       const loader = document.querySelector(".loader");
       if (loader) {
         loader.style.display = "block";
@@ -1713,7 +1511,7 @@ class App extends Component {
     };
 
     const hideLoader = () => {
-      console.log("Hiding loader");
+      //console.log("Hiding loader");
       const loader = document.querySelector(".loader");
       if (loader) {
         loader.style.display = "none";
@@ -1885,7 +1683,7 @@ class App extends Component {
 
           // Send the FormData to Django backend using fetch
           const csrfToken = await getCSRFToken();
-          console.log("CSRF Token:", csrfToken);
+          //console.log("CSRF Token:", csrfToken);
 
           // Create FormData and append the PDF Blob
           const formData = new FormData();
@@ -1900,7 +1698,261 @@ class App extends Component {
           formData.append("reportDate", reportDate);
           formData.append("location", location);
 
-          console.log("FormData:", formData);
+          //console.log("FormData:", formData);
+
+          try {
+            const response = await axios.post("/upload_ecg_pdf/", formData, {
+              headers: {
+                "Content-Type": "multipart/form-data",
+                "X-CSRFToken": csrfToken,
+              },
+            });
+
+            console.log(
+              "PDF successfully sent to Django backend.",
+              response.data
+            );
+            // Hide the loader when the PDF is ready
+            hideLoader();
+            // Show the success notification
+            showNotification("PDF successfully uploaded!");
+          } catch (error) {
+            console.error("Error sending PDF to Django backend.", error);
+            // Show the error notification
+            showNotification("Error uploading PDF. Please try again.");
+          }
+
+          //alert("Report Uploaded successfully!");
+
+          // Save the current URL before going back in the history
+          const currentURL = window.location.href;
+
+          // Redirect to the previous page after a short delay
+          await delay(200);
+
+          // Navigate back to the previous page with a cache-busting query parameter
+          window.location.href = document.referrer + "?nocache=" + Date.now();
+
+          // Listen for the popstate event to know when the history state changes
+          window.addEventListener("popstate", () => {
+            // Check if the URL has changed
+            if (window.location.href !== currentURL) {
+              // Reload the current page after a short delay
+              setTimeout(() => {
+                window.location.reload(true);
+              }, 200);
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Error generating PDF:", error);
+        // Hide the loader when the PDF is ready
+      }
+    };
+
+    loadImageAndRenderPDF();
+  };
+  //***************************************///////////////////// upload ECG pdf to database (END) ///////////////**********************************************/
+
+  ////////////////////////////////////////////////////////////////////////// UPLOAD XRAY PDF //////////////////////////////////////////////////////////////////////////
+  uploadXrayPDF = async () => {
+    const showLoader = () => {
+      //console.log("Showing loader");
+      const loader = document.querySelector(".loader");
+      if (loader) {
+        loader.style.display = "block";
+      }
+    };
+
+    const hideLoader = () => {
+      //console.log("Hiding loader");
+      const loader = document.querySelector(".loader");
+      if (loader) {
+        loader.style.display = "none";
+      }
+    };
+
+    const extractDataFromURL = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("data-patientid");
+      const patientName = urlParams.get("data-patientname");
+      const testDate = urlParams.get("data-testdate");
+      const reportDate = urlParams.get("data-reportdate");
+      const location = urlParams.get("data-location");
+
+      return { patientId, patientName, testDate, reportDate, location };
+    };
+
+    const showNotification = (message) => {
+      const notification = document.getElementById("notification");
+      const notificationText = document.getElementById("notification-text");
+
+      if (notification && notificationText) {
+        notificationText.innerText = message;
+        notification.style.display = "block";
+
+        // Hide the notification after 3 seconds (adjust the delay as needed)
+        setTimeout(() => {
+          notification.style.display = "none";
+        }, 1000);
+      }
+    };
+
+    const getCSRFToken = async () => {
+      try {
+        const response = await fetch("/get-csrf-token/");
+        const data = await response.json();
+        return data.csrf_token;
+      } catch (error) {
+        //console.error("Error fetching CSRF token:", error);
+        throw error;
+      }
+    };
+
+    // Show the loader before starting the PDF generation
+    showLoader();
+    const filename = this.createFilename();
+    const data = document.getElementsByClassName("ck-editor__editable")[0];
+    const table = data.querySelector("table");
+    data.classList.add("ck-blurred");
+    data.classList.remove("ck-focused");
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    // Create a function to load images and render PDF
+    const loadImageAndRenderPDF = async () => {
+      try {
+        let graphSrc = Array.from(data.children).pop().children[0].currentSrc;
+        let graphElement = document.querySelector(
+          "figure.image:nth-last-of-type(1)"
+        );
+        graphElement.remove();
+
+        if (data != undefined) {
+          var a4Width = 595.28; // A4 width in points (1 point = 1/72 inch)
+          var a4Height = 841.89; // A4 height in points
+
+          var canvasWidth = a4Width; // Adjusted width to leave some margin
+          var canvasHeight = a4Height; // Adjusted height to maintain aspect ratio and leave margin
+
+          const canvas = await html2canvas(data, {
+            scale: 2, // Adjust the scale if needed for better quality
+            useCORS: true, // Enable CORS to capture images from external URLs
+          });
+
+          const imgData = canvas.toDataURL("image/png", 1.0);
+          const pdf = new jsPDF("p", "pt", [a4Width, a4Height], true);
+
+          // Calculate the image dimensions to fit within the PDF dimensions
+          const canvasAspectRatio = canvas.width / canvas.height;
+          const pdfAspectRatio = a4Width / a4Height;
+
+          let pdfImageWidth = canvasWidth;
+          let pdfImageHeight = canvasHeight;
+
+          if (canvasAspectRatio > pdfAspectRatio) {
+            pdfImageWidth = canvasWidth;
+            pdfImageHeight = canvasWidth / canvasAspectRatio;
+          } else {
+            pdfImageHeight = canvasHeight;
+            pdfImageWidth = canvasHeight * canvasAspectRatio;
+          }
+
+          // Calculate the positioning to center the image
+          const xPosition = (pdf.internal.pageSize.width - pdfImageWidth) / 2;
+          const yPosition = (pdf.internal.pageSize.height - pdfImageHeight) / 2;
+
+          // Create a separate canvas for the rotated graph image
+          const graphCanvas = document.createElement("canvas");
+          graphCanvas.width = 1024;
+          graphCanvas.height = 1024;
+          const graphCtx = graphCanvas.getContext("2d");
+          let graphImg = await this.getDataUri(graphSrc);
+          const image = new Image();
+          image.src = graphImg;
+
+          await new Promise((resolve) => {
+            image.onload = resolve;
+          });
+
+          graphCtx.translate(graphCanvas.width / 2, graphCanvas.height / 2);
+          graphCtx.rotate(Math.PI / 2); // Rotate the image by 90 degrees
+          graphCtx.drawImage(
+            image,
+            -graphCanvas.height / 2,
+            -graphCanvas.width / 2,
+            graphCanvas.height,
+            graphCanvas.width
+          );
+
+          pdf.addImage(
+            graphCanvas.toDataURL("image/png"),
+            "PNG",
+            0,
+            0,
+            a4Width,
+            a4Height
+          );
+
+          pdf.addPage("a4", "portrait"); // Add a new portrait-oriented page
+          pdf.addImage(
+            imgData,
+            "PNG",
+            xPosition,
+            yPosition,
+            pdfImageWidth,
+            pdfImageHeight
+          );
+
+          pdf.setTextColor(255, 255, 255);
+
+          // Calculate the position to place the text at the bottom
+          const textX = 40;
+          const textY = 841.89 - 2; // 20 points from the bottom
+
+          // If a table exists within the ck-editor__editable div, capture its text content
+          if (table) {
+            const tableText = table.textContent || "";
+
+            // Add the table text as text (preserve original formatting)
+            pdf.setFontSize(2); // Adjust the font size as needed
+            pdf.text(textX, textY, tableText);
+          }
+
+          // Iterate through all paragraphs in the ck-editor__editable div
+          const paragraphs = data.querySelectorAll("p");
+          paragraphs.forEach((paragraph) => {
+            const paragraphText = paragraph.textContent || "";
+
+            // Add each paragraph text as text (preserve original formatting)
+            pdf.setFontSize(2); // Adjust the font size as needed
+            pdf.text(textX, textY - 2, paragraphText); // Place it above the table text
+          });
+
+          // Convert the PDF to a Blob
+          const pdfBlob = pdf.output("blob");
+
+          // Extract data from URL
+          const { patientId, patientName, testDate, reportDate, location } =
+            extractDataFromURL();
+
+          // Send the FormData to Django backend using fetch
+          const csrfToken = await getCSRFToken();
+          //console.log("CSRF Token:", csrfToken);
+
+          // Create FormData and append the PDF Blob
+          const formData = new FormData();
+          formData.append(
+            "pdf",
+            pdfBlob,
+            filename ? filename + ".pdf" : "download.pdf"
+          );
+          formData.append("patientId", patientId);
+          formData.append("patientName", patientName);
+          formData.append("testDate", testDate);
+          formData.append("reportDate", reportDate);
+          formData.append("location", location);
+
+          //console.log("FormData:", formData);
 
           try {
             const response = await axios.post("/upload_xray_pdf/", formData, {
@@ -1954,7 +2006,7 @@ class App extends Component {
   };
   //***************************************///////////////////// upload split XRAY pdf to database (END) ///////////////**********************************************/
 
-  ////////////////////////////////// Upload XRAY PDF without IMAGE (START) ////////////////////////
+////////////////////////////////// Upload XRAY PDF without IMAGE (START) ////////////////////////
   UploadDivContentOnPDFWithoutImage() {
     const showLoader = () => {
       console.log("Showing loader");
@@ -1979,9 +2031,8 @@ class App extends Component {
       const testDate = urlParams.get("data-testdate");
       const reportDate = urlParams.get("data-reportdate");
       const location = urlParams.get("data-location");
-      const accession = urlParams.get("data-accession");
 
-      return { patientId, patientName, testDate, reportDate, location, accession };
+      return { patientId, patientName, testDate, reportDate, location };
     };
 
     const showNotification = (message) => {
@@ -2083,7 +2134,7 @@ class App extends Component {
         const pdfBlob = pdf.output("blob");
 
         // Extract data from URL
-        const { patientId, patientName, testDate, reportDate, location, accession } =
+        const { patientId, patientName, testDate, reportDate, location } =
           extractDataFromURL();
 
         // Send the FormData to Django backend using fetch
@@ -2102,8 +2153,6 @@ class App extends Component {
         formData.append("testDate", testDate);
         formData.append("reportDate", reportDate);
         formData.append("location", location);
-        formData.append("accession", accession);
-        
 
         console.log("FormData:", formData);
 
@@ -2153,6 +2202,7 @@ class App extends Component {
   }
   ////////////////////////////////// Upload XRAY PDF without IMAGE (END) ////////////////////////
 
+
   ////////////////////////////////// Upload XRAY PDF with IMAGE (START) ////////////////////////
   UploadDivContentOnPDF() {
     const showLoader = () => {
@@ -2178,9 +2228,8 @@ class App extends Component {
       const testDate = urlParams.get("data-testdate");
       const reportDate = urlParams.get("data-reportdate");
       const location = urlParams.get("data-location");
-      const accession = urlParams.get("data-accession");
 
-      return { patientId, patientName, testDate, reportDate, location, accession };
+      return { patientId, patientName, testDate, reportDate, location };
     };
 
     const showNotification = (message) => {
@@ -2266,7 +2315,7 @@ class App extends Component {
         const pdfBlob = pdf.output("blob");
 
         // Extract data from URL
-        const { patientId, patientName, testDate, reportDate, location, accession } =
+        const { patientId, patientName, testDate, reportDate, location } =
           extractDataFromURL();
 
         // Send the FormData to Django backend using fetch
@@ -2285,7 +2334,6 @@ class App extends Component {
         formData.append("testDate", testDate);
         formData.append("reportDate", reportDate);
         formData.append("location", location);
-        formData.append("accession", accession);
 
         console.log("FormData:", formData);
 
@@ -2304,7 +2352,7 @@ class App extends Component {
           // Hide the loader when the PDF is ready
           hideLoader();
           // Show the success notification
-          showNotification("PDF successfully uploaded and sent to WhatsApp!");
+          showNotification("PDF successfully uploaded!");
         } catch (error) {
           console.error("Error sending PDF to Django backend.", error);
           // Show the error notification
@@ -2335,6 +2383,7 @@ class App extends Component {
   }
 
   //////////////////// Upload XRAY PDF with IMAGE (END) ////////////////////////////////////
+
 
   ////////////////////////////////// Upload VITALS PDF without IMAGE (START) ////////////////////////
   UploadDivContentOnPDFVitals() {
@@ -2509,182 +2558,181 @@ class App extends Component {
   }
   ////////////////////////////////// Upload Vitals PDF without IMAGE (END) ////////////////////////
 
-  ////////////////////////////////// Upload OPtometry PDF without IMAGE (START) ////////////////////////
-  UploadDivContentOnPDFOptometry() {
-    const showLoader = () => {
-      console.log("Showing loader");
-      const loader = document.querySelector(".loader");
-      if (loader) {
-        loader.style.display = "block";
-      }
-    };
 
-    const hideLoader = () => {
-      console.log("Hiding loader");
-      const loader = document.querySelector(".loader");
-      if (loader) {
-        loader.style.display = "none";
-      }
-    };
-
-    const extractDataFromURL = () => {
-      const patientId = document.querySelector(
-        "#root > div > div > div.document-editor__editable-container > div > figure.table.ck-widget.ck-widget_with-selection-handle > table > tbody > tr:nth-child(1) > td:nth-child(2) > span > strong"
-      )?.innerHTML;
-      const patientName = document.querySelector(
-        "#root > div > div > div.document-editor__editable-container > div > figure.table.ck-widget.ck-widget_with-selection-handle > table > tbody > tr:nth-child(1) > td:nth-child(1) > span > strong"
-      )?.innerHTML;
-      const testDate = document.querySelector(
-        "#root > div > div > div.document-editor__editable-container > div > figure.table.ck-widget.ck-widget_with-selection-handle > table > tbody > tr:nth-child(2) > td:nth-child(2) > span > strong"
-      )?.innerHTML;
-      const reportDate = document.querySelector(
-        "#root > div > div > div.document-editor__editable-container > div > figure.table.ck-widget.ck-widget_with-selection-handle > table > tbody > tr:nth-child(2) > td:nth-child(3) > span > strong"
-      )?.innerHTML;
-
-      return { patientId, patientName, testDate, reportDate };
-    };
-
-    const showNotification = (message) => {
-      const notification = document.getElementById("notification");
-      const notificationText = document.getElementById("notification-text");
-
-      if (notification && notificationText) {
-        notificationText.innerText = message;
-        notification.style.display = "block";
-
-        // Hide the notification after 3 seconds (adjust the delay as needed)
-        setTimeout(() => {
-          notification.style.display = "none";
-        }, 1000);
-      }
-    };
-
-    const getCSRFToken = async () => {
-      try {
-        const response = await fetch("/get-csrf-token/");
-        const data = await response.json();
-        return data.csrf_token;
-      } catch (error) {
-        console.error("Error fetching CSRF token:", error);
-        throw error;
-      }
-    };
-    // Show the loader before starting the PDF generation
-    showLoader();
-    var filename = this.createFilename();
-    const data = document.getElementsByClassName("ck-editor__editable")[0];
-    const table = data.querySelector("table");
-    data.classList.add("ck-blurred");
-    data.classList.remove("ck-focused");
-    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-    if (data != undefined) {
-      var a4Width = 595.28; // A4 width in points (1 point = 1/72 inch)
-      var a4Height = 841.89; // A4 height in points
-
-      var canvasWidth = a4Width - 40; // Adjusted width to leave some margin
-
-      html2canvas(data, {
-        scale: 4, // Adjust the scale if needed for better quality
-        windowWidth: document.body.scrollWidth,
-        windowHeight: document.body.scrollHeight,
-      }).then(async (canvas) => {
-        const imgData = canvas.toDataURL("image/png", 1.0);
-
-        // Calculate the height based on the aspect ratio of the captured image
-        const canvasHeight = (canvasWidth / canvas.width) * canvas.height;
-
-        // Hide the loader when the PDF is ready
-        hideLoader();
-
-        // Create PDF with only the captured content
-        const pdf = new jsPDF("p", "pt", [a4Width, a4Height], true);
-        pdf.addImage(imgData, "PNG", 20, 20, canvasWidth, canvasHeight);
-
-        pdf.setTextColor(255, 255, 255);
-
-        // Calculate the position to place the text at the bottom
-        const textX = 40;
-        const textY = 841.89 - 2; // 20 points from the bottom
-
-        // If a table exists within the ck-editor__editable div, capture its text content
-        if (table) {
-          const tableText = table.textContent || "";
-
-          // Add the table text as text (preserve original formatting)
-          pdf.setFontSize(2); // Adjust the font size as needed
-          pdf.text(textX, textY, tableText);
+    ////////////////////////////////// Upload OPtometry PDF without IMAGE (START) ////////////////////////
+    UploadDivContentOnPDFOptometry() {
+      const showLoader = () => {
+        console.log("Showing loader");
+        const loader = document.querySelector(".loader");
+        if (loader) {
+          loader.style.display = "block";
         }
-
-        // Iterate through all paragraphs in the ck-editor__editable div
-        const paragraphs = data.querySelectorAll("p");
-        paragraphs.forEach((paragraph) => {
-          const paragraphText = paragraph.textContent || "";
-
-          // Add each paragraph text as text (preserve original formatting)
-          pdf.setFontSize(2); // Adjust the font size as needed
-          pdf.text(textX, textY - 2, paragraphText); // Place it above the table text
-        });
-
-        // Convert the PDF to a Blob
-        const pdfBlob = pdf.output("blob");
-
-        // Extract data from URL
-        const { patientId, patientName, testDate, reportDate } =
-          extractDataFromURL();
-
-        // Send the FormData to Django backend using fetch
-        const csrfToken = await getCSRFToken();
-        console.log("CSRF Token:", csrfToken);
-
-        // Create FormData and append the PDF Blob
-        const formData = new FormData();
-        formData.append(
-          "pdf",
-          pdfBlob,
-          filename ? filename + ".pdf" : "download.pdf"
-        );
-        formData.append("patientId", patientId);
-        formData.append("patientName", patientName);
-        formData.append("testDate", testDate);
-        formData.append("reportDate", reportDate);
-
-        console.log("FormData:", formData);
-
+      };
+  
+      const hideLoader = () => {
+        console.log("Hiding loader");
+        const loader = document.querySelector(".loader");
+        if (loader) {
+          loader.style.display = "none";
+        }
+      };
+  
+      const extractDataFromURL = () => {
+        const patientId = document.querySelector(
+          "#root > div > div > div.document-editor__editable-container > div > figure.table.ck-widget.ck-widget_with-selection-handle > table > tbody > tr:nth-child(1) > td:nth-child(2) > span > strong"
+        )?.innerHTML;
+        const patientName = document.querySelector(
+          "#root > div > div > div.document-editor__editable-container > div > figure.table.ck-widget.ck-widget_with-selection-handle > table > tbody > tr:nth-child(1) > td:nth-child(1) > span > strong"
+        )?.innerHTML;
+        const testDate = document.querySelector(
+          "#root > div > div > div.document-editor__editable-container > div > figure.table.ck-widget.ck-widget_with-selection-handle > table > tbody > tr:nth-child(2) > td:nth-child(2) > span > strong"
+        )?.innerHTML;
+        const reportDate = document.querySelector(
+          "#root > div > div > div.document-editor__editable-container > div > figure.table.ck-widget.ck-widget_with-selection-handle > table > tbody > tr:nth-child(2) > td:nth-child(3) > span > strong"
+        )?.innerHTML;
+  
+        return { patientId, patientName, testDate, reportDate };
+      };
+  
+      const showNotification = (message) => {
+        const notification = document.getElementById("notification");
+        const notificationText = document.getElementById("notification-text");
+  
+        if (notification && notificationText) {
+          notificationText.innerText = message;
+          notification.style.display = "block";
+  
+          // Hide the notification after 3 seconds (adjust the delay as needed)
+          setTimeout(() => {
+            notification.style.display = "none";
+          }, 1000);
+        }
+      };
+  
+      const getCSRFToken = async () => {
         try {
-          const response = await axios.post(
-            "/upload_optometry_pdf/",
-            formData,
-            {
+          const response = await fetch("/get-csrf-token/");
+          const data = await response.json();
+          return data.csrf_token;
+        } catch (error) {
+          console.error("Error fetching CSRF token:", error);
+          throw error;
+        }
+      };
+      // Show the loader before starting the PDF generation
+      showLoader();
+      var filename = this.createFilename();
+      const data = document.getElementsByClassName("ck-editor__editable")[0];
+      const table = data.querySelector("table");
+      data.classList.add("ck-blurred");
+      data.classList.remove("ck-focused");
+      const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  
+      if (data != undefined) {
+        var a4Width = 595.28; // A4 width in points (1 point = 1/72 inch)
+        var a4Height = 841.89; // A4 height in points
+  
+        var canvasWidth = a4Width - 40; // Adjusted width to leave some margin
+  
+        html2canvas(data, {
+          scale: 4, // Adjust the scale if needed for better quality
+          windowWidth: document.body.scrollWidth,
+          windowHeight: document.body.scrollHeight,
+        }).then(async (canvas) => {
+          const imgData = canvas.toDataURL("image/png", 1.0);
+  
+          // Calculate the height based on the aspect ratio of the captured image
+          const canvasHeight = (canvasWidth / canvas.width) * canvas.height;
+  
+          // Hide the loader when the PDF is ready
+          hideLoader();
+  
+          // Create PDF with only the captured content
+          const pdf = new jsPDF("p", "pt", [a4Width, a4Height], true);
+          pdf.addImage(imgData, "PNG", 20, 20, canvasWidth, canvasHeight);
+  
+          pdf.setTextColor(255, 255, 255);
+  
+          // Calculate the position to place the text at the bottom
+          const textX = 40;
+          const textY = 841.89 - 2; // 20 points from the bottom
+  
+          // If a table exists within the ck-editor__editable div, capture its text content
+          if (table) {
+            const tableText = table.textContent || "";
+  
+            // Add the table text as text (preserve original formatting)
+            pdf.setFontSize(2); // Adjust the font size as needed
+            pdf.text(textX, textY, tableText);
+          }
+  
+          // Iterate through all paragraphs in the ck-editor__editable div
+          const paragraphs = data.querySelectorAll("p");
+          paragraphs.forEach((paragraph) => {
+            const paragraphText = paragraph.textContent || "";
+  
+            // Add each paragraph text as text (preserve original formatting)
+            pdf.setFontSize(2); // Adjust the font size as needed
+            pdf.text(textX, textY - 2, paragraphText); // Place it above the table text
+          });
+  
+          // Convert the PDF to a Blob
+          const pdfBlob = pdf.output("blob");
+  
+          // Extract data from URL
+          const { patientId, patientName, testDate, reportDate } =
+            extractDataFromURL();
+  
+          // Send the FormData to Django backend using fetch
+          const csrfToken = await getCSRFToken();
+          console.log("CSRF Token:", csrfToken);
+  
+          // Create FormData and append the PDF Blob
+          const formData = new FormData();
+          formData.append(
+            "pdf",
+            pdfBlob,
+            filename ? filename + ".pdf" : "download.pdf"
+          );
+          formData.append("patientId", patientId);
+          formData.append("patientName", patientName);
+          formData.append("testDate", testDate);
+          formData.append("reportDate", reportDate);
+  
+          console.log("FormData:", formData);
+  
+          try {
+            const response = await axios.post("/upload_optometry_pdf/", formData, {
               headers: {
                 "Content-Type": "multipart/form-data",
                 "X-CSRFToken": csrfToken,
               },
-            }
-          );
-
-          console.log(
-            "PDF successfully sent to Django backend.",
-            response.data
-          );
-          // Hide the loader when the PDF is ready
-          hideLoader();
-          // Show the success notification
-          showNotification("PDF successfully uploaded!");
-        } catch (error) {
-          console.error("Error sending PDF to Django backend.", error);
-          // Show the error notification
-          showNotification("Error uploading PDF. Please try again.");
-        }
-
-        // Reload the current page after a short delay
-        setTimeout(() => {
-          window.location.reload(true);
-        }, 200);
-      });
+            });
+  
+            console.log(
+              "PDF successfully sent to Django backend.",
+              response.data
+            );
+            // Hide the loader when the PDF is ready
+            hideLoader();
+            // Show the success notification
+            showNotification("PDF successfully uploaded!");
+          } catch (error) {
+            console.error("Error sending PDF to Django backend.", error);
+            // Show the error notification
+            showNotification("Error uploading PDF. Please try again.");
+          }
+  
+          // Reload the current page after a short delay
+          setTimeout(() => {
+            window.location.reload(true);
+          }, 200);
+        });
+      }
     }
-  }
-  ////////////////////////////////// Upload Optometry PDF without IMAGE (END) ////////////////////////
+    ////////////////////////////////// Upload Optometry PDF without IMAGE (END) ////////////////////////
+
+
 
   //////////////////////////////////////////////////////////////
   toDataURL(url, index, callback) {
@@ -2903,10 +2951,6 @@ class App extends Component {
         console.log("Optometry Report pdf");
         this.UploadDivContentOnPDFOptometry();
         break;
-      case "12":
-        console.log("JSON Report");
-        this.GetDivContentAsJSON();
-        break;
       default:
         console.log("---");
         break;
@@ -2930,253 +2974,347 @@ class App extends Component {
     });
   }
 
+  
   render() {
+    const { data, handleClick, name } = this.props;
+    const urlSearchParams = new URLSearchParams(window.location.search);
     const { options_label, reportFrmData } = this.state;
-    return (
+    const { isDiv2Visible} = this.state;
+   
+      return (
       <div>
-        <div className="document-editor">
-          <div className="document-editor__toolbar" />
-          <div className="page-content">
-            <div className="document-editor__editable-container">
-              {this.state.modal && options_label === "X-RAY CHEST" ? (
-                <XrayChest
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ): this.state.modal && options_label === "Blanks" ? (
-                <Blanks
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) :   this.state.modal && options_label === "CT PNS" ? (
-                <PnsAbnormal
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) : this.state.modal && options_label === "CAMP ECG" ? (
-                <CampECG2
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) : this.state.modal &&
-                options_label === "X-RAY LEFT-SHOULDER" ? (
-                <XrayLeftShoulder
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) : this.state.modal &&
-                options_label === "X-RAY RIGHT-SHOULDER" ? (
-                <XrayRightShoulder
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) : this.state.modal && options_label === "X-RAY KNEE" ? (
-                <XrayKnee
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) : this.state.modal &&
-                options_label === "X-RAY SPINE(CERVICAL)" ? (
-                <XraySpineCervical
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) : this.state.modal &&
-                options_label === "X-RAY SPINE(LUMBER)" ? (
-                <XraySpineLumber
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) : this.state.modal &&
-                options_label === "X-RAY SPINE(DORSAL)" ? (
-                <XraySpineDorsal
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                /> // this.state.modal && (options_label === "ECG") ?
-              ) : //   <ECG handleClick={this.handleClick} reportFrmData={reportFrmData} generateReport={this.generateReport} generatePatientTable={this.generatePatientTable()} /> :
-              this.state.modal && options_label === "VITALS" ? (
-                <Vitals
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) : this.state.modal && options_label === "OPTOMETRY" ? (
-                <Optometry
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) : this.state.modal && options_label === "OPTOMETRY NO-INPUT" ? (
-                <Optometry2
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) : this.state.modal && options_label === "OPTOMETRY (CAMP)" ? (
-                <Optometry3
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) : this.state.modal && options_label === "AUDIOMETRY" ? (
-                <Audiometry
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) : this.state.modal &&
-                options_label === "OPTOMETRY (CAMP) NO-INPUT" ? (
-                <Optometry4
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) : this.state.modal && options_label === "CT ABDOMEN" ? (
-                <CtAbdomen
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) : this.state.modal && options_label === "CT HEAD" ? (
-                <CtHead
-                  handleClick={this.handleClick}
-                  reportFrmData={reportFrmData}
-                  generateReport={this.generateReport}
-                  generatePatientTable={this.generatePatientTable()}
-                />
-              ) : (
-                ""
-              )}
-              <CKEditor
-                editor={DecoupledEditor}
-                data={reportFrmData}
-                onInit={(editor) => {
-                  editor.onclick = this.onclickDiv;
-                  window.editor = editor;
-                  editor.allowedContent = true;
-                  const toolbarContainer = document.querySelector(
-                    ".document-editor__toolbar"
-                  );
-
-                  toolbarContainer.appendChild(editor.ui.view.toolbar.element);
-
-                  window.editor.ui.view.toolbar.element.children[0].appendChild(
-                    this.copyAction()
-                  );
-                  window.editor.ui.view.toolbar.element.children[0].appendChild(
-                    this.choose()
-                  );
-                  // window.editor.ui.view.toolbar.element.children[0].appendChild(this.getPDFButton());
-                  window.editor.ui.view.toolbar.element.children[0].appendChild(
-                    this.actionDropDown()
-                  );
-
-                  window.editor.ui.view.toolbar.element.children[0].appendChild(
-                    this.userDropdown()
-                  );
-                }}
-              />
-            </div>
-            <div className="viewport-container">
-              <div className="viewport" id="viewport"></div>
-              <div className="button-container">
-                <button
-                  className="tool-button"
-                  value="Zoom"
-                  onClick={(e) => this.enableTool(e.target.value)}
-                >
-                  Zoom
-                </button>
-                <button
-                  className="tool-button"
-                  value="Contrast"
-                  onClick={(e) => this.enableTool(e.target.value)}
-                >
-                  Contrast
-                </button>
-                <button
-                  className="tool-button"
-                  value="Rotate"
-                  onClick={(e) => this.enableTool(e.target.value)}
-                >
-                  Rotate
-                </button>
-                <button
-                  className="tool-button"
-                  value="Invert"
-                  onClick={(e) => this.enableTool(e.target.value)}
-                >
-                  Invert
-                </button>
-                <button
-                  className="tool-button"
-                  value="Pan"
-                  onClick={(e) => this.enableTool(e.target.value)}
-                >
-                  Pan
-                </button>
-                <button
-                  className="tool-button"
-                  value="Length"
-                  onClick={(e) => this.enableTool(e.target.value)}
-                >
-                  Length
-                </button>
-                <button
-                  className="tool-button"
-                  value="Magnify"
-                  onClick={(e) => this.enableTool(e.target.value)}
-                >
-                  Magnify
-                </button>
-                <button
-                  className="tool-button"
-                  value="Markers"
-                  onClick={(e) => this.enableTool(e.target.value)}
-                >
-                  Markers
-                </button>
-                <button
-                  className="tool-button"
-                  value="Disable"
-                  onClick={(e) => this.enableTool(e.target.value)}
-                >
-                  Disable Tools
-                </button>
-              </div>
-            </div>
-          </div>
+          <div className="document-editor">
+        <div className="document-editor__toolbar">
         </div>
-      </div>
-    );
+        <div className="page-content" id='page-content'>
+          <div  className='cornerstone-container'>
+          <div className='tools'>
+{/*Button for enabling Zoom tool */}
+<div className="button-container"><button className='tool-button' value='Zoom'
+onClick={e => this.toggleTool(e.target.value)}> <AiOutlineZoomIn size={25} /> {/* Adjust size as 
+needed */}Zoom</button></div>
+{/*Button for enabling Pan tool, drop down for changing alignment settings */}
+<div className="button-container" id='Pan Settings'>
+<button className='tool-button' value='Pan' onClick={e =>
+this.toggleTool(e.target.value)}><AiOutlineDrag size={25} /> {/* Pan Icon */}
+Pan</button>
+<select id="alignment" className="dropdown" onChange={e =>
+this.alignmentSettings(e.target.value, selected_viewport)}>
+<option value='' selected disabled hidden></option>
+<option value='AlignLeft'>Align Left</option>
+<option value='AlignCenter'>Align Center</option>
+<option value='AlignRight'>Align Right</option>
+</select>
+</div>
+{/*Drop down for changing rotation and flip settings */}
+<div className="button-container" id='Orientation Settings'>
+<button className='tool-button' value='PlanarRotate' onClick={e =>
+this.toggleTool(e.target.value)}> <FaRedoAlt /> {/* Rotate icon */}Rotate</button>
+<select id='orientation' className="dropdown" onChange={e =>
+this.orientationSettings(e, selected_viewport)}>
+<option value='' selected disabled hidden></option>
+<option value='Rleft'>Rotate Left</option>
+<option value='Rright'>Rotate Right</option>
+<option value='Hflip'>Horizontal Flip</option>
+<option value='Vflip'>Vertical Flip</option>
+</select>
+</div>
+{/*Button for enabling Probe Tool */}
+<div className="button-container"><button className='tool-button' value='Probe'
+onClick={e => this.toggleTool(e.target.value)}> <FaSearch /> {/* Probe/ magnifying glass icon 
+*/}Probe</button></div>
+{/*Button for enabling Contrast tool, Drop down for changing windowing settings*/}
+<div className="button-container">
+<button className='tool-button' value='Contrast' onClick={e =>
+this.toggleTool(e.target.value)}> <FaAdjust /> {/* Contrast/adjust icon */}Windowing</button>
+<select id='windowing' className="dropdown" onChange={e =>
+this.windowingSettings(e, selected_viewport)}>
+<option value='' selected disabled hidden></option>
+<option value="Invert">Invert</option>
+<option value="Bone">Bone</option>
+<option value="Lungs">Lungs</option>
+<option value="Brain">Brain</option>
+<option value="Abdomen">Abdomen</option>
+<option value="ST">Soft Tissue</option>
+<option value="Liver">Liver</option>
+<option value="Mediastinal">Mediastinal</option>
+</select>
+</div>
+{/*Drop down for enabling measurement tools */}
+<div className="button-container">
+<button className='name-button' disabled> <FaRuler /> {/* Measurement icon 
+*/}Measurements</button>
+<select id="measurement" className="dropdown" onChange={e =>
+this.toggleTool(e.target.value)}>
+<option value='' selected disabled hidden></option>
+<option value='Length'>Length</option>
+<option value='Height'>Height</option>
+<option value='Angle'>Angle</option>
+<option value='CobbAngle'>Cobb Angle</option>
+<option value='RectangleROI'>Rectangle ROI</option>
+<option value='CircleROI'>Circle ROI</option>
+<option value='EllipticalROI'>Elliptical ROI</option>
+<option value='FreehandROI'>Freehand ROI</option>
+<option value='SplineROI'>Spline ROI</option>
+<option value='Bidirectional'>Bidirectional</option>
+<option value='ArrowAnnotate'>Arrow Annotate</option>
+</select>
+</div>
+{/*Button for enabling Eraser tool */}
+<div className="button-container"><button className='tool-button' value='Eraser'
+onClick={e => this.toggleTool(e.target.value)}> <FaEraser /> {/* Eraser icon 
+*/}Eraser</button></div>
+{/*Drop down for changing MPR orientation for a volume in a selected viewport */}
+<div className="button-container">
+<button className='name-button' disabled> <FaCube /> {/* 3D Cube icon 
+*/}MPR</button>
+<select id='mpr' className="dropdown" onChange={e => this.volumeOrientation(e, 
+selected_viewport)}>
+<option value='' selected disabled hidden></option>
+<option value='axial'>Axial</option>
+<option value='sagittal'>Sagittal</option>
+<option value='coronal'>Coronal</option>
+</select>
+</div>
+{/*Slider for changing selected viewports slab thickness */}
+<div className='button-container'>
+<button className='name-button' disabled> <FaBars /> {/* Bars icon */}Slab 
+Thickness</button>
+<input type='range' min='0' max='50' defaultValue='0' class='slider' id='slider'
+onChange={e => this.slabThickness(e.target.value, selected_viewport)}></input>
+</div>
+{/*Drop down for changing the layout of the viewports */}
+<div className="button-container">
+<button className='name-button' disabled> <FaThLarge /> {/* Grid layout icon 
+*/}Layout</button>
+<select id="layout" className="dropdown" onChange={e => this.layoutSettings(e)}>
+<option value='one' selected>1x1</option>
+<option value='two'>1x2</option>
+<option value='four'>2x2</option>
+</select>
+</div>
+{/*Button for resetting selected viewport settings */}
+<div className="button-container"><button className='tool-button' value='Reset'
+onClick={e => this.viewportSettings(e.target.value, selected_viewport)}> <FaUndo /> {/* 
+Undo/Reset icon */}Reset</button></div>
+{/*Button for capturing selected viewport */}
+<div className="button-container"><button className='tool-button' onClick={e =>
+this.capture(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Capture</button></div>
+{/*Button for hiding editor and putting the viewer in full screen mode */}
+<div className="button-container">
+<button  className='tool-button' onClick={this.toggleDivs}>
+<FaExpand />  {isDiv2Visible ? 'Full screen' : 'create report'}
+        </button>
+</div>
+</div>
+{/*container for all four viewports */}
+<div className='viewport-container' id='viewport-container'>
+<div 
+    className="patientdata" 
+    style={{
+  backgroundColor: "rgba(255, 255, 255, 0.9)", 
+  padding: "1px",
+  position: "absolute",
+  zIndex: 10,
+  borderRadius: "1px",
+  overflowX: "auto", // Horizontal scrolling
+  overflowY: "auto", // Vertical scrolling
+  width: "200px",    // Fixed width
+}}
+  >
+  </div>
+  
+<div className="viewport" id='viewport1' data-value='first' onDragOver={e =>
+this.allowDrop(e)} onDrop={e => this.drop(e)}></div>
+<div className="viewport" id='viewport2' data-value='second' onDragOver={e =>
+this.allowDrop(e)} onDrop={e => this.drop(e)}></div>
+<div className="viewport" id='viewport3' data-value='third' onDragOver={e =>
+this.allowDrop(e)} onDrop={e => this.drop(e)}></div>
+<div className="viewport" id='viewport4' data-value='fourth' onDragOver={e =>
+this.allowDrop(e)} onDrop={e => this.drop(e)}></div>
+</div>
+{/*Container for patient details */}
+<div className='details'>
+<div id="viewport1Index">Image: </div>
+<div id='viewport2Index'>Image: </div>
+<div id='viewport3Index'>Image: </div>
+<div id='viewport4Index'>Image: </div>
+</div>
+<div id='output'></div>
+</div>
+          {isDiv2Visible && ( <div className="document-editor__editable-container" id="reportEditor">
+    {this.state.modal && options_label === "X-RAY CHEST" ? (
+      <XrayChest
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+      />
+    ) : this.state.modal && options_label === "CT PNS" ? (
+      <PnsAbnormal
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+
+      />
+    ) : this.state.modal && options_label === "CAMP ECG" ? (
+      <CampECG2
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+      />
+    ) : this.state.modal && options_label === "X-RAY LEFT-SHOULDER" ? (
+      <XrayLeftShoulder
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+      />
+    ) : this.state.modal && options_label === "X-RAY RIGHT-SHOULDER" ? (
+      <XrayRightShoulder
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+      />
+    ) : this.state.modal && options_label === "X-RAY KNEE" ? (
+      <XrayKnee
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+      />
+    ) : this.state.modal && options_label === "X-RAY SPINE(CERVICAL)" ? (
+      <XraySpineCervical
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+      />
+    ) : this.state.modal && options_label === "X-RAY SPINE(LUMBER)" ? (
+      <XraySpineLumber
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+      />
+    ) : this.state.modal && options_label === "X-RAY SPINE(DORSAL)" ? (
+      <XraySpineDorsal
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+      />
+    ) : this.state.modal && options_label === "VITALS" ? (
+      <Vitals
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+      />
+    ) : this.state.modal && options_label === "OPTOMETRY" ? (
+      <Optometry
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+      />
+    ) : this.state.modal && options_label === "OPTOMETRY NO-INPUT" ? (
+      <Optometry2
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+      />
+    ) : this.state.modal && options_label === "OPTOMETRY (CAMP)" ? (
+      <Optometry3
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+      />
+    ) : this.state.modal && options_label === "AUDIOMETRY" ? (
+      <Audiometry
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+
+      />
+    ) : this.state.modal && options_label === "OPTOMETRY (CAMP) NO-INPUT" ? (
+      <Optometry4
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+      />
+    ) : this.state.modal && options_label === "CT ABDOMEN" ? (
+      <CtAbdomen
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+      />
+    ) : this.state.modal && options_label === "CT HEAD" ? (
+      <CtHead
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+      />
+    ) : (
+      ""
+    )}
+    <CKEditor
+   editor={DecoupledEditor}
+data={reportFrmData}
+onInit={(editor) => {
+  editor.onclick = this.onclickDiv;
+  window.editor = editor;
+  editor.allowedContent = true;
+  editor.config.extraAllowedContent = '*(*);*{*}';
+  
+  const toolbarContainer = document.querySelector(".document-editor__toolbar");
+  
+  // Check if the toolbar already exists to avoid duplication
+  if (!toolbarContainer.querySelector(".custom-toolbar")) {
+    // Create a new div to hold the custom toolbar buttons
+    const customToolbar = document.createElement('div');
+    customToolbar.classList.add('custom-toolbar');
+    
+    // Append the toolbar to the CKEditor toolbar
+    toolbarContainer.appendChild(editor.ui.view.toolbar.element);
+
+    // Append the custom buttons to the toolbar only if they haven't been added before
+    window.editor.ui.view.toolbar.element.children[0].appendChild(this.copyAction());
+    window.editor.ui.view.toolbar.element.children[0].appendChild(this.choose());
+    // window.editor.ui.view.toolbar.element.children[0].appendChild(this.getPDFButton());
+    window.editor.ui.view.toolbar.element.children[0].appendChild(this.actionDropDown());
+    window.editor.ui.view.toolbar.element.children[0].appendChild(this.userDropdown());
+    
+    // Add the custom toolbar to the editor toolbar
+    window.editor.ui.view.toolbar.element.children[0].appendChild(customToolbar);
   }
+}}
+/>
+  </div>)}
+        </div>
+        <div className="previewTab" id="previewTab"></div>
+      </div>
+      </div>
+       );
+    
+  };
+
+  //remove all images and metadata from cache, destroy any created volumes
+  componentWillUnmount() {
+    //terminate webworkers that are used for decoding dicom files
+    cornerstoneDICOMImageLoader.webWorkerManager.terminate();
+
+    //destroy cornerstone tools
+    cornerstoneTools.destroy();
+
+    //destroy the created rendering engine
+    renderingEngine.destroy();
+
+    //decache and destroy all the volumes created
+    for (const volume of cornerstone.cache.getVolumes()){
+      volume.decache(true)
+      volume.destroy();
+    };
+
+    //purge cache
+    cornerstone.cache.purgeCache();
+    
+  }
+  
 }
 
 render(<App />, document.getElementById("root"));
+
+

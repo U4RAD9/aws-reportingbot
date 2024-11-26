@@ -97,6 +97,9 @@ from botocore.exceptions import NoCredentialsError, PartialCredentialsError
 import webbrowser
 import time
 from users.forms import PersonalInfoForm
+from pyorthanc import Orthanc, find_patients
+import logging
+import urllib
 
 def login(request):
     if request.method == 'POST':
@@ -3723,8 +3726,231 @@ def ECGSetTarget(request):
 
         return redirect('ecg_reporting_status')
 
+# added by akash for the orthnac data fetch
+# Configure logging (if not already set up
+    if request.method in ['POST', 'GET']:
+        try:
+            # Define Orthanc server details
+            url = 'http://13.202.103.243:2002/'
+            server = Orthanc(url, username='admin', password='u4rad')
 
+            # Retrieve the study_id from POST request
+            study_id = None
+            for key in request.POST.keys():
+                study_id = key
+                logging.debug(f"Study ID received: {study_id}")  # Log study ID
 
+            # Handle missing study_id case
+            if not study_id:
+                logging.error("No study ID provided in the request.")
+                return JsonResponse({'error': 'Missing study_id'}, status=400)
+
+            # Encode the study_id to ensure proper format for URL
+            encoded_study_id = urllib.parse.quote(study_id)
+            logging.debug(f"Encoded study ID: {encoded_study_id}")
+
+            # Retrieve study information
+            try:
+                study = server.get_studies_id(encoded_study_id)
+                if not study:
+                    logging.error(f"Study with ID {encoded_study_id} not found on the server.")
+                    return JsonResponse({'error': f"Study with ID {encoded_study_id} not found."}, status=404)
+            except httpx.HTTPError as e:
+                logging.error(f"HTTP error occurred: {e}")
+                return JsonResponse({'error': f"HTTP error occurred: {str(e)}"}, status=500)
+
+            series_ids = study.get('Series', [])
+            series = []
+            studyUID = ''
+            name = ''
+            id = ''
+            studyDate = ''
+            studyTime = ''
+            centre_name = ''
+
+            # Process each series and extract relevant tags
+            for i in series_ids:
+                sampleInstance = server.get_series_id(i)['Instances'][0]
+                tags = server.get_instances_id_tags(sampleInstance)
+
+                # Extract necessary information from tags
+                name = tags['0010,0010'].get('Value', 'Unknown')
+                studyUID = tags['0020,000d'].get('Value', 'Unknown')
+                studyDate = tags['0008,0020'].get('Value', 'Unknown')
+                studyTime = tags['0008,0030'].get('Value', 'Unknown')
+                seriesUID = tags['0020,000e'].get('Value', 'Unknown')
+                seriesModality = tags['0008,0060'].get('Value', 'Unknown')
+                id = tags['0010,0020'].get('Value', 'Unknown')
+                seriesDescription = tags['0008,103e'].get('Value', 'Unknown')
+                centre_name = tags['0008,0080'].get('Value', 'Unknown')
+                seriesPreview = f"{url}instances/{sampleInstance}/preview"
+
+                # Append series details
+                series.append([
+                    seriesUID,
+                    seriesModality,
+                    seriesDescription,
+                    seriesPreview
+                ])
+
+            # Log final values for debugging
+            logging.debug(f"Study UID: {studyUID}, Series: {series}, Name: {name}, ID: {id}, "
+                          f"Date: {studyDate}, Time: {studyTime}, Centre Name: {centre_name}")
+
+            # Return JSON response
+            return JsonResponse({
+                'study_uid': studyUID,
+                'series': series,
+                'name': name,
+                'id': id,
+                'date': studyDate,
+                'time': studyTime,
+                'centre_name': centre_name
+            })
+
+        except Exception as e:
+            logging.error(f"Unexpected error processing server data: {e}")
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        logging.warning("Invalid HTTP method used for server_data.")
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+
+# Configure logging (if not already done)
+# logging.basicConfig(level=logging.DEBUG)
+
+# def server_data(request):
+#     if request.method in ['POST', 'GET']:
+#         try:
+#             # Define Orthanc server details
+#             url = 'http://13.202.103.243:2002/'
+#             server = Orthanc(url, username='admin', password='u4rad')
+
+#             # Extract the study ID
+#             study_id = None
+#             for key in request.POST.keys():
+#                 study_id = key.strip()  # Strip whitespace
+#                 logging.debug(f"Received raw study ID: {study_id}")
+
+#                 # Optional: Validate study_id format (e.g., looks like a UUID)
+#                 if '-' not in study_id:
+#                     logging.error(f"Invalid study ID format: {study_id}")
+#                     return JsonResponse({'error': 'Invalid study ID format'}, status=400)
+
+#             # Handle missing study_id
+#             if not study_id:
+#                 logging.error("No study ID provided in the request.")
+#                 return JsonResponse({'error': 'Missing study_id'}, status=400)
+
+#             # Encode study ID for URL
+#             encoded_study_id = urllib.parse.quote(study_id)
+#             logging.debug(f"Encoded study ID: {encoded_study_id}")
+
+#             # Fetch study details from Orthanc
+#             try:
+#                 study = server.get_studies_id(encoded_study_id)
+#                 if not study:
+#                     logging.error(f"Study with ID {encoded_study_id} not found on the server.")
+#                     return JsonResponse({'error': f"Study with ID {encoded_study_id} not found."}, status=404)
+#             except httpx.HTTPError as e:
+#                 logging.error(f"HTTP error occurred while accessing Orthanc: {e}")
+#                 return JsonResponse({'error': f"HTTP error: {str(e)}"}, status=500)
+
+#             # Extract series details
+#             series_ids = study.get('Series', [])
+#             series = []
+#             studyUID = ''
+#             name = ''
+#             id = ''
+#             studyDate = ''
+#             studyTime = ''
+#             centre_name = ''
+
+#             for i in series_ids:
+#                 sampleInstance = server.get_series_id(i)['Instances'][0]
+#                 tags = server.get_instances_id_tags(sampleInstance)
+
+#                 # Extract necessary fields
+#                 name = tags['0010,0010'].get('Value', 'Unknown')
+#                 studyUID = tags['0020,000d'].get('Value', 'Unknown')
+#                 studyDate = tags['0008,0020'].get('Value', 'Unknown')
+#                 studyTime = tags['0008,0030'].get('Value', 'Unknown')
+#                 seriesUID = tags['0020,000e'].get('Value', 'Unknown')
+#                 seriesModality = tags['0008,0060'].get('Value', 'Unknown')
+#                 id = tags['0010,0020'].get('Value', 'Unknown')
+#                 seriesDescription = tags['0008,103e'].get('Value', 'Unknown')
+#                 centre_name = tags['0008,0080'].get('Value', 'Unknown')
+#                 seriesPreview = f"{url}instances/{sampleInstance}/preview"
+
+#                 # Append series details
+#                 series.append([
+#                     seriesUID,
+#                     seriesModality,
+#                     seriesDescription,
+#                     seriesPreview
+#                 ])
+
+#             # Log final output
+#             logging.debug(f"Study UID: {studyUID}, Series: {series}, Name: {name}, ID: {id}, "
+#                           f"Date: {studyDate}, Time: {studyTime}, Centre Name: {centre_name}")
+
+#             # Return the JSON response
+#             return JsonResponse({
+#                 'study_uid': studyUID,
+#                 'series': series,
+#                 'name': name,
+#                 'id': id,
+#                 'date': studyDate,
+#                 'time': studyTime,
+#                 'centre_name': centre_name
+#             })
+
+#         except Exception as e:
+#             logging.error(f"Unexpected error processing server data: {e}")
+#             return JsonResponse({'error': f"An unexpected error occurred: {str(e)}"}, status=500)
+
+#     else:
+#         logging.warning("Invalid HTTP method used for server_data.")
+#         return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+def server_data(request):
+    if request.method == 'POST':
+        url = 'http://13.202.103.243:2002/'
+        server = Orthanc(url, username='admin', password='u4rad')
+        for key in request.POST.keys():
+            study_id = key
+        study = server.get_studies_id(study_id)
+        series_ids = study['Series']
+        series = []
+        studyUID = ''
+        name = ''
+        id = ''
+        studyDate = ''
+        studyTime = ''
+        for i in series_ids:
+            sampleInstance = server.get_series_id(i)['Instances'][0]
+            tags = server.get_instances_id_tags(sampleInstance)
+            name = tags['0010,0010']['Value']
+            studyUID = tags['0020,000d']['Value']
+            studyDate = tags['0008,0020']['Value']
+            studyTime = tags['0008,0030']['Value']
+            seriesUID = tags['0020,000e']['Value']
+            seriesModality = tags['0008,0060']['Value']
+            id = tags['0010,0020']['Value']
+            seriesDescription = tags['0008,103e']['Value']
+            seriesPreview = 'http://13.202.103.243:2002/instances/' + sampleInstance + '/preview'
+            series.append([seriesUID, seriesModality, seriesDescription, seriesPreview])
+        print(studyUID, series, name, id, studyDate, studyTime)
+        return JsonResponse ({'study_uid': studyUID, 'series': series, 'name': name, 'id': id, 'date': studyDate, 'time': studyTime})
+
+        # patient = find_patients(server)[0]
+        # study = patient.studies[0]
+        # series = []
+        # print(study.identifier)
+        # for i in study.series:
+        #     preview = 'http://13.202.103.243:2002/instances/' + i.instances[0].identifier + '/preview' 
+        #     series.append([i.uid, i.modality, i.description, preview]) 
+        # return JsonResponse({'study_uid': study.uid, 'series': series, 'name' : patient.name, 'id' : patient.patient_id, 'date' : study.date.strftime("%d/%m/%Y"), 'time': study.date.strftime("%H:%M:%S")}) 
 
 
 

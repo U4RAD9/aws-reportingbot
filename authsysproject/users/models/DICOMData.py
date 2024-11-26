@@ -11,6 +11,7 @@ class DICOMData(models.Model):
     age = models.CharField(max_length=250, blank=True)
     gender = models.CharField(max_length=250, blank=True)
     study_date = models.CharField(max_length=250, blank=True)
+    study_id = models.CharField(max_length=100, blank=True)
     study_description = models.CharField(max_length=200, blank=True)
     isDone = models.BooleanField(default=False)
     NonReportable = models.BooleanField(default=False)

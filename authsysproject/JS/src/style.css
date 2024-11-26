@@ -1,318 +1,402 @@
 @import url("bootstrap/dist/css/bootstrap.min.css");
-
+body {
+   overflow: hidden;
+}
 .document-editor {
   border: 1px solid var(--ck-color-base-border);
   border-radius: var(--ck-border-radius);
 
   /* Set vertical boundaries for the document editor. */
-  height: 94.15vh;
-
-
+  height: 100vh;
   /* This element is a flex container for easier rendering. */
-  display: flex;
-  flex-flow: column nowrap;
+  position: relative;
+
 }
 
 .document-editor__toolbar {
-  /* Make sure the toolbar container is always above the editable. */
-  z-index: 1;
+  position: sticky; /* Fixes the toolbar at the top */
+  top: 0; /* Aligns it to the top of the viewport */
+  left: 0; /* Aligns it to the left */
+  right: 0; /* Makes it stretch to the right edge */
+  z-index: 1; /* Ensures it appears above other content */
 
-  /* Create the illusion of the toolbar floating over the editable. */
-  box-shadow: 0 0 5px hsla(0, 0%, 0%, 0.2);
-
-  /* Use the CKEditor CSS variables to keep the UI consistent. */
-  border-bottom: 1px solid var(--ck-color-toolbar-border);
+  /* Visual enhancements */
+  background: linear-gradient(135deg, #f5f7fa, #c3cfe2); /* Soft gradient background */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow-x: hidden;
 }
 
-/* Adjust the look of the toolbar inside the container. */
-/* .document-editor__toolbar .ck-toolbar {
-  border: 0;
-  border-radius: 0;
-} */
+  
+#previewTab {
+    display: grid; /* Use grid layout */
+    grid-auto-flow: column; /* Flow items in rows (side by side) */
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Set minimum and maximum width for grid items */
+    grid-auto-columns: 100px; /* Force fixed column width for grid items */
+    overflow-x: auto; /* Enable horizontal scrolling */
+    border: 1px solid #007bff; /* Add border for visibility */
+    padding: 0; /* Remove padding for no space */
+    margin: 0; /* Ensure no margin */
+    height: 100px;
+    background-color: whitesmoke; /* Set background color to black */
+  }
+  
 
+  .page-content  {
+    display: flex;
+    width: 100%;
+    position: relative; /* Change to relative unless absolute is necessary */
+    overflow: hidden;
+    text-align: center;
+    align-items: center; /* Vertically center grid content */
+  
+}
 
-.page-content {
-  display: grid;
-  text-align: center;
-  grid-template-columns: 50% 50%;
-  height: 100%;
+.cornerstone-container  {
+    height: 80vh;
+    width: 100vw;
+    flex: 1; /* Takes full width initially */
+    transition: flex 0.3s ease;
+    margin-top: 30px;
 }
 
 .viewport-container {
-  height: 100%;
-  text-align: center;
+    width: 100%;
+    height: 85%;
+    margin: 0.5em auto auto;
+    display: grid;
+  }
+  
+  .viewport {
+    position: relative;
+    width: auto;
+    height: auto;
+    margin: none;
+    padding: none;
+    border: 2px solid white;
+    image-rendering: -webkit-optimize-contrast; /* High-quality rendering */
+    image-rendering: crisp-edges; /* Keeps images sharp */
+  }
+  
+  .viewport:hover {
+    border: 2px solid red;
+  }
+  
+  .cornerstone-canvas {
+    height: 100% !important;
+    width: 100% !important;
+    margin: auto;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+  }
+  
+  .svg-layer {
+    position: relative !important;
+  }
+  
+  .tools {
+    margin-top: 0.5em;
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto auto auto auto auto auto auto auto auto auto auto auto auto;
+  }
+  
+  .button-container {
+    margin-left: none;
+    margin-right: none;
+  }
+  
+  .dropdown {
+    width: 20px !important;
+    border: none;
+  }
+  
+  .tool-button {
+    color: #333; /* Darker text color for better contrast */
+    background-color: #f8f9fa; /* Light background for a modern look */
+    border: none;
+    border-radius: 8px; /* Rounded corners */
+    padding: 10px 15px; /* Padding for better clickability */
+    font-size: 14px; /* Increase font size for readability */
+    font-weight: bold; /* Bold text for emphasis */
+    transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth transitions for hover effects */
+    cursor: pointer; /* Cursor changes to pointer on hover */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  }
+  
+  .name-button{
+    color: black;
+    background-color: white;
+    border: none;
+  }
+  
+  .tool-button:hover {
+    background-color: #007bff; /* Change background on hover */
+    color: white; /* Change text color on hover */
+    transform: translateY(-2px); /* Slight lift effect on hover */
+  }
+  
+  .tool-button:active {
+    transform: translateY(0); /* Reset lift effect on click */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); /* Deeper shadow on click */
+  }
+  
+  .slider {
+    opacity: 0.7;
+    transition: none;
+  }
+  
+  .slider:hover {
+    opacity: 1;
+  }
+  
+  .details {
+    display: grid;
+    grid-template-columns: auto auto auto auto auto;
+  }
+  
+  #viewport2{
+    display: none;
+  }
+  
+  #viewport3{
+    display: none;
+  }
+  
+  #viewport4{
+    display: none;
+  }
+  
+
+  .document-editor__editable-container {
+    display: flex;
+    flex-direction: column; /* Arrange content vertically */
+    padding: calc(2 * var(--ck-spacing-large));
+    background: var(--ck-color-base-foreground);
+    padding-top: 15px;
+  
+    flex: 1; /* Will take 50% width when shown */
+    transition: flex 0.3s ease;
+    height: 80vh;
+    overflow-y: auto; /* Adds vertical scroll if content exceeds height */
+    overflow-x: hidden;
+  
 }
 
-.viewport {
-  position: relative;
-  width: 90%;
-  height: 600px;
-  margin: 0.5em auto auto;
+.document-editor__content {
+  flex-grow: 1; /* Take up all available space */
+  overflow-y: auto; /* Adds vertical scroll if content exceeds height */
+  overflow-x: hidden;
 }
 
-.button-container{
-  margin-top: 0.5em;
-}
-
-.tool-button{
-  color: black;
-  background-color: white;
-}
-
-.tool-button:hover{
-  color: white;
-  background-color: black;
-}
-
-/* Make the editable container look like the inside of a native word processor application. */
-.document-editor__editable-container {
-  padding: calc(2 * var(--ck-spacing-large));
-  background: var(--ck-color-base-foreground);
-  padding-top: 15px;
-  height: 100% !important;
-  overflow: auto !important
-
-  /* Make it possible to scroll the "page" of the edited content. */
-}
-
-.document-editor__editable-container > div{
-  padding: none 1.5cm 0.1cm  !important;
-}
-
-.document-editor__editable-container .ck-editor__editable {
-  /* Set the dimensions of the "page". */
-  min-height: 21cm;
-
-  /* Keep the "page" off the boundaries of the container. */
+/* Additional styles to ensure CKEditor doesn't overlap toggle button */
+.document-editor__editable-container > div {
+  padding: none 1.5cm 0.1cm !important;
+  }
+  .document-editor__editable-container .ck-editor__editable {
   padding: 1em;
-
   border: 1px hsl(0, 0%, 82.7%) solid;
   border-radius: var(--ck-border-radius);
   background: white;
-
-  /* The "page" should cast a slight shadow (3D illusion). */
   box-shadow: 0 0 5px hsla(0, 0%, 0%, 0.1);
-
-  /* Center the "page". */
   margin: 0 auto;
-}
-
-/* Set the default font for the "page" of the content. */
-.document-editor .ck-content,
-/* .document-editor .ck-heading-dropdown .ck-list .ck-button__label {
-  font: 16px/1.6 "Helvetica Neue", Helvetica, Arial, sans-serif;
-} */
-
-/* Adjust the headings dropdown to host some larger heading styles. */
-.document-editor .ck-heading-dropdown .ck-list .ck-button__label {
+  overflow-x: hidden;
+  }
+  /* Adjust the headings dropdown to host some larger heading styles. */
+  .document-editor .ck-heading-dropdown .ck-list .ck-button__label {
   line-height: calc(
-    1.7 * var(--ck-line-height-base) * var(--ck-font-size-base)
+  1.7 * var(--ck-line-height-base) * var(--ck-font-size-base)
   );
   min-width: 6em;
-}
-
-/* Scale down all heading previews because they are way too big to be presented in the UI.
-Preserve the relative scale, though. */
-.document-editor
+  }
+  /* Scale down all heading previews because they are way too big to be presented in the UI.
+  Preserve the relative scale, though. */
+  .document-editor
   .ck-heading-dropdown
   .ck-list
   .ck-button:not(.ck-heading_paragraph)
   .ck-button__label {
   transform: scale(0.8);
   transform-origin: left;
-}
-
-/* Set the styles for "Heading 1". */
-.document-editor .ck-content h2,
-.document-editor .ck-heading-dropdown .ck-heading_heading1 .ck-button__label {
+  }
+  /* Set the styles for "Heading 1". */
+  .document-editor .ck-content h2,
+  .document-editor .ck-heading-dropdown .ck-heading_heading1 .ck-button__label {
   font-size: 2.18em;
   font-weight: normal;
-}
-
-.document-editor .ck-content h2 {
+  }
+  .document-editor .ck-content h2 {
   line-height: 1.37em;
   padding-top: 0.342em;
   margin-bottom: 0.142em;
-}
-
-/* Set the styles for "Heading 2". */
-.document-editor .ck-content h3,
-.document-editor .ck-heading-dropdown .ck-heading_heading2 .ck-button__label {
+  }
+  /* Set the styles for "Heading 2". */
+  .document-editor .ck-content h3,
+  .document-editor .ck-heading-dropdown .ck-heading_heading2 .ck-button__label {
   font-size: 1.75em;
   font-weight: normal;
   color: hsl(203, 100%, 50%);
-}
-
-.document-editor
+  }
+  .document-editor
   .ck-heading-dropdown
   .ck-heading_heading2.ck-on
   .ck-button__label {
   color: var(--ck-color-list-button-on-text);
-}
-
-/* Set the styles for "Heading 2". */
-.document-editor .ck-content h3 {
+  }
+  /* Set the styles for "Heading 2". */
+  .document-editor .ck-content h3 {
   line-height: 1.86em;
   padding-top: 0.171em;
   margin-bottom: 0.357em;
-}
-
-/* Set the styles for "Heading 3". */
-.document-editor .ck-content h4,
-.document-editor .ck-heading-dropdown .ck-heading_heading3 .ck-button__label {
+  }
+  /* Set the styles for "Heading 3". */
+  .document-editor .ck-content h4,
+  .document-editor .ck-heading-dropdown .ck-heading_heading3 .ck-button__label {
   font-size: 1.31em;
   font-weight: bold;
-}
-
-.document-editor .ck-content h4 {
+  }
+  .document-editor .ck-content h4 {
   line-height: 1.24em;
   padding-top: 0.286em;
   margin-bottom: 0.952em;
-}
-
-/* Set the styles for "Paragraph". */
-.document-editor .ck-content p {
+  }
+  /* Set the styles for "Paragraph". */
+  .document-editor .ck-content p {
   font-size: 1em;
   line-height: 1.63em;
   padding-top: 0.5em;
   margin-bottom: 1.13em;
-}
-
-/* Make the block quoted text serif with some additional spacing. */
-.document-editor .ck-content blockquote {
+  }
+  /* Make the block quoted text serif with some additional spacing. */
+  .document-editor .ck-content blockquote {
   font-family: Georgia, serif;
   margin-left: calc(2 * var(--ck-spacing-large));
   margin-right: calc(2 * var(--ck-spacing-large));
-}
-
-
-.select-box {
+  }
+  .select-box {
   width: 100%;
   color: blueviolet;
-  
-}
-
-.MuiPaper-elevation1, .MuiPaper-elevation2 {
-  box-shadow: none !important;
-}
-
-.document-editor .ck-content p:first-child { 
-  font-size: 1em;
-  line-height: 12.9pt;
-   padding-top: 0.5em; 
-   margin-bottom: 1.13em; 
-}
-
-.document-editor .ck-content p{
-  font-size: 1em;
-  line-height: 12.9pt;
-  padding-top: 0; 
-  margin-bottom: 1.13em;
-}
-
-@media (min-width: 576px)  {
-.modal-dialog {
-    max-width: 700px !important;
   }
-}
-
-table, table th, table thead th  {
+  .MuiPaper-elevation1, .MuiPaper-elevation2 {
+  box-shadow: none !important;
+  }
+  .document-editor .ck-content p:first-child { 
+  font-size: 1em;
+  line-height: 12.9pt;
+  padding-top: 0.5em; 
+  margin-bottom: 1.13em; 
+  }
+  @media (max-width: 767px) {
+  .page-content {
+  display: block !important; 
+  overflow: auto;
+  }
+  .viewport-container {
+  margin-top: 0.5em;
+  }
+  }
+  @media (min-width: 768px) {
+  .modal-dialog {
+  max-width: 700px !important;
+  }
+  }
+  table, table th, table thead th {
   font-size: 13px;
   text-align: center !important;
   /* backgrou nd-image: url("logo.png"); */
   background-color: gray;
-}
-
-tbody {
+  }
+  tbody {
   background-color: gray;
-}
-
-.ck-content .image>figcaption {
+  }
+  .ck-content .image>figcaption {
   display: none !important;
-}
-
-.ck-content .image {
+  }
+  .ck-content .image {
   width: 100%;
-}
-
-.ck-content .image img {
+  }
+  .ck-content .image img {
   margin: 0px !important;
   width: auto;
   height: auto;
   max-width: 100%;
   max-height: 700px;
-}
-
-@media print {
+  }
+  @media print {
   body * {
-    visibility: hidden;
+  visibility: hidden;
   }
   .ck-content, .ck-content * {
-    visibility: visible;
+  visibility: visible;
   }
   #ck-content {
-    position: absolute;
-    left: 0;
-    top: 0;
+  position: absolute;
+  left: 0;
+  top: 0;
   }
   .document-editor__editable-container .ck-editor__editable {
-     width: 100%; 
-     min-height: 21cm; 
-     padding: 1cm 2cm 2cm; 
-     border: 1px hsl(0, 0%, 82.7%) solid; 
-     border-radius: var(--ck-border-radius); 
-     background: white; 
-     box-shadow: none;
-     margin: none; 
+  width: 100%; 
+  min-height: 21cm; 
+  padding: 1cm 2cm 2cm; 
+  border: 1px hsl(0, 0%, 82.7%) solid; 
+  border-radius: var(--ck-border-radius); 
+  background: white; 
+  box-shadow: none;
+  margin: none; 
   }
   table{
-    table-layout: auto;
+  table-layout: auto;
   }
-}
-
-
-.MuiGrid-item:nth-child(2) > div {
+  }
+  .modal {
+  width: 100%;
+  position: relative;
+  }
+  .modal-backdrop {
+  display: none;
+  }
+  .modal-dialog {
+  margin-top: none;
+  }
+  .modal-body {
+  max-height: calc(100vh - 210px);
+  overflow-y: auto;
+  }
+  .MuiGrid-item:nth-child(2) > div {
   margin-bottom: 0!important;
-}
-
-.MuiGrid-item:nth-child(2) div.MuiCardContent-root{
+  }
+  .MuiGrid-item:nth-child(2) div.MuiCardContent-root{
   padding-bottom: 0!important;
-}
-
-.MuiGrid-item:nth-child(3) div.MuiCardContent-root{
+  }
+  .MuiGrid-item:nth-child(3) div.MuiCardContent-root{
   padding-top: 0!important;
   margin-top: -15px;
-}
-
-.err {
+  }
+  .err {
   color: red!important;
-}
-
-.document-editor__toolbar div .report-here {
+  }
+  .document-editor__toolbar div .report-here {
   color: rgb(255, 255, 255);
   padding: 8px;
   margin-left: 30px;
   background-color: rgb(226, 72, 72);
   border-radius: 6px;
   font-size: 11px;
-}
-
-.document-editor__toolbar div .report-here:hover {
+  }
+  .document-editor__toolbar div .report-here:hover {
   background-color: rgb(219, 2, 2);
   font-size: 12px;
   cursor: pointer;
-}
-
-.document-editor__toolbar div .user-name {
+  }
+  .document-editor__toolbar div .user-name {
   color:rgba(0, 0, 0, 0.767);
   font-size: 12px;
   padding: 5px;
   text-shadow: darkgray;
   font-style: italic;
   border-left: 2px solid gray;
-}
-
-.document-editor__toolbar div .user-name .current-user {
+  }
+  .document-editor__toolbar div .user-name .current-user {
   color: black;
   font-size: 15px;
   font-family: "Lucida Console", "Courier New", monospace;
@@ -320,57 +404,33 @@ tbody {
   border-right: 1px solid rgb(174, 173, 173);
   margin-left: 5px;
   padding-right: 25px;
-}
-
-.modal {
-  width: 100%;
-  position: static;
-}
-
-.modal-backdrop {
-  width: 100%;
-  position: static;
-}
-
-.modal-dialog {
-  margin-top: none;
-}
-
-.modal-body {
-  max-height: calc(100vh - 210px);
-  overflow-y: auto;
-}
-
-table{
+  }
+  table{
   -webkit-user-select: none;
   -khtml-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   -o-user-select: none;
   user-select: none;
-}
-
-table::before{
+  }
+  table::before{
   content: element(table);
+  
 }
 
-/* Add media query for mobile screens */
-@media (max-width: 767px) {
-  .page-content {
-    display: block;
-  }
 
-  .document-editor__editable-container,
-  .viewport-container {
-    width: 100%;
-  }
 
-  .ck.ck-content.ck-editor__editable.ck-rounded-corners.ck-editor__editable_inline.ck-blurred {
-    font-size: 8px; /* Reduce font size to 14px for smaller screens */
-  }
 
-  table, table th, table thead th {
-    font-size: 8px; 
-  }
-}
-
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  

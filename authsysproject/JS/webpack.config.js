@@ -1,3 +1,4 @@
+
 const path = require("path");
 const webpack = require("webpack");
 
@@ -8,6 +9,10 @@ module.exports = {
     filename: "[name].js",
   },
   resolve: {
+    alias: {
+      "@cornerstonejs/tools": "@cornerstonejs/tools/dist/umd/index.js",
+      "@cornerstonejs/core": "@cornerstonejs/core/dist/umd/index.js",
+    },
     fallback: {
         url: require.resolve('url'),
         assert: require.resolve('assert'),
@@ -17,7 +22,8 @@ module.exports = {
         os: require.resolve('os-browserify/browser'),
         buffer: require.resolve('buffer'),
         stream: require.resolve('stream-browserify'),
-    }
+    },
+    extensions: ['.js', '.jsx', '.ts', '.wasm']
   },
   module: {
     rules: [
@@ -31,7 +37,15 @@ module.exports = {
         exclude: /node_modules/,
         use: ["style-loader", "css-loader"],
       },
+      {
+        test: /\.wasm$/,
+        type: 'webassembly/async'
+      },
     ],
+  },
+  experiments: {
+    asyncWebAssembly: true,
+    topLevelAwait: true,
   },
   optimization: {
     minimize: true,
@@ -39,6 +53,6 @@ module.exports = {
   plugins:[
     new webpack.DefinePlugin({
         process: {env: {}}
-    })
+    }),
   ],
 };
