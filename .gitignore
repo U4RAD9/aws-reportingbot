@@ -11,6 +11,10 @@ authsysproject/ecg_graphs/
 authsysproject/jpeg_files/
 GoogleDriveAPI.json/
 
+# Removing the settings.py file and some others to resolve the git conflict.
+authsysproject/settings.py
+settings.py
+authsysproject/authsyspoject/settings.py
 # Backup files # 
 *.bak 
 

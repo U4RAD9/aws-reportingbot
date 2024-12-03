@@ -16,10 +16,11 @@ class DICOMData(models.Model):
     isDone = models.BooleanField(default=False)
     NonReportable = models.BooleanField(default=False)
     notes = models.CharField(max_length=50000, default=True)
-    location = models.ForeignKey(XLocation, on_delete=models.CASCADE, null=True, blank=True)
+    #location = models.ForeignKey(XLocation, on_delete=models.CASCADE, null=True, blank=True)
+    location = models.CharField(max_length=100, blank=True, null=True)
     radiologist = models.ManyToManyField(PersonalInfo, blank=True)
     body_part_examined = models.CharField(max_length=200, blank=True, null=True)
-    accession_number = models.CharField(max_length=50, null=True, blank=True)
+    #accession_number = models.CharField(max_length=50, null=True, blank=True)
 
     def __str__(self):
         return str(self.patient_name)
