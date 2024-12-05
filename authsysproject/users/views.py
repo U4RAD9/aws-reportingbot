@@ -100,6 +100,9 @@ from users.forms import PersonalInfoForm
 from pyorthanc import Orthanc, find_patients
 import logging
 import urllib
+# Importing this to use the aggregate function in the upated report status of xray view. - HImanshu.
+from django.db.models import Sum
+
 
 def login(request):
     if request.method == 'POST':
@@ -2166,33 +2169,79 @@ def update_patient_done_status(request, patient_id):
     except PatientDetails.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Patient not found'})
 
+# This is the view to update the report status using the done button, here the major issue is that this code might work
+# locally and on deployment sometimes, but this is not the actual approach because of unwanted looping over the query
+# sets and directly comparing the querysets instead of comparing thier count. As of now, the data in querysets are
+# compared continously by looping over it (not required.), and some more detailed reason is given here :
+# In local development with fewer records, your query might work without issues because the QuerySet is small.
+# On the deployed server, if the QuerySet is much larger,
+# it could behave differently when trying to loop over or compare it. - Himanshu.
 
+# @require_POST
+# def update_patient_done_status_xray(request, patient_id):
+#     try:
+#         current_user_personal_info = PersonalInfoModel.objects.get(user=request.user)
+#         user_unreported_and_allocated_patients = DICOMData.objects.filter(radiologist=current_user_personal_info,
+#                                                                           isDone=False).count()
+#         print(user_unreported_and_allocated_patients)
+#         if user_unreported_and_allocated_patients > 0:
+#             PersonalInfoModel.objects.filter(id=current_user_personal_info.id).update(
+#                 total_reported=F('total_reported') + 1)
+
+#         total_uploaded_xray = Total_Cases.objects.values_list('total_uploaded_xray', flat=True)
+#         for value in total_uploaded_xray:
+#             total_uploaded_xray = value
+
+#         total_reported_xray = Total_Cases.objects.values_list('total_reported_xray', flat=True)
+#         for value in total_reported_xray:
+#             total_reported_xray = value
+
+#         if total_uploaded_xray > total_reported_xray:
+#             Total_Cases.objects.update(total_reported_xray=models.F('total_reported_xray') + 1)
+#         patient = get_object_or_404(DICOMData, patient_id=patient_id)
+#         patient.isDone = True
+#         patient.save()
+
+#         return JsonResponse({'success': True})
+#     except DICOMData.DoesNotExist:
+#         return JsonResponse({'success': False, 'error': 'Patient not found'})
+
+# This is the updated view for updating the report status using the done button as of right now.
+# Here is the reason and solution given with explanation :
+# By changing the code to use aggregate() for getting summed values and simplifying the comparison logic,
+# we can ensure that the API behaves correctly in both local and deployed environments.
+# The key issue with our original code was the incorrect comparison between QuerySet objects. - Himanshu.
 @require_POST
 def update_patient_done_status_xray(request, patient_id):
     try:
+        # Fetch the personal info of the current user
         current_user_personal_info = PersonalInfoModel.objects.get(user=request.user)
-        user_unreported_and_allocated_patients = DICOMData.objects.filter(radiologist=current_user_personal_info,
-                                                                          isDone=False).count()
+        
+        # Count the unreported and allocated patients for the current user
+        user_unreported_and_allocated_patients = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=False).count()
         print(user_unreported_and_allocated_patients)
+        
+        # If there are unreported and allocated patients, increment the 'total_reported' for the current user
         if user_unreported_and_allocated_patients > 0:
             PersonalInfoModel.objects.filter(id=current_user_personal_info.id).update(
-                total_reported=F('total_reported') + 1)
+                total_reported=F('total_reported') + 1
+            )
 
-        total_uploaded_xray = Total_Cases.objects.values_list('total_uploaded_xray', flat=True)
-        for value in total_uploaded_xray:
-            total_uploaded_xray = value
+        # Use aggregate to fetch the total uploaded and reported x-rays in one query
+        total_uploaded_xray = Total_Cases.objects.aggregate(Sum('total_uploaded_xray'))['total_uploaded_xray__sum'] or 0
+        total_reported_xray = Total_Cases.objects.aggregate(Sum('total_reported_xray'))['total_reported_xray__sum'] or 0
 
-        total_reported_xray = Total_Cases.objects.values_list('total_reported_xray', flat=True)
-        for value in total_reported_xray:
-            total_reported_xray = value
-
+        # Compare the total uploaded and reported x-rays
         if total_uploaded_xray > total_reported_xray:
             Total_Cases.objects.update(total_reported_xray=models.F('total_reported_xray') + 1)
+
+        # Fetch the DICOMData object for the patient and mark it as done
         patient = get_object_or_404(DICOMData, patient_id=patient_id)
         patient.isDone = True
         patient.save()
 
         return JsonResponse({'success': True})
+
     except DICOMData.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Patient not found'})
 
