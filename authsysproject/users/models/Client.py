@@ -7,6 +7,7 @@ class Client(models.Model):
     email = models.EmailField(unique=True, null=True, blank=True)
     password = models.CharField(max_length=100, null=True, blank=True)
     location = models.ForeignKey(XLocation, on_delete=models.CASCADE, null=True, blank=True)
+    institution_name = models.CharField(max_length=250, blank=True, null=True, default="None")
 
     def __str__(self):
         return self.name

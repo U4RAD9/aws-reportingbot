@@ -14,8 +14,8 @@ GoogleDriveAPI.json/
 # Removing the files causing git conflicts - Himanshu.
 authsysproject/settings.py
 settings.py
-authsysproject/users/migrations
-users/migrations
+#authsysproject/users/migrations
+#users/migrations
 
 # Backup files # 
 *.bak 
