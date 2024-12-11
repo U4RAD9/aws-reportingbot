@@ -77,10 +77,6 @@ class Blanks extends Component {
         "</pre>" +
         "</header>";
     }
-    if(frmData)
-    {
-    report+="<strong>" + "Doctor Consultation and recommendation" + "</strong>"
-    }
 
     const current_user = JSON.parse(
       document.getElementById("current-user").textContent || "{}"
@@ -88,7 +84,6 @@ class Blanks extends Component {
 
     report +=
       this.pageBreak() +
-      this.getImpression(impression, totalCovidPoints) +
       this.getCorads(current_user);
 
     if (frmData.reportimage) {
@@ -122,16 +117,7 @@ class Blanks extends Component {
     );
   }
 
-  getImpression(impression, totalCovidPoints) {
-    let text = "</br><p><strong><u>IMPRESSION:</u></strong></p><p>";
-    return (
-      text +
-      (impression.length !== 0
-        ? impression.join("")
-        : "No significant findings.") +
-      "</p>"
-    );
-  }
+
 
   render() {
     const { frmData } = this.state;

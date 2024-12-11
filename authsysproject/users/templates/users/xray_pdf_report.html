@@ -506,6 +506,7 @@
               <tr>
                 <th>Patient ID</th>
                 <th>Name</th>
+                <th>Institution Name</th>
                 <th>
                   <div class="filter-dropdown-container">
                     <div>Test Date</div>
@@ -544,6 +545,7 @@
               <tr class="patientRow">
                 <td>{{ pdf.patient_id }}</td>
                 <td>{{ pdf.name }}</td>
+                <td>{{ pdf.institution_name }}</td>
                 <td data-date="{{ pdf.test_date|date:'Y-m-d' }}">{{ pdf.test_date|date:'Y-m-d' }}</td>
                 <td>{{ pdf.report_date }}</td>
                 <td>{{ pdf.location }}</td>

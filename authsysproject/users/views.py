@@ -118,7 +118,7 @@ def login(request):
                 return redirect('proinst')
             elif group == 'cardiologist':
                 return redirect('ecgallocation')
-            elif group == 'cardiologist2':
+            elif group == 'radiologist':
                 return redirect('xrayallocation')
             elif group == 'audiometrist':
                 return redirect('audiometry')
@@ -132,6 +132,8 @@ def login(request):
                 return redirect('client')
             elif group == 'campautomation':
                 return redirect('optometrylist')
+            elif group == 'supercoordinator':
+                return redirect('supercoordinator')
             else:
                 return redirect('reportingbot')
         else:
@@ -536,9 +538,10 @@ def client_dashboard(request):
     test_dates_set = set()
     report_dates_set = set()
 
-    if current_user_personal_info.location:
-        location = current_user_personal_info.location
-        pdfs = XrayReport.objects.filter(location=location.name).order_by('-report_date')  # Matching location name
+    if current_user_personal_info.institution_name:
+        institution_name = current_user_personal_info.institution_name
+        print("institution_name:", institution_name)
+        pdfs = XrayReport.objects.filter(institution_name=institution_name).order_by('-report_date')  # Matching location name
         pdfs_list.extend(pdfs)
         test_dates_set.update(pdf.test_date for pdf in pdfs)
         report_dates_set.update(pdf.report_date for pdf in pdfs)
@@ -565,7 +568,7 @@ def client_dashboard(request):
         'pdfs': page_obj,
         'Test_Dates': formatted_test_dates,
         'Report_Dates': formatted_report_dates,
-        'Location': current_user_personal_info.location,
+        'Location': current_user_personal_info.institution_name,
         'paginator': paginator,
         'page_obj': page_obj
     }
@@ -701,7 +704,7 @@ def allocation1(request):
     total_current_uploaded = DICOMData.objects.all().count()
 
     # Get radiologists from the group
-    radiologist_group = Group.objects.get(name='cardiologist2')
+    radiologist_group = Group.objects.get(name='radiologist')
     radiologist_objects = radiologist_group.user_set.all()
 
     # Retrieve total cases data
@@ -900,7 +903,7 @@ def allocate1(request):
     global radiologist_logout_time
     global radiologist_login_time
 
-    radiologist_group = Group.objects.get(name='cardiologist2')
+    radiologist_group = Group.objects.get(name='radiologist')
     radiologist_objects = radiologist_group.user_set.all()
 
     total_unallocated_patients = DICOMData.objects.filter(radiologist=None, isDone=False, NonReportable=False)
@@ -1052,7 +1055,7 @@ def allocate1(request):
         else:
             selected_radiologist_email = request.POST.get('radiologist')
             if selected_radiologist_email:
-                radiologist_group = Group.objects.get(name='cardiologist2')
+                radiologist_group = Group.objects.get(name='radiologist')
                 radiologist_user = get_object_or_404(radiologist_group.user_set, email=selected_radiologist_email)
 
                 # Fetch the corresponding PersonalInfo instance for the selected cardiologist
@@ -1150,9 +1153,9 @@ def presigned_url(bucket_name, object_name, operation='get_object'):
     return url
 
 
-@user_type_required('cardiologist2')
+@user_type_required('radiologist')
 def xrayallocation(request):
-    radiologist_group = Group.objects.get(name='cardiologist2')
+    radiologist_group = Group.objects.get(name='radiologist')
 
     # Fetch the corresponding PersonalInfo instance for the current user
     current_user_personal_info = PersonalInfoModel.objects.get(user=request.user)
@@ -1837,307 +1840,307 @@ def patientDetails(request):
 
 
 @user_type_required('technician')
-def upload_dicom(request):
-    form = DICOMDataForm()
-    locations = XLocation.objects.all()
+# def upload_dicom(request):
+#     form = DICOMDataForm()
+#     locations = XLocation.objects.all()
 
-    success_message = ''
-    success_details = []
-    rejected_message = ''
-    rejected_details = []
+#     success_message = ''
+#     success_details = []
+#     rejected_message = ''
+#     rejected_details = []
 
-    if request.method == 'POST':
-        form = DICOMDataForm(request.POST, request.FILES)
-        upload_type = request.POST.get('upload_type')
+#     if request.method == 'POST':
+#         form = DICOMDataForm(request.POST, request.FILES)
+#         upload_type = request.POST.get('upload_type')
 
-        if upload_type == 'single_file_per_person':
-            return handle_single_file_per_person_upload(request, form, locations)
-        elif upload_type == 'multiple_file_single_person':
-            return handle_multiple_file_single_person_upload(request, form, locations)
-        else:
-            return HttpResponse("Invalid upload type")
+#         if upload_type == 'single_file_per_person':
+#             return handle_single_file_per_person_upload(request, form, locations)
+#         elif upload_type == 'multiple_file_single_person':
+#             return handle_multiple_file_single_person_upload(request, form, locations)
+#         else:
+#             return HttpResponse("Invalid upload type")
 
-    return render(request, 'users/upload_dicom.html', {
-        'form': form,
-        'location': locations,
-        'success_message': success_message,
-        'success_details': success_details,
-        'rejected_message': rejected_message,
-        'rejected_details': rejected_details,
-    })
-
-
-def handle_single_file_per_person_upload(request, form, locations):
-    success_message = ''
-    rejected_message = ''
-    success_details = []
-    rejected_details = []
-    if request.method == 'POST':
-        form = DICOMDataForm(request.POST, request.FILES)
-
-        location_name = request.POST.get('location')
-        locations = XLocation.objects.filter(name=location_name)
-
-        if locations.exists():
-            location = locations.first()
-            city = location.city
-            client = city.client
-
-            if form.is_valid():
-                print("Form is valid!")
-                dicom_instances = []
-                rejected_files = []
-
-                for dicom_file in request.FILES.getlist('dicom_file'):
-                    try:
-                        dicom_data = dcmread(dicom_file)
-                        print(dicom_data)
-                    except Exception as e:
-                        print(f"Error reading DICOM file: {str(e)}")
-                        rejected_files.append({'id': None, 'name': dicom_file.name})
-                        continue
-
-                    study_date_formatted = datetime.strptime(dicom_data.StudyDate, "%Y%m%d").strftime("%Y-%m-%d")
-                    # Extract body part examined from DICOM file
-
-                    accession_number = dicom_data.get('AccessionNumber', None)
-                    if accession_number == '':
-                        accession_number = None
-
-                    with transaction.atomic():
-                        existing_instance = DICOMData.objects.filter(
-                            patient_id=str(dicom_data.PatientID),
-                            # Add other relevant fields for comparison
-                        ).first()
-
-                        if existing_instance:
-                            print(f"Skipping file {dicom_file.name} - Duplicate data found.")
-                            rejected_files.append({'id': existing_instance.id, 'name': dicom_file.name})
-                        else:
-                            print(f"Saving file {dicom_file.name}")
-
-                            dicom_instance = DICOMData.objects.create(
-                                patient_name=str(dicom_data.PatientName),
-                                patient_id=str(dicom_data.PatientID),
-                                age=str(dicom_data.PatientAge),
-                                gender='Male' if dicom_data.PatientSex.upper() == 'M' else 'Female',
-                                study_date=study_date_formatted,
-                                study_description=str(dicom_data.StudyDescription),
-                                notes=request.POST.get("note"),
-                                body_part_examined=str(dicom_data.BodyPartExamined),
-                                location=location,
-                                accession_number=accession_number
-                            )
-                            if dicom_instance.notes == '':
-                                dicom_instance.notes = 'No Clinical History.'
-
-                            # Save the DICOM file
-                            dicom_file_obj = DICOMFile.objects.create(
-                                dicom_data=dicom_instance,
-                                dicom_file=dicom_file
-                            )
-
-                            # Convert DICOM image to JPEG-compatible format
-                            pixel_data = dicom_data.pixel_array
-                            if dicom_data.BitsAllocated == 16:
-                                pixel_data = pixel_data.astype('uint16')
-                                pixel_data = pixel_data >> (dicom_data.BitsStored - 8)
-
-                            # Convert DICOM image to JPEG and save
-                            with BytesIO() as output:
-                                Image.fromarray(pixel_data).convert('L').save(output, format='JPEG')
-
-                                # Save the JPEG file with the correct DICOM instance
-                                jpeg_file_name = f"{dicom_file.name.split('.')[0]}.jpg"
-                                jpeg_file = ContentFile(output.getvalue(), name=jpeg_file_name)
-                                jpeg_instance = JPEGFile.objects.create(dicom_data=dicom_instance, jpeg_file=jpeg_file)
-                                dicom_instance.save()
-
-                            dicom_instances.append(dicom_instance)
-
-                            print(f"Total DICOM instances to save: {len(dicom_instances)}")
-
-                # After the loop ends
-                total_cases, created = Total_Cases.objects.get_or_create(id=1, defaults={'total_uploaded_xray': 0})
-
-                #Auto Allocate
-                radiologist_group = Group.objects.get(name='cardiologist2')
-                radiologist_user = get_object_or_404(radiologist_group.user_set, email='drgauravbpl@gmail.com')
-                radiologist = PersonalInfoModel.objects.get(user=radiologist_user)
-
-                selected_patient_id = DICOMData.objects.filter(location=17)
-                for patient in selected_patient_id:
-                    patient.radiologist.add(radiologist)
-
-                if dicom_instances:
-                    total_cases.total_uploaded_xray += len(dicom_instances)
-                    success_message = f"{len(dicom_instances)} Images uploaded successfully."
-                    success_details = [
-                        {'id': dicom_instance.id, 'name': dicom_instance.dicom_files.first().dicom_file.name} for
-                        dicom_instance in dicom_instances]
+#     return render(request, 'users/upload_dicom.html', {
+#         'form': form,
+#         'location': locations,
+#         'success_message': success_message,
+#         'success_details': success_details,
+#         'rejected_message': rejected_message,
+#         'rejected_details': rejected_details,
+#     })
 
 
-                if rejected_files:
-                    rejected_message = f"{len(rejected_files)} files were rejected. Please check and try again."
-                    rejected_details = [{'id': item['id'], 'name': item['name']} for item in rejected_files]
+# def handle_single_file_per_person_upload(request, form, locations):
+#     success_message = ''
+#     rejected_message = ''
+#     success_details = []
+#     rejected_details = []
+#     if request.method == 'POST':
+#         form = DICOMDataForm(request.POST, request.FILES)
 
-                total_cases.save()
+#         location_name = request.POST.get('location')
+#         locations = XLocation.objects.filter(name=location_name)
 
-        else:
-            print("No location found with the name:", location_name)
+#         if locations.exists():
+#             location = locations.first()
+#             city = location.city
+#             client = city.client
 
-    # Print both messages at the end
-    print("Success Message:", success_message)
-    print("Rejected Message:", rejected_message)
+#             if form.is_valid():
+#                 print("Form is valid!")
+#                 dicom_instances = []
+#                 rejected_files = []
 
-    # Handle GET requests separately
-    return render(request, 'users/upload_dicom.html', {
-        'form': form,
-        'location': locations,
-        'success_message': success_message,
-        'success_details': success_details,
-        'rejected_message': rejected_message,
-        'rejected_details': rejected_details,
-    })
+#                 for dicom_file in request.FILES.getlist('dicom_file'):
+#                     try:
+#                         dicom_data = dcmread(dicom_file)
+#                         print(dicom_data)
+#                     except Exception as e:
+#                         print(f"Error reading DICOM file: {str(e)}")
+#                         rejected_files.append({'id': None, 'name': dicom_file.name})
+#                         continue
+
+#                     study_date_formatted = datetime.strptime(dicom_data.StudyDate, "%Y%m%d").strftime("%Y-%m-%d")
+#                     # Extract body part examined from DICOM file
+
+#                     accession_number = dicom_data.get('AccessionNumber', None)
+#                     if accession_number == '':
+#                         accession_number = None
+
+#                     with transaction.atomic():
+#                         existing_instance = DICOMData.objects.filter(
+#                             patient_id=str(dicom_data.PatientID),
+#                             # Add other relevant fields for comparison
+#                         ).first()
+
+#                         if existing_instance:
+#                             print(f"Skipping file {dicom_file.name} - Duplicate data found.")
+#                             rejected_files.append({'id': existing_instance.id, 'name': dicom_file.name})
+#                         else:
+#                             print(f"Saving file {dicom_file.name}")
+
+#                             dicom_instance = DICOMData.objects.create(
+#                                 patient_name=str(dicom_data.PatientName),
+#                                 patient_id=str(dicom_data.PatientID),
+#                                 age=str(dicom_data.PatientAge),
+#                                 gender='Male' if dicom_data.PatientSex.upper() == 'M' else 'Female',
+#                                 study_date=study_date_formatted,
+#                                 study_description=str(dicom_data.StudyDescription),
+#                                 notes=request.POST.get("note"),
+#                                 body_part_examined=str(dicom_data.BodyPartExamined),
+#                                 location=location,
+#                                 accession_number=accession_number
+#                             )
+#                             if dicom_instance.notes == '':
+#                                 dicom_instance.notes = 'No Clinical History.'
+
+#                             # Save the DICOM file
+#                             dicom_file_obj = DICOMFile.objects.create(
+#                                 dicom_data=dicom_instance,
+#                                 dicom_file=dicom_file
+#                             )
+
+#                             # Convert DICOM image to JPEG-compatible format
+#                             pixel_data = dicom_data.pixel_array
+#                             if dicom_data.BitsAllocated == 16:
+#                                 pixel_data = pixel_data.astype('uint16')
+#                                 pixel_data = pixel_data >> (dicom_data.BitsStored - 8)
+
+#                             # Convert DICOM image to JPEG and save
+#                             with BytesIO() as output:
+#                                 Image.fromarray(pixel_data).convert('L').save(output, format='JPEG')
+
+#                                 # Save the JPEG file with the correct DICOM instance
+#                                 jpeg_file_name = f"{dicom_file.name.split('.')[0]}.jpg"
+#                                 jpeg_file = ContentFile(output.getvalue(), name=jpeg_file_name)
+#                                 jpeg_instance = JPEGFile.objects.create(dicom_data=dicom_instance, jpeg_file=jpeg_file)
+#                                 dicom_instance.save()
+
+#                             dicom_instances.append(dicom_instance)
+
+#                             print(f"Total DICOM instances to save: {len(dicom_instances)}")
+
+#                 # After the loop ends
+#                 total_cases, created = Total_Cases.objects.get_or_create(id=1, defaults={'total_uploaded_xray': 0})
+
+#                 #Auto Allocate
+#                 radiologist_group = Group.objects.get(name='radiologist')
+#                 radiologist_user = get_object_or_404(radiologist_group.user_set, email='drgauravbpl@gmail.com')
+#                 radiologist = PersonalInfoModel.objects.get(user=radiologist_user)
+
+#                 selected_patient_id = DICOMData.objects.filter(location=17)
+#                 for patient in selected_patient_id:
+#                     patient.radiologist.add(radiologist)
+
+#                 if dicom_instances:
+#                     total_cases.total_uploaded_xray += len(dicom_instances)
+#                     success_message = f"{len(dicom_instances)} Images uploaded successfully."
+#                     success_details = [
+#                         {'id': dicom_instance.id, 'name': dicom_instance.dicom_files.first().dicom_file.name} for
+#                         dicom_instance in dicom_instances]
 
 
-def handle_multiple_file_single_person_upload(request, form, locations):
-    success_message = ''
-    rejected_message = ''
-    success_details = []
-    rejected_details = []
-    if request.method == 'POST':
-        form = DICOMDataForm(request.POST, request.FILES)
-        upload_type = request.POST.get('upload_type')
+#                 if rejected_files:
+#                     rejected_message = f"{len(rejected_files)} files were rejected. Please check and try again."
+#                     rejected_details = [{'id': item['id'], 'name': item['name']} for item in rejected_files]
 
-        location_name = request.POST.get('location')
-        locations = XLocation.objects.filter(name=location_name)
-        body_part_examined = ''
+#                 total_cases.save()
 
-        if locations.exists():
-            location = locations.first()
-            city = location.city
-            client = city.client
+#         else:
+#             print("No location found with the name:", location_name)
 
-            if form.is_valid():
-                print("Form is valid!")
-                dicom_instances = defaultdict(list)
-                rejected_files = []
+#     # Print both messages at the end
+#     print("Success Message:", success_message)
+#     print("Rejected Message:", rejected_message)
 
-                for dicom_file in request.FILES.getlist('dicom_file'):
-                    try:
-                        dicom_data = dcmread(dicom_file)
-                        #print(dicom_data)
-                        print(f"Processing file: {dicom_file.name}")
-                    except Exception as e:
-                        #print(f"Error reading DICOM file: {str(e)}")
-                        print(f"Error reading DICOM file {dicom_file.name}: {str(e)}")
-                        rejected_files.append({'id': None, 'name': dicom_file.name})
-                        continue
-
-                    study_date_formatted = datetime.strptime(dicom_data.StudyDate, "%Y%m%d").strftime("%Y-%m-%d")
-
-                    accession_number = dicom_data.get('AccessionNumber', None)
-                    if accession_number == '':
-                        accession_number = None
-
-                    # Get the unique identifier for the patient
-                    patient_id = str(dicom_data.PatientID)
-
-                    # Get the body part examined
-                    if dicom_data.BodyPartExamined:
-                        body_part_examined = str(dicom_data.BodyPartExamined.split()[0])
+#     # Handle GET requests separately
+#     return render(request, 'users/upload_dicom.html', {
+#         'form': form,
+#         'location': locations,
+#         'success_message': success_message,
+#         'success_details': success_details,
+#         'rejected_message': rejected_message,
+#         'rejected_details': rejected_details,
+#     })
 
 
-                    # Check if DICOMData instance already exists for the patient and study date
-                    existing_instance = DICOMData.objects.filter(patient_id=patient_id).first()
+# def handle_multiple_file_single_person_upload(request, form, locations):
+#     success_message = ''
+#     rejected_message = ''
+#     success_details = []
+#     rejected_details = []
+#     if request.method == 'POST':
+#         form = DICOMDataForm(request.POST, request.FILES)
+#         upload_type = request.POST.get('upload_type')
 
-                    if existing_instance and existing_instance.body_part_examined != body_part_examined:
-                        # If an instance exists and body part examined is different, modify the patient ID
-                        suffix = 1
-                        while DICOMData.objects.filter(patient_id=f"{patient_id}-{suffix}").exists():
-                            suffix += 1
-                        patient_id = f"{patient_id}-{suffix}"
+#         location_name = request.POST.get('location')
+#         locations = XLocation.objects.filter(name=location_name)
+#         body_part_examined = ''
 
-                    # Create or get DICOMData instance
-                    dicom_instance, created = DICOMData.objects.get_or_create(
-                        patient_id=patient_id,
-                        body_part_examined=body_part_examined,
-                        # Add other relevant fields for comparison
-                    )
+#         if locations.exists():
+#             location = locations.first()
+#             city = location.city
+#             client = city.client
 
-                    if created:
-                        # Initialize common fields if this is a newly created DICOMData instance
-                        dicom_instance.client = client
-                        dicom_instance.city = city
-                        dicom_instance.location = location
-                        dicom_instance.patient_name = str(dicom_data.PatientName)
-                        # if
-                        dicom_instance.age = str(dicom_data.PatientAge)
-                        dicom_instance.gender = 'Male' if dicom_data.PatientSex.upper() == 'M' else 'Female'
-                        dicom_instance.notes = request.POST.get("note")
-                        if dicom_instance.notes == '':
-                            dicom_instance.notes = "No Clinical History."
+#             if form.is_valid():
+#                 print("Form is valid!")
+#                 dicom_instances = defaultdict(list)
+#                 rejected_files = []
 
-                        dicom_instance.study_description = str(dicom_data.StudyDescription)  # Save Body Part Examined
-                        dicom_instance.study_date = study_date_formatted
-                        dicom_instance.accession_number = accession_number
-                        dicom_instance.save()
+#                 for dicom_file in request.FILES.getlist('dicom_file'):
+#                     try:
+#                         dicom_data = dcmread(dicom_file)
+#                         #print(dicom_data)
+#                         print(f"Processing file: {dicom_file.name}")
+#                     except Exception as e:
+#                         #print(f"Error reading DICOM file: {str(e)}")
+#                         print(f"Error reading DICOM file {dicom_file.name}: {str(e)}")
+#                         rejected_files.append({'id': None, 'name': dicom_file.name})
+#                         continue
 
-                    # Create a DICOMFile instance for the DICOMData instance
-                    dicom_file_obj = DICOMFile.objects.create(dicom_data=dicom_instance, dicom_file=dicom_file)
+#                     study_date_formatted = datetime.strptime(dicom_data.StudyDate, "%Y%m%d").strftime("%Y-%m-%d")
+
+#                     accession_number = dicom_data.get('AccessionNumber', None)
+#                     if accession_number == '':
+#                         accession_number = None
+
+#                     # Get the unique identifier for the patient
+#                     patient_id = str(dicom_data.PatientID)
+
+#                     # Get the body part examined
+#                     if dicom_data.BodyPartExamined:
+#                         body_part_examined = str(dicom_data.BodyPartExamined.split()[0])
+
+
+#                     # Check if DICOMData instance already exists for the patient and study date
+#                     existing_instance = DICOMData.objects.filter(patient_id=patient_id).first()
+
+#                     if existing_instance and existing_instance.body_part_examined != body_part_examined:
+#                         # If an instance exists and body part examined is different, modify the patient ID
+#                         suffix = 1
+#                         while DICOMData.objects.filter(patient_id=f"{patient_id}-{suffix}").exists():
+#                             suffix += 1
+#                         patient_id = f"{patient_id}-{suffix}"
+
+#                     # Create or get DICOMData instance
+#                     dicom_instance, created = DICOMData.objects.get_or_create(
+#                         patient_id=patient_id,
+#                         body_part_examined=body_part_examined,
+#                         # Add other relevant fields for comparison
+#                     )
+
+#                     if created:
+#                         # Initialize common fields if this is a newly created DICOMData instance
+#                         dicom_instance.client = client
+#                         dicom_instance.city = city
+#                         dicom_instance.location = location
+#                         dicom_instance.patient_name = str(dicom_data.PatientName)
+#                         # if
+#                         dicom_instance.age = str(dicom_data.PatientAge)
+#                         dicom_instance.gender = 'Male' if dicom_data.PatientSex.upper() == 'M' else 'Female'
+#                         dicom_instance.notes = request.POST.get("note")
+#                         if dicom_instance.notes == '':
+#                             dicom_instance.notes = "No Clinical History."
+
+#                         dicom_instance.study_description = str(dicom_data.StudyDescription)  # Save Body Part Examined
+#                         dicom_instance.study_date = study_date_formatted
+#                         dicom_instance.accession_number = accession_number
+#                         dicom_instance.save()
+
+#                     # Create a DICOMFile instance for the DICOMData instance
+#                     dicom_file_obj = DICOMFile.objects.create(dicom_data=dicom_instance, dicom_file=dicom_file)
                     
-                    # Convert DICOM image to JPEG-compatible format
-                    pixel_data = dicom_data.pixel_array
-                    if dicom_data.BitsAllocated == 16:
-                        pixel_data = pixel_data.astype('uint16')  # Convert to 16-bit unsigned integer
-                        pixel_data = pixel_data >> (dicom_data.BitsStored - 8)  # Right-shift to 8-bit
+#                     # Convert DICOM image to JPEG-compatible format
+#                     pixel_data = dicom_data.pixel_array
+#                     if dicom_data.BitsAllocated == 16:
+#                         pixel_data = pixel_data.astype('uint16')  # Convert to 16-bit unsigned integer
+#                         pixel_data = pixel_data >> (dicom_data.BitsStored - 8)  # Right-shift to 8-bit
 
-                    # Convert DICOM image to JPEG and save
-                    with BytesIO() as output:
-                        Image.fromarray(pixel_data).convert('L').save(output, format='JPEG')  # 'L' for grayscale
+#                     # Convert DICOM image to JPEG and save
+#                     with BytesIO() as output:
+#                         Image.fromarray(pixel_data).convert('L').save(output, format='JPEG')  # 'L' for grayscale
 
-                        # Save the JPEG file with the correct DICOM instance
-                        jpeg_file_name = f"{dicom_file.name.split('.')[0]}.jpg"  # Assuming DICOM file name is unique
-                        #jpeg_file_name = f"{patient_id}_{dicom_instance.patient_name}.jpg"  # Use the modified patient_id and patient_name
-                        jpeg_file = ContentFile(output.getvalue(), name=jpeg_file_name)
-                        jpeg_instance = JPEGFile.objects.create(dicom_data=dicom_instance, jpeg_file=jpeg_file)
-                    # Keep track of successfully processed instances
-                    if patient_id not in dicom_instances:
-                        dicom_instances[patient_id] = dicom_instance
+#                         # Save the JPEG file with the correct DICOM instance
+#                         jpeg_file_name = f"{dicom_file.name.split('.')[0]}.jpg"  # Assuming DICOM file name is unique
+#                         #jpeg_file_name = f"{patient_id}_{dicom_instance.patient_name}.jpg"  # Use the modified patient_id and patient_name
+#                         jpeg_file = ContentFile(output.getvalue(), name=jpeg_file_name)
+#                         jpeg_instance = JPEGFile.objects.create(dicom_data=dicom_instance, jpeg_file=jpeg_file)
+#                     # Keep track of successfully processed instances
+#                     if patient_id not in dicom_instances:
+#                         dicom_instances[patient_id] = dicom_instance
 
-                # Retrieving total_cases
-                total_cases, created = Total_Cases.objects.get_or_create(id=1, defaults={'total_uploaded_xray': 0})
+#                 # Retrieving total_cases
+#                 total_cases, created = Total_Cases.objects.get_or_create(id=1, defaults={'total_uploaded_xray': 0})
 
-                # Update total cases count
-                total_cases.total_uploaded_xray += len(dicom_instances)
-                total_cases.save()
+#                 # Update total cases count
+#                 total_cases.total_uploaded_xray += len(dicom_instances)
+#                 total_cases.save()
 
-                # Collect success details
-                success_message = f"{len(dicom_instances)} Images uploaded successfully."
-                success_details = [{'id': None, 'name': file_obj.dicom_file.name} for dicom_instance in dicom_instances.values() for file_obj in dicom_instance.dicom_files.all()]
+#                 # Collect success details
+#                 success_message = f"{len(dicom_instances)} Images uploaded successfully."
+#                 success_details = [{'id': None, 'name': file_obj.dicom_file.name} for dicom_instance in dicom_instances.values() for file_obj in dicom_instance.dicom_files.all()]
                 
-                if rejected_files:
-                    rejected_message = f"{len(rejected_files)} files were rejected. Please check and try again."
-                    rejected_details = [{'id': item['id'], 'name': item['name']} for item in rejected_files]
-                    #rejected_details = rejected_files
+#                 if rejected_files:
+#                     rejected_message = f"{len(rejected_files)} files were rejected. Please check and try again."
+#                     rejected_details = [{'id': item['id'], 'name': item['name']} for item in rejected_files]
+#                     #rejected_details = rejected_files
 
-        else:
-            print("No location found with the name:", location_name)
+#         else:
+#             print("No location found with the name:", location_name)
 
-    # Print both messages at the end
-    print("Success Message:", success_message)
-    print("Rejected Message:", rejected_message)
+#     # Print both messages at the end
+#     print("Success Message:", success_message)
+#     print("Rejected Message:", rejected_message)
 
-    # Handle GET requests separately
-    return render(request, 'users/upload_dicom.html', {
-        'form': form,
-        'location': locations,
-        'success_message': success_message,
-        'success_details': success_details,
-        'rejected_message': rejected_message,
-        'rejected_details': rejected_details,
-    })
+#     # Handle GET requests separately
+#     return render(request, 'users/upload_dicom.html', {
+#         'form': form,
+#         'location': locations,
+#         'success_message': success_message,
+#         'success_details': success_details,
+#         'rejected_message': rejected_message,
+#         'rejected_details': rejected_details,
+#     })
 
 
 @require_POST
@@ -2387,6 +2390,7 @@ def upload_xray_pdf(request):
             patient_id = request.POST.get('patientId').replace(' ', '_')  # Replace spaces with underscores
             patient_name = request.POST.get('patientName').replace(' ', '_')  # Replace spaces with underscores
             location = request.POST.get('location')
+            institution_name = request.POST('institution_name')
             accession_number = request.POST.get('accession')
             test_date_str = request.POST.get('testDate')
             report_date_str = request.POST.get('reportDate')
@@ -2400,6 +2404,7 @@ def upload_xray_pdf(request):
                 name=patient_name,
                 patient_id=patient_id,
                 location=location,
+                institution_name=institution_name,
                 test_date=datetime.strptime(test_date_str, "%Y-%m-%d").date(),
                 report_date=datetime.strptime(report_date_str, "%Y-%m-%d").date(),
                 accession_number=accession_number
@@ -2489,6 +2494,7 @@ def xray_pdf_report(request):
     formatted_dates = [date.strftime('%Y-%m-%d') for date in test_dates]
     report_dates = set(pdf.report_date for pdf in pdfs)
     unique_locations = XLocation.objects.all()
+    institution_name = institution_name
 
     context = {
         'pdfs': page_obj,
@@ -2496,6 +2502,7 @@ def xray_pdf_report(request):
         'Test_Date': sorted(formatted_dates),
         'Report_Date': sorted(report_dates),  # Ensure dates are sorted for dropdown
         'Location': unique_locations,  # Ensure locations are sorted for dropdown
+        'institution_name': institution_name,
         'paginator': paginator,  # Include the paginator object
         'page_obj': page_obj,  # Include the current page object
     }
@@ -4000,6 +4007,197 @@ def server_data(request):
         #     preview = 'http://13.202.103.243:2002/instances/' + i.instances[0].identifier + '/preview' 
         #     series.append([i.uid, i.modality, i.description, preview]) 
         # return JsonResponse({'study_uid': study.uid, 'series': series, 'name' : patient.name, 'id' : patient.patient_id, 'date' : study.date.strftime("%d/%m/%Y"), 'time': study.date.strftime("%H:%M:%S")}) 
+
+
+
+        #Edit option for client 07/12/24
+def clientdata(request):
+    """Display all DICOMData entries."""
+    # Get the logged-in user's associated client
+    client = request.user.client  # Assuming a one-to-one relationship between user and client
+    
+    # Get the institution_name of the client
+    institution_name = client.institution_name
+    dicom_data = DICOMData.objects.filter(institution_name=institution_name)
+
+    # Get edit permissions for the client
+    edit_permissions = {
+        'patient_name': client.can_edit_patient_name,
+        'patient_id': client.can_edit_patient_id,
+        'age': client.can_edit_age,
+        'gender': client.can_edit_gender,
+        'study_date': client.can_edit_study_date,
+        'study_description': client.can_edit_study_description,
+        'notes': client.can_edit_notes,
+        'body_part_examined': client.can_edit_body_part_examined,
+        'referring_doctor_name': client.can_edit_referring_doctor_name,
+        'whatsapp_number': client.can_edit_whatsapp_number
+    }
+
+    return render(request, 'users/upload_dicom.html', {'dicom_data': dicom_data, 'edit_permissions': edit_permissions})
+
+
+    
+
+
+@csrf_exempt
+def edit_dicom_data(request, pk):
+    """Edit specific DICOMData entry."""
+    if request.method == "POST":
+        dicom_entry = get_object_or_404(DICOMData, pk=pk)
+        dicom_entry.patient_name = request.POST.get('patient_name', dicom_entry.patient_name)
+        dicom_entry.patient_id = request.POST.get('patient_id', dicom_entry.patient_id)
+        dicom_entry.age = request.POST.get('age', dicom_entry.age)
+        dicom_entry.gender = request.POST.get('gender', dicom_entry.gender)
+        dicom_entry.study_date = request.POST.get('study_date', dicom_entry.study_date)
+        dicom_entry.study_description = request.POST.get('study_description', dicom_entry.study_description)
+        dicom_entry.notes = request.POST.get('notes', dicom_entry.notes)
+        dicom_entry.body_part_examined = request.POST.get('body_part_examined', dicom_entry.body_part_examined)
+        dicom_entry.referring_doctor_name = request.POST.get('referring_doctor_name', dicom_entry.referring_doctor_name)
+        dicom_entry.whatsapp_number = request.POST.get('whatsapp_number', dicom_entry.whatsapp_number)
+        dicom_entry.save()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False}, status=400)
+
+
+
+
+@login_required
+def supercoordinator_view(request, client_id=None):
+    # Initialize the edit permissions to False (or another default value)
+    can_edit_patient_name = False
+    can_edit_patient_id = False
+    can_edit_age = False
+    can_edit_gender = False
+    can_edit_study_date = False
+    can_edit_study_description = False
+    can_edit_notes = False
+    can_edit_body_part_examined = False
+    can_edit_referring_doctor_name = False
+    can_edit_whatsapp_number = False
+    # Check if the logged-in user is a superuser
+    if not request.user.is_superuser:
+        messages.error(request, "Access denied. Superuser privileges are required.")
+        return redirect('/')  # Redirect non-superusers to the homepage or any other view
+
+    if request.method == "POST":
+        # Handle client creation or update
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        location_id = request.POST.get('location')
+        institution_name = request.POST.get('institution_name')
+
+        # Fetch field-level permissions from POST data
+        
+        can_edit_patient_name = request.POST.get('can_edit_patient_name') == 'on'
+        can_edit_patient_id = request.POST.get('can_edit_patient_id') == 'on'
+        can_edit_age = request.POST.get('can_edit_age') == 'on'
+        can_edit_gender = request.POST.get('can_edit_gender') == 'on'
+        can_edit_study_date = request.POST.get('can_edit_study_date') == 'on'
+        can_edit_study_description = request.POST.get('can_edit_study_description') == 'on'
+        can_edit_notes = request.POST.get('can_edit_notes') == 'on'
+        can_edit_body_part_examined = request.POST.get('can_edit_body_part_examined') == 'on'
+        can_edit_referring_doctor_name = request.POST.get('can_edit_referring_doctor_name') == 'on'
+        can_edit_whatsapp_number = request.POST.get('can_edit_whatsapp_number') == 'on'
+        
+
+
+        # If name is None or empty, handle it gracefully
+        if not name:
+            messages.error(request, "Name is required.")
+            return redirect('supercoordinator')
+        
+        # If editing an existing client
+        client_id = request.GET.get('client_id')
+        if client_id:
+            client_id = request.GET.get('client_id')
+            client = get_object_or_404(Client, id=client_id)
+            user = client.user
+            user.email = email
+            user.first_name = name.split()[0] if " " in name else name
+            # user.last_name = name.split()[1] if " " in name else ''
+            user.last_name = name.split()[1] if " " in name and len(name.split()) > 1 else ''
+            if password:
+                user.set_password(password)  # Set password only if provided
+            user.save()
+
+
+        else:
+            # Create a new client
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                password=password,
+                first_name=name.split()[0] if " " in name else name,
+                # last_name=name.split()[1] if " " in name else '',
+                last_name = name.split()[1] if " " in name and len(name.split()) > 1 else '',
+            )
+            # Assign user to the "client" group
+            client_group = Group.objects.get(name='client')
+            user.groups.add(client_group)
+
+        # Assign the location and other details
+        location = XLocation.objects.get(id=location_id) if location_id else None
+
+        # Save the client profile
+        Client.objects.update_or_create(
+            id=client_id,  # If editing, update the client
+            defaults={
+                'user': user,
+                'name': name,
+                'email': email,
+                'password': password,
+                'location': location,
+                'institution_name': institution_name,
+                'can_edit_patient_name': can_edit_patient_name,
+                'can_edit_patient_id': can_edit_patient_id,
+                'can_edit_age': can_edit_age,
+                'can_edit_gender': can_edit_gender,
+                'can_edit_study_date': can_edit_study_date,
+                'can_edit_study_description': can_edit_study_description,
+                'can_edit_notes': can_edit_notes,
+                'can_edit_body_part_examined': can_edit_body_part_examined,
+                'can_edit_referring_doctor_name': can_edit_referring_doctor_name,
+                'can_edit_whatsapp_number': can_edit_whatsapp_number,
+            }
+        )
+
+
+        print("Client ID:", client_id) 
+        messages.success(request, "Client profile updated successfully." if client_id else "Client profile created successfully.")
+        return redirect('supercoordinator')
+
+    # Fetch existing clients for listing
+    clients = Client.objects.all()
+    locations = XLocation.objects.all()
+    client_to_edit = get_object_or_404(Client, id=client_id) if client_id else None
+
+    # If editing, get the existing client data
+    client_id = request.GET.get('client_id')
+    client_to_edit = None
+    if client_id:
+        client_to_edit = get_object_or_404(Client, id=client_id)
+    else:
+        client_to_edit = []
+    print("Client to Edit:", client_to_edit)
+
+    return render(request, 'users/supercoordinator.html', {
+        'clients': clients,
+        'locations': locations,
+        'client_to_edit': client_to_edit,
+        'can_edit_patient_name': can_edit_patient_name,
+        'can_edit_patient_id': can_edit_patient_id,
+        'can_edit_age': can_edit_age,
+        'can_edit_gender': can_edit_gender,
+        'can_edit_study_date': can_edit_study_date,
+        'can_edit_study_description': can_edit_study_description,
+        'can_edit_notes': can_edit_notes,
+        'can_edit_body_part_examined': can_edit_body_part_examined,
+        'can_edit_referring_doctor_name': can_edit_referring_doctor_name,
+        'can_edit_whatsapp_number': can_edit_whatsapp_number,
+    })
+
 
 
 

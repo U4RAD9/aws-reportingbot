@@ -10,317 +10,217 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-  <style>
-    /* Add your CSS styles here */
-    .button {
-      display: block;
-      margin: 0 auto;
-      /* This will center the button horizontally */
-    }
+    <style>
+      /* Add your CSS styles here */
+      .table-container {
+        margin: 0%;
+        width: 100vw;
+      }
 
-
-    .card {
-      max-width: 600px;
-      margin: 50px auto;
-      padding: 20px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      border-radius: 10px;
-    }
-
-    h2 {
-      color: #333;
-      text-align: center;
-    }
-
-    form p {
-      margin-bottom: 10px;
-      text-align: center;
-    }
-
-
-    select {
-      margin-top: 10px;
-    }
-
-    button {
-      background-color: #4CAF50;
-      color: white;
-      padding: 10px 15px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-
-    }
-
-
-    textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      box-sizing: border-box;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      resize: vertical;
-      /* Allow vertical resizing */
-    }
-
-
-
-
-    ul.messages {
-      list-style-type: none;
-      padding: 0;
-      margin: 20px 0;
-    }
-
-    ul.messages li {
-      margin-bottom: 10px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-
-    .success {
-      background-color: #d4edda;
-      color: #155724;
-    }
-
-    .error {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
-
-    .custom-file-input {
-      display: none;
-    }
-
-    .custom-file-label {
-      background-color: #007BFF;
-      color: white;
-      padding: 10px 15px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      display: inline-block;
-    }
-
-    .message-card {
-      max-width: 600px;
-      margin: 20px auto;
-      padding: 20px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      border-radius: 10px;
-      display: none;
-      /* Hide message cards by default */
-    }
-
-    .success {
-      background-color: #d4edda;
-      color: #155724;
-    }
-
-    .error {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
-
-    .popup {
-        display: none;
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        background-color: orange;
+      .table-bordered {
+        width: 100vw;
+      }
+  
+      .btn-custom {
+        background-color: #007bff;
         color: white;
-        padding: 10px 15px;
-        border-radius: 5px;
-        z-index: 1000;
-    }
-
-    .popup-content {
+      }
+  
+      .popup-content {
         font-size: 14px;
-    }
-
-  </style>
-</head>
-
-<body>
-
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">XRAi Reporting</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
-                <ul class="navbar-nav">
-                   <li class="nav-item">
-                      <a href="client/" class="nav-link">
-                        <button class="btn btn-sm btn-info"><strong>Dashboard</strong></button>
-                      </a> 
-                    </li>
-                    <li class="nav-item">
-                      <a href="/logout" class="nav-link">
-                        <button class="logout-button btn btn-sm btn-danger"><strong>Logout</strong></button>
-                      </a>
-                    </li>
-                </ul>
-            </div>
+      }
+  
+      .modal-content {
+        border-radius: 10px;
+      }
+  
+      /* Optional: Styles for button positioning */
+      .card {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+      }
+      .modal-body {
+        max-height: 400px; /* Set the max height to suit your design */
+        overflow-y: auto;  /* Enable vertical scrolling */
+      }
+      
+      /* Optional: Ensure the modal size is constrained */
+      .modal-dialog {
+        max-width: 600px; /* Adjust this to set a fixed width for the modal */
+        width: 100%;      /* Allow full width within the max-width constraint */
+      }
+    </style>
+  </head>
+  
+  <body>
+  
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">XRAi Reporting</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <a href="client/" class="nav-link">
+                <button class="btn btn-sm btn-info"><strong>Dashboard</strong></button>
+              </a> 
+            </li>
+            <li class="nav-item">
+              <a href="/logout" class="nav-link">
+                <button class="logout-button btn btn-sm btn-danger"><strong>Logout</strong></button>
+              </a>
+            </li>
+          </ul>
         </div>
+      </div>
     </nav>
-
-
-  <div class="card">
-      <div id="popup-message" class="popup">
-            <span class="popup-content">Findings X-Ray Images...</span>
-        </div>
-    <h2>Upload DICOM Image</h2>
-    <form method="post" enctype="multipart/form-data" action="{% url 'upload_dicom' %}">
-      {% csrf_token %}
-
-      <div class="form-group">
-        <label for="id_dicom_file">Dicom file:</label>
-        {{ form.dicom_file }}
-      </div>
-
-      <div class="col">
-        <select class="form-control" name='location' required>
-          <option value="">Select Location</option>
-          {% for location in location %}
-          <option>{{ location.name }}</option>
+  
+    <div class="table-container container">
+      <table class="table table-bordered table-striped">
+        <thead class="thead-dark">
+          <tr>
+            <th style="width: 150px;">Patient Name</th>
+            <th style="width: 150px;">Patient ID</th>
+            <th style="width: 150px;">Age</th>
+            <th style="width: 150px;">Gender</th>
+            <th style="width: 150px;">Study Date</th>
+            <th style="width: 150px;">Study Description</th>
+            <th style="width: 150px;">Notes</th>
+            <th style="width: 150px;">Body Part Examined</th>
+            <th style="width: 150px;">Referring Doctor Name</th>
+            <th style="width: 150px;">WhatsApp Number</th>
+            <th style="width: 150px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in dicom_data %}
+          <tr>
+            <td>{{ entry.patient_name }}</td>
+            <td>{{ entry.patient_id }}</td>
+            <td>{{ entry.age }}</td>
+            <td>{{ entry.gender }}</td>
+            <td>{{ entry.study_date }}</td>
+            <td>{{ entry.study_description }}</td>
+            <td>{{ entry.notes }}</td>
+            <td>{{ entry.body_part_examined }}</td>
+            <td>{{ entry.referring_doctor_name }}</td>
+            <td>{{ entry.whatsapp_number }}</td>
+            <td>
+              <button class="btn btn-sm btn-custom" onclick="openEditModal({{ entry.id }})">Edit</button>
+            </td>
+          </tr>
           {% endfor %}
-        </select>
-      </div>
-      <textarea name="note" id="note" placeholder="Enter clinical note"></textarea>
-
-      <div class="form-group">
-          <label for="id_upload_type"><strong>Select View:</strong></label>
-        <div class="form-check">
-          <input class="form-check-input" type="radio" name="upload_type" value="single_file_per_person" checked>
-          <label class="form-check-label" for="id_upload_type_single">Single View</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input" type="radio" name="upload_type" value="multiple_file_single_person">
-          <label class="form-check-label" for="id_upload_type_multiple">Multiple View</label>
-        </div>
-      </div>
-
-      <button class="button" type="submit">Upload</button>
-    </form>
-    <!-- Add this part to your template -->
-    {% if success_message %}
-    <div class="alert alert-success" role="alert">
-      <strong>Success!</strong> {{ success_message }}
-      {% if success_details %}
-      <ul>
-        {% for detail in success_details %}
-        <li>ID: {{ detail.id }}, Name: {{ detail.name }}</li>
-        {% endfor %}
-      </ul>
-      {% endif %}
+        </tbody>
+      </table>
     </div>
-    {% endif %}
-
-    {% if rejected_message %}
-    <div class="alert alert-danger" role="alert">
-      <strong>Rejected! Duplicate Data Alert</strong><br> {{ rejected_message }}
-      {% if rejected_details %}
-      <ul>
-        {% for detail in rejected_details %}
-        <li>ID: {{ detail.id }}, Name: {{ detail.name }}</li>
-        {% endfor %}
-      </ul>
-      {% endif %}
+  
+    <!-- Modal for Edit Form -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editModalLabel">Edit DICOM Data</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="editForm">
+              <input type="hidden" id="dicomId" />
+              <div class="mb-3">
+                <label for="patient_name" class="form-label">Name:</label>
+                <input type="text" class="form-control" id="patient_name" {% if not edit_permissions.patient_name %} disabled {% endif %} />
+              </div>
+              <div class="mb-3">
+                <label for="patient_id" class="form-label">Patient Id:</label>
+                <input type="text" class="form-control" id="patient_id" {% if not edit_permissions.patient_id %} disabled {% endif %} />
+              </div>
+              <div class="mb-3">
+                <label for="age" class="form-label">Age:</label>
+                <input type="text" class="form-control" id="age" {% if not edit_permissions.age %} disabled {% endif %} />
+              </div>
+              <div class="mb-3">
+                <label for="gender" class="form-label">Gender:</label>
+                <input type="text" class="form-control" id="gender" {% if not edit_permissions.gender %} disabled {% endif %} />
+              </div>
+              <div class="mb-3">
+                <label for="study_date" class="form-label">Study Date:</label>
+                <input type="text" class="form-control" id="study_date" {% if not edit_permissions.study_date %} disabled {% endif %} />
+              </div>
+              <div class="mb-3">
+                <label for="study_description" class="form-label">Study Description:</label>
+                <input type="text" class="form-control" id="study_description" {% if not edit_permissions.study_description %} disabled {% endif %} />
+              </div>
+              <div class="mb-3">
+                <label for="notes" class="form-label">Notes:</label>
+                <input type="text" class="form-control" id="notes" {% if not edit_permissions.notes %} disabled {% endif %} />
+              </div>
+              <div class="mb-3">
+                <label for="body_part_examined" class="form-label">Body Part Examined:</label>
+                <input type="text" class="form-control" id="body_part_examined" {% if not edit_permissions.body_part_examined %} disabled {% endif %} />
+              </div>
+              <div class="mb-3">
+                <label for="referring_doctor_name" class="form-label">Referring Doctor Name:</label>
+                <input type="text" class="form-control" id="referring_doctor_name" {% if not edit_permissions.referring_doctor_name %} disabled {% endif %} />
+              </div>
+              <div class="mb-3">
+                <label for="whatsapp_number" class="form-label">WhatsApp Number:</label>
+                <input type="text" class="form-control" id="whatsapp_number" {% if not edit_permissions.whatsapp_number %} disabled {% endif %} />
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveEdit()">Save changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
-    {% endif %}
-
-    {% if messages %}
-    <ul class="messages">
-      {% for message in messages %}
-      <li{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-  </div>
-
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-
-<!--  <script>-->
-<!--      $(document).ready(function () {-->
-<!--        // When the Auto Sync button is clicked-->
-<!--        $('.btn-primary').click(function () {-->
-<!--          // Send a POST request to the auto_sync endpoint-->
-<!--          $.ajax({-->
-<!--            url: '/auto_sync/', // Replace this with the actual URL of your auto_sync endpoint-->
-<!--            method: 'POST',-->
-<!--            headers: { 'X-CSRFToken': '{{ csrf_token }}' }, // Include CSRF token-->
-<!--            success: function (response) {-->
-<!--              // Handle success response if needed-->
-<!--              console.log('Auto Sync triggered successfully');-->
-<!--            },-->
-<!--            error: function (error) {-->
-<!--              // Handle error response if needed-->
-<!--              console.error('Error triggering Auto Sync:', error);-->
-<!--            }-->
-<!--          });-->
-<!--        });-->
-<!--      });-->
-<!--  </script>-->
-
-
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      var successMessage = document.getElementById('successMessage');
-      var rejectedMessage = document.getElementById('rejectedMessage');
-      var successDetails = document.getElementById('successDetails');
-      var rejectedDetails = document.getElementById('rejectedDetails');
-      var messageDetails = document.getElementById('messageDetails');
-      var alertMessage = document.getElementById('alertMessage');
-
-      function showDetails(detailsList, detailsData) {
-        var details = JSON.parse(detailsData);
-        detailsList.innerHTML = ''; // Clear existing content
-
-        if (details.length > 0) {
-          for (var i = 0; i < details.length; i++) {
-            var listItem = document.createElement('li');
-            listItem.textContent = `ID: ${details[i].id}, Name: ${details[i].name}`;
-            detailsList.appendChild(listItem);
+  
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+      function openEditModal(id) {
+        $("#dicomId").val(id);
+        const row = $("tr:has(button[onclick='openEditModal(" + id + ")'])");
+        $("#patient_name").val(row.find("td:eq(0)").text());
+        $("#patient_id").val(row.find("td:eq(1)").text());
+        $("#age").val(row.find("td:eq(2)").text());
+        $("#gender").val(row.find("td:eq(3)").text());
+        $("#study_date").val(row.find("td:eq(4)").text());
+        $("#study_description").val(row.find("td:eq(5)").text());
+        $("#notes").val(row.find("td:eq(6)").text());
+        $("#body_part_examined").val(row.find("td:eq(7)").text());
+        $("#referring_doctor_name").val(row.find("td:eq(8)").text());
+        $("#whatsapp_number").val(row.find("td:eq(9)").text());
+        $('#editModal').modal('show');
+      }
+  
+      function saveEdit() {
+        const id = $("#dicomId").val();
+        $.post(`/edit-dicom-data/${id}/`, {
+          patient_name: $("#patient_name").val(),
+          patient_id: $("#patient_id").val(),
+          age: $("#age").val(),
+          gender: $("#gender").val(),
+          study_date: $("#study_date").val(),
+          study_description: $("#study_description").val(),
+          notes: $("#notes").val(),
+          body_part_examined: $("#body_part_examined").val(),
+          referring_doctor_name: $("#referring_doctor_name").val(),
+          whatsapp_number: $("#whatsapp_number").val(),
+          csrfmiddlewaretoken: "{{ csrf_token }}",
+        }).done(function (response) {
+          if (response.success) {
+            location.reload();
+          } else {
+            alert("Failed to update data!");
           }
-
-          // Show the message details
-          messageDetails.style.display = 'block';
-        } else {
-          // If there are no details, hide the message details container
-          messageDetails.style.display = 'none';
-        }
+        }).fail(function () {
+          alert("Error while updating data!");
+        });
       }
-
-      // Check for success message
-      if (successMessage && successMessage.textContent.trim() !== '') {
-        successMessage.style.display = 'block';
-        showDetails(successDetails, successMessage.dataset.details);
-      }
-
-      // Check for rejected message
-      if (rejectedMessage && rejectedMessage.textContent.trim() !== '') {
-        rejectedMessage.style.display = 'block';
-        showDetails(rejectedDetails, rejectedMessage.dataset.details);
-      }
-    });
-
-
-    document.addEventListener('DOMContentLoaded', function () {
-        var alertMessage = document.getElementById('alertMessage');
-        if (alertMessage) {
-           // Hide the alert message after 3 seconds
-           setTimeout(function () {
-               alertMessage.style.display = 'none';
-           }, 3000); // 3000 milliseconds = 3 seconds
-        }
-    });
-
-  </script>
-
-</body>
-
-</html>
+    </script>
+  
+  </body>
+  
+  </html>

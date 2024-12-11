@@ -308,6 +308,7 @@ export default class PopUpXrayChest extends React.Component {
     const patientName = urlSearchParams.get("data-patientname");
     const age = urlSearchParams.get("data-age");
     const gender = urlSearchParams.get("data-gender");
+    const institution = urlSearchParams.get("data-institution_name");
     const testDate = urlSearchParams.get("data-testdate");
     const reportDate = urlSearchParams.get("data-reportdate");
     // const reportimage = urlSearchParams.get("data-reportimage");

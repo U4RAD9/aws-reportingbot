@@ -22,6 +22,7 @@ import XraySpineDorsal from "./Utils/XraySpineDorsal";
 import Vitals from "./Utils/Vitals";
 import CtHead from "./Utils/CtHead";
 import CtAbdomen from "./Utils/CtAbdomen";
+import Blanks   from './Utils/Blanks'
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { Test } from "@jsonforms/core";
@@ -1196,17 +1197,172 @@ class App extends Component {
   // This is the function to extract the data that is passed in the url. 
   extractDataFromURL = () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const patientId = urlParams.get("data-patientid");
-    const patientName = urlParams.get("data-patientname");
-    const age = urlParams.get("data-age");
-    const gender = urlParams.get("data-gender");
-    const testDate = urlParams.get("data-testdate");
-    const reportDate = urlParams.get("data-reportdate");
+    // const patientId = urlParams.get("data-patientid");
+    // const patientName = urlParams.get("data-patientname");
+    // const age = urlParams.get("data-age");
+    // const gender = urlParams.get("data-gender");
+    // const testDate = urlParams.get("data-testdate");
+    // const reportDate = urlParams.get("data-reportdate");
     const location = urlParams.get("data-location");
     const accession = urlParams.get("data-accession");
-    const reportImageUrl = urlParams.get("data-reportimage");
+    const institutionName = urlParams.get("data-institution_name");
+    // const reportImageUrl = urlParams.get("data-reportimage");
 
-    return { patientId, patientName, age, gender, testDate, reportDate, location, accession, reportImageUrl };
+    // return { patientId, patientName, age, gender, testDate, reportDate, location, accession, reportImageUrl };
+    return { location, accession, institutionName };
+  };
+
+    // This is the function to get the data from the table of ckeditor - Himanshu.
+    extractTableData = (tableData) =>{
+      // Getting the table element.
+      const table = tableData.querySelector('table');
+      // Now, getting all the rows of the table
+      const rows = table.querySelectorAll('tr');
+  
+      // Initializing an object to store the extracted data
+      const data = {
+          patientName: '',
+          patientId: '',
+          age: '',
+          gender: '',
+          testDate: '',
+          reportDate: ''
+      };
+  
+      rows.forEach(row => {
+          const cells = row.querySelectorAll('td');  // Get all cells in the row
+          cells.forEach(cell => {
+              const strongTag = cell.querySelector('strong');  // Look for <strong> inside the <td>
+  
+              if (strongTag) {
+                  const textContent = strongTag.textContent.trim();  // Get the text inside <strong>
+                  if (textContent.includes("Name:")) {
+                      data.patientName = textContent.replace("Name:", "").trim();  // Extract patient name
+                  } else if (textContent.includes("Patient ID:")) {
+                      data.patientId = textContent.replace("Patient ID:", "").trim();  // Extract patient ID
+                  } else if (textContent.includes("Age:")) {
+                      data.age = textContent.replace("Age:", "").trim();  // Extract age
+                  } else if (textContent.includes("Gender:")) {
+                      data.gender = textContent.replace("Gender:", "").trim();  // Extract gender
+                  } else if (textContent.includes("Test date:")) {
+                      data.testDate = textContent.replace("Test date:", "").trim();  // Extract test date
+                  } else if (textContent.includes("Report date:")) {
+                      data.reportDate = textContent.replace("Report date:", "").trim();  // Extract report date
+                  }
+              }
+          });
+      });
+  
+      // Returning the extracted data as an object.
+      return data;
+  };
+
+  addParagraphToPdf = (pdf, element, fontSize, isHeading, currentYPosition) => {
+    // Extract the actual data from the element
+    // let textContent = element.textContent || "";
+
+    // Decode HTML entities to normal characters (such as &nbsp; -> " ")
+    // textContent = this.decodeHtmlEntities(textContent);
+  
+    // Remove extra spaces from the beginning and end of the content
+    // textContent = textContent.trim();
+  
+    // Check if the text contains <br> tags (i.e., multiple lines)
+    // Corrected to pass the element as it contains child nodes with <br> and again filtering any empty lines.
+    const lines = this.splitParagraphIntoLines(element).filter(line => line.trim().length > 0);
+  
+    // Define the font size for the text
+    pdf.setFontSize(fontSize);
+  
+    // Loop through each line if there are multiple lines due to <br> tags
+    for (let line of lines) {
+      // Check if the element has both <strong> and <u> tags (Heading case)
+      const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
+      
+      if (isHeading) {
+        // Set the font to bold and underline, and set the X and Y positions
+        pdf.setFont("helvetica", "bold");  // Set the font style to bold
+        const xCoordinate = 40;  // X-coordinate for headings
+        // This increase in y i've done to make the impression come with space.
+        currentYPosition += 5;
+        pdf.text(line, xCoordinate, currentYPosition);
+        
+        // Update Y position after adding heading
+        currentYPosition += 20;  // Update Y by 20 for headings
+      } else {
+        // Check if only <strong> is present (bold, but no underline)
+      //   const isBold = element.querySelector('strong'); // Check if it's bold (strong)
+        
+      //   if (isBold) {
+      //     // Set the font to bold and normal style (without underline)
+      //     pdf.setFont("helvetica", "bold");  // Set the font style to bold
+      //     const xCoordinate = 60;  // X-coordinate for bold paragraphs
+      //     pdf.text(line, xCoordinate, currentYPosition);
+          
+      //     // Update Y position after adding bold text
+      //     currentYPosition += 15;  // Update Y by 15 for normal paragraphs
+      //   } else {
+      //     // For normal text (neither bold nor underlined)
+      //     pdf.setFont("helvetica", "normal");  // Set the font style to normal
+      //     const xCoordinate = 60;  // X-coordinate for normal text
+      //     pdf.text(line, xCoordinate, currentYPosition);
+          
+      //     // Update Y position after adding normal text
+      //     currentYPosition += 15;  // Update Y by 15 for normal paragraphs
+      //   }
+
+        // For normal text (neither bold nor underlined)
+            pdf.setFont("helvetica", "normal");  // Set the font style to normal
+            const xCoordinate = 60;  // X-coordinate for normal text
+            pdf.text(line, xCoordinate, currentYPosition);
+            
+            // Update Y position after adding normal text
+            currentYPosition += 15;  // Update Y by 15 for normal paragraphs
+       }
+    }
+  
+    return currentYPosition;
+  };
+
+  // Utility function to decode HTML entities into their character equivalents
+  decodeHtmlEntities = (str) => {
+    let doc = new DOMParser().parseFromString(str, "text/html");
+    return doc.body.textContent || "";
+  };
+
+  splitParagraphIntoLines = (element) => {
+    const lines = [];
+    let currentLine = "";
+    
+    const children = element.childNodes; // Get all child nodes (including text and <br> tags)
+  
+    children.forEach((child) => {
+      if (child.nodeName === "BR") {
+        // If a <br> tag is found, push the current line if it's not empty
+        if (currentLine.trim().length > 0) {
+          // Check if the current line contains unwanted entities like "&nbsp;" or "&NoBreak"
+          if (!currentLine.includes("&nbsp;") && !currentLine.includes("&NoBreak")) {
+            lines.push(currentLine.trim()); // Only add non-empty lines that don't contain unwanted entities
+          }
+        }
+        currentLine = ""; // Reset the current line for the next one
+      } else if (child.nodeType === Node.TEXT_NODE) {
+        // For text nodes, append the text to the current line
+        currentLine += child.textContent;
+      } else {
+        // Handle other tags (e.g., <strong>, <em>) if necessary
+        currentLine += child.textContent; // Append child content (e.g., bold or italic) to current line
+      }
+    });
+  
+    // Add the last line if it's not empty and doesn't contain unwanted entities
+    if (currentLine.trim().length > 0) {
+      if (!currentLine.includes("&nbsp;") && !currentLine.includes("&NoBreak")) {
+        lines.push(currentLine.trim());
+      }
+    }
+  
+    return lines;
   };
 
   // Showing the notification on the browser.
@@ -1346,11 +1502,14 @@ class App extends Component {
   // End of all the common functions for the reporting bot.
 
 ///////////////////////////////// Download PDF without Image /////////////////////////////
-  GetDivContentOnPDFWithoutImage() {
+   GetDivContentOnPDFWithoutImage() {
     (async () => {
       this.showLoader();
       const filename = this.createFilename();
       const data = document.getElementsByClassName("ck-editor__editable")[0];
+      console.log("This is the data i got from the class :",data);
+      const dataFromId = document.getElementById("reportEditor");
+      console.log("This is the data i got from the id reportEditor :", dataFromId);
       
       const images = data.querySelectorAll("img");
       const signatureElement = images[1];
@@ -1365,7 +1524,16 @@ class App extends Component {
       // remaining required images at the end to reduce the time complexity.
       const remainingReportImages = Array.prototype.slice.call(images, 2);
 
-      const { patientId, patientName, age, gender, testDate, reportDate, location, accession, reportImageUrl } = this.extractDataFromURL();
+      // Getting the table data from my function.
+      // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
+      const tableData = this.extractTableData(data);
+      const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
+      console.log("This is my extracted table data :",tableData);
+
+      // Getting all the children elements of the data (ckeditor content).
+      const elements = data.children;
+      // This is the variable to handle the skipping of elemens(if needed).
+      let skipNext = false;
 
       const pdf = new jsPDF("p", "pt", "a4");
 
@@ -1393,198 +1561,30 @@ class App extends Component {
           });
           currentYPosition = pdf.previousAutoTable.finalY + 20;
 
-          const paragraphs = data.querySelectorAll("p");
-          const columnWidth = (pdf.internal.pageSize.width - 80) / 2; // 80 = 40px margin on each side
-          let isLeftColumn = true; // Start with left column
-          let leftColumnY = 0;
-          let rightColumnY = 0;
-          const marginX = 40; // Margin from left side
-          const columnGap = 10; // Gap between columns
-          const bullet = "\u2022 ";
-          // For fixing the ckeditor problem i am using this logic - Himanshu.
-          const observationArray = [];
-          console.log("This is the complete fetched paragraph tag from ckeditor:");
-          console.log(paragraphs)
-          console.log("End of the paragraphs tag.")
-          
-
-          for (const paragraph of paragraphs) {
-              const paragraphText = paragraph.textContent || "";
-              console.log("These is the paragraph text :", paragraphText);
-
-              pdf.setFontSize(12);
-              pdf.setFont("helvetica", "bold");
-
-              if (paragraphText.includes("OBSERVATIONS:") || paragraphText.includes("OBSERVATION:") || paragraphText.includes("FINDINGS:") || paragraphText.includes("FINDING:")) {
-                  pdf.text(paragraphText, marginX, currentYPosition);
-                  pdf.setFontSize(13);
-                  pdf.setFont("helvetica", "normal");
-                  currentYPosition += 20;
-              } else if (paragraphText.includes("IMPRESSION:") || paragraphText.includes("IMPRESSIONS:")) {
-                  // Adding the logic if the lines are lesser than 6 than they will get printed in the normal manner.
-                  if (observationArray.length > 5){
-                    // Adding the logic to add the observation lines just before the Impression line.
-                    // setting the font size and the font family back to normal.
-                    pdf.setFontSize(12); 
-                    pdf.setFont("helvetica", "normal");
-                    const totallines = observationArray.length;
-                    const halflines = Math.ceil(totallines / 2);
-                    console.log("This is the observation array :", observationArray);
-
-                    // Adding the bullet point to the lines before printing them  on the pdf.
-                    const addBulletPoint = (line) => {
-                      if (line.startsWith(bullet)) {
-                          return line;
-                      }
-                      return bullet + line;
-                    };
-
-                    // setting the left column and right column logic (left one is not needed, i can optimise it later.)
-                    rightColumnY = currentYPosition;
-                    leftColumnY = currentYPosition;
-
-                    // Processing the texts which will fix the line text width greater than the column width issue.
-                    const processTextColumn = (text, x, y, columnWidth) => {
-                      let currentY = y;
-                      const textWidth = pdf.getTextWidth(text);
-                      const maxWidth = columnWidth - 20; // Padding for each column
-                      console.log("This is the current y (at the beginning of processing the new line of array ) :", currentY);
-                      console.log("This is the textWidth :", textWidth);
-                      console.log("This is the maxwidth :", maxWidth);
-              
-                      if (textWidth > maxWidth) {
-                        let remainingText = text;
-                        pdf.setFont("helvetica", "normal");
-                        let currentLine = '';
-                    
-                        // Split text into words
-                        const words = remainingText.split(' ');
-                    
-                        for (const word of words) {
-                            // Construct a test line with the next word
-                            const testLine = currentLine.length > 0 ? currentLine + ' ' + word : word;
-                            console.log("This is the testline :", testLine);
-                            const testLineWidth = pdf.getTextWidth(testLine);
-                    
-                            if (testLineWidth > maxWidth) {
-                                // If it exceeds the width, print the current line
-                                if (currentLine.length > 0) {
-                                    console.log("if the current line is greater than the maxwidth and is having some data:");
-                                    console.log("This is the current line", currentLine);
-                                    pdf.text(currentLine, x, currentY);
-                                    currentY += 15; // Move down for the next line
-                                    console.log("This is the current y :", currentY);
-                                }
-                                // Start a new line with the current word
-                                currentLine = "  " + word; // Reset current line to the word that caused overflow
-                                console.log("This is the remaining word or sentence added with a space here :", currentLine);
-                                
-                            } else {
-                                // If it fits, update the current line
-                                currentLine = testLine;
-                            }
-                        }
-                    
-                        // Print any remaining text in currentLine
-                        if (currentLine.length > 0) {
-                            pdf.text(currentLine, x, currentY);
-                            console.log("Printing any current line if left :", currentLine);
-                            console.log("This is the current y updated on the remaining text code :", currentY);
-                        }
-                      } else {
-                          pdf.text(text, x, currentY);
-                          console.log("Adding the text directly because it doesn't need separation :", text);
-                          console.log("the current y for directly added text:", currentY);
-                      }
-
-                      console.log("This is the current Y before just coming out of the process (return currenty +15) :", currentY);
-                      
-                      return currentY + 15;
-                    
-                    };
-
-                    // Adding the lines to the respective side along with the bullet points. 
-                    for (let i = 0; i < totallines; i++) {
-                      const lineWithBullet = addBulletPoint(observationArray[i]);
-                      console.log("These are the observation array lines given one by one :");
-                      console.log(lineWithBullet);
-                      console.log("End of the observation array separated lines.");
-                      if (i < halflines) {
-                          leftColumnY = processTextColumn(lineWithBullet, marginX, leftColumnY, columnWidth);
-                      } else {
-                          rightColumnY = processTextColumn(lineWithBullet, marginX + columnWidth + columnGap, rightColumnY, columnWidth);
-                      }
-                    }
-                    currentYPosition = Math.max(leftColumnY, rightColumnY);
-                    console.log("This is the right Column y :", rightColumnY);
-                    console.log("This is the left column y :", leftColumnY);
-                    console.log("This is the current y position :", currentYPosition);
-                  } else {
-
-                    // Adding the bullet point.
-                    const addBulletPoint = (line) => {
-                      if (line.startsWith(bullet)) {
-                          return line;
-                      }
-                      return bullet + line;
-                    };
-
-                    // Now adding the texts in normal manner.
-                    for (const line of observationArray){
-                      const lineWithBullet = addBulletPoint(line);
-                      pdf.setFont("helvetica", "normal");
-                      pdf.text(lineWithBullet, marginX, currentYPosition);
-                      currentYPosition += 15;
-                    }
-
-                  }
-                  
-                  // End of the observation text's logic.
-                  currentYPosition += 20;
-                  pdf.setFontSize(13);
-                  pdf.setFont("helvetica", "bold");
-                  pdf.text(paragraphText, marginX, currentYPosition);
-                  pdf.setFontSize(10);
-                  pdf.setFont("helvetica", "normal");
-                  currentYPosition += 20;
-              } else if (paragraphText.includes("Dr.")) {
-                  currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
-                  pdf.setFontSize(12);
-                  pdf.setFont("helvetica", "normal");
-                  const drdatalines = paragraphText.split(',').map(line => line.trim()).filter(line => line.length > 0);
-                  for (const drdata of drdatalines){
-                    pdf.text(drdata, marginX, currentYPosition);
-                    currentYPosition += 15;
-                  }
-                  currentYPosition += 10;
-              } else if (paragraphText.includes("X-RAY") || paragraphText.includes("CT")) {
-                  pdf.setFontSize(13);
-                  pdf.setFont("helvetica", "bold");
-                  pdf.text(paragraphText, marginX, currentYPosition);
-                  currentYPosition += 20;
-              } else if (paragraphText.includes(bullet)) {
-                  pdf.setFontSize(12);
-                  pdf.setFont("helvetica", "bold");
-                  const impressionlines = paragraphText.split('.').map(line => line.trim()).filter(line => line.length > 0);
-                  for (const line of impressionlines) {
-                    pdf.text(line, marginX, currentYPosition);
-                  }
-                  currentYPosition += 20;
+          // Looping through each element inside the CKEditor.
+          for (let i = 0; i < elements.length; i++) {
+            const element = elements[i];
+            console.log("These are individual children elements of data :",element);
+            if (element.tagName === 'P') {
+              const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
+              if (isHeading) {
+                  // Add heading
+                  currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
               } else {
-                // Handle text in columnar structure
-                const lines = paragraphText.split('.').map(line => line.trim()).filter(line => line.length > 0);
-                console.log("These are the lines of the observation :")
-                console.log(lines)
-                console.log("End of lines of the observation.")
-                // Adding the observation text in the array. 
-                for (const observationtext of lines){
-                  observationArray.push(observationtext);
-                }
-                // End of the observation text logic.
-                
-            }
-          }  
+                  // Check if it's a "Dr." line and needs signature
+                  if (element.textContent.includes("Dr.")) {
+                      // Add signature first
+                      currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+                  }
 
+                  // Splitting paragraphs based on <br> tags and processing each line
+                  // const lines = this.splitParagraphIntoLines(element);
+
+                  // Regular paragraph
+                  currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
+              }
+            }
+          }
           // This is to download the file on the same browser.
           pdf.save(filename ? filename + ".pdf" : "download.pdf");
 
@@ -1611,94 +1611,15 @@ class App extends Component {
     })();
   }
 
-  ////////////////////////////////// Another one upgraded on 05/01/2024 ////////////////////////
-  // GetDivContentOnPDF() {
-  //   const showLoader = () => {
-  //     //console.log("Showing loader");
-  //     const loader = document.querySelector(".loader");
-  //     if (loader) {
-  //       loader.style.display = "block";
-  //     }
-  //   };
 
-  //   const hideLoader = () => {
-  //     //console.log("Hiding loader");
-  //     const loader = document.querySelector(".loader");
-  //     if (loader) {
-  //       loader.style.display = "none";
-  //     }
-  //   };
-  //   // Show the loader before starting the PDF generation
-  //   showLoader();
-  //   var filename = this.createFilename();
-  //   const data = document.getElementsByClassName("ck-editor__editable")[0];
-  //   const table = data.querySelector("table");
-  //   data.classList.add("ck-blurred");
-  //   data.classList.remove("ck-focused");
-  //   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  //   if (data != undefined) {
-  //     // Create a new jsPDF instance
-  //     const pdf = new jsPDF("p", "pt", [595.28, 841.89], true); // A4 dimensions
-
-  //     // Capture the entire content, including text and images
-  //     html2canvas(data, {
-  //       scale: 2, // Adjust the scale if needed for better image quality
-  //       useCORS: true, // Added to address potential CORS issues
-  //     }).then(async (canvas) => {
-  //       const imgData = canvas.toDataURL("image/png", 1.0);
-
-  //       // Calculate the position to center the image
-  //       const imgWidth = 595.28 - 40; // Adjusted width to leave some margin
-  //       const imgHeight = imgWidth * 1.5 - 40; // Adjusted height to maintain aspect ratio and leave margin
-  //       const imgX = (595.28 - imgWidth) / 2;
-  //       const imgY = (841.89 - imgHeight) / 2;
-
-  //       // Hide the loader when the PDF is ready
-  //       hideLoader();
-  //       // Add the image to the PDF
-  //       pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth, imgHeight);
-  //       pdf.setTextColor(255, 255, 255);
-  //       // Calculate the position to place the text at the bottom
-  //       const textX = 40;
-  //       const textY = 841.89 - 2; // 20 points from the bottom
-
-  //       // If a table exists within the ck-editor__editable div, capture its text content
-  //       if (table) {
-  //         const tableText = table.textContent || "";
-
-  //         // Add the table text as text (preserve original formatting)
-  //         pdf.setFontSize(2); // Adjust the font size as needed
-  //         pdf.text(textX, textY, tableText);
-  //       }
-
-  //       // If the ck-editor__editable div contains paragraphs, capture the text from the first paragraph
-  //       const paragraphs = data.querySelectorAll("p");
-  //       paragraphs.forEach((paragraph) => {
-  //         const paragraphText = paragraph.textContent || "";
-
-  //         // Add each paragraph text as text (preserve original formatting)
-  //         pdf.setFontSize(2); // Adjust the font size as needed
-  //         pdf.text(textX, textY - 2, paragraphText); // Place it above the table text
-  //       });
-
-  //       // Save the PDF
-  //       pdf.save(filename ? filename + ".pdf" : "download.pdf");
-
-  //       // Redirect to the previous page after a short delay
-  //       await delay(200);
-  //       window.location.reload(true);
-  //     });
-  //   }
-  // }
-
-  //  This is the updated pdf generation logic. - Himanshu.
   GetDivContentOnPDF() {
-
     (async () => {
       this.showLoader();
       const filename = this.createFilename();
       const data = document.getElementsByClassName("ck-editor__editable")[0];
+      console.log("This is the data i got from the class :",data);
+      const dataFromId = document.getElementById("reportEditor");
+      console.log("This is the data i got from the id reportEditor :", dataFromId);
       
       const images = data.querySelectorAll("img");
       const signatureElement = images[1];
@@ -1713,7 +1634,16 @@ class App extends Component {
       // remaining required images at the end to reduce the time complexity.
       const remainingReportImages = Array.prototype.slice.call(images, 2);
 
-      const { patientId, patientName, age, gender, testDate, reportDate, location, accession, reportImageUrl } = this.extractDataFromURL();
+      // Getting the table data from my function.
+      // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
+      const tableData = this.extractTableData(data);
+      const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
+      console.log("This is my extracted table data :",tableData);
+
+      // Getting all the children elements of the data (ckeditor content).
+      const elements = data.children;
+      // This is the variable to handle the skipping of elemens(if needed).
+      let skipNext = false;
 
       const pdf = new jsPDF("p", "pt", "a4");
 
@@ -1741,199 +1671,31 @@ class App extends Component {
           });
           currentYPosition = pdf.previousAutoTable.finalY + 20;
 
-          const paragraphs = data.querySelectorAll("p");
-          const columnWidth = (pdf.internal.pageSize.width - 80) / 2; // 80 = 40px margin on each side
-          let isLeftColumn = true; // Start with left column
-          let leftColumnY = 0;
-          let rightColumnY = 0;
-          const marginX = 40; // Margin from left side
-          const columnGap = 10; // Gap between columns
-          const bullet = "\u2022 ";
-          // For fixing the ckeditor problem i am using this logic - Himanshu.
-          const observationArray = [];
-          console.log("This is the complete fetched paragraph tag from ckeditor:");
-          console.log(paragraphs)
-          console.log("End of the paragraphs tag.")
-          
-
-          for (const paragraph of paragraphs) {
-              const paragraphText = paragraph.textContent || "";
-              console.log("These is the paragraph text :", paragraphText);
-
-              pdf.setFontSize(12);
-              pdf.setFont("helvetica", "bold");
-
-              if (paragraphText.includes("OBSERVATIONS:") || paragraphText.includes("OBSERVATION:") || paragraphText.includes("FINDINGS:") || paragraphText.includes("FINDING:")) {
-                  pdf.text(paragraphText, marginX, currentYPosition);
-                  pdf.setFontSize(13);
-                  pdf.setFont("helvetica", "normal");
-                  currentYPosition += 20;
-              } else if (paragraphText.includes("IMPRESSION:") || paragraphText.includes("IMPRESSIONS:")) {
-                  // Adding the logic if the lines are lesser than 6 than they will get printed in the normal manner.
-                  if (observationArray.length > 5){
-                    // Adding the logic to add the observation lines just before the Impression line.
-                    // setting the font size and the font family back to normal.
-                    pdf.setFontSize(12); 
-                    pdf.setFont("helvetica", "normal");
-                    const totallines = observationArray.length;
-                    const halflines = Math.ceil(totallines / 2);
-                    console.log("This is the observation array :", observationArray);
-
-                    // Adding the bullet point to the lines before printing them  on the pdf.
-                    const addBulletPoint = (line) => {
-                      if (line.startsWith(bullet)) {
-                          return line;
-                      }
-                      return bullet + line;
-                    };
-
-                    // setting the left column and right column logic (left one is not needed, i can optimise it later.)
-                    rightColumnY = currentYPosition;
-                    leftColumnY = currentYPosition;
-
-                    // Processing the texts which will fix the line text width greater than the column width issue.
-                    const processTextColumn = (text, x, y, columnWidth) => {
-                      let currentY = y;
-                      const textWidth = pdf.getTextWidth(text);
-                      const maxWidth = columnWidth - 20; // Padding for each column
-                      console.log("This is the current y (at the beginning of processing the new line of array ) :", currentY);
-                      console.log("This is the textWidth :", textWidth);
-                      console.log("This is the maxwidth :", maxWidth);
-              
-                      if (textWidth > maxWidth) {
-                        let remainingText = text;
-                        pdf.setFont("helvetica", "normal");
-                        let currentLine = '';
-                    
-                        // Split text into words
-                        const words = remainingText.split(' ');
-                    
-                        for (const word of words) {
-                            // Construct a test line with the next word
-                            const testLine = currentLine.length > 0 ? currentLine + ' ' + word : word;
-                            console.log("This is the testline :", testLine);
-                            const testLineWidth = pdf.getTextWidth(testLine);
-                    
-                            if (testLineWidth > maxWidth) {
-                                // If it exceeds the width, print the current line
-                                if (currentLine.length > 0) {
-                                    console.log("if the current line is greater than the maxwidth and is having some data:");
-                                    console.log("This is the current line", currentLine);
-                                    pdf.text(currentLine, x, currentY);
-                                    currentY += 15; // Move down for the next line
-                                    console.log("This is the current y :", currentY);
-                                }
-                                // Start a new line with the current word
-                                currentLine = "  " + word; // Reset current line to the word that caused overflow
-                                console.log("This is the remaining word or sentence added with a space here :", currentLine);
-                                
-                            } else {
-                                // If it fits, update the current line
-                                currentLine = testLine;
-                            }
-                        }
-                    
-                        // Print any remaining text in currentLine
-                        if (currentLine.length > 0) {
-                            pdf.text(currentLine, x, currentY);
-                            console.log("Printing any current line if left :", currentLine);
-                            console.log("This is the current y updated on the remaining text code :", currentY);
-                        }
-                      } else {
-                          pdf.text(text, x, currentY);
-                          console.log("Adding the text directly because it doesn't need separation :", text);
-                          console.log("the current y for directly added text:", currentY);
-                      }
-
-                      console.log("This is the current Y before just coming out of the process (return currenty +15) :", currentY);
-                      
-                      return currentY + 15;
-                    
-                    };
-
-                    // Adding the lines to the respective side along with the bullet points. 
-                    for (let i = 0; i < totallines; i++) {
-                      const lineWithBullet = addBulletPoint(observationArray[i]);
-                      console.log("These are the observation array lines given one by one :");
-                      console.log(lineWithBullet);
-                      console.log("End of the observation array separated lines.");
-                      if (i < halflines) {
-                          leftColumnY = processTextColumn(lineWithBullet, marginX, leftColumnY, columnWidth);
-                      } else {
-                          rightColumnY = processTextColumn(lineWithBullet, marginX + columnWidth + columnGap, rightColumnY, columnWidth);
-                      }
-                    }
-                    currentYPosition = Math.max(leftColumnY, rightColumnY);
-                    console.log("This is the right Column y :", rightColumnY);
-                    console.log("This is the left column y :", leftColumnY);
-                    console.log("This is the current y position :", currentYPosition);
-                  } else {
-
-                    // Adding the bullet point.
-                    const addBulletPoint = (line) => {
-                      if (line.startsWith(bullet)) {
-                          return line;
-                      }
-                      return bullet + line;
-                    };
-
-                    // Now adding the texts in normal manner.
-                    for (const line of observationArray){
-                      const lineWithBullet = addBulletPoint(line);
-                      pdf.setFont("helvetica", "normal");
-                      pdf.text(lineWithBullet, marginX, currentYPosition);
-                      currentYPosition += 15;
-                    }
-
-                  }
-                  
-                  // End of the observation text's logic.
-                  currentYPosition += 20;
-                  pdf.setFontSize(13);
-                  pdf.setFont("helvetica", "bold");
-                  pdf.text(paragraphText, marginX, currentYPosition);
-                  pdf.setFontSize(10);
-                  pdf.setFont("helvetica", "normal");
-                  currentYPosition += 20;
-              } else if (paragraphText.includes("Dr.")) {
-                  currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
-                  pdf.setFontSize(12);
-                  pdf.setFont("helvetica", "normal");
-                  const drdatalines = paragraphText.split(',').map(line => line.trim()).filter(line => line.length > 0);
-                  for (const drdata of drdatalines){
-                    pdf.text(drdata, marginX, currentYPosition);
-                    currentYPosition += 15;
-                  }
-                  currentYPosition += 10;
-              } else if (paragraphText.includes("X-RAY") || paragraphText.includes("CT")) {
-                  pdf.setFontSize(13);
-                  pdf.setFont("helvetica", "bold");
-                  pdf.text(paragraphText, marginX, currentYPosition);
-                  currentYPosition += 20;
-              } else if (paragraphText.includes(bullet)) {
-                  pdf.setFontSize(12);
-                  pdf.setFont("helvetica", "bold");
-                  const impressionlines = paragraphText.split('.').map(line => line.trim()).filter(line => line.length > 0);
-                  for (const line of impressionlines) {
-                    pdf.text(line, marginX, currentYPosition);
-                  }
-                  currentYPosition += 20;
+          // Looping through each element inside the CKEditor.
+          for (let i = 0; i < elements.length; i++) {
+            const element = elements[i];
+            console.log("These are individual children elements of data :",element);
+            if (element.tagName === 'P') {
+              const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
+              if (isHeading) {
+                  // Add heading
+                  currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
               } else {
-                // Handle text in columnar structure
-                const lines = paragraphText.split('.').map(line => line.trim()).filter(line => line.length > 0);
-                console.log("These are the lines of the observation :")
-                console.log(lines)
-                console.log("End of lines of the observation.")
-                // Adding the observation text in the array. 
-                for (const observationtext of lines){
-                  observationArray.push(observationtext);
-                }
-                // End of the observation text logic.
-                
-            }
-          }              
+                  // Check if it's a "Dr." line and needs signature
+                  if (element.textContent.includes("Dr.")) {
+                      // Add signature first
+                      currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+                  }
 
-          // currentYPosition = await this.addReportImage(pdf, reportImageUrl, currentYPosition);
+                  // Splitting paragraphs based on <br> tags and processing each line
+                  // const lines = this.splitParagraphIntoLines(element);
+
+                  // Regular paragraph
+                  currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
+              }
+            }
+          }
+
           // Passing the remaining images instead of the url fetched image directly to add all captured images.
           for (const image of remainingReportImages) {
             const imageUrl = image ? image.src : null;
@@ -2642,6 +2404,11 @@ class App extends Component {
       this.showLoader();
       const filename = this.createFilename();
       const data = document.getElementsByClassName("ck-editor__editable")[0];
+      console.log("This is the data i got from the class :",data);
+      const dataFromId = document.getElementById("reportEditor");
+      console.log("This is the data i got from the id reportEditor :", dataFromId);
+
+      const { location, accession, institutionName } = this.extractDataFromURL();
       
       const images = data.querySelectorAll("img");
       const signatureElement = images[1];
@@ -2656,7 +2423,16 @@ class App extends Component {
       // remaining required images at the end to reduce the time complexity.
       const remainingReportImages = Array.prototype.slice.call(images, 2);
 
-      const { patientId, patientName, age, gender, testDate, reportDate, location, accession, reportImageUrl } = this.extractDataFromURL();
+      // Getting the table data from my function.
+      // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
+      const tableData = this.extractTableData(data);
+      const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
+      console.log("This is my extracted table data :",tableData);
+
+      // Getting all the children elements of the data (ckeditor content).
+      const elements = data.children;
+      // This is the variable to handle the skipping of elemens(if needed).
+      let skipNext = false;
 
       const pdf = new jsPDF("p", "pt", "a4");
 
@@ -2684,197 +2460,30 @@ class App extends Component {
           });
           currentYPosition = pdf.previousAutoTable.finalY + 20;
 
-          const paragraphs = data.querySelectorAll("p");
-          const columnWidth = (pdf.internal.pageSize.width - 80) / 2; // 80 = 40px margin on each side
-          let isLeftColumn = true; // Start with left column
-          let leftColumnY = 0;
-          let rightColumnY = 0;
-          const marginX = 40; // Margin from left side
-          const columnGap = 10; // Gap between columns
-          const bullet = "\u2022 ";
-          // For fixing the ckeditor problem i am using this logic - Himanshu.
-          const observationArray = [];
-          console.log("This is the complete fetched paragraph tag from ckeditor:");
-          console.log(paragraphs)
-          console.log("End of the paragraphs tag.")
-          
-
-          for (const paragraph of paragraphs) {
-              const paragraphText = paragraph.textContent || "";
-              console.log("These is the paragraph text :", paragraphText);
-
-              pdf.setFontSize(12);
-              pdf.setFont("helvetica", "bold");
-
-              if (paragraphText.includes("OBSERVATIONS:") || paragraphText.includes("OBSERVATION:") || paragraphText.includes("FINDINGS:") || paragraphText.includes("FINDING:")) {
-                  pdf.text(paragraphText, marginX, currentYPosition);
-                  pdf.setFontSize(13);
-                  pdf.setFont("helvetica", "normal");
-                  currentYPosition += 20;
-              } else if (paragraphText.includes("IMPRESSION:") || paragraphText.includes("IMPRESSIONS:")) {
-                  // Adding the logic if the lines are lesser than 6 than they will get printed in the normal manner.
-                  if (observationArray.length > 5){
-                    // Adding the logic to add the observation lines just before the Impression line.
-                    // setting the font size and the font family back to normal.
-                    pdf.setFontSize(12); 
-                    pdf.setFont("helvetica", "normal");
-                    const totallines = observationArray.length;
-                    const halflines = Math.ceil(totallines / 2);
-                    console.log("This is the observation array :", observationArray);
-
-                    // Adding the bullet point to the lines before printing them  on the pdf.
-                    const addBulletPoint = (line) => {
-                      if (line.startsWith(bullet)) {
-                          return line;
-                      }
-                      return bullet + line;
-                    };
-
-                    // setting the left column and right column logic (left one is not needed, i can optimise it later.)
-                    rightColumnY = currentYPosition;
-                    leftColumnY = currentYPosition;
-
-                    // Processing the texts which will fix the line text width greater than the column width issue.
-                    const processTextColumn = (text, x, y, columnWidth) => {
-                      let currentY = y;
-                      const textWidth = pdf.getTextWidth(text);
-                      const maxWidth = columnWidth - 20; // Padding for each column
-                      console.log("This is the current y (at the beginning of processing the new line of array ) :", currentY);
-                      console.log("This is the textWidth :", textWidth);
-                      console.log("This is the maxwidth :", maxWidth);
-              
-                      if (textWidth > maxWidth) {
-                        let remainingText = text;
-                        pdf.setFont("helvetica", "normal");
-                        let currentLine = '';
-                    
-                        // Split text into words
-                        const words = remainingText.split(' ');
-                    
-                        for (const word of words) {
-                            // Construct a test line with the next word
-                            const testLine = currentLine.length > 0 ? currentLine + ' ' + word : word;
-                            console.log("This is the testline :", testLine);
-                            const testLineWidth = pdf.getTextWidth(testLine);
-                    
-                            if (testLineWidth > maxWidth) {
-                                // If it exceeds the width, print the current line
-                                if (currentLine.length > 0) {
-                                    console.log("if the current line is greater than the maxwidth and is having some data:");
-                                    console.log("This is the current line", currentLine);
-                                    pdf.text(currentLine, x, currentY);
-                                    currentY += 15; // Move down for the next line
-                                    console.log("This is the current y :", currentY);
-                                }
-                                // Start a new line with the current word
-                                currentLine = "  " + word; // Reset current line to the word that caused overflow
-                                console.log("This is the remaining word or sentence added with a space here :", currentLine);
-                                
-                            } else {
-                                // If it fits, update the current line
-                                currentLine = testLine;
-                            }
-                        }
-                    
-                        // Print any remaining text in currentLine
-                        if (currentLine.length > 0) {
-                            pdf.text(currentLine, x, currentY);
-                            console.log("Printing any current line if left :", currentLine);
-                            console.log("This is the current y updated on the remaining text code :", currentY);
-                        }
-                      } else {
-                          pdf.text(text, x, currentY);
-                          console.log("Adding the text directly because it doesn't need separation :", text);
-                          console.log("the current y for directly added text:", currentY);
-                      }
-
-                      console.log("This is the current Y before just coming out of the process (return currenty +15) :", currentY);
-                      
-                      return currentY + 15;
-                    
-                    };
-
-                    // Adding the lines to the respective side along with the bullet points. 
-                    for (let i = 0; i < totallines; i++) {
-                      const lineWithBullet = addBulletPoint(observationArray[i]);
-                      console.log("These are the observation array lines given one by one :");
-                      console.log(lineWithBullet);
-                      console.log("End of the observation array separated lines.");
-                      if (i < halflines) {
-                          leftColumnY = processTextColumn(lineWithBullet, marginX, leftColumnY, columnWidth);
-                      } else {
-                          rightColumnY = processTextColumn(lineWithBullet, marginX + columnWidth + columnGap, rightColumnY, columnWidth);
-                      }
-                    }
-                    currentYPosition = Math.max(leftColumnY, rightColumnY);
-                    console.log("This is the right Column y :", rightColumnY);
-                    console.log("This is the left column y :", leftColumnY);
-                    console.log("This is the current y position :", currentYPosition);
-                  } else {
-
-                    // Adding the bullet point.
-                    const addBulletPoint = (line) => {
-                      if (line.startsWith(bullet)) {
-                          return line;
-                      }
-                      return bullet + line;
-                    };
-
-                    // Now adding the texts in normal manner.
-                    for (const line of observationArray){
-                      const lineWithBullet = addBulletPoint(line);
-                      pdf.setFont("helvetica", "normal");
-                      pdf.text(lineWithBullet, marginX, currentYPosition);
-                      currentYPosition += 15;
-                    }
-
-                  }
-                  
-                  // End of the observation text's logic.
-                  currentYPosition += 20;
-                  pdf.setFontSize(13);
-                  pdf.setFont("helvetica", "bold");
-                  pdf.text(paragraphText, marginX, currentYPosition);
-                  pdf.setFontSize(10);
-                  pdf.setFont("helvetica", "normal");
-                  currentYPosition += 20;
-              } else if (paragraphText.includes("Dr.")) {
-                  currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
-                  pdf.setFontSize(12);
-                  pdf.setFont("helvetica", "normal");
-                  const drdatalines = paragraphText.split(',').map(line => line.trim()).filter(line => line.length > 0);
-                  for (const drdata of drdatalines){
-                    pdf.text(drdata, marginX, currentYPosition);
-                    currentYPosition += 15;
-                  }
-                  currentYPosition += 10;
-              } else if (paragraphText.includes("X-RAY") || paragraphText.includes("CT")) {
-                  pdf.setFontSize(13);
-                  pdf.setFont("helvetica", "bold");
-                  pdf.text(paragraphText, marginX, currentYPosition);
-                  currentYPosition += 20;
-              } else if (paragraphText.includes(bullet)) {
-                  pdf.setFontSize(12);
-                  pdf.setFont("helvetica", "bold");
-                  const impressionlines = paragraphText.split('.').map(line => line.trim()).filter(line => line.length > 0);
-                  for (const line of impressionlines) {
-                    pdf.text(line, marginX, currentYPosition);
-                  }
-                  currentYPosition += 20;
+          // Looping through each element inside the CKEditor.
+          for (let i = 0; i < elements.length; i++) {
+            const element = elements[i];
+            console.log("These are individual children elements of data :",element);
+            if (element.tagName === 'P') {
+              const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
+              if (isHeading) {
+                  // Add heading
+                  currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
               } else {
-                // Handle text in columnar structure
-                const lines = paragraphText.split('.').map(line => line.trim()).filter(line => line.length > 0);
-                console.log("These are the lines of the observation :")
-                console.log(lines)
-                console.log("End of lines of the observation.")
-                // Adding the observation text in the array. 
-                for (const observationtext of lines){
-                  observationArray.push(observationtext);
-                }
-                // End of the observation text logic.
-                
+                  // Check if it's a "Dr." line and needs signature
+                  if (element.textContent.includes("Dr.")) {
+                      // Add signature first
+                      currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+                  }
+
+                  // Splitting paragraphs based on <br> tags and processing each line
+                  // const lines = this.splitParagraphIntoLines(element);
+
+                  // Regular paragraph
+                  currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
+              }
             }
-          }   
+          }
           
           // Adding the data to blob to send it to backend.
           const pdfBlob = pdf.output("blob");
@@ -2891,6 +2500,7 @@ class App extends Component {
             formData.append("reportDate", reportDate);
             formData.append("location", location);
             formData.append("accession", accession);
+            formData.append("institution_name", institutionName);
 
             await axios.post("/upload_xray_pdf/", formData, {
                 headers: {
@@ -2928,15 +2538,17 @@ class App extends Component {
       }
     })();
   }
-  ////////////////////////////////// Upload XRAY PDF without IMAGE (END) ////////////////////////
 
-
-  ////////////////////////////////// Upload XRAY PDF with IMAGE (START) ////////////////////////
   UploadDivContentOnPDF() {
     (async () => {
       this.showLoader();
       const filename = this.createFilename();
       const data = document.getElementsByClassName("ck-editor__editable")[0];
+      console.log("This is the data i got from the class :",data);
+      const dataFromId = document.getElementById("reportEditor");
+      console.log("This is the data i got from the id reportEditor :", dataFromId);
+
+      const { location, accession, institutionName } = this.extractDataFromURL();
       
       const images = data.querySelectorAll("img");
       const signatureElement = images[1];
@@ -2951,7 +2563,16 @@ class App extends Component {
       // remaining required images at the end to reduce the time complexity.
       const remainingReportImages = Array.prototype.slice.call(images, 2);
 
-      const { patientId, patientName, age, gender, testDate, reportDate, location, accession, reportImageUrl } = this.extractDataFromURL();
+      // Getting the table data from my function.
+      // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
+      const tableData = this.extractTableData(data);
+      const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
+      console.log("This is my extracted table data :",tableData);
+
+      // Getting all the children elements of the data (ckeditor content).
+      const elements = data.children;
+      // This is the variable to handle the skipping of elemens(if needed).
+      let skipNext = false;
 
       const pdf = new jsPDF("p", "pt", "a4");
 
@@ -2979,197 +2600,30 @@ class App extends Component {
           });
           currentYPosition = pdf.previousAutoTable.finalY + 20;
 
-          const paragraphs = data.querySelectorAll("p");
-          const columnWidth = (pdf.internal.pageSize.width - 80) / 2; // 80 = 40px margin on each side
-          let isLeftColumn = true; // Start with left column
-          let leftColumnY = 0;
-          let rightColumnY = 0;
-          const marginX = 40; // Margin from left side
-          const columnGap = 10; // Gap between columns
-          const bullet = "\u2022 ";
-          // For fixing the ckeditor problem i am using this logic - Himanshu.
-          const observationArray = [];
-          console.log("This is the complete fetched paragraph tag from ckeditor:");
-          console.log(paragraphs)
-          console.log("End of the paragraphs tag.")
-          
-
-          for (const paragraph of paragraphs) {
-              const paragraphText = paragraph.textContent || "";
-              console.log("These is the paragraph text :", paragraphText);
-
-              pdf.setFontSize(12);
-              pdf.setFont("helvetica", "bold");
-
-              if (paragraphText.includes("OBSERVATIONS:") || paragraphText.includes("OBSERVATION:") || paragraphText.includes("FINDINGS:") || paragraphText.includes("FINDING:")) {
-                  pdf.text(paragraphText, marginX, currentYPosition);
-                  pdf.setFontSize(13);
-                  pdf.setFont("helvetica", "normal");
-                  currentYPosition += 20;
-              } else if (paragraphText.includes("IMPRESSION:") || paragraphText.includes("IMPRESSIONS:")) {
-                  // Adding the logic if the lines are lesser than 6 than they will get printed in the normal manner.
-                  if (observationArray.length > 5){
-                    // Adding the logic to add the observation lines just before the Impression line.
-                    // setting the font size and the font family back to normal.
-                    pdf.setFontSize(12); 
-                    pdf.setFont("helvetica", "normal");
-                    const totallines = observationArray.length;
-                    const halflines = Math.ceil(totallines / 2);
-                    console.log("This is the observation array :", observationArray);
-
-                    // Adding the bullet point to the lines before printing them  on the pdf.
-                    const addBulletPoint = (line) => {
-                      if (line.startsWith(bullet)) {
-                          return line;
-                      }
-                      return bullet + line;
-                    };
-
-                    // setting the left column and right column logic (left one is not needed, i can optimise it later.)
-                    rightColumnY = currentYPosition;
-                    leftColumnY = currentYPosition;
-
-                    // Processing the texts which will fix the line text width greater than the column width issue.
-                    const processTextColumn = (text, x, y, columnWidth) => {
-                      let currentY = y;
-                      const textWidth = pdf.getTextWidth(text);
-                      const maxWidth = columnWidth - 20; // Padding for each column
-                      console.log("This is the current y (at the beginning of processing the new line of array ) :", currentY);
-                      console.log("This is the textWidth :", textWidth);
-                      console.log("This is the maxwidth :", maxWidth);
-              
-                      if (textWidth > maxWidth) {
-                        let remainingText = text;
-                        pdf.setFont("helvetica", "normal");
-                        let currentLine = '';
-                    
-                        // Split text into words
-                        const words = remainingText.split(' ');
-                    
-                        for (const word of words) {
-                            // Construct a test line with the next word
-                            const testLine = currentLine.length > 0 ? currentLine + ' ' + word : word;
-                            console.log("This is the testline :", testLine);
-                            const testLineWidth = pdf.getTextWidth(testLine);
-                    
-                            if (testLineWidth > maxWidth) {
-                                // If it exceeds the width, print the current line
-                                if (currentLine.length > 0) {
-                                    console.log("if the current line is greater than the maxwidth and is having some data:");
-                                    console.log("This is the current line", currentLine);
-                                    pdf.text(currentLine, x, currentY);
-                                    currentY += 15; // Move down for the next line
-                                    console.log("This is the current y :", currentY);
-                                }
-                                // Start a new line with the current word
-                                currentLine = "  " + word; // Reset current line to the word that caused overflow
-                                console.log("This is the remaining word or sentence added with a space here :", currentLine);
-                                
-                            } else {
-                                // If it fits, update the current line
-                                currentLine = testLine;
-                            }
-                        }
-                    
-                        // Print any remaining text in currentLine
-                        if (currentLine.length > 0) {
-                            pdf.text(currentLine, x, currentY);
-                            console.log("Printing any current line if left :", currentLine);
-                            console.log("This is the current y updated on the remaining text code :", currentY);
-                        }
-                      } else {
-                          pdf.text(text, x, currentY);
-                          console.log("Adding the text directly because it doesn't need separation :", text);
-                          console.log("the current y for directly added text:", currentY);
-                      }
-
-                      console.log("This is the current Y before just coming out of the process (return currenty +15) :", currentY);
-                      
-                      return currentY + 15;
-                    
-                    };
-
-                    // Adding the lines to the respective side along with the bullet points. 
-                    for (let i = 0; i < totallines; i++) {
-                      const lineWithBullet = addBulletPoint(observationArray[i]);
-                      console.log("These are the observation array lines given one by one :");
-                      console.log(lineWithBullet);
-                      console.log("End of the observation array separated lines.");
-                      if (i < halflines) {
-                          leftColumnY = processTextColumn(lineWithBullet, marginX, leftColumnY, columnWidth);
-                      } else {
-                          rightColumnY = processTextColumn(lineWithBullet, marginX + columnWidth + columnGap, rightColumnY, columnWidth);
-                      }
-                    }
-                    currentYPosition = Math.max(leftColumnY, rightColumnY);
-                    console.log("This is the right Column y :", rightColumnY);
-                    console.log("This is the left column y :", leftColumnY);
-                    console.log("This is the current y position :", currentYPosition);
-                  } else {
-
-                    // Adding the bullet point.
-                    const addBulletPoint = (line) => {
-                      if (line.startsWith(bullet)) {
-                          return line;
-                      }
-                      return bullet + line;
-                    };
-
-                    // Now adding the texts in normal manner.
-                    for (const line of observationArray){
-                      const lineWithBullet = addBulletPoint(line);
-                      pdf.setFont("helvetica", "normal");
-                      pdf.text(lineWithBullet, marginX, currentYPosition);
-                      currentYPosition += 15;
-                    }
-
-                  }
-                  
-                  // End of the observation text's logic.
-                  currentYPosition += 20;
-                  pdf.setFontSize(13);
-                  pdf.setFont("helvetica", "bold");
-                  pdf.text(paragraphText, marginX, currentYPosition);
-                  pdf.setFontSize(10);
-                  pdf.setFont("helvetica", "normal");
-                  currentYPosition += 20;
-              } else if (paragraphText.includes("Dr.")) {
-                  currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
-                  pdf.setFontSize(12);
-                  pdf.setFont("helvetica", "normal");
-                  const drdatalines = paragraphText.split(',').map(line => line.trim()).filter(line => line.length > 0);
-                  for (const drdata of drdatalines){
-                    pdf.text(drdata, marginX, currentYPosition);
-                    currentYPosition += 15;
-                  }
-                  currentYPosition += 10;
-              } else if (paragraphText.includes("X-RAY") || paragraphText.includes("CT")) {
-                  pdf.setFontSize(13);
-                  pdf.setFont("helvetica", "bold");
-                  pdf.text(paragraphText, marginX, currentYPosition);
-                  currentYPosition += 20;
-              } else if (paragraphText.includes(bullet)) {
-                  pdf.setFontSize(12);
-                  pdf.setFont("helvetica", "bold");
-                  const impressionlines = paragraphText.split('.').map(line => line.trim()).filter(line => line.length > 0);
-                  for (const line of impressionlines) {
-                    pdf.text(line, marginX, currentYPosition);
-                  }
-                  currentYPosition += 20;
+          // Looping through each element inside the CKEditor.
+          for (let i = 0; i < elements.length; i++) {
+            const element = elements[i];
+            console.log("These are individual children elements of data :",element);
+            if (element.tagName === 'P') {
+              const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
+              if (isHeading) {
+                  // Add heading
+                  currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
               } else {
-                // Handle text in columnar structure
-                const lines = paragraphText.split('.').map(line => line.trim()).filter(line => line.length > 0);
-                console.log("These are the lines of the observation :")
-                console.log(lines)
-                console.log("End of lines of the observation.")
-                // Adding the observation text in the array. 
-                for (const observationtext of lines){
-                  observationArray.push(observationtext);
-                }
-                // End of the observation text logic.
-                
+                  // Check if it's a "Dr." line and needs signature
+                  if (element.textContent.includes("Dr.")) {
+                      // Add signature first
+                      currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+                  }
+
+                  // Splitting paragraphs based on <br> tags and processing each line
+                  // const lines = this.splitParagraphIntoLines(element);
+
+                  // Regular paragraph
+                  currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
+              }
             }
-          }   
+          }
 
           // Passing the remaining images instead of the url fetched image directly to add all captured images.
           for (const image of remainingReportImages) {
@@ -3177,8 +2631,6 @@ class App extends Component {
             console.log("This is the image Url:", imageUrl);
             currentYPosition = await this.addReportImage(pdf, imageUrl, currentYPosition);
           }
-
-          
           // Adding the data to blob to send it to backend.
           const pdfBlob = pdf.output("blob");
 
@@ -3194,7 +2646,7 @@ class App extends Component {
             formData.append("reportDate", reportDate);
             formData.append("location", location);
             formData.append("accession", accession);
-
+            formData.append("institution_name", institutionName);
             await axios.post("/upload_xray_pdf/", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
@@ -3231,7 +2683,6 @@ class App extends Component {
       }
     })();
   }
-
   //////////////////// Upload XRAY PDF with IMAGE (END) ////////////////////////////////////
 
 
@@ -4000,7 +3451,15 @@ this.allowDrop(e)} onDrop={e => this.drop(e)}></div>
         generateReport={this.generateReport}
         generatePatientTable={this.generatePatientTable()}
       />
-    ) : this.state.modal && options_label === "CT PNS" ? (
+    ) : this.state.modal && options_label === "Blanks" ? (
+      <Blanks
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+        generatePatientTable={this.generatePatientTable()}
+      />
+    ) 
+    : this.state.modal && options_label === "CT PNS" ? (
       <PnsAbnormal
         handleClick={this.handleClick}
         reportFrmData={reportFrmData}
@@ -4136,6 +3595,56 @@ onInit={(editor) => {
   //   const content = editor.getData();
   //   sessionStorage.setItem('editorContent', content); // Store the content in sessionStorage
   // });
+
+
+    // Updated code to fix the session storage ck editor issue on our new pacs - Himanshu.
+  // Step 1: Get the `data-study-id` parameter from the URL (patient identifier)
+  const urlParams = new URLSearchParams(window.location.search);
+  const currentStudyId = urlParams.get('data-study-id'); // The unique patient ID from the URL
+
+  // Step 2: Check if the `data-study-id` exists in the URL
+  if (!currentStudyId) {
+      console.warn('No study ID found in the URL.');
+      // Optionally handle this case: You could display a message or disable certain features
+      // For now, we can exit the function early if no study ID is available
+      return;  // Exit the function, nothing further to do
+  }
+
+  // Step 3: Retrieve previously saved study ID from sessionStorage
+  const savedStudyId = sessionStorage.getItem('savedStudyId');
+
+  // Step 4: Handle the case when study ID is missing or changed
+  if (!savedStudyId) {
+      // No study ID saved, store the current one for future use
+      sessionStorage.setItem('savedStudyId', currentStudyId);
+  } else if (savedStudyId !== currentStudyId) {
+      // Study ID has changed, clear the old data and store the new ID
+      sessionStorage.removeItem(`editorContent-${savedStudyId}`); // Remove old content
+      sessionStorage.removeItem('savedStudyId'); // Remove old study ID
+      sessionStorage.setItem('savedStudyId', currentStudyId); // Store new study ID
+  }
+
+  // Step 5: Retrieve saved content specific to the current study ID
+  const savedContent = sessionStorage.getItem(`editorContent-${currentStudyId}`);
+
+  // Step 6: If content exists for this study ID, restore it
+  if (savedContent && savedStudyId === currentStudyId) {
+      editor.setData(savedContent); // Restore saved content to CKEditor
+  }
+
+  // Step 7: Save editor content to sessionStorage on every change
+  editor.model.document.on('change:data', () => {
+      const content = editor.getData(); // Get current content from the editor
+      sessionStorage.setItem(`editorContent-${currentStudyId}`, content); // Save content tied to the current study ID
+  });
+
+  // Step 8: Function to clear session storage when reporting is done
+  function clearSessionData() {
+      sessionStorage.removeItem(`editorContent-${currentStudyId}`); // Remove editor content for current patient
+      sessionStorage.removeItem('savedStudyId'); // Remove saved study ID
+  }
+
+
   
   const toolbarContainer = document.querySelector(".document-editor__toolbar");
   

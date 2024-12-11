@@ -9,5 +9,17 @@ class Client(models.Model):
     location = models.ForeignKey(XLocation, on_delete=models.CASCADE, null=True, blank=True)
     institution_name = models.CharField(max_length=250, blank=True, null=True, default="None")
 
+    # Field-level permissions for editable fields
+    can_edit_patient_name = models.BooleanField(default=False)
+    can_edit_patient_id = models.BooleanField(default=False)
+    can_edit_age = models.BooleanField(default=False)
+    can_edit_gender = models.BooleanField(default=False)
+    can_edit_study_date = models.BooleanField(default=False)
+    can_edit_study_description = models.BooleanField(default=False)
+    can_edit_notes = models.BooleanField(default=False)
+    can_edit_body_part_examined = models.BooleanField(default=False)
+    can_edit_referring_doctor_name = models.BooleanField(default=False)
+    can_edit_whatsapp_number = models.BooleanField(default=False)
+
     def __str__(self):
         return self.name

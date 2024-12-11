@@ -42,8 +42,8 @@ urlpatterns = [
     path('allocate/', views.allocate, name='allocate'),
     path('allocate1/', views.allocate1, name='allocate1'),
     path('fetch_patient_data', views.fetch_patient_data, name='fetch_patient_data'),
-    path('upload_dicom/', views.upload_dicom, name='upload_dicom'),
-    path('upload_dicom.html', views.upload_dicom, name='upload_dicom'),
+    #path('upload_dicom/', views.upload_dicom, name='upload_dicom'),
+    #path('upload_dicom.html', views.upload_dicom, name='upload_dicom'),
     path('api/update_patient_done_status/<str:patient_id>/', views.update_patient_done_status, name='update_patient_done_status'),
     path('api/update_patient_done_status_xray/<str:patient_id>/', views.update_patient_done_status_xray, name='update_patient_done_status_xray'),
     path('api/reject_patient_status/<str:patient_id>/', views.reject_patient_status, name='reject_patient_status'),
@@ -60,7 +60,7 @@ urlpatterns = [
     path('optometry_pdf_report/', views.optometry_pdf_report, name='optometry_pdf_report'),
     path('audiometry_pdf_report/', views.audiometry_pdf_report, name='audiometry_pdf_report'),
     path('get_excel/', views.get_excel, name='get_excel'),
-    path('client/', views.client_dashboard, name='client'),
+    path('clientdata/client/', views.client_dashboard, name='client'),
     path('update_history/', views.update_clinical_history, name='clinical_history'),
     path('optometrylist', views.optometrylist, name='optometrylist'),
     path('vitalslist', views.vitalslist, name='vitalslist'),
@@ -95,6 +95,10 @@ urlpatterns = [
     path('upload/', views.upload_files, name='upload_files'),
     # path('auto_sync/', views.Auto_Sync, name='get_dcm_files'),
     path('upload-ecg/', views.upload_ecg, name='upload_ecg'),
+    path('clientdata/', views.clientdata, name='clientdata'),
+    path('edit-dicom-data/<int:pk>/', views.edit_dicom_data, name='edit_dicom_data'),
+    path('supercoordinator/', views.supercoordinator_view, name='supercoordinator'),
+    path('supercoordinator/edit/<int:client_id>/', views.supercoordinator_view, name='edit_client'),
 
 
 ] 
