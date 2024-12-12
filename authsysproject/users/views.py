@@ -129,7 +129,7 @@ def login(request):
             elif group == 'technician':
                 return redirect('upload_dicom')
             elif group == 'client':
-                return redirect('client')
+                return redirect('clientdata')
             elif group == 'campautomation':
                 return redirect('optometrylist')
             elif group == 'supercoordinator':
