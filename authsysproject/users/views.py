@@ -2494,7 +2494,7 @@ def xray_pdf_report(request):
     formatted_dates = [date.strftime('%Y-%m-%d') for date in test_dates]
     report_dates = set(pdf.report_date for pdf in pdfs)
     unique_locations = XLocation.objects.all()
-    institution_name = institution_name
+    institution_name = set(pdf.institution_name for pdf in pdfs)
 
     context = {
         'pdfs': page_obj,
