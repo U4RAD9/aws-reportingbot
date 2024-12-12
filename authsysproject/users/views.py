@@ -2390,7 +2390,7 @@ def upload_xray_pdf(request):
             patient_id = request.POST.get('patientId').replace(' ', '_')  # Replace spaces with underscores
             patient_name = request.POST.get('patientName').replace(' ', '_')  # Replace spaces with underscores
             location = request.POST.get('location')
-            institution_name = request.POST('institution_name')
+            institution_name = request.POST.get('institution_name')
             accession_number = request.POST.get('accession')
             test_date_str = request.POST.get('testDate')
             report_date_str = request.POST.get('reportDate')
