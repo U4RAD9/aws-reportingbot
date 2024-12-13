@@ -23,7 +23,7 @@ class DICOMData(models.Model):
     #accession_number = models.CharField(max_length=50, null=True, blank=True)
     institution_name = models.CharField(max_length=250, blank=True, null=True, default="None")
     referring_doctor_name = models.CharField(max_length=250, blank=True, null=True, default="None")
-    whatsapp_number = models.IntegerField(blank=True, null=True)
+    whatsapp_number = models.CharField(max_length=10, blank=True, null=True)
 
     def __str__(self):
         return str(self.patient_name)
