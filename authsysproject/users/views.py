@@ -3995,7 +3995,7 @@ def server_data(request):
             seriesModality = tags['0008,0060']['Value']
             id = tags['0010,0020']['Value']
             seriesDescription = tags['0008,103e']['Value']
-            seriesPreview = 'http://13.202.103.243:2002/instances/' + sampleInstance + '/preview'
+            seriesPreview = 'https://pacs.reportingbot.in/instances/' + sampleInstance + '/preview'
             series.append([seriesUID, seriesModality, seriesDescription, seriesPreview])
         print(studyUID, series, name, id, studyDate, studyTime)
         return JsonResponse ({'study_uid': studyUID, 'series': series, 'name': name, 'id': id, 'date': studyDate, 'time': studyTime})
