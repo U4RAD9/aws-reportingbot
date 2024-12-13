@@ -512,7 +512,7 @@ class App extends Component {
   
           // put the url of the orthanc server with /dicom-web
           // example http://127.0.0.1:2002/dicom-web
-          wadoRsRoot: 'http://13.202.103.243:2002/dicom-web',
+          wadoRsRoot: 'https://pacs.reportingbot.in/dicom-web',
         });
   
         // populate preview tab
