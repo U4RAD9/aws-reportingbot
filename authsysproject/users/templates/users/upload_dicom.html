@@ -197,6 +197,7 @@
   
       function saveEdit() {
         const id = $("#dicomId").val();
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value; // Get the CSRF token
         $.post(`/edit-dicom-data/${id}/`, {
           patient_name: $("#patient_name").val(),
           patient_id: $("#patient_id").val(),
@@ -208,7 +209,7 @@
           body_part_examined: $("#body_part_examined").val(),
           referring_doctor_name: $("#referring_doctor_name").val(),
           whatsapp_number: $("#whatsapp_number").val(),
-          csrfmiddlewaretoken: "{{ csrf_token }}",
+          csrfmiddlewaretoken: csrftoken,
         }).done(function (response) {
           if (response.success) {
             location.reload();
