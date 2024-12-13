@@ -2,6 +2,7 @@ from collections import defaultdict
 import math
 from urllib.parse import urlparse, parse_qs
 from tkinter import Tk, filedialog
+from venv import logger
 from django.shortcuts import get_object_or_404, render, redirect
 from django.http import JsonResponse
 from django.http import HttpResponse
@@ -4044,19 +4045,24 @@ def clientdata(request):
 def edit_dicom_data(request, pk):
     """Edit specific DICOMData entry."""
     if request.method == "POST":
-        dicom_entry = get_object_or_404(DICOMData, pk=pk)
-        dicom_entry.patient_name = request.POST.get('patient_name', dicom_entry.patient_name)
-        dicom_entry.patient_id = request.POST.get('patient_id', dicom_entry.patient_id)
-        dicom_entry.age = request.POST.get('age', dicom_entry.age)
-        dicom_entry.gender = request.POST.get('gender', dicom_entry.gender)
-        dicom_entry.study_date = request.POST.get('study_date', dicom_entry.study_date)
-        dicom_entry.study_description = request.POST.get('study_description', dicom_entry.study_description)
-        dicom_entry.notes = request.POST.get('notes', dicom_entry.notes)
-        dicom_entry.body_part_examined = request.POST.get('body_part_examined', dicom_entry.body_part_examined)
-        dicom_entry.referring_doctor_name = request.POST.get('referring_doctor_name', dicom_entry.referring_doctor_name)
-        dicom_entry.whatsapp_number = request.POST.get('whatsapp_number', dicom_entry.whatsapp_number)
-        dicom_entry.save()
-        return JsonResponse({'success': True})
+        try:
+            dicom_entry = get_object_or_404(DICOMData, pk=pk)
+            dicom_entry.patient_name = request.POST.get('patient_name', dicom_entry.patient_name)
+            dicom_entry.patient_id = request.POST.get('patient_id', dicom_entry.patient_id)
+            dicom_entry.age = request.POST.get('age', dicom_entry.age)
+            dicom_entry.gender = request.POST.get('gender', dicom_entry.gender)
+            dicom_entry.study_date = request.POST.get('study_date', dicom_entry.study_date)
+            dicom_entry.study_description = request.POST.get('study_description', dicom_entry.study_description)
+            dicom_entry.notes = request.POST.get('notes', dicom_entry.notes)
+            dicom_entry.body_part_examined = request.POST.get('body_part_examined', dicom_entry.body_part_examined)
+            dicom_entry.referring_doctor_name = request.POST.get('referring_doctor_name', dicom_entry.referring_doctor_name)
+            dicom_entry.whatsapp_number = request.POST.get('whatsapp_number', dicom_entry.whatsapp_number)
+            dicom_entry.save()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            # Log the exception
+            logger.exception("Error updating DICOMData entry.")
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
     return JsonResponse({'success': False}, status=400)
 
 
