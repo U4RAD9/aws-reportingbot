@@ -3972,7 +3972,7 @@ def ECGSetTarget(request):
 
 def server_data(request):
     if request.method == 'POST':
-        url = 'http://13.202.103.243:2002/'
+        url = 'https://pacs.reportingbot.in/'
         server = Orthanc(url, username='admin', password='u4rad')
         for key in request.POST.keys():
             study_id = key
