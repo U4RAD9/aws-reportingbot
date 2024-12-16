@@ -482,6 +482,7 @@
                 </th>
                 <th>Report Date</th>
                   <th>Location</th>
+                  <th>WhatsApp Number</th>
                 <th>Actions</th>
                 <th>Select All<input class="ml-1" type="checkbox" id="selectAllCheckbox" /></th>
               </tr>
@@ -494,6 +495,7 @@
                 <td data-date="{{ pdf.test_date|date:'Y-m-d' }}">{{ pdf.test_date|date:'Y-m-d' }}</td>
                 <td>{{ pdf.report_date }}</td>
                 <td>{{ pdf.location }}</td>
+                <td>{{ pdf.whatsapp_number }}</td>
                 <td>
                   <a class="reportButton" href="{{ pdf.signed_url }}" download>DOWNLOAD</a>
                 </td>

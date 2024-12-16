@@ -543,9 +543,17 @@ def client_dashboard(request):
         institution_name = current_user_personal_info.institution_name
         print("institution_name:", institution_name)
         pdfs = XrayReport.objects.filter(institution_name=institution_name).order_by('-report_date')  # Matching location name
-        pdfs_list.extend(pdfs)
-        test_dates_set.update(pdf.test_date for pdf in pdfs)
-        report_dates_set.update(pdf.report_date for pdf in pdfs)
+        # pdfs_list.extend(pdfs)
+        # test_dates_set.update(pdf.test_date for pdf in pdfs)
+        # report_dates_set.update(pdf.report_date for pdf in pdfs)
+        # Add WhatsApp number for each PDF by searching DICOMData
+        for pdf in pdfs:
+            dicom_data = DICOMData.objects.filter(patient_id=pdf.patient_id, patient_name=pdf.name).first()
+            pdf.whatsapp_number = dicom_data.whatsapp_number if dicom_data else None
+            pdfs_list.append(pdf)
+
+            test_dates_set.add(pdf.test_date)
+            report_dates_set.add(pdf.report_date)
 
     
         # Pagination
@@ -560,6 +568,9 @@ def client_dashboard(request):
                 pdf.signed_url = presigned_url(bucket_name, f'{pdf.pdf_file.name}')
             else:
                 pdf.signed_url = None
+
+            # Add WhatsApp number from related DICOMData if available
+            #pdf.whatsapp_number = pdf.dicom_data.whatsapp_number if pdf.dicom_data else None    
 
 
     formatted_test_dates = sorted(test_date.strftime('%Y-%m-%d') for test_date in test_dates_set)
