@@ -4232,6 +4232,7 @@ def send_whatsapp(request):
             patient_name = data.get('patient_name')
             pdf_url = data.get('pdf_url')
             patient_id = data.get('patient_id')
+            print(data, whatsapp_number, patient_name, pdf_url, patient_id)
 
             # Log the parsed data
             logger.info(f"Parsed Data: {whatsapp_number}, {patient_name}, {pdf_url}, {patient_id}")
@@ -4239,6 +4240,8 @@ def send_whatsapp(request):
             # Check if the WhatsApp number is valid (10-digit number)
             if not re.fullmatch(r'\d{10}', whatsapp_number):
                 return JsonResponse({"success": False, "message": "Invalid phone number."})
+            
+            print("passed valid")
 
             # Twilio credentials and client setup
             account_sid = settings.TWILIO_ACCOUNT_SID
@@ -4247,7 +4250,7 @@ def send_whatsapp(request):
 
             # The media URL for the PDF file (stored in AWS S3 or your server)
             #media_url = f'https://your-s3-bucket-name.s3.your-region.amazonaws.com/{pdf_url}'
-            
+            print("passed valid 2")
             # Send the WhatsApp message
             message = client.messages.create(
                 content_sid='HXbabe8bcff70872e4425778df05927569',  # Content SID for WhatsApp template
