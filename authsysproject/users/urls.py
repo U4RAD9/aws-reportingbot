@@ -99,7 +99,7 @@ urlpatterns = [
     path('edit-dicom-data/<int:pk>/', views.edit_dicom_data, name='edit_dicom_data'),
     path('supercoordinator/', views.supercoordinator_view, name='supercoordinator'),
     path('supercoordinator/edit/<int:client_id>/', views.supercoordinator_view, name='edit_client'),
-    path('/send_whatsapp/', views.send_whatsapp, name='send_whatsapp'),
+    path('send_whatsapp/', views.send_whatsapp, name='send_whatsapp'),
 
 
 ] 
