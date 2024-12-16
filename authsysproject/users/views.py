@@ -548,7 +548,9 @@ def client_dashboard(request):
         # report_dates_set.update(pdf.report_date for pdf in pdfs)
         # Add WhatsApp number for each PDF by searching DICOMData
         for pdf in pdfs:
-            dicom_data = DICOMData.objects.filter(patient_id=pdf.patient_id, patient_name=pdf.name).first()
+            # Replace underscores with spaces in the name for matching
+            normalized_name = pdf.name.replace("_", " ") if pdf.name else None
+            dicom_data = DICOMData.objects.filter(patient_id=pdf.patient_id, patient_name=normalized_name).first()
             pdf.whatsapp_number = dicom_data.whatsapp_number if dicom_data else None
             pdfs_list.append(pdf)
 
