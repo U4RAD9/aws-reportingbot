@@ -4224,8 +4224,6 @@ def send_whatsapp(request):
     print("I'm inside whatsApp")
     if request.method == "POST":
         try:
-            # Log the incoming data for debugging
-            logger.info("Received POST request with data: %s", request.body)
             # Parse the incoming JSON data
             data = json.loads(request.body)
             whatsapp_number = data.get('whatsapp_number')
@@ -4234,12 +4232,10 @@ def send_whatsapp(request):
             patient_id = data.get('patient_id')
             print(data, whatsapp_number, patient_name, pdf_url, patient_id)
 
-            # Log the parsed data
-            logger.info(f"Parsed Data: {whatsapp_number}, {patient_name}, {pdf_url}, {patient_id}")
 
             # Check if the WhatsApp number is valid (10-digit number)
-            if not re.fullmatch(r'\d{10}', whatsapp_number):
-                return JsonResponse({"success": False, "message": "Invalid phone number."})
+            #if not re.fullmatch(r'\d{10}', whatsapp_number):
+            #    return JsonResponse({"success": False, "message": "Invalid phone number."})
             
             print("passed valid")
 
@@ -4247,6 +4243,7 @@ def send_whatsapp(request):
             account_sid = settings.TWILIO_ACCOUNT_SID
             auth_token = settings.TWILIO_AUTH_TOKEN
             client = tw(account_sid, auth_token)
+            print(account_sid, auth_token)
 
             # The media URL for the PDF file (stored in AWS S3 or your server)
             #media_url = f'https://your-s3-bucket-name.s3.your-region.amazonaws.com/{pdf_url}'
