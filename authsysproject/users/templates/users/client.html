@@ -1,465 +1,473 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XRAi Reporting</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <style>
-        body {
-          font-family: Arial, sans-serif;
-          margin: 0;
-          padding: 0;
-          display: flex;
-          min-height: 100vh;
-          flex-direction: column;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XRAi Reporting</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      min-height: 100vh;
+      flex-direction: column;
+    }
 
-        .container {
-          margin: 0 auto;
-          width: 100%;
-          max-width: 100%;
-          padding-left: 5px;
-          padding-right: 5px;
-        }
+    .container {
+      margin: 0 auto;
+      width: 100%;
+      max-width: 100%;
+      padding-left: 5px;
+      padding-right: 5px;
+    }
 
-        .card {
-          border: none;
-          border-radius: 7px;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-          margin-bottom: 3px;
-          position: sticky;
-          top: 0;
-          z-index: 1;
-          background-color: #fff;
-        }
+    .card {
+      border: none;
+      border-radius: 7px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 3px;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background-color: #fff;
+    }
 
-        .card-body {
-          padding: 10px;
-        }
+    .card-body {
+      padding: 10px;
+    }
 
-        #count1 {
-          padding: 10px;
-          font-size: 25px;
-          color: black;
-        }
+    #count1 {
+      padding: 10px;
+      font-size: 25px;
+      color: black;
+    }
 
-        #count2 {
-          padding: 10px;
-          font-size: 25px;
-          color: black;
-        }
+    #count2 {
+      padding: 10px;
+      font-size: 25px;
+      color: black;
+    }
 
-        #totalRowCount {
-          color: orange;
-        }
+    #totalRowCount {
+      color: orange;
+    }
 
-        .row-container1 {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
+    .row-container1 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-        .col {
-          margin-left: 60px;
-        }
+    .col {
+      margin-left: 60px;
+    }
 
-        #reportedRowCount {
-          color: green;
-        }
+    #reportedRowCount {
+      color: green;
+    }
 
-        .header {
-          margin-bottom: 5px;
-          background-color: #fff;
-          z-index: 10;
-          position: sticky;
-          top: 60px;
-        }
+    .header {
+      margin-bottom: 5px;
+      background-color: #fff;
+      z-index: 10;
+      position: sticky;
+      top: 60px;
+    }
 
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          background-color: #ccc;
-        }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #ccc;
+    }
 
-        th,
-        td {
-          padding: 5px;
-          text-align: left;
-          border-bottom: 1px solid #ccc;
-          justify-content: space-between;
-        }
+    th,
+    td {
+      padding: 5px;
+      text-align: left;
+      border-bottom: 1px solid #ccc;
+      justify-content: space-between;
+    }
 
-        th:last-child,
-        td:last-child {
-          border-right: none;
-        }
+    th:last-child,
+    td:last-child {
+      border-right: none;
+    }
 
-        th:first-child,
-        td:first-child {
-          position: sticky;
-          left: 0;
-          background-color: #fff;
-          z-index: 1;
-        }
+    th:first-child,
+    td:first-child {
+      position: sticky;
+      left: 0;
+      background-color: #fff;
+      z-index: 1;
+    }
 
-        td:first-child {
-          z-index: 2;
-        }
+    td:first-child {
+      z-index: 2;
+    }
 
-        .table-container {
-          height: 100%;
-          overflow-y: auto;
-        }
+    .table-container {
+      height: 100%;
+      overflow-y: auto;
+    }
 
-        .dropdown-select {
-          position: relative;
-        }
+    .dropdown-select {
+      position: relative;
+    }
 
-        .dropdown-select select {
-          width: 100%;
-          padding: 5px;
-          font-size: 14px;
-          border: 1px solid #ccc;
-          border-radius: 5px;
-        }
+    .dropdown-select select {
+      width: 100%;
+      padding: 5px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
 
-        .dropdown-select select:focus {
-          outline: none;
-          border-color: #007bff;
-          box-shadow: 0 0 5px #007bff;
-        }
+    .dropdown-select select:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 5px #007bff;
+    }
 
-        .dropdown-select1 {
-          position: relative;
-        }
+    .dropdown-select1 {
+      position: relative;
+    }
 
-        .dropdown-select1 select {
-          width: 70%;
-          padding: 5px;
-          font-size: 12px;
-          border: 1px solid #ccc;
-          border-radius: 5px;
-        }
+    .dropdown-select1 select {
+      width: 70%;
+      padding: 5px;
+      font-size: 12px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
 
-        .dropdown-select1 select:focus {
-          outline: none;
-          border-color: #007bff;
-          box-shadow: 0 0 5px #007bff;
-        }
+    .dropdown-select1 select:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 5px #007bff;
+    }
 
-        .greeting {
-          margin-top: 18px;
-          text-align: right;
-          font-weight: bold;
-          float: right;
-          color: black;
-        }
+    .greeting {
+      margin-top: 18px;
+      text-align: right;
+      font-weight: bold;
+      float: right;
+      color: black;
+    }
 
-        .search-container {
-          margin-top: 7px;
-          margin-right: 270px;
-          font-weight: bold;
-          float: right;
-          position: sticky;
-          display: flex;
-          justify-content: center;
-        }
+    .search-container {
+      margin-top: 7px;
+      margin-right: 270px;
+      font-weight: bold;
+      float: right;
+      position: sticky;
+      display: flex;
+      justify-content: center;
+    }
 
-        .footer {
-          background-color: #f7f7f7;
-          padding: 10px 0;
-          text-align: center;
-          margin-top: auto;
-        }
+    .footer {
+      background-color: #f7f7f7;
+      padding: 10px 0;
+      text-align: center;
+      margin-top: auto;
+    }
 
-        .filter-dropdown-container {
-          display: flex;
-          align-items: center;
-        }
+    .filter-dropdown-container {
+      display: flex;
+      align-items: center;
+    }
 
-        .filter-dropdown-container>div {
-          margin-right: 3px;
-          /* Adjust this value to control the space between the "Date" header and the dropdown */
-        }
+    .filter-dropdown-container>div {
+      margin-right: 3px;
+      /* Adjust this value to control the space between the "Date" header and the dropdown */
+    }
 
-        a.reportButton {
-          color: white;
-          background-color: #ffa500;
-          border: none;
-          border-radius: 5px;
-          padding: 5px 10px;
-          font-size: 15px;
-          cursor: pointer;
-          text-decoration: none;
-          /* Add this line to remove underline */
-          transition: background-color 0.3s;
-        }
+    a.reportButton {
+      color: white;
+      background-color: #ffa500;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      font-size: 15px;
+      cursor: pointer;
+      text-decoration: none;
+      /* Add this line to remove underline */
+      transition: background-color 0.3s;
+    }
 
-        a.reportButton:hover {
-          background-color: #ff8c00;
-          /* Change to the desired darker orange color on hover */
-          text-decoration: none;
-        }
+    a.reportButton:hover {
+      background-color: #ff8c00;
+      /* Change to the desired darker orange color on hover */
+      text-decoration: none;
+    }
 
-        .downloadButton {
-          color: white;
-          background-color: #008510;
-          border: none;
-          border-radius: 5px;
-          padding: 5px 10px;
-          font-size: 15px;
-          cursor: pointer;
-          text-decoration: none;
-          /* Add this line to remove underline */
-          transition: background-color 0.3s;
-        }
+    .downloadButton {
+      color: white;
+      background-color: #008510;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      font-size: 15px;
+      cursor: pointer;
+      text-decoration: none;
+      /* Add this line to remove underline */
+      transition: background-color 0.3s;
+    }
 
-        .downloadButton:hover {
-          background-color: #17c551;
-          /* Change to the desired darker orange color on hover */
-          text-decoration: none;
-        }
+    .downloadButton:hover {
+      background-color: #17c551;
+      /* Change to the desired darker orange color on hover */
+      text-decoration: none;
+    }
 
-        .hidden-row {
-          display: none;
-        }
+    .hidden-row {
+      display: none;
+    }
 
-        .btn-custom-sm {
-          padding: 5px;
-          font-size: 11px;
-          border-radius: 4px;
-          background-color: #ff0000;
-          color: #ffffff;
-          border: none;
-          cursor: pointer;
-        }
+    .btn-custom-sm {
+      padding: 5px;
+      font-size: 11px;
+      border-radius: 4px;
+      background-color: #ff0000;
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+    }
 
-        .btn-custom-sm:hover {
-          background-color: #c82222;
-          /* Change to the desired darker orange color on hover */
-          text-decoration: none;
-        }
+    .btn-custom-sm:hover {
+      background-color: #c82222;
+      /* Change to the desired darker orange color on hover */
+      text-decoration: none;
+    }
 
-        .scroll-to-top {
-          position: fixed;
-          bottom: 30px;
-          right: 30px;
-          display: none;
-        }
+    .scroll-to-top {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      display: none;
+    }
 
-        .scroll-to-top a {
-          display: block;
-          width: 40px;
-          height: 40px;
-          background-color: green;
-          border-radius: 50%;
-          color: #ffffff;
-          font-size: 20px;
-          text-align: center;
-          line-height: 40px;
-          text-decoration: none;
-        }
+    .scroll-to-top a {
+      display: block;
+      width: 40px;
+      height: 40px;
+      background-color: green;
+      border-radius: 50%;
+      color: #ffffff;
+      font-size: 20px;
+      text-align: center;
+      line-height: 40px;
+      text-decoration: none;
+    }
 
-        .refresh {
-          background-color: blue;
-          color: white;
-          padding: 3px 7px;
-          border: none;
-          border-radius: 5px;
-          font-size: 12px;
-        }
+    .refresh {
+      background-color: blue;
+      color: white;
+      padding: 3px 7px;
+      border: none;
+      border-radius: 5px;
+      font-size: 12px;
+    }
 
-        .popup {
-          display: none;
-          position: fixed;
-          bottom: 30px;
-          right: 30px;
-          background-color: orange;
-          color: white;
-          padding: 10px 15px;
-          border-radius: 5px;
-          z-index: 1000;
-          max-width: 300px;
-          /* Adjust the maximum width as needed */
-          width: auto;
-          /* Set width to auto or a specific value based on your design */
-        }
+    .popup {
+      display: none;
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background-color: orange;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 5px;
+      z-index: 1000;
+      max-width: 300px;
+      /* Adjust the maximum width as needed */
+      width: auto;
+      /* Set width to auto or a specific value based on your design */
+    }
 
-        .popup-content {
-          font-size: 14px;
-          /* You can also set a max-width for the content if needed */
-          max-width: 100%;
-          overflow: hidden;
-          /* Hide content overflow if it exceeds the max-width */
-        }
+    .popup-content {
+      font-size: 14px;
+      /* You can also set a max-width for the content if needed */
+      max-width: 100%;
+      overflow: hidden;
+      /* Hide content overflow if it exceeds the max-width */
+    }
 
-        .small-popup {
-          display: none;
-          position: absolute;
-          background-color: white;
-          color: black;
-          padding: 10px;
-          border-radius: 5px;
-          box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-          z-index: 1000;
-          max-width: 300px;
-          /* Adjust the maximum width as needed */
-          width: auto;
-          /* Set width to auto or a specific value based on your design */
-        }
+    .small-popup {
+      display: none;
+      position: absolute;
+      background-color: white;
+      color: black;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      max-width: 300px;
+      /* Adjust the maximum width as needed */
+      width: auto;
+      /* Set width to auto or a specific value based on your design */
+    }
 
-        /* Apply 3D effect on hover */
-        .unallocate-button {
-          transition: transform 0.3s;
-        }
+    /* Apply 3D effect on hover */
+    .unallocate-button {
+      transition: transform 0.3s;
+    }
 
-        .unallocate-button:hover {
-          transform: translateY(-3px) translateZ(0);
-          /* Adjust the values for the desired 3D effect */
-        }
+    .unallocate-button:hover {
+      transform: translateY(-3px) translateZ(0);
+      /* Adjust the values for the desired 3D effect */
+    }
 
-        #patientTable {
-          width: 100%;
-          background-color: white;
-          color: black;
-        }
+    #patientTable {
+      width: 100%;
+      background-color: white;
+      color: black;
+    }
 
-        #myInput {
-          padding: 5px;
-          font-size: 15px;
-          width: 230px;
-        }
+    #myInput {
+      padding: 5px;
+      font-size: 15px;
+      width: 230px;
+    }
 
-        #myInput::placeholder {
-          color: #999;
-          /* Adjust the color as needed */
-        }
+    #myInput::placeholder {
+      color: #999;
+      /* Adjust the color as needed */
+    }
 
-        .row-container {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
+    .row-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-        .count-container {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          background-color: skyblue;
-          border-radius: 10px;
-          font-family: "Arial", sans-serif;
-        }
+    .count-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      background-color: skyblue;
+      border-radius: 10px;
+      font-family: "Arial", sans-serif;
+    }
 
-        #count1,
-        #count2,
-        .greeting {
-          margin-right: 10px;
-          margin-left: 10px;
-          padding: 4px;
-          font-size: 16px;
-        }
+    #count1,
+    #count2,
+    .greeting {
+      margin-right: 10px;
+      margin-left: 10px;
+      padding: 4px;
+      font-size: 16px;
+    }
 
-        #totalRowCount,
-        #reportedRowCount {
-          color: black;
-        }
+    #totalRowCount,
+    #reportedRowCount {
+      color: black;
+    }
 
-        #myInput {
-          padding: 8px;
-          font-size: 15px;
-          border: 1px solid #ccc;
-          border-radius: 5px;
-          width: 250px;
-        }
-    </style>
+    #myInput {
+      padding: 8px;
+      font-size: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 250px;
+    }
+  </style>
 </head>
+
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/client">XRAi Reporting</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
-                <ul class="navbar-nav">
-                    <!-- <li class="nav-item">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/client">XRAi Reporting</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+        <ul class="navbar-nav">
+          <!-- <li class="nav-item">
                         <a href="/update_history" class="nav-link">
                             <button class="btn btn-sm btn-primary"><strong>Update History</strong></button>
                         </a>
                     </li> -->
-                    <li class="nav-item">
-                      <a href="/clientdata" class="nav-link">
-                        <button class="btn btn-sm btn-info"><strong>Dashboard</strong></button>
-                      </a> 
-                    </li>
-                    <li class="nav-item">
-                        <a href="/logout" class="nav-link">
-                            <button class="logout-button btn btn-sm btn-danger"><strong>Logout</strong></button>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+          <li class="nav-item">
+            <a href="/clientdata" class="nav-link">
+              <button class="btn btn-sm btn-info">
+                <strong>Dashboard</strong>
+              </button>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/logout" class="nav-link">
+              <button class="logout-button btn btn-sm btn-danger">
+                <strong>Logout</strong>
+              </button>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
 
-    <div class="container">
-        <div id="clinicalHistoryPopup" class="small-popup">
-            <span class="popup-content"></span>
-        </div>
+  <div class="container">
+    <div id="clinicalHistoryPopup" class="small-popup">
+      <span class="popup-content"></span>
+    </div>
 
-        <div class="row">
-          <div class="col-lg-12">
-            <div class="card">
-              <div class="card-body">
-                <h1 class="header">
-                  <div class="row-container">
-                    <div class="count-container">
-                      <span id="count1"><strong>Total XRAY Reports:</strong><span id="totalRowCount">0</span></span>
-                    </div>
-                    <div class="row-container1">
-                      <div class="col">
-                        <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names/IDs/Test Date"
-                          title="Type in a name" />
-                      </div>
-                      <div class="col">
-                        <button class="downloadButton" onclick="downloadSelectedPDFs()"><i class="fa fa-download"></i>
-                          Download</button>
-                      </div>
-                    </div>
-                    <div class="greeting" id="greeting">
-                      {% if user %}
-                      <h6>
-                        <strong>{{ user.first_name }}</strong>,
-                        <span id="greeting-text"></span>
-                      </h6>
-                      {% endif %}
-                    </div>
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-body">
+            <h1 class="header">
+              <div class="row-container">
+                <div class="count-container">
+                  <span id="count1"><strong>Total XRAY Reports:</strong><span id="totalRowCount">0</span></span>
+                </div>
+                <div class="row-container1">
+                  <div class="col">
+                    <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names/IDs/Test Date"
+                      title="Type in a name" />
                   </div>
-                </h1>
+                  <div class="col">
+                    <button class="downloadButton" onclick="downloadSelectedPDFs()">
+                      <i class="fa fa-download"></i> Download
+                    </button>
+                  </div>
+                </div>
+                <div class="greeting" id="greeting">
+                  {% if user %}
+                  <h6>
+                    <strong>{{ user.first_name }}</strong>,
+                    <span id="greeting-text"></span>
+                  </h6>
+                  {% endif %}
+                </div>
               </div>
-            </div>
+            </h1>
           </div>
         </div>
-        <div class="card">
-        <div class="pagination">
-           <span class="step-links">
-             {% if page_obj.has_previous %}
-               <a href="?page=1">&laquo; first</a>
-               <a href="?page={{ page_obj.previous_page_number }}">previous</a>
-             {% endif %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="pagination">
+        <span class="step-links">
+          {% if page_obj.has_previous %}
+          <a href="?page=1">&laquo; first</a>
+          <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+          {% endif %}
 
-             <span class="current">
-               Page {{ page_obj.number }} of {{ paginator.num_pages }}.
-             </span>
+          <span class="current">
+            Page {{ page_obj.number }} of {{ paginator.num_pages }}.
+          </span>
 
-             {% if page_obj.has_next %}
-               <a href="?page={{ page_obj.next_page_number }}">next</a>
-               <a href="?page={{ paginator.num_pages }}">last &raquo;</a>
-             {% endif %}
-           </span>
-         </div>
+          {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}">next</a>
+          <a href="?page={{ paginator.num_pages }}">last &raquo;</a>
+          {% endif %}
+        </span>
+      </div>
       <div class="card-body">
         <div class="table-container">
           <table id="patientTable">
@@ -481,10 +489,12 @@
                   </div>
                 </th>
                 <th>Report Date</th>
-                  <th>Location</th>
-                  <th>WhatsApp Number</th>
+                <th>Location</th>
+                <th>WhatsApp Number</th>
                 <th>Actions</th>
-                <th>Select All<input class="ml-1" type="checkbox" id="selectAllCheckbox" /></th>
+                <th>
+                  Select All<input class="ml-1" type="checkbox" id="selectAllCheckbox" />
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -492,12 +502,20 @@
               <tr class="patientRow">
                 <td>{{ pdf.patient_id }}</td>
                 <td>{{ pdf.name }}</td>
-                <td data-date="{{ pdf.test_date|date:'Y-m-d' }}">{{ pdf.test_date|date:'Y-m-d' }}</td>
+                <td data-date="{{ pdf.test_date|date:'Y-m-d' }}">
+                  {{ pdf.test_date|date:'Y-m-d' }}
+                </td>
                 <td>{{ pdf.report_date }}</td>
                 <td>{{ pdf.location }}</td>
                 <td>{{ pdf.whatsapp_number }}</td>
                 <td>
                   <a class="reportButton" href="{{ pdf.signed_url }}" download>DOWNLOAD</a>
+                  <!-- Add the Send WhatsApp Button -->
+                  <button class="btn btn-sm btn-success sendWhatsAppButton" data-patient-id="{{ pdf.patient_id }}"
+                    data-whatsapp="{{ pdf.whatsapp_number }}" data-name="{{ pdf.name }}"
+                    data-pdf-url="{{ pdf.signed_url }}">
+                    Send WhatsApp
+                  </button>
                 </td>
                 <td><input type="checkbox" class="rowCheckbox" /></td>
               </tr>
@@ -511,17 +529,16 @@
         </div>
       </div>
     </div>
-    </div>
+  </div>
 
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
   <!-- Include necessary libraries -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-core@latest/dist/cornerstone.js"></script>
-  <scriptsrc="https://cdn.jsdelivr.net/npm/cornerstone-wado-image-loader@latest/dist/cornerstoneWADOImageLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cornerstone-wado-image-loader@latest/dist/cornerstoneWADOImageLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-tools@latest/dist/cornerstoneTools.js"></script>
 
-    <script>
+  <script>
     // Function to update the counts of rows with 'Report' and 'Reported' button states
     function updateRowCounts() {
       const totalRowCount = $("#patientTable tbody tr").length;
@@ -536,7 +553,6 @@
     });
   </script>
   <script>
-
     function myFunction() {
       var input, filter, table, tr, td, i, txtValue;
       input = document.getElementById("myInput");
@@ -547,7 +563,8 @@
       for (i = 1; i < tr.length; i++) {
         var found = false;
         var columns = tr[i].getElementsByTagName("td");
-        for (var j = 0; j < columns.length - 1; j++) { // Exclude the last column (Actions)
+        for (var j = 0; j < columns.length - 1; j++) {
+          // Exclude the last column (Actions)
           td = columns[j];
           if (td) {
             txtValue = td.textContent || td.innerText;
@@ -608,8 +625,6 @@
     document.addEventListener("DOMContentLoaded", function () {
       getGreeting();
     });
-
-
   </script>
 
   <script>
@@ -700,31 +715,67 @@
     }
   </script>
 
-
   <script>
     $(document).ready(function () {
-        // Event handler for the change event of the test date dropdown
-        $('#filter-date-select-date').change(function () {
-            filterTable();
+      // Event handler for the change event of the test date dropdown
+      $("#filter-date-select-date").change(function () {
+        filterTable();
+      });
+
+      function filterTable() {
+        var selectedDate = $("#filter-date-select-date").val();
+
+        // Loop through each row in the table
+        $("#patientTable tbody tr").each(function () {
+          var rowDate = $(this).find("td:nth-child(3)").text(); // Get the test date from the table cell
+
+          // Check if the row matches the selected date and location
+          if (selectedDate === "" || rowDate === selectedDate) {
+            $(this).show();
+          } else {
+            // Hide the row if it does not match the selected date and location
+            $(this).hide();
+          }
         });
+      }
+    });
+  </script>
 
-        function filterTable() {
-            var selectedDate = $('#filter-date-select-date').val();
+  <script>
+    // Event listener for the Send WhatsApp button
+    $(document).on("click", ".sendWhatsAppButton", function () {
+      var whatsappNumber = $(this).data("whatsapp");
+      var patientName = $(this).data("name");
+      var pdfUrl = $(this).data("pdf-url");
+      var patientId = $(this).data("patient-id");
 
-            // Loop through each row in the table
-            $('#patientTable tbody tr').each(function () {
-                var rowDate = $(this).find('td:nth-child(3)').text(); // Get the test date from the table cell
+      // Prepare the data to send to the backend
+      var data = {
+        whatsapp_number: whatsappNumber,
+        patient_name: patientName,
+        pdf_url: pdfUrl,
+        patient_id: patientId,
+      };
 
-                // Check if the row matches the selected date and location
-                if ((selectedDate === '' || rowDate === selectedDate)) {
-                    $(this).show();
-                } else {
-                    // Hide the row if it does not match the selected date and location
-                    $(this).hide();
-                }
-            });
-        }
+      // Send the data to the backend using AJAX
+      $.ajax({
+        url: "/send_whatsapp/", // Update this with the correct backend URL
+        type: "POST",
+        data: JSON.stringify(data),
+        contentType: "application/json",
+        success: function (response) {
+          if (response.success) {
+            alert("WhatsApp message sent successfully!");
+          } else {
+            alert("Error sending WhatsApp message.");
+          }
+        },
+        error: function () {
+          alert("Error sending WhatsApp message.");
+        },
+      });
     });
   </script>
 </body>
+
 </html>

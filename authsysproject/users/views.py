@@ -4219,6 +4219,47 @@ def supercoordinator_view(request, client_id=None):
 
 
 
+@csrf_exempt
+def send_whatsapp(request):
+    if request.method == "POST":
+        try:
+            # Parse the incoming JSON data
+            data = json.loads(request.body)
+            whatsapp_number = data.get('whatsapp_number')
+            patient_name = data.get('patient_name')
+            pdf_url = data.get('pdf_url')
+            patient_id = data.get('patient_id')
+
+            # Check if the WhatsApp number is valid (10-digit number)
+            if not re.fullmatch(r'\d{10}', whatsapp_number):
+                return JsonResponse({"success": False, "message": "Invalid phone number."})
+
+            # Twilio credentials and client setup
+            account_sid = settings.TWILIO_ACCOUNT_SID
+            auth_token = settings.TWILIO_AUTH_TOKEN
+            client = tw(account_sid, auth_token)
+
+            # The media URL for the PDF file (stored in AWS S3 or your server)
+            #media_url = f'https://your-s3-bucket-name.s3.your-region.amazonaws.com/{pdf_url}'
+            
+            # Send the WhatsApp message
+            message = client.messages.create(
+                content_sid='HXbabe8bcff70872e4425778df05927569',  # Content SID for WhatsApp template
+                from_='MG228f0104ea3ddfc780cfcc1a0ca561d9',
+                to=f'whatsapp:+91{whatsapp_number}',  # Indian country code
+                content_variables=json.dumps({'1': patient_name, '2': pdf_url}),
+            )
+            print(message)
+
+            return JsonResponse({"success": True, "message": "WhatsApp message sent successfully."})
+        
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    return JsonResponse({"success": False, "message": "Invalid request method."})    
+
+
+
 
 
 
