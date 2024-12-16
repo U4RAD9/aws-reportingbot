@@ -4221,14 +4221,20 @@ def supercoordinator_view(request, client_id=None):
 
 @csrf_exempt
 def send_whatsapp(request):
+    print("I'm inside whatsApp")
     if request.method == "POST":
         try:
+            # Log the incoming data for debugging
+            logger.info("Received POST request with data: %s", request.body)
             # Parse the incoming JSON data
             data = json.loads(request.body)
             whatsapp_number = data.get('whatsapp_number')
             patient_name = data.get('patient_name')
             pdf_url = data.get('pdf_url')
             patient_id = data.get('patient_id')
+
+            # Log the parsed data
+            logger.info(f"Parsed Data: {whatsapp_number}, {patient_name}, {pdf_url}, {patient_id}")
 
             # Check if the WhatsApp number is valid (10-digit number)
             if not re.fullmatch(r'\d{10}', whatsapp_number):
