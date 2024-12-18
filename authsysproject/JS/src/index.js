@@ -291,7 +291,6 @@ class App extends Component {
   drop(event) {
     event.preventDefault();
   
-    // newViewport needed for volume viewport
     let newViewport;
   
     // Get volume ID/image IDs and modality
@@ -308,83 +307,71 @@ class App extends Component {
       orientation = cornerstone.Enums.OrientationAxis.CORONAL;
     }
   
-    // Get all related elements
+    // Get related elements
     const parentElement = event.target.parentElement;
     const viewport_ID = parentElement.getAttribute('data-value');
     var viewport = renderingEngine.getViewport(viewport_ID);
   
-    // Clear previous image/volume cache
+    // Clear any previous data
     if (viewport.type === cornerstone.Enums.ViewportType.STACK) {
-      viewport.setStack([]);  // Clear the stack
+      viewport.setStack([]); // Clear stack
       viewport.render();
     } else if (viewport.type === cornerstone.Enums.ViewportType.VOLUME) {
-      viewport.setVolumes([]);  // Clear the volume
+      viewport.setVolumes([]); // Clear volume
       viewport.render();
     }
   
-    // Check if the ID is a URL (i.e., the dataTransfer contains an image URL)
+    // Handle single-image condition
     if (ID && ID.includes('http')) {
-      // If ID is a URL, fetch the image and display it
       this.getDataUri(ID).then((dataUri) => {
-        // Upload the image as a DataURI directly into the viewer
         const imageId = cornerstone.imageCache.putImage(dataUri);
-        
-        // Set the image in the viewport (for stack view)
+  
+        // Use a stack viewport for single images
         if (viewport.type === cornerstone.Enums.ViewportType.STACK) {
-          viewport.setStack([imageId]);  // Use the image ID as the stack
-          viewport.render();
+          viewport.setStack([imageId]);
         }
+        viewport.render();
       });
-  
     } else if (modality === 'CT' || modality === 'MR') {
+      (async () => {
+        const volume = cornerstone.cache.getVolume(ID);
   
-      // Condition for if the viewport is a stack viewport
-      if (viewport.type === cornerstone.Enums.ViewportType.STACK) {
+        // Check if the volume contains multiple slices
+        const hasMultipleSlices = volume && volume.imageIds.length > 1;
   
-        // Change the viewport to a volume viewport asynchronously
-        (async () => {
+        if (hasMultipleSlices) {
+          // Handle volume rendering for multiple slices
           newViewport = await cornerstone.utilities.convertStackToVolumeViewport({
             options: { volumeId: ID, viewportId: viewport_ID, orientation: orientation },
-            viewport: viewport
+            viewport: viewport,
           });
           newViewport.setProperties({ rotation: 0 });
           toolGroup.addViewport(newViewport.id, renderingEngineId);
           newViewport.render();
   
-          let currElement = newViewport.element;
-          let elementID = '#' + currElement.id;
-  
-          // Remove previous event listeners and add new event listener for capturing image index
-          $(elementID).off();
-          currElement.addEventListener(cornerstone.EVENTS.VOLUME_NEW_IMAGE, () => {
-            let index = newViewport.getSliceIndex() + 1;
-  
-            // Update image index div
-            let indexElem = document.getElementById(indexMap[newViewport.id]);
-            indexElem.innerHTML = 'Image: ' + index;
+          // Attach volume event listener
+          newViewport.element.addEventListener(cornerstone.EVENTS.VOLUME_NEW_IMAGE, () => {
+            const index = newViewport.getSliceIndex() + 1;
+            document.getElementById(indexMap[newViewport.id]).innerHTML = 'Image: ' + index;
           });
-        })();
-      }
-  
-      // Condition for if the viewport is already a volume viewport
-      else {
-        viewport.setVolumes([{ volumeId: ID }]);
+        } else {
+          // Handle stack rendering for single slices
+          viewport.setStack(volume.imageIds);
+          viewport.render();
+        }
+      })();
+    } else {
+      // Handle non-CT modalities
+      if (viewport.type === cornerstone.Enums.ViewportType.STACK) {
+        viewport.setStack(nonCT_ImageIds[Number(ID)]);
         viewport.render();
-      }
-    }
-  
-    // Condition for non-CT modalities
-    if (modality !== 'CT' && modality !== 'MR') {
-  
-      // Condition for if the viewport is a volume viewport
-      if (viewport.type === cornerstone.Enums.ViewportType.ORTHOGRAPHIC) {
-  
-        // Get the viewport input and change it to stack viewport asynchronously
+      } else {
         (async () => {
           renderingEngine.disableElement(viewport_ID);
           let curr = viewport_list[viewport_ID];
           curr.type = cornerstone.Enums.ViewportType.STACK;
           delete curr.defaultOptions;
+  
           renderingEngine.enableElement(curr);
           viewport = renderingEngine.getViewport(viewport_ID);
           viewport.setProperties({ rotation: 0 });
@@ -392,50 +379,17 @@ class App extends Component {
           viewport.setStack(nonCT_ImageIds[Number(ID)]);
           viewport.render();
   
-          // Remove previous event listeners and add new event listener for capturing image index
-          let currElement = viewport.element;
-          let elementID = '#' + currElement.id;
-          $(elementID).off(); // jQuery for removing event listeners
-          currElement.addEventListener(cornerstone.EVENTS.STACK_NEW_IMAGE, () => {
-            let index = viewport.getCurrentImageIdIndex() + 1;
-  
-            // Update image index
-            let indexElem = document.getElementById(indexMap[viewport.id]);
-            indexElem.innerHTML = index;
+          // Attach stack event listener
+          viewport.element.addEventListener(cornerstone.EVENTS.STACK_NEW_IMAGE, () => {
+            const index = viewport.getCurrentImageIdIndex() + 1;
+            document.getElementById(indexMap[viewport.id]).innerHTML = index;
           });
         })();
       }
-  
-      // Condition for if the viewport is already a stack viewport
-      else {
-        viewport.setStack(nonCT_ImageIds[Number(ID)]);
-        viewport.render();
-      }
     }
-  };
-  
-  getDataUri(url) {
-    return new Promise((resolve) => {
-      var image = new Image();
-      image.crossOrigin = "anonymous"; // Fetch images from external domains
-      image.onload = function () {
-        var canvas = document.createElement("canvas");
-        canvas.width = this.naturalWidth;
-        canvas.height = this.naturalHeight;
-  
-        // Set white background in case PNG has a transparent background
-        var ctx = canvas.getContext("2d");
-        ctx.fillStyle = "#fff"; // White fill style
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-        canvas.getContext("2d").drawImage(this, 0, 0);
-        resolve(canvas.toDataURL("image/jpeg"));
-      };
-  
-      image.src = url;
-      
-    });
   }
+  
+
   
   
   
@@ -739,43 +693,73 @@ class App extends Component {
 
   //function for windowing settings (for any changes, change the upper and lower voiRange for specific windowing) and invert
   //might need to fix some value
-  windowingSettings(event, id){
-    const call = event.target.value
+  windowingSettings(event, id) {
+    const call = event.target.value;
     const viewport = renderingEngine.getViewport(id);
-    switch(call){
+    let selectedWindow = '';
+    let upperValue, lowerValue;
+  
+    switch (call) {
       case 'Invert':
-        const { invert } = viewport.getProperties()
-        viewport.setProperties({invert: !invert});
+        const { invert } = viewport.getProperties();
+        viewport.setProperties({ invert: !invert });
+        selectedWindow = 'Invert';
+        upperValue = lowerValue = null;  // No range for Invert
         break;
-
+  
       case 'Lungs':
-        viewport.setProperties({voiRange: {upper: 1600,lower: -600}});
+        viewport.setProperties({ voiRange: { upper: 1050, lower: -1650 } });
+        selectedWindow = 'Lungs';
+        upperValue = 1050;
+        lowerValue = -1650;
         break;
-
+  
       case 'Brain':
-        viewport.setProperties({voiRange: {upper: 70,lower: 30}});
+        viewport.setProperties({ voiRange: { upper: 80, lower: 0 } });
+        selectedWindow = 'Brain';
+        upperValue = 80;
+        lowerValue = 0;
         break;
-
+  
       case 'Bone':
-        viewport.setProperties({voiRange: {upper: 2000,lower: 500}});
+        viewport.setProperties({ voiRange: { upper: 1500, lower: -500 } });
+        selectedWindow = 'Bone';
+        upperValue = 1500;
+        lowerValue = -500;
         break;
-
+  
       case 'ST':
-        viewport.setProperties({voiRange: {upper: 350,lower: 50}});
+        viewport.setProperties({ voiRange: { upper: 225, lower: -125 } });
+        selectedWindow = 'Soft Tissue (ST)';
+        upperValue = 225;
+        lowerValue = -125;
         break;
-
+  
       case 'Abdomen':
-        viewport.setProperties({voiRange: {upper: 400,lower: 40}});
+        viewport.setProperties({ voiRange: { upper: 250, lower: -150 } });
+        selectedWindow = 'Abdomen';
+        upperValue = 250;
+        lowerValue = -150;
         break;
-          
+  
       case 'Liver':
-        viewport.setProperties({voiRange: {upper: 160,lower: 60}});
+        viewport.setProperties({ voiRange: { upper: 150, lower: 0 } });
+        selectedWindow = 'Liver';
+        upperValue = 150;
+        lowerValue = 0;
         break;
-          
+  
       case 'Mediastinal':
-        viewport.setProperties({voiRange: {upper: 500,lower: 50}});
+        viewport.setProperties({ voiRange: { upper: 225, lower: -125 } });
+        selectedWindow = 'Mediastinal';
+        upperValue = 225;
+        lowerValue = -125;
         break;
-    };
+  
+    
+    }
+  
+   
     event.target.value = '';
     viewport.render();
   }
