@@ -17,7 +17,7 @@ from .models.serviceslist import ServicesList
 from .models.audiopatientdata import audioPatientDetails
 from .models.optometrydata import optopatientDetails
 from .models.vitalpatientdata import vitalPatientDetails
-from .models.DICOMData import DICOMData, DICOMFile, JPEGFile
+from .models.DICOMData import DICOMData, DICOMFile, JPEGFile, PatientHistoryFile
 from .models.Coordinator import Coordinator
 from .models.EcgPdfReport import EcgReport
 from .models.XrayPdfReport import XrayReport
@@ -72,6 +72,12 @@ class DICOMFileInline(admin.TabularInline):
 class JPEGFileInline(admin.TabularInline):
     model = JPEGFile
 
+
+class PatientHistoryFileInline(admin.TabularInline):
+    model = PatientHistoryFile
+
 @admin.register(DICOMData)
 class DICOMDataAdmin(admin.ModelAdmin):
-    inlines = [DICOMFileInline, JPEGFileInline]
+    inlines = [DICOMFileInline, JPEGFileInline, PatientHistoryFileInline]
+
+
