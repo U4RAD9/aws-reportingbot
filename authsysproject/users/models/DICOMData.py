@@ -14,7 +14,7 @@ class DICOMData(models.Model):
     study_time = models.TimeField(max_length=250, blank=True)
     recived_on_orthanc = models.TimeField(max_length=250, blank=True)
     recived_on_db = models.DateTimeField(auto_now_add=True)
-    Modality = models.CharField(max_length=250, blank=True)
+    Modality = models.CharField(max_length=250, blank=True, null=True)
     study_id = models.CharField(max_length=100, blank=True)
     study_description = models.CharField(max_length=200, blank=True)
     isDone = models.BooleanField(default=False)
