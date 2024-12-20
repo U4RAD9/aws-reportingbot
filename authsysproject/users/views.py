@@ -1360,7 +1360,17 @@ def QualificationDetails(request):
         mdpsyr = request.POST['mdpsyr']
         mddegree = request.FILES['mddegree']
 
-        x = QualificationDetailsModel.objects.create(tensname=tensname, tengrade=tengrade, tenpsyr=tenpsyr,
+
+        # Assuming you have the user instance from earlier (e.g., from a global context or session)
+        # You can get the user by email or session (if you're storing the user in a session variable)
+
+        email = request.POST.get('email')  # Get the email for the user you created earlier
+        try:
+            user = User.objects.get(email=email)  # Retrieve the user
+        except User.DoesNotExist:
+            return JsonResponse(status=400, data={"message": "User does not exist"})
+
+        x = QualificationDetailsModel.objects.create(user=user, tensname=tensname, tengrade=tengrade, tenpsyr=tenpsyr,
                                                      tencertificate=tencertificate,
                                                      twelvesname=twelvesname, twelvegrade=twelvegrade,
                                                      twelvepsyr=twelvepsyr, twelvecertificate=twelvecertificate,
