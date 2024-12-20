@@ -1316,8 +1316,9 @@ def PersonalInfo(request):
         serviceslist = request.POST.getlist('serviceslist')  # Get a list of selected services
         exportlist = request.POST.getlist('exportlist')
 
-        if not all([name, email, password, phone, resume, uploadpicture, signature, companylogo, serviceslist,
-                    exportlist]):
+        # if not all([name, email, password, phone, resume, uploadpicture, signature, companylogo, serviceslist,
+        #             exportlist]):
+        if not all([name, email, password, phone, resume, uploadpicture]):
             return JsonResponse(status=400, data={"message": "Missing required fields"})
 
 

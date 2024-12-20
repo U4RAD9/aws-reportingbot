@@ -18,7 +18,7 @@ class WorkExp(models.Model):
     pii = models.CharField(max_length=15, null=True, default=None, blank=True)
     msname = models.CharField(max_length=15, null=True, default=None, blank=True)
     mcirgno = models.CharField(max_length=15, null=True, default=None, blank=True)
-    regcecr = models.FileField(upload_to='uploads/', storage=S3Boto3Storage(), null=True, default=None, blank=True)
+    regcecr = models.FileField(upload_to='uploads/', storage=S3Boto3Storage(), null=True, blank=True)
 
     def __str__(self):
         return str(self.user)

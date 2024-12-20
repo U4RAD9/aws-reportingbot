@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from .serviceslist import ServicesList
 from .exportlist import ExportList
+from storages.backends.s3boto3 import S3Boto3Storage
 
 
 class PersonalInfo(models.Model):
@@ -12,8 +13,8 @@ class PersonalInfo(models.Model):
     phone = models.CharField(max_length=210, null=True, default=None, blank=True)
     altphone = models.CharField(max_length=210, null=True, default=None, blank=True)
     reference = models.CharField(max_length=250, null=True, default=None, blank=True)
-    resume = models.FileField(upload_to='uploads/', null=True, default=None, blank=True)
-    uploadpicture = models.FileField(upload_to='uploads/', null=True, default=None, blank=True)
+    resume = models.FileField(upload_to='uploads/', storage=S3Boto3Storage(), null=True, default=None, blank=True)
+    uploadpicture = models.FileField(upload_to='uploads/', storage=S3Boto3Storage(), null=True, default=None, blank=True)
     signature = models.FileField(upload_to='static/signatures/', null=True, default=None, blank=True)
     companylogo = models.FileField(upload_to='static/companylogos/', null=True, default=None, blank=True)
     total_reported = models.IntegerField(default=0)
