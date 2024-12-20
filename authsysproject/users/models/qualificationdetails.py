@@ -1,8 +1,10 @@
 from django.db import models
 from storages.backends.s3boto3 import S3Boto3Storage
+from django.contrib.auth.models import User
 
 
 class QualificationDetails(models.Model):
+    user = models.OneToOneField(User, null=True, on_delete=models.CASCADE)
     tensname = models.CharField(max_length=30, blank=True, null=True)
     tengrade = models.CharField(max_length=10, blank=True, null=True)
     tenpsyr = models.CharField(max_length=15, blank=True, null=True)
