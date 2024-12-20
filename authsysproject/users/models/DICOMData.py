@@ -2,6 +2,7 @@ from django.db import models
 from .personalinfo import PersonalInfo
 from .Xray_Location import XLocation
 from storages.backends.s3boto3 import S3Boto3Storage
+from django.utils.timezone import now
 
 
 
@@ -28,6 +29,12 @@ class DICOMData(models.Model):
     institution_name = models.CharField(max_length=250, blank=True, null=True, default="None")
     referring_doctor_name = models.CharField(max_length=250, blank=True, null=True, default="None")
     whatsapp_number = models.CharField(max_length=10, blank=True, null=True)
+
+
+    def save(self, *args, **kwargs):
+        if not self.recived_on_db:  # Set the timestamp only if it isn't already set
+            self.recived_on_db = now()
+        super(DICOMData, self).save(*args, **kwargs)
 
     def __str__(self):
         return str(self.patient_name)
