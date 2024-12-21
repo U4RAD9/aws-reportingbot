@@ -906,16 +906,34 @@
                                 type: 'POST',
                                 contentType: false,
                                 processData: false,
+                                // success: function(r) {
+                                //     if(r.redirect) {
+                                //         swal("You have been registered successfully!", {
+                                //           icon: 'success',
+                                //           showCancelButton: false,
+                                //         }).then((value) => {
+                                //             window.location.replace('/');
+                                //         });
+                                //     }
+                                // },
                                 success: function(r) {
-                                    if(r.redirect) {
+                                    if (r.message === "success") {
+                                        _this.parents(".form-box").fadeOut('fast');
+                                        _this.parents(".form-box").next().fadeIn('fast');
+                                    } else if (r.redirect) {
                                         swal("You have been registered successfully!", {
-                                          icon: 'success',
-                                          showCancelButton: false,
-                                        }).then((value) => {
+                                            icon: 'success',
+                                            showCancelButton: false,
+                                        }).then(() => {
                                             window.location.replace('/');
                                         });
+                                    } else {
+                                        swal("Something went wrong!", {
+                                            icon: 'error',
+                                            showCancelButton: false,
+                                        });
                                     }
-                                },
+                                }
                             });
                         });
                     } else {
@@ -931,6 +949,8 @@
             $(this).parents(".form-box").prev().fadeIn('fast');
         });
     });
+    
+    
     var myInput = document.getElementById("password");
     var letter = document.getElementById("letter");
     var capital = document.getElementById("capital");
