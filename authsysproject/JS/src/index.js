@@ -119,7 +119,7 @@ cornerstoneDICOMImageLoader.configure({
 let maxWebWorkers = 1;
 
 if (navigator.hardwareConcurrency) {
-  maxWebWorkers = Math.min(navigator.hardwareConcurrency, 7);
+  maxWebWorkers = Math.min(navigator.hardwareConcurrency, 10);
 }
 
 
@@ -195,11 +195,12 @@ const exportOptions = JSON.parse(current_user.exportlist).map((item) => ({
 
 class App extends Component {
   editor = null;
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.state = {
       modal: false,
       reportFrmData: this.generatePatientTable(),
+      showPatientData: true,   
       options_label: "DEFAULT",
     };
     this.ActionEvents = this.ActionEvents.bind(this);
@@ -228,7 +229,8 @@ class App extends Component {
     this.fullScreen = this.fullScreen.bind(this);
     this.drop = this.drop.bind(this);
     this.allowDrop = this.allowDrop.bind(this);  
-    this.toggleDivs = this.toggleDivs.bind(this); // New method for toggling divs
+    this.toggleDivs = this.toggleDivs.bind(this); 
+    this.togglePatientData = this.togglePatientData.bind(this); 
     
   }
   allowDrop(event){
@@ -239,7 +241,11 @@ class App extends Component {
       isDiv2Visible: !prevState.isDiv2Visible,
     }));
   }
-
+  togglePatientData() {
+    this.setState(prevState => ({
+      showPatientData: !prevState.showPatientData,
+    }));
+  }    
    //function to capture selected viewport and download it as image
   capture(element) {
     html2canvas(element, { allowTaint: true }).then(function (canvas) {
@@ -3391,6 +3397,12 @@ this.capture(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Capture</b
 <FaExpand />  {isDiv2Visible ? 'Full screen' : 'create report'}
         </button>
 </div>
+<button 
+        style={{ margin: "1px", padding: "1px 1px", cursor: "pointer" }}
+        onClick={this.togglePatientData}
+      >
+        {this.state.showPatientData ? "Hide Details" : "Show Details"}
+      </button>
 </div>
 {/*container for all four viewports */}
 <div className='viewport-container' id='viewport-container'>
@@ -3405,6 +3417,7 @@ this.capture(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Capture</b
   overflowX: "auto", // Horizontal scrolling
   overflowY: "auto", // Vertical scrolling
   width: "200px",    // Fixed width
+  display: this.state.showPatientData ? "block" : "none",
 }}
   >
   </div>
