@@ -518,15 +518,16 @@
             </td>
 
             <td>
-               {% for patient_url in patient_urls %}
-                  <!-- Display PDF URLs -->
-                  <div>
+              {% for patient_url in patient_urls %}
+                 {% if patient_url.patient.id == patient.id %}
                     {% for url in patient_url.pdf_urls %}
-                        <a class="imageButton" href="{{ url }}" target="_blank">Download PDF</a>
+                       <a class="imageButton" href="{{ url }}" target="_blank">
+                         View Image
+                       </a>
                     {% endfor %}
-                  </div>
-               {% endfor %}
-            </td>
+                 {% endif %}
+              {% endfor %}
+           </td>
 
             <td>
               {% for patient_url in patient_urls %}
