@@ -1229,9 +1229,17 @@ def xrayallocationreverse(request):
     for patient in page_obj:
         jpeg_files = patient.jpeg_files.all()
         urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
+
+        # Fetch PDFs for the patient
+        patient_name_with_underscores = patient.patient_name.replace(" ", "_")
+        pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient.patient_id)
+        
+        pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name) for pdf_report in pdf_reports]
+
         patient_urls.append({
            'patient': patient,
-           'urls': urls
+           'urls': urls,
+           'pdf_urls': pdf_urls  # Add PDFs URLs to the patient data
         })
         print(jpeg_files)
 
