@@ -497,7 +497,7 @@
                 </th>
 
                 <th>Clinical History</th>
-                <th>Image</th>
+                <th>Pdf Reports</th>
                 <th>Actions</th>
               <!-- Add a column for the "Report" button -->
               </tr>
@@ -523,7 +523,7 @@
                   {% if patient_url.patient.id == patient.id %}
                      {% for url in patient_url.urls %}
                         <a class="imageButton" href="{{ url }}" target="_blank">
-                          View Image
+                          View PDF Report
                         </a>
                      {% endfor %}
                   {% endif %}
