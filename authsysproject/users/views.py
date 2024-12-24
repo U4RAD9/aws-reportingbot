@@ -2430,8 +2430,8 @@ def upload_xray_pdf(request):
                 patient_id=patient_id,
                 location=location,
                 institution_name=institution_name,
-                test_date=datetime.strptime(test_date_str, "%Y-%m-%d").date(),
-                report_date=datetime.strptime(report_date_str, "%Y-%m-%d").date(),
+                test_date=datetime.strptime(test_date_str, "%d-%m-%Y").date(),
+                report_date=datetime.strptime(report_date_str, "%d-%m-%Y").date(),
                 accession_number=accession_number
             )
             pdf_model_instance.save()
