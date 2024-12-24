@@ -1140,7 +1140,7 @@ class App extends Component {
     );
     const patientName = patientNameElement?.innerHTML.trim(); // Trim extra spaces
     const PatientId = PatientIdElement?.innerHTML.trim(); // Trim extra spaces
-    const location = urlSearchParams.get("data-location");
+    const location = urlSearchParams.get("data-institution_name");
 
     let filename;
     if (!patientName || !PatientId) {

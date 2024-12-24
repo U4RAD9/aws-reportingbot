@@ -1206,6 +1206,45 @@ def xrayallocation(request):
                    'locations': location, 'page_obj': page_obj, 'patient_urls': patient_urls})
 
 
+@user_type_required('radiologist')
+def xrayallocationreverse(request):
+    radiologist_group = Group.objects.get(name='radiologist')
+
+    # Fetch the corresponding PersonalInfo instance for the current user
+    current_user_personal_info = PersonalInfoModel.objects.get(user=request.user)
+    total_reported = current_user_personal_info.total_reported
+    today = now().date()
+    yesterday = today - timedelta(days=1)
+    allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=True).order_by('study_date')
+
+    # Set up pagination
+    paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
+    page_number = request.GET.get('page', 1)  # Get the page number from the request
+    page_obj = paginator.get_page(page_number)
+    
+   
+    # Generate presigned URLs for JPEG files in S3
+    bucket_name = 'u4rad-s3-reporting-bot'
+    patient_urls = []
+    for patient in page_obj:
+        jpeg_files = patient.jpeg_files.all()
+        urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
+        patient_urls.append({
+           'patient': patient,
+           'urls': urls
+        })
+        print(jpeg_files)
+
+    location = XLocation.objects.all()
+    unique_dates = set()
+    for patient in allocated_to_current_user:
+        unique_dates.add(patient.study_date)
+    sorted_unique_dates = sorted(unique_dates, reverse=False)
+    return render(request, 'users/xrayallocationreverse.html',
+                  {'reported': total_reported, 'patients': page_obj, 'Date': sorted_unique_dates,
+                   'locations': location, 'page_obj': page_obj, 'patient_urls': patient_urls})
+
+
 
 user_type_required('audiometrist')
 def audiometry(request):

@@ -36,6 +36,7 @@ urlpatterns = [
     path('serviceslist', views.PersonalInfo, name='serviceslist'),
     path('ecgallocation', views.ecgallocation, name='ecgallocation'),
     path('xrayallocation', views.xrayallocation, name='xrayallocation'),
+    path('xrayallocationreverse', views.xrayallocationreverse, name='xrayallocationreverse'),
     path('audiometry', views.audiometry, name='audiometry'),
     path('allocation', views.allocation, name='ecgcoordinator'),
     path('allocation1', views.allocation1, name='xraycoordinator'),
