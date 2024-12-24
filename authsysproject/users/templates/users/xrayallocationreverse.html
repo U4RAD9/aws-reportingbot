@@ -521,8 +521,8 @@
                {% for patient_url in patient_urls %}
                   <!-- Display PDF URLs -->
                   <div>
-                    {% for url in patient_data.pdf_urls %}
-                        <a href="{{ url }}" target="_blank">Download PDF</a>
+                    {% for url in patient_url.pdf_urls %}
+                        <a class="imageButton" href="{{ url }}" target="_blank">Download PDF</a>
                     {% endfor %}
                   </div>
                {% endfor %}
