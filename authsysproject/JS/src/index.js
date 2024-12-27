@@ -426,7 +426,6 @@ class App extends Component {
       const id = data.id;
       const study_date = data.date;
       const study_time = data.time;
-      const centre_name = data.centre_name;
   
       let k = 0;
       let imageIdIndex = 0;
@@ -455,7 +454,7 @@ class App extends Component {
       }
       const formattedDate = formatDate(study_date);
       
-             viewport.innerHTML += `<p style="margin-bottom:0">Name: ${name}<br>ID: ${id}<br>Study Date: ${formattedDate}<br>Study Time: ${formattedTime}<br>Centre Name : ${centre_name}<br></p>`
+             viewport.innerHTML += `<p style="margin-bottom:0">Name: ${name}<br>ID: ${id}<br>Study Date: ${formattedDate}<br>Study Time: ${formattedTime}<br></p>`
       
   
       

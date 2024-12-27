@@ -580,7 +580,7 @@
 
 
 
-  <script>
+  <!-- <script>
     $(document).ready(function () {
       let popupTimer;
 
@@ -669,8 +669,31 @@
       $(document).ready(function () {
         updateRowCounts();
       });
+  </script> -->
+  <script>
+    $(document).ready(function () {
+      $(".openClinicalHistoryButton").click(function () {
+        // Get the clinical history data from the button's data attribute
+        const clinicalHistoryData = $(this).data("clinical-history");
+  
+        // Open a new tab to display the clinical history
+        const newTab = window.open(); // Open a new tab
+  
+        // Set the content of the new tab
+        newTab.document.write(`
+          <html>
+            <head><title>Clinical History</title></head>
+            <body>
+              <h1>Clinical History</h1>
+              <p>${clinicalHistoryData}</p>
+            </body>
+          </html>
+        `);
+  
+        // Optionally, add styles and additional content to the new tab as needed
+      });
+    });
   </script>
-
   <script>
     function myFunction() {
       var input, filter, table, tr, td, i, txtValue;

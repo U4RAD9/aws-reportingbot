@@ -19,6 +19,7 @@ from users.models.VitalsPdfReport import VitalsReport
 from users.models.instpersonalinfo import InstPersonalInfo as InstPersonalInfoModel
 from users.models.institutionmodalities import InstitutionModalities as InstitutionModalitiesModel
 from users.models.personalinfo import PersonalInfo as PersonalInfoModel
+from users.models.corporatecoordinator import CorporateCoordinator
 from users.models.qualificationdetails import QualificationDetails as QualificationDetailsModel
 from users.models.workexp import WorkExp as WorkExpModel
 from users.models.bankinginfo import BankingInfo as BankingInfoModel
@@ -127,6 +128,8 @@ def login(request):
                 return redirect('ecgcoordinator')
             elif group == 'xraycoordinator':
                 return redirect('xraycoordinator')
+            elif group == 'corporatecoordinator':
+                return redirect('corporatecoordinator')
             elif group == 'technician':
                 return redirect('upload_dicom')
             elif group == 'client':
@@ -713,6 +716,12 @@ def allocation(request):
 def allocation1(request):
     # Fetch and order patients
     patients = DICOMData.objects.all().order_by('-study_date')
+
+
+    # If a radiologist filter is applied, filter the patients
+    radiologist_filter = request.GET.get('radiologist', None)
+    if radiologist_filter:
+        patients = patients.filter(radiologist__user__first_name__icontains=radiologist_filter)
     
     # Total counts for statistics
     total_current_uploaded = DICOMData.objects.all().count()
@@ -720,6 +729,10 @@ def allocation1(request):
     # Get radiologists from the group
     radiologist_group = Group.objects.get(name='radiologist')
     radiologist_objects = radiologist_group.user_set.all()
+
+    # Get corporatecoordinator from the group
+    corporatecoordinator_group = Group.objects.get(name='corporatecoordinator')
+    corporatecoordinator_objects = corporatecoordinator_group.user_set.all()
 
     # Retrieve total cases data
     total_uploaded_xray = Total_Cases.objects.values_list('total_uploaded_xray', flat=True).first()
@@ -769,15 +782,33 @@ def allocation1(request):
     sorted_unique_dates = sorted(unique_dates, reverse=False)
 
     # Get unique locations
-    unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
+    # unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
+    unique_locations = set(patient.location for patient in page_obj.object_list)
+    sorted_unique_locations = sorted(unique_locations, reverse=False)
+
+    # unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
+    unique_institution_name = set(patient.institution_name for patient in page_obj.object_list)
+    sorted_unique_institution_name = sorted(unique_institution_name, reverse=False)
+
+
+    # Modality
+    # Get unique modality values, ensuring None values are excluded
+    unique_modality = {patient.Modality for patient in page_obj.object_list if patient.Modality is not None}
+    
+    # Sort the unique modalities
+    sorted_unique_modality = sorted(unique_modality, reverse=False)
+    
 
     return render(request, 'users/allocation1.html', {
-        'Location': unique_locations,
+        'Institution': sorted_unique_institution_name,
+        'Location': sorted_unique_locations,
+        'Modalities': sorted_unique_modality,
         'total': total_cases,
         'count': total_current_uploaded,
         'patients': page_obj,
         'Date': sorted_unique_dates,
         'radiologists': radiologist_objects,
+        'corporatecoordinator_objects': corporatecoordinator_objects,
         'page_obj': page_obj  # Pass page_obj for pagination controls
     })
 
@@ -892,6 +923,8 @@ def allocate(request):
 # Dictionary to store login and logout times for radiologists
 radiologist_login_time = {}
 radiologist_logout_time = {}
+corporatecoordinator_login_time = {}
+corporatecoordinator_logout_time = {}
 
 
 # Signal receiver for user login
@@ -899,7 +932,8 @@ radiologist_logout_time = {}
 def handle_user_login(sender, request, user, **kwargs):
     login_time = timezone.now()
     radiologist_login_time[user.email] = login_time
-    print('login time', radiologist_login_time)
+    corporatecoordinator_login_time[user.email] = login_time
+    print('login time', radiologist_login_time, corporatecoordinator_login_time)
 
 
 # Signal receiver for user logout
@@ -909,7 +943,8 @@ def handle_user_logout(sender, request, user, **kwargs):
     session = Session.objects.get(session_key=session_key)
     logout_time = session.expire_date
     radiologist_logout_time[user.email] = logout_time
-    print('logout time', radiologist_logout_time)
+    corporatecoordinator_logout_time[user.email] = logout_time
+    print('logout time', radiologist_logout_time, corporatecoordinator_logout_time)
 
 
 @user_type_required('xraycoordinator')
@@ -4311,7 +4346,486 @@ def send_whatsapp(request):
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
 
-    return JsonResponse({"success": False, "message": "Invalid request method."})    
+    return JsonResponse({"success": False, "message": "Invalid request method."})  
+
+
+
+
+
+def allocatecoordinator1(request):
+    global corporatecoordinator_logout_time
+    global corporatecoordinator_login_time
+
+    corporatecoordinator_group = Group.objects.get(name='corporatecoordinator')
+    corporatecoordinator_objects = corporatecoordinator_group.user_set.all()
+
+    total_unallocated_patients = DICOMData.objects.filter(corporatecoordinator=None, isDone=False, NonReportable=False)
+    total_allocated_patients = DICOMData.objects.filter(corporatecoordinator__isnull=False, isDone=False)
+    total_reported_patients = DICOMData.objects.filter(isDone=True)
+
+
+
+    total_client = XClient.objects.all()
+    total_cities = XCity.objects.all()
+    total_locations = XLocation.objects.all()
+    total_dates = Date.objects.all()
+
+    # Dictionary to store session status/first_name/time for each corporatecoordinator
+    corporatecoordinator_session_status = {}
+
+    for corporatecoordinator in corporatecoordinator_objects:
+        is_active_session = False
+
+        active_sessions = Session.objects.filter(expire_date__gte=timezone.now())
+        for session in active_sessions:
+            session_data = session.get_decoded()
+            user_id = session_data.get('_auth_user_id')
+            if user_id == str(corporatecoordinator.id):
+                is_active_session = True
+                break
+
+        # Calculate inactive time for the current corporatecoordinator
+        inactive_since_text = ""
+        logout_time = corporatecoordinator_logout_time.get(corporatecoordinator.email)
+        if logout_time:
+            time_difference = timezone.now() - logout_time
+            duration_seconds = time_difference.total_seconds()
+            hours = int(duration_seconds // 3600)
+            minutes = int((duration_seconds % 3600) // 60)
+            seconds = int(duration_seconds % 60)
+
+            if hours > 0:
+                inactive_since_text = f"Inactive last {hours} hours"
+            elif minutes > 0:
+                inactive_since_text = f"Inactive last {minutes} minutes"
+            else:
+                inactive_since_text = f"Inactive last {seconds} seconds"
+
+        active_since_text = ""
+        login_time = corporatecoordinator_login_time.get(corporatecoordinator.email)
+        if login_time:
+            time_difference = timezone.now() - login_time
+            duration_seconds = time_difference.total_seconds()
+            hours = int(duration_seconds // 3600)
+            minutes = int((duration_seconds % 3600) // 60)
+            seconds = int(duration_seconds % 60)
+
+            if hours > 0:
+                active_since_text = f"Active last {hours} hours"
+            elif minutes > 0:
+                active_since_text = f"Active last {minutes} minutes"
+            else:
+                active_since_text = f"Active last {seconds} seconds"
+
+        # Add email, first name, and inactive time to the corporatecoordinator_session_status dictionary
+        corporatecoordinator_session_status[corporatecoordinator.email] = {
+            'is_active': is_active_session,
+            'first_name': corporatecoordinator.first_name,
+            'inactive_time': inactive_since_text,
+            'active_time': active_since_text
+        }
+
+    context = {
+        'corporatecoordinator_session_status': corporatecoordinator_session_status,
+        'unallocated_patients': total_unallocated_patients,
+        'allocated_patients': total_allocated_patients,
+        'reported_patients': total_reported_patients,
+        'cities': total_cities,
+        'clients': total_client,
+        'locations': total_locations,
+        'dates': total_dates,
+    }
+
+    if 'name' in request.POST:
+        name = request.POST.get("name")
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+
+        client = XClient(
+            name=name,
+            email=email,
+            password=password,
+        )
+        client.save()
+        return redirect("allocatecoordinator1")
+
+    elif 'city_name' in request.POST:
+        client_id = request.POST.get("client")
+        city_name = request.POST.get("city_name")
+        client = XClient.objects.get(pk=client_id)
+        city = XCity(client=client, name=city_name)
+        city.save()
+
+        return redirect("allocatecoordinator1")
+
+    elif "location_name" in request.POST:
+        city_id = request.POST.get('city')
+        location_name = request.POST.get('location_name')
+        city = XCity.objects.get(pk=city_id)
+        location = XLocation(city=city, name=location_name)
+        location.save()
+
+        return redirect("allocatecoordinator1")
+
+    elif 'delete_client' in request.POST:
+        client_id = request.POST.get("delete_client")
+        if client_id:
+            client = XClient.objects.filter(pk=client_id).first()
+            if client:
+                client.delete()
+
+            return redirect("allocatecoordinator1")
+
+    elif 'delete_city' in request.POST:
+        city_id = request.POST.get("delete_city")
+        if city_id:
+            city = XCity.objects.filter(pk=city_id).first()
+            if city:
+                city.delete()
+
+            return redirect("allocatecoordinator1")
+
+    elif 'delete_location' in request.POST:
+        location_id = request.POST.get("delete_location")
+        if location_id:
+            location = XLocation.objects.filter(pk=location_id).first()
+            if location_id:
+                location.delete()
+
+            return redirect("allocatecoordinator1")
+
+    action = request.POST.get('action')
+    if action in ('allocate', 'unallocate', 'nonreport'):
+        if action == 'nonreport':
+            selected_patient_ids = request.POST.getlist('cases')
+            print(len(selected_patient_ids))
+            if selected_patient_ids:
+                DICOMData.objects.filter(patient_id__in=selected_patient_ids).update(NonReportable=True)
+                total_cases_instance = Total_Cases.objects.first()
+                total_cases_instance.total_nonreported_xray += len(selected_patient_ids)
+                total_cases_instance.save()
+
+        else:
+            selected_corporatecoordinator_email = request.POST.get('corporatecoordinator')
+            if selected_corporatecoordinator_email:
+                corporatecoordinator_group = Group.objects.get(name='corporatecoordinator')
+                corporatecoordinator_user = get_object_or_404(corporatecoordinator_group.user_set, email=selected_corporatecoordinator_email)
+
+                # Fetch the corresponding PersonalInfo instance for the selected cardiologist
+                corporatecoordinator = CorporateCoordinator.objects.get(user=corporatecoordinator_user)
+
+                if corporatecoordinator:
+                    selected_patient_ids = request.POST.getlist('cases')
+                    if selected_patient_ids:
+                        selected_patients = DICOMData.objects.filter(patient_id__in=selected_patient_ids)
+
+                        for patient in selected_patients:
+                            if action == 'allocate':
+                                patient.corporatecoordinator.add(corporatecoordinator)
+                            elif action == 'unallocate':
+                                patient.corporatecoordinator.remove(corporatecoordinator)
+
+                    selected_patient_ids = request.POST.getlist('cases1')
+                    if selected_patient_ids:
+                        selected_patients = DICOMData.objects.filter(patient_id__in=selected_patient_ids)
+                        for patient in selected_patients:
+                            if action == 'allocate':
+                                patient.corporatecoordinator.add(corporatecoordinator)
+                            elif action == 'unallocate':
+                                patient.corporatecoordinator.remove(corporatecoordinator)
+                    selected_patient_ids = request.POST.getlist('cases2')
+                    if selected_patient_ids:
+                        selected_patients = DICOMData.objects.filter(patient_id__in=selected_patient_ids)
+                        for patient in selected_patients:
+                            if action == 'allocate':
+                                patient.corporatecoordinator.add(corporatecoordinator)
+                            elif action == 'unallocate':
+                                patient.corporatecoordinator.remove(corporatecoordinator)
+    return render(request, 'users/allocatecoordinator1.html', context) 
+
+
+
+#corporate-coordinator page.......................................
+@user_type_required('corporatecoordinator')
+def allocationcoordinator1(request):
+    # Get the logged-in user
+    logged_in_user = request.user
+
+    # Fetch and filter patients assigned to the logged-in corporate coordinator
+    patients = DICOMData.objects.filter(corporatecoordinator__user=logged_in_user).order_by('-study_date')
+    
+    # Total counts for statistics
+    total_current_uploaded = patients.count()
+
+    # Get radiologists from the group
+    radiologist_group = Group.objects.get(name='radiologist')
+    radiologist_objects = radiologist_group.user_set.all()
+
+    # Retrieve total cases data
+    total_uploaded_xray = Total_Cases.objects.values_list('total_uploaded_xray', flat=True).first()
+    total_reported_xray = Total_Cases.objects.values_list('total_reported_xray', flat=True).first()
+    total_nonreported_xray = Total_Cases.objects.values_list('total_nonreported_xray', flat=True).first()
+
+    # Calculate various patient counts
+    total_reported_patients = patients.filter(isDone=True).count()
+    total_nonreported_patients = patients.filter(NonReportable=True).count()
+    total_unreported_and_unallocated_patients = patients.filter(radiologist=None, isDone=False, NonReportable=False).count()
+    total_unreported_and_allocated_patients = patients.filter(radiologist__isnull=False, isDone=False, NonReportable=False).values('patient_id').distinct().count()
+    total_unreported_patients = total_unreported_and_unallocated_patients + total_unreported_and_allocated_patients
+
+    total_cases = {
+        'total_uploaded': total_uploaded_xray,
+        'alltime_reported': total_reported_xray,
+        'total_nonreported': total_nonreported_xray,
+        'total_reported': total_reported_patients,
+        'total_unreported': total_unreported_patients,
+        'unallocated': total_unreported_and_unallocated_patients,
+        'nonreported': total_nonreported_patients
+    }
+
+    # Set up pagination
+    paginator = Paginator(patients, 400)  # 400 patients per page
+    page_number = request.GET.get('page', 1)  # Get the page number from the request
+    try:
+        page_obj = paginator.get_page(page_number)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page
+        page_obj = paginator.get_page(1)
+    except EmptyPage:
+        # If page is out of range, deliver last page of results
+        page_obj = paginator.get_page(paginator.num_pages)
+
+    # Generate presigned URLs for JPEG files on the current page
+    bucket_name = 'u4rad-s3-reporting-bot'
+    for patient in page_obj:
+        jpeg_files = patient.jpeg_files.all()
+        patient.presigned_jpeg_urls = [
+            presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files
+        ]
+
+    # Get unique dates from the patients on the current page
+    unique_dates = set(patient.study_date for patient in page_obj.object_list)
+    sorted_unique_dates = sorted(unique_dates, reverse=False)
+
+    # Get unique locations
+    unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
+
+    return render(request, 'users/allocationcoordinator1.html', {
+        'Location': unique_locations,
+        'total': total_cases,
+        'count': total_current_uploaded,
+        'patients': page_obj,
+        'Date': sorted_unique_dates,
+        'radiologists': radiologist_objects,
+        'page_obj': page_obj  # Pass page_obj for pagination controls
+    })
+
+
+
+#allocate page for corporatecoordinator
+@user_type_required('corporatecoordinator')
+def coordinatorallocate1(request):
+    global radiologist_logout_time
+    global radiologist_login_time
+
+    # Get the current corporate coordinator
+    corporate_coordinator = get_object_or_404(CorporateCoordinator, user=request.user)
+
+    # radiologist_group = Group.objects.get(name='radiologist')
+    # radiologist_objects = radiologist_group.user_set.all()
+
+    # Fetch only the radiologists associated with the corporate coordinator
+    radiologist_objects = corporate_coordinator.radiologist.all()
+
+    # total_unallocated_patients = DICOMData.objects.filter(radiologist=None, isDone=False, NonReportable=False)
+    # total_allocated_patients = DICOMData.objects.filter(radiologist__isnull=False, isDone=False)
+    # total_reported_patients = DICOMData.objects.filter(isDone=True)
+
+
+    # Filter DICOMData for the logged-in CorporateCoordinator
+    total_unallocated_patients = DICOMData.objects.filter(radiologist=None, isDone=False, NonReportable=False, corporatecoordinator=corporate_coordinator)
+    total_allocated_patients = DICOMData.objects.filter(radiologist__isnull=False, isDone=False, corporatecoordinator=corporate_coordinator)
+    total_reported_patients = DICOMData.objects.filter(isDone=True, corporatecoordinator=corporate_coordinator)
+
+
+
+    total_client = XClient.objects.all()
+    total_cities = XCity.objects.all()
+    total_locations = XLocation.objects.all()
+    total_dates = Date.objects.all()
+
+    # Dictionary to store session status/first_name/time for each radiologist
+    radiologist_session_status = {}
+
+    for radiologist in radiologist_objects:
+        is_active_session = False
+
+        active_sessions = Session.objects.filter(expire_date__gte=timezone.now())
+        for session in active_sessions:
+            session_data = session.get_decoded()
+            user_id = session_data.get('_auth_user_id')
+            if user_id == str(radiologist.user.id):
+                is_active_session = True
+                break
+
+        # Calculate inactive time for the current radiologist
+        inactive_since_text = ""
+        logout_time = radiologist_logout_time.get(radiologist.user.email)
+        if logout_time:
+            time_difference = timezone.now() - logout_time
+            duration_seconds = time_difference.total_seconds()
+            hours = int(duration_seconds // 3600)
+            minutes = int((duration_seconds % 3600) // 60)
+            seconds = int(duration_seconds % 60)
+
+            if hours > 0:
+                inactive_since_text = f"Inactive last {hours} hours"
+            elif minutes > 0:
+                inactive_since_text = f"Inactive last {minutes} minutes"
+            else:
+                inactive_since_text = f"Inactive last {seconds} seconds"
+
+        active_since_text = ""
+        login_time = radiologist_login_time.get(radiologist.user.email)
+        if login_time:
+            time_difference = timezone.now() - login_time
+            duration_seconds = time_difference.total_seconds()
+            hours = int(duration_seconds // 3600)
+            minutes = int((duration_seconds % 3600) // 60)
+            seconds = int(duration_seconds % 60)
+
+            if hours > 0:
+                active_since_text = f"Active last {hours} hours"
+            elif minutes > 0:
+                active_since_text = f"Active last {minutes} minutes"
+            else:
+                active_since_text = f"Active last {seconds} seconds"
+
+        # Add email, first name, and inactive time to the radiologist_session_status dictionary
+        radiologist_session_status[radiologist.user.email] = {
+            'is_active': is_active_session,
+            'first_name': radiologist.user.first_name,
+            'inactive_time': inactive_since_text,
+            'active_time': active_since_text
+        }
+
+    context = {
+        'radiologist_session_status': radiologist_session_status,
+        'unallocated_patients': total_unallocated_patients,
+        'allocated_patients': total_allocated_patients,
+        'reported_patients': total_reported_patients,
+        'cities': total_cities,
+        'clients': total_client,
+        'locations': total_locations,
+        'dates': total_dates,
+    }
+
+    if 'name' in request.POST:
+        name = request.POST.get("name")
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+
+        client = XClient(
+            name=name,
+            email=email,
+            password=password,
+        )
+        client.save()
+        return redirect("coordinatorallocate1")
+
+    elif 'city_name' in request.POST:
+        client_id = request.POST.get("client")
+        city_name = request.POST.get("city_name")
+        client = XClient.objects.get(pk=client_id)
+        city = XCity(client=client, name=city_name)
+        city.save()
+
+        return redirect("coordinatorallocate1")
+
+    elif "location_name" in request.POST:
+        city_id = request.POST.get('city')
+        location_name = request.POST.get('location_name')
+        city = XCity.objects.get(pk=city_id)
+        location = XLocation(city=city, name=location_name)
+        location.save()
+
+        return redirect("coordinatorallocate1")
+
+    elif 'delete_client' in request.POST:
+        client_id = request.POST.get("delete_client")
+        if client_id:
+            client = XClient.objects.filter(pk=client_id).first()
+            if client:
+                client.delete()
+
+            return redirect("coordinatorallocate1")
+
+    elif 'delete_city' in request.POST:
+        city_id = request.POST.get("delete_city")
+        if city_id:
+            city = XCity.objects.filter(pk=city_id).first()
+            if city:
+                city.delete()
+
+            return redirect("coordinatorallocate1")
+
+    elif 'delete_location' in request.POST:
+        location_id = request.POST.get("delete_location")
+        if location_id:
+            location = XLocation.objects.filter(pk=location_id).first()
+            if location_id:
+                location.delete()
+
+            return redirect("coordinatorallocate1")
+
+    action = request.POST.get('action')
+    if action in ('allocate', 'unallocate', 'nonreport'):
+        if action == 'nonreport':
+            selected_patient_ids = request.POST.getlist('cases')
+            print(len(selected_patient_ids))
+            if selected_patient_ids:
+                DICOMData.objects.filter(patient_id__in=selected_patient_ids).update(NonReportable=True)
+                total_cases_instance = Total_Cases.objects.first()
+                total_cases_instance.total_nonreported_xray += len(selected_patient_ids)
+                total_cases_instance.save()
+
+        else:
+            selected_radiologist_email = request.POST.get('radiologist')
+            if selected_radiologist_email:
+                radiologist_group = Group.objects.get(name='radiologist')
+                radiologist_user = get_object_or_404(radiologist_group.user_set, email=selected_radiologist_email)
+
+                # Fetch the corresponding PersonalInfo instance for the selected cardiologist
+                radiologist = PersonalInfoModel.objects.get(user=radiologist_user)
+
+                if radiologist:
+                    selected_patient_ids = request.POST.getlist('cases')
+                    if selected_patient_ids:
+                        selected_patients = DICOMData.objects.filter(patient_id__in=selected_patient_ids)
+
+                        for patient in selected_patients:
+                            if action == 'allocate':
+                                patient.radiologist.add(radiologist)
+                            elif action == 'unallocate':
+                                patient.radiologist.remove(radiologist)
+
+                    selected_patient_ids = request.POST.getlist('cases1')
+                    if selected_patient_ids:
+                        selected_patients = DICOMData.objects.filter(patient_id__in=selected_patient_ids)
+                        for patient in selected_patients:
+                            if action == 'allocate':
+                                patient.radiologist.add(radiologist)
+                            elif action == 'unallocate':
+                                patient.radiologist.remove(radiologist)
+                    selected_patient_ids = request.POST.getlist('cases2')
+                    if selected_patient_ids:
+                        selected_patients = DICOMData.objects.filter(patient_id__in=selected_patient_ids)
+                        for patient in selected_patients:
+                            if action == 'allocate':
+                                patient.radiologist.add(radiologist)
+                            elif action == 'unallocate':
+                                patient.radiologist.remove(radiologist)
+    return render(request, 'users/coordinatorallocate1.html', context)    
 
 
 

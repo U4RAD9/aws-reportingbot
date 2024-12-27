@@ -438,6 +438,7 @@
                             <li><a class="dropdown-item" href="#" onclick="downloadExcel()">Get Excel</a></li>
                             <li><a class="dropdown-item" href="get_excel">Get Excel(Observation)</a></li>
                             <li> <a class="dropdown-item" href="/allocate1">Allocate</a></li>
+                            <li> <a class="dropdown-item" href="/allocatecoordinator1">Allocate to Corporate Coordinator</a></li>
                             <li> <a class="dropdown-item" href="/reporting_status">Reporting Status</a></li>
                         </ul>
                     </li>
@@ -546,13 +547,52 @@
                             <select id="filter-location-select-location" class="form-control">
                                 <option value="">All</option>
                                 {% for location in Location %}
-                                    <option value="{{ location }}" data-city="{{ location.city.name }}">{{ location }}</option>
+                                    <option value="{{ location }}">{{ location }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                     </div>
                 </th>
-                <th>Institution</th>
+                <th>
+                  <div class="filter-dropdown-container">
+                       <div>Institution</div>
+                       <div class="dropdown-select1" id="filter-institution_name-dropdown">
+                           <select id="filter-institution_name-select-institution_name" class="form-control">
+                               <option value="">All</option>
+                               {% for institution_name in Institution %}
+                                   <option value="{{ institution_name }}">{{ institution_name }}</option>
+                               {% endfor %}
+                           </select>
+                       </div>
+                   </div>
+               </th>
+
+                <th>
+                  <div class="filter-dropdown-container">
+                     <div>Modality</div>
+                     <div class="dropdown-select1" id="filter-Modality-dropdown">
+                         <select id="filter-Modality-select-Modality" class="form-control">
+                             <option value="">All</option>
+                             {% for Modality in Modalities %}
+                                 <option value="{{ Modality }}">{{ Modality }}</option>
+                             {% endfor %}
+                         </select>
+                     </div>
+                  </div>
+                </th>
+                <th>
+                  <div class="filter-dropdown-container">
+                      <div>Coordinator</div>
+                      <div class="dropdown-select1" id="filter-coordinator-select-coordinator">
+                          <select id="filter-coordinator-select-coordinator" class="form-control">
+                              <option value="">All</option>
+                              {% for corporatecoordinator in corporatecoordinators %}
+                                  <option value="{{ corporatecoordinator }}">{{ corporatecoordinator.first_name }}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
+                  </div>
+              </th>
                 <th>
                     <div class="filter-dropdown-container">
                         <div>Allocated</div>
@@ -594,6 +634,13 @@
             <td>{{ patient.study_date }}</td>
             <td>{{ patient.location}}</td>
             <td>{{ patient.institution_name }}</td>
+            <td>{{ patient.Modality }}</td>
+            <td data-corporatecoordinator="{{ patient.corporatecoordinator }}">
+              {% for corporatecoordinator in patient.corporatecoordinator.all %}
+                  {{ corporatecoordinator.user.first_name }}
+                  {% if not forloop.last %}, {% endif %}
+              {% endfor %}
+          </td>
             <td data-radiologist="{{ patient.radiologist }}">
                 {% for radiologist in patient.radiologist.all %}
                     {{ radiologist.user.first_name }}
@@ -873,18 +920,33 @@
             filterTable();
         });
 
+        // Event handler for the change event of the institution_name dropdown
+        $('#filter-institution_name-select-institution_name').change(function () {
+            filterTable();
+        });
+
+
+        // Event handler for the change event of the Modality dropdown
+        $('#filter-Modality-select-Modality').change(function () {
+            filterTable();
+        });
+
         function filterTable() {
             var selectedDate = $('#filter-date-select-date').val();
             var selectedLocation = $('#filter-location-select-location').val();
+            var selectedInstitution_name = $('#filter-institution_name-select-institution_name').val();
+            var selectedModality = $('#filter-Modality-select-Modality').val();
 
             // Loop through each row in the table
             $('#patientTable tbody tr').each(function () {
                 var rowDate = $(this).find('td:nth-child(5)').text(); // Get the test date from the table cell
                 var rowLocation = $(this).find('td:nth-child(6)').text(); // Get the location from the table cell
+                var rowInstitution_name = $(this).find('td:nth-child(7)').text(); // Get the location from the table cell
+                var rowModality = $(this).find('td:nth-child(8)').text();
 
                 // Check if the row matches the selected date and location
                 if ((selectedDate === '' || rowDate === selectedDate) &&
-                    (selectedLocation === '' || rowLocation === selectedLocation)) {
+                    (selectedLocation === '' || rowLocation === selectedLocation) && (selectedInstitution_name === '' || rowInstitution_name === selectedInstitution_name) && (selectedModality === '' || rowModality === selectedModality)) {
                     // Show the row if it matches the selected date and location
                     $(this).show();
                 } else {
@@ -916,6 +978,25 @@
             }
         }
 
+        // Function to filter the table by corporatecoordinator
+        function filterTableByCorporatecoordinator(corporatecoordinator) {
+            // Show all rows initially
+            $("tbody tr").show();
+            if (corporatecoordinator) {
+                // Filter rows based on the selected corporatecoordinator
+                console.log(corporatecoordinator)
+                $("tbody tr").each(function () {
+                    var rowCorporatecoordinators = $(this).find("td[data-corporatecoordinator]").map(function() {
+                    return $(this).data("corporatecoordinator").trim();
+                }).get();
+                console.log(rowCorporatecoordinators);
+                if (rowCorporatecoordinators.indexOf(corporatecoordinator) === -1) {
+                    $(this).hide();
+                }
+                });
+            }
+        }
+
         // Function to filter the table by status
         function filterTableByStatus(status) {
             // Show all rows initially
@@ -937,6 +1018,13 @@
             filterTableByCardiologist(selectedCardiologist);
         });
 
+
+        // Event handler for the "coordnator" dropdown filter
+        $(document).on("change", "#filter-coordinator-select-coordinator", function() {
+            var selectedCoordinator = $(this).val();
+            filterTableByCoordinator(selectedCoordinator);
+        });
+
          // Event handler for the "Status" dropdown filter
         $(document).on("change", "#filter-status-select", function () {
             var selectedStatus = $(this).val();
@@ -945,6 +1033,7 @@
 
         // Call the filter functions on page load to initialize the table
         filterTableByCardiologist($("#filter-allocate-select-allocate").val());
+        filterTableByCoordinator($("#filter-coordinator-select-coordinator").val());
         filterTableByStatus($("#filter-status-select").val());
     </script>
 

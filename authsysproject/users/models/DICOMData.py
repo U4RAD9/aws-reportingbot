@@ -1,6 +1,7 @@
 from django.db import models
 from .personalinfo import PersonalInfo
 from .Xray_Location import XLocation
+from .corporatecoordinator import CorporateCoordinator
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.utils.timezone import now
 
@@ -24,6 +25,7 @@ class DICOMData(models.Model):
     #location = models.ForeignKey(XLocation, on_delete=models.CASCADE, null=True, blank=True)
     location = models.CharField(max_length=100, blank=True, null=True)
     radiologist = models.ManyToManyField(PersonalInfo, blank=True)
+    corporatecoordinator = models.ManyToManyField(CorporateCoordinator, blank=True)
     body_part_examined = models.CharField(max_length=200, blank=True, null=True)
     #accession_number = models.CharField(max_length=50, null=True, blank=True)
     institution_name = models.CharField(max_length=250, blank=True, null=True, default="None")
