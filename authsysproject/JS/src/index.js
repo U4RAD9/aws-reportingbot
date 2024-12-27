@@ -394,12 +394,9 @@ class App extends Component {
       }
     }
   }
-  
 
   
   
-  
-  // When dropping a preview image onto a viewport
   async cornerstone(PARAM) {
     try {
       const previewTab = document.getElementById('previewTab');
@@ -438,7 +435,7 @@ class App extends Component {
               const hours = study_time.slice(0, 2); // First two digits as hours
               const minutes = study_time.slice(2, 4); // Next two digits as minutes
               const seconds = study_time.slice(4, 6); // Last two digits as seconds
-              return `${hours} hours ${minutes} minutes ${seconds} seconds`;
+              return `${hours} : ${minutes} : ${seconds} `;
             }
             const formattedTime = formatTime(study_time);
       // Function to format the date as YYYY/MM/DD
@@ -472,14 +469,22 @@ class App extends Component {
   
           // put the url of the orthanc server with /dicom-web
           // example http://127.0.0.1:2002/dicom-web
-          wadoRsRoot: 'https://pacs.reportingbot.in/dicom-web',
+          wadoRsRoot: 'http://13.202.103.243:2002/dicom-web',
         });
-  
+        console.log("imageId:", imageId); // Check the structure of imageId
+
+       
+  // Check if imageId is an array and get its length
+  let imageCount = 0;
+  if (Array.isArray(imageId)) {
+    imageCount = imageId.length;
+  } 
         // populate preview tab
         let image = document.createElement('img');
         image.src = item[3];
-        image.style.height = '150px';
-        image.style.width = '150px';
+        console.log(item[3]);
+        image.style.height = '100px';
+        image.style.width = '120px';
         image.style.marginBottom = '0px';
   
         // conditional to check whether modality is CT or anything else 
@@ -511,24 +516,36 @@ class App extends Component {
         image.dataset.modality = item[1];
         image.dataset.description = item[2]; 
         image.draggable = true;
+        const textContainer = document.createElement('div');
+        textContainer.style.border = '1px solid #ccc'; // Add a border
+        textContainer.style.padding = '10px'; // Add spacing inside the container
+        textContainer.style.marginBottom = '5px'; // Space below the container
+        textContainer.style.borderRadius = '2px'; // Rounded corners
+        textContainer.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)'; // Subtle shadow for better visuals
+        textContainer.style.backgroundColor = '#f9f9f9'; // Light background for contrast
+        textContainer.style.maxWidth = '100px'; // Restrict maximum width
+        textContainer.style.textAlign = 'center'; // Center the content
         
-        // Log the modality and description to the console
-        //console.log(`Modality: ${item[1]}, Description: ${item[2]}`);
+        textContainer.innerHTML = `
+        <p style="margin: 1px 0; line-height: 1.3; font-size: 10px;">
+          <strong>${item[1]}</strong><br>
+          <span> <strong>${item[2]}</strong><br></span>
+          <span>Image Count: <strong>${imageCount}</strong></span>
+        </p>
+      `;
         
-        previewTab.innerHTML += `
-          <p style='margin-bottom: 0px'>
-            ${item[1]}<br>${item[2]}
-          </p>
-        `;
+        // Append the text container above the image
+        previewTab.appendChild(textContainer);
         
         previewTab.appendChild(image);
+        
       }
   
       // event delegation to attach event listener to each preview image in the preview tab
       previewTab.addEventListener('dragstart', (event) => {
         if (event.target.tagName === 'IMG') {
             const transferData = [event.target.dataset.value, event.target.dataset.modality, event.target.dataset.description];
-            //console.log("Transferred Data: ", transferData); // Log the data being transferred
+            console.log("Transferred Data: ", transferData); // Log the data being transferred
             event.dataTransfer.setData("text", JSON.stringify(transferData));
         }
     });
@@ -538,7 +555,6 @@ class App extends Component {
       console.error(error);
     }
   }
-  
 
 
 
@@ -557,69 +573,109 @@ class App extends Component {
     });
     curr_tool = tool;
   }
-  //viewport layout settings for single viewport, 2 viewports, or 4 viewports
-  layoutSettings(event){
-    const call = event.target.value;
-    const container = document.getElementById('viewport-container');
-    const viewport2 = document.getElementById('viewport2');
-    const viewport3 = document.getElementById('viewport3');
-    const viewport4 = document.getElementById('viewport4');
+  // Viewport layout settings for single viewport, 2 viewports, or 4 viewports
+layoutSettings(event) {
+  const call = event.target.value;
+  const container = document.getElementById('viewport-container');
+  const viewport2 = document.getElementById('viewport2');
+  const viewport3 = document.getElementById('viewport3');
+  const viewport4 = document.getElementById('viewport4');
 
-    switch(call){
-      case 'one':
-        if (prev_layout == 'four'){
-          renderingEngine.disableElement(viewportIds[2]);
-          renderingEngine.disableElement(viewportIds[3]);
-          toolGroup.removeViewports(renderingEngineId, viewportIds[2]);
-          toolGroup.removeViewports(renderingEngineId, viewportIds[3]);
-          viewport3.style.display = 'none';
-          viewport4.style.display = 'none';
-        }
-        renderingEngine.disableElement(viewportIds[1]);
-        toolGroup.removeViewports(renderingEngineId, viewportIds[1]);
-        viewport2.style.display = 'none';
-        container.style.gridTemplateColumns = 'none';
-        container.style.gridTemplateRows = 'none'
-        break;
-      case 'two':
-        if (prev_layout == 'four'){
-          renderingEngine.disableElement(viewportIds[2]);
-          renderingEngine.disableElement(viewportIds[3]);
-          toolGroup.removeViewports(renderingEngineId, viewportIds[2]);
-          toolGroup.removeViewports(renderingEngineId, viewportIds[3]);
-          viewport3.style.display = 'none';
-          viewport4.style.display = 'none';
-        } else{
-          renderingEngine.enableElement(second_viewport);
-          toolGroup.addViewport(viewportIds[1], renderingEngineId);
-          viewport2.style.display = 'block';
-        }
-        container.style.gridTemplateColumns = '50% 50%';
-        container.style.gridTemplateRows = 'none'
-        
-        break;
-      case 'four':
-        if (prev_layout == 'one'){
-          renderingEngine.enableElement(second_viewport);
-          viewport2.style.display = 'block';
-          toolGroup.addViewport(viewportIds[1], renderingEngineId);
-        }
+  switch(call) {
+    case 'one':
+      if (prev_layout == 'four') {
+        // Disable and remove the last two viewports (3 and 4) from the rendering engine
+        renderingEngine.disableElement(viewportIds[2]);
+        renderingEngine.disableElement(viewportIds[3]);
+        toolGroup.removeViewports(renderingEngineId, viewportIds[2]);
+        toolGroup.removeViewports(renderingEngineId, viewportIds[3]);
+        // Hide viewports 3 and 4
+        viewport3.style.display = 'none';
+        viewport4.style.display = 'none';
+      }
+      // Disable second viewport and remove from the rendering engine
+      renderingEngine.disableElement(viewportIds[1]);
+      toolGroup.removeViewports(renderingEngineId, viewportIds[1]);
+      // Hide the second viewport
+      viewport2.style.display = 'none';
+      container.style.gridTemplateColumns = 'none';
+      container.style.gridTemplateRows = 'none';
+      break;
+    
+    case 'two':
+      if (prev_layout == 'four') {
+        // Disable and remove the last two viewports (3 and 4)
+        renderingEngine.disableElement(viewportIds[2]);
+        renderingEngine.disableElement(viewportIds[3]);
+        toolGroup.removeViewports(renderingEngineId, viewportIds[2]);
+        toolGroup.removeViewports(renderingEngineId, viewportIds[3]);
+        // Hide viewports 3 and 4
+        viewport3.style.display = 'none';
+        viewport4.style.display = 'none';
+      } else {
+        // Enable and add viewport 2
+        renderingEngine.enableElement(second_viewport);
+        toolGroup.addViewport(viewportIds[1], renderingEngineId);
+        // Display viewport 2
+        viewport2.style.display = 'block';
+      }
+      // Update grid layout for two viewports (50% split)
+      container.style.gridTemplateColumns = '50% 50%';
+      container.style.gridTemplateRows = 'none';
+      break;
+    
+    case 'three':
+      if (prev_layout == 'four') {
+        // Disable viewport 4 and remove it from rendering engine
+        renderingEngine.disableElement(viewportIds[3]);
+        toolGroup.removeViewports(renderingEngineId, viewportIds[3]);
+        // Hide viewports 3 and 4
+        viewport4.style.display = 'none';
+      } else {
+        // Enable and add viewport 2
+        renderingEngine.enableElement(second_viewport);
         renderingEngine.enableElement(third_viewport);
-        renderingEngine.enableElement(fourth_viewport);
+        toolGroup.addViewport(viewportIds[1], renderingEngineId);
         toolGroup.addViewport(viewportIds[2], renderingEngineId);
-        toolGroup.addViewport(viewportIds[3], renderingEngineId);
-
+        // Display viewport 2
+        viewport2.style.display = 'block';
         viewport3.style.display = 'block';
-        viewport4.style.display = 'block';
-        container.style.gridTemplateColumns = '50% 50%';
-        container.style.gridTemplateRows = '50% 50%';
-        break;
-    }
-    renderingEngine.resize(true, false);
-    prev_layout = call;
-    event.target.value = ''
+      }
+      // Update grid layout for 1x3 viewports (1 row, 3 columns)
+      container.style.gridTemplateColumns = '33.33% 33.33% 33.33%';  // Equal 3 columns
+      container.style.gridTemplateRows = 'none'; // One row, no need for multiple rows
+      break;
+    
+    case 'four':
+      if (prev_layout == 'one') {
+        // Enable and add viewport 2
+        renderingEngine.enableElement(second_viewport);
+        viewport2.style.display = 'block';
+        toolGroup.addViewport(viewportIds[1], renderingEngineId);
+      }
+      // Enable and add viewport 3 and 4
+      renderingEngine.enableElement(third_viewport);
+      renderingEngine.enableElement(fourth_viewport);
+      toolGroup.addViewport(viewportIds[2], renderingEngineId);
+      toolGroup.addViewport(viewportIds[3], renderingEngineId);
+      // Display viewports 3 and 4
+      viewport3.style.display = 'block';
+      viewport4.style.display = 'block';
+      // Update grid layout for 4 viewports (2x2 grid)
+      container.style.gridTemplateColumns = '50% 50%';
+      container.style.gridTemplateRows = '50% 50%';
+      break;
   }
 
+  // Resize the rendering engine to fit the updated layout
+  renderingEngine.resize(true, false);
+  
+  // Update the previous layout to the current one for tracking
+  prev_layout = call;
+  
+  // Reset the event target value for next use
+  event.target.value = '';
+}
   //volume slab thickness settings for volume viewports
   slabThickness(val, id){
     const viewport = renderingEngine.getViewport(id);
@@ -3381,6 +3437,7 @@ onChange={e => this.slabThickness(e.target.value, selected_viewport)}></input>
 <select id="layout" className="dropdown" onChange={e => this.layoutSettings(e)}>
 <option value='one' selected>1x1</option>
 <option value='two'>1x2</option>
+<option value='three'>1x3</option>
 <option value='four'>2x2</option>
 </select>
 </div>
