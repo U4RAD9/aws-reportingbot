@@ -783,11 +783,11 @@ def allocation1(request):
 
     # Get unique locations
     # unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
-    unique_locations = set(patient.location for patient in page_obj.object_list)
+    unique_locations = {patient.location for patient in page_obj.object_list if patient.location is not None}
     sorted_unique_locations = sorted(unique_locations, reverse=False)
 
     # unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
-    unique_institution_name = set(patient.institution_name for patient in page_obj.object_list)
+    unique_institution_name = {patient.institution_name for patient in page_obj.object_list if patient.institution_name is not None}
     sorted_unique_institution_name = sorted(unique_institution_name, reverse=False)
 
 
