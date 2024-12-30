@@ -1191,12 +1191,16 @@ def ecgallocation(request):
                       'patient_urls': patient_urls
                   })
 
-def presigned_url(bucket_name, object_name, operation='get_object'):
+def presigned_url(bucket_name, object_name, operation='get_object', inline=False):
     try:
         s3_client = boto3.client('s3', region_name='ap-south-1', config=boto3.session.Config(signature_version='s3v4'))
+
+        # Set Content-Disposition based on the 'inline' parameter
+        content_disposition = 'inline' if inline else 'attachment'
+
         url = s3_client.generate_presigned_url(
             ClientMethod=operation,
-            Params={'Bucket': bucket_name, 'Key': object_name, 'ResponseContentDisposition': 'attachment'},
+            Params={'Bucket': bucket_name, 'Key': object_name, 'ResponseContentDisposition': content_disposition},
             ExpiresIn=3600
         )
     except (NoCredentialsError, PartialCredentialsError):
@@ -1238,7 +1242,7 @@ def xrayallocation(request):
         # Get history files
         history_files = patient.history_files.all()
         patient.history_file_urls = [
-            presigned_url(bucket_name, history_file.history_file.name) for history_file in history_files
+            presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
         ]
         print(jpeg_files)
 
@@ -1285,7 +1289,7 @@ def xrayallocationreverse(request):
         # Get history files
         history_files = patient.history_files.all()
         patient.history_file_urls = [
-            presigned_url(bucket_name, history_file.history_file.name) for history_file in history_files
+            presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
         ]
 
         patient_urls.append({
