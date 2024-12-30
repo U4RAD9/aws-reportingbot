@@ -787,34 +787,42 @@ def allocation1(request):
     unique_dates = set(patient.study_date for patient in page_obj.object_list)
     sorted_unique_dates = sorted(unique_dates, reverse=False)
 
-    # Get unique locations
-    # unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
-    unique_locations = {patient.location for patient in page_obj.object_list if patient.location is not None}
-    sorted_unique_locations = sorted(unique_locations, reverse=False)
+
+    #Get unique study time from the patients
+    unique_study_time = {patient.study_time for patient in page_obj.object_list if patient.study_time is not None}
+    sorted_unique_study_time = sorted(unique_study_time, reverse=False)
 
     # unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
     unique_institution_name = {patient.institution_name for patient in page_obj.object_list if patient.institution_name is not None}
     sorted_unique_institution_name = sorted(unique_institution_name, reverse=False)
 
+    # Recived date time on db
+    unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None}
+    sorted_unique_recived_on_db = sorted(unique_recived_on_db, reverse=False)
+
+    #Study Description of patent from dicom data
+    # Recived date time on db
+    unique_study_description = {patient.study_description for patient in page_obj.object_list if patient.study_description is not None}
+    sorted_unique_study_description = sorted(unique_study_description, reverse=False)
 
     # Modality
     # Get unique modality values, ensuring None values are excluded
     unique_modality = {patient.Modality for patient in page_obj.object_list if patient.Modality is not None}
-    
-    # Sort the unique modalities
     sorted_unique_modality = sorted(unique_modality, reverse=False)
     
 
     return render(request, 'users/allocation1.html', {
         'Institution': sorted_unique_institution_name,
-        'Location': sorted_unique_locations,
         'Modalities': sorted_unique_modality,
         'total': total_cases,
         'count': total_current_uploaded,
         'patients': page_obj,
         'Date': sorted_unique_dates,
+        'Study_time' : sorted_unique_study_time,
+        'Received_on_db': sorted_unique_recived_on_db,
+        'Study_description': sorted_unique_study_description,
         'radiologists': radiologist_objects,
-        'corporatecoordinator_objects': corporatecoordinator_objects,
+        'corporatecoordinator': corporatecoordinator_objects,
         'page_obj': page_obj  # Pass page_obj for pagination controls
     })
 
@@ -967,7 +975,7 @@ def allocate1(request):
 
 
 
-    total_client = XClient.objects.all()
+    total_client = Client.objects.all()
     total_cities = XCity.objects.all()
     total_locations = XLocation.objects.all()
     total_dates = Date.objects.all()
@@ -1038,63 +1046,7 @@ def allocate1(request):
         'dates': total_dates,
     }
 
-    if 'name' in request.POST:
-        name = request.POST.get("name")
-        email = request.POST.get("email")
-        password = request.POST.get("password")
-
-        client = XClient(
-            name=name,
-            email=email,
-            password=password,
-        )
-        client.save()
-        return redirect("allocate1")
-
-    elif 'city_name' in request.POST:
-        client_id = request.POST.get("client")
-        city_name = request.POST.get("city_name")
-        client = XClient.objects.get(pk=client_id)
-        city = XCity(client=client, name=city_name)
-        city.save()
-
-        return redirect("allocate1")
-
-    elif "location_name" in request.POST:
-        city_id = request.POST.get('city')
-        location_name = request.POST.get('location_name')
-        city = XCity.objects.get(pk=city_id)
-        location = XLocation(city=city, name=location_name)
-        location.save()
-
-        return redirect("allocate1")
-
-    elif 'delete_client' in request.POST:
-        client_id = request.POST.get("delete_client")
-        if client_id:
-            client = XClient.objects.filter(pk=client_id).first()
-            if client:
-                client.delete()
-
-            return redirect("allocate1")
-
-    elif 'delete_city' in request.POST:
-        city_id = request.POST.get("delete_city")
-        if city_id:
-            city = XCity.objects.filter(pk=city_id).first()
-            if city:
-                city.delete()
-
-            return redirect("allocate1")
-
-    elif 'delete_location' in request.POST:
-        location_id = request.POST.get("delete_location")
-        if location_id:
-            location = XLocation.objects.filter(pk=location_id).first()
-            if location_id:
-                location.delete()
-
-            return redirect("allocate1")
+    
 
     action = request.POST.get('action')
     if action in ('allocate', 'unallocate', 'nonreport'):
