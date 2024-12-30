@@ -779,7 +779,7 @@ def allocation1(request):
         # Get history files
         history_files = patient.history_files.all()
         patient.history_file_urls = [
-            presigned_url(bucket_name, history_file.history_file.name) for history_file in history_files
+            presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
         ]
 
 
@@ -1284,7 +1284,7 @@ def xrayallocationreverse(request):
         patient_name_with_underscores = patient.patient_name.replace(" ", "_")
         pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient.patient_id)
         
-        pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name) for pdf_report in pdf_reports]
+        pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
 
         # Get history files
         history_files = patient.history_files.all()
