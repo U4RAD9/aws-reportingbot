@@ -4148,29 +4148,6 @@ def clientdata(request):
     institution_name = client.institution_name
     dicom_data = DICOMData.objects.filter(institution_name=institution_name)
 
-    # S3 bucket name
-    bucket_name = 'u4rad-s3-reporting-bot'
-
-    # Prepare data for rendering, including history files with presigned URLs
-    dicom_data_with_history = []
-    for data in dicom_data:
-        # Fetch associated history files
-        history_files = data.history_files.all()
-
-        # Generate presigned URLs for each history file
-        history_file_urls = [
-            {
-                'name': history_file.history_file.name,  # File name
-                'url': presigned_url(bucket_name, history_file.history_file.name, inline=True)  # Inline URL
-            }
-            for history_file in history_files
-        ]
-
-        dicom_data_with_history.append({
-            'dicom_data': data,
-            'history_files': history_file_urls,
-        })
-
     # Get edit permissions for the client
     edit_permissions = {
         'patient_name': client.can_edit_patient_name,
@@ -4186,7 +4163,7 @@ def clientdata(request):
         'upload_history': True,  # Assuming all clients can upload history files
     }
 
-    return render(request, 'users/upload_dicom.html', {'dicom_data_with_history': dicom_data_with_history, 'edit_permissions': edit_permissions})
+    return render(request, 'users/upload_dicom.html', {'dicom_data': dicom_data, 'edit_permissions': edit_permissions})
 
 
     
