@@ -90,12 +90,13 @@
             <th style="width: 150px;">Notes</th>
             <th style="width: 150px;">Body Part Examined</th>
             <th style="width: 150px;">Referring Doctor Name</th>
+            <th style="width: 150px;">History Files</th>
             <th style="width: 150px;">WhatsApp Number</th>
             <th style="width: 150px;">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {% for entry in dicom_data %}
+          {% for entry in dicom_data_with_history %}
           <tr>
             <td>{{ entry.patient_name }}</td>
             <td>{{ entry.patient_id }}</td>
@@ -106,6 +107,13 @@
             <td>{{ entry.notes }}</td>
             <td>{{ entry.body_part_examined }}</td>
             <td>{{ entry.referring_doctor_name }}</td>
+            <td>
+              {% for file in entry.history_files %}
+              <a class="imageButton" target="_blank" href="{{ file.url }}">
+                History Files {{ forloop.counter }}
+              </a>
+              {% endfor %}
+            </td>
             <td>{{ entry.whatsapp_number }}</td>
             <td>
               <button class="btn btn-sm btn-custom" onclick="openEditModal({{ entry.id }})">Edit</button>
