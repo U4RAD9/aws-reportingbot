@@ -607,6 +607,7 @@
                     </div>
                 </th>
                 <th>Clinical History</th>
+                <th>History Files</th>
                 <th>Image</th>
                 <th>
                     <div class="filter-dropdown-container">
@@ -651,6 +652,14 @@
               <button class="openClinicalHistoryButton" data-clinical-history="{{ patient.notes }}">
                 View
               </button>
+            </td>
+
+            <td>
+              {% for file_url in patient.history_file_urls %}
+                <a class="imageButton" target="_blank" href="{{ file_url }}">
+                  History Files {{ forloop.counter }}
+                </a>
+              {% endfor %}
             </td>
 
             <td>

@@ -497,6 +497,7 @@
                 </th>
 
                 <th>Clinical History</th>
+                <th>History Files</th>
                 <th>Pdf Reports</th>
                 <th>Actions</th>
               <!-- Add a column for the "Report" button -->
@@ -516,6 +517,14 @@
               <button class="openClinicalHistoryButton" data-clinical-history="{{ patient.notes }}">
                 View
               </button>
+            </td>
+
+            <td>
+              {% for file_url in patient.history_file_urls %}
+                <a class="imageButton" target="_blank" href="{{ file_url }}">
+                  History Files {{ forloop.counter }}
+                </a>
+              {% endfor %}
             </td>
 
             <td>

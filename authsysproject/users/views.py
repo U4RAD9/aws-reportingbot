@@ -31,7 +31,7 @@ from users.models.audiopatientdata import audioPatientDetails
 from users.models.optometrydata import optopatientDetails
 from users.models.vitalpatientdata import vitalPatientDetails
 from users.models.VaccinationPatientData import vaccinationPatientDetails
-from users.models.DICOMData import DICOMData, DICOMFile, JPEGFile
+from users.models.DICOMData import DICOMData, DICOMFile, JPEGFile, PatientHistoryFile
 from users.models.EcgPdfReport import EcgReport
 from users.models.XrayPdfReport import XrayReport
 from django.core.files.storage import default_storage
@@ -776,6 +776,12 @@ def allocation1(request):
             presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files
         ]    
 
+        # Get history files
+        history_files = patient.history_files.all()
+        patient.history_file_urls = [
+            presigned_url(bucket_name, history_file.history_file.name) for history_file in history_files
+        ]
+
 
     # Get unique dates from the patients on the current page
     unique_dates = set(patient.study_date for patient in page_obj.object_list)
@@ -1229,6 +1235,11 @@ def xrayallocation(request):
            'patient': patient,
            'urls': urls
         })
+        # Get history files
+        history_files = patient.history_files.all()
+        patient.history_file_urls = [
+            presigned_url(bucket_name, history_file.history_file.name) for history_file in history_files
+        ]
         print(jpeg_files)
 
     location = XLocation.objects.all()
@@ -1270,6 +1281,12 @@ def xrayallocationreverse(request):
         pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient.patient_id)
         
         pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name) for pdf_report in pdf_reports]
+
+        # Get history files
+        history_files = patient.history_files.all()
+        patient.history_file_urls = [
+            presigned_url(bucket_name, history_file.history_file.name) for history_file in history_files
+        ]
 
         patient_urls.append({
            'patient': patient,
@@ -4138,7 +4155,8 @@ def clientdata(request):
         'notes': client.can_edit_notes,
         'body_part_examined': client.can_edit_body_part_examined,
         'referring_doctor_name': client.can_edit_referring_doctor_name,
-        'whatsapp_number': client.can_edit_whatsapp_number
+        'whatsapp_number': client.can_edit_whatsapp_number,
+        'upload_history': True,  # Assuming all clients can upload history files
     }
 
     return render(request, 'users/upload_dicom.html', {'dicom_data': dicom_data, 'edit_permissions': edit_permissions})
@@ -4164,6 +4182,22 @@ def edit_dicom_data(request, pk):
             dicom_entry.referring_doctor_name = request.POST.get('referring_doctor_name', dicom_entry.referring_doctor_name)
             dicom_entry.whatsapp_number = request.POST.get('whatsapp_number', dicom_entry.whatsapp_number)
             dicom_entry.save()
+
+            # Handle history file uploads
+            if request.FILES.getlist('history_files'):
+                uploaded_files = []
+                for file in request.FILES.getlist('history_files'):
+                    history_file = PatientHistoryFile.objects.create(
+                        dicom_data=dicom_entry,
+                        history_file=file
+                    )
+                    uploaded_files.append({
+                        'id': history_file.id,
+                        'file_url': history_file.history_file.url,
+                        'uploaded_at': history_file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S'),
+                    })
+                return JsonResponse({'success': True, 'uploaded_files': uploaded_files})
+
             return JsonResponse({'success': True})
         except Exception as e:
             # Log the exception
