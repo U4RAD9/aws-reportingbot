@@ -4593,19 +4593,48 @@ def allocationcoordinator1(request):
             presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files
         ]
 
+        # Get history files
+        history_files = patient.history_files.all()
+        patient.history_file_urls = [
+            presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+        ]
+
     # Get unique dates from the patients on the current page
     unique_dates = set(patient.study_date for patient in page_obj.object_list)
     sorted_unique_dates = sorted(unique_dates, reverse=False)
 
-    # Get unique locations
-    unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
+    #Get unique study time from the patients
+    unique_study_time = {patient.study_time for patient in page_obj.object_list if patient.study_time is not None}
+    sorted_unique_study_time = sorted(unique_study_time, reverse=False)
+
+    # unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
+    unique_institution_name = {patient.institution_name for patient in page_obj.object_list if patient.institution_name is not None}
+    sorted_unique_institution_name = sorted(unique_institution_name, reverse=False)
+
+    # Recived date time on db
+    unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None}
+    sorted_unique_recived_on_db = sorted(unique_recived_on_db, reverse=False)
+
+    #Study Description of patent from dicom data
+    # Recived date time on db
+    unique_study_description = {patient.study_description for patient in page_obj.object_list if patient.study_description is not None}
+    sorted_unique_study_description = sorted(unique_study_description, reverse=False)
+
+    # Modality
+    # Get unique modality values, ensuring None values are excluded
+    unique_modality = {patient.Modality for patient in page_obj.object_list if patient.Modality is not None}
+    sorted_unique_modality = sorted(unique_modality, reverse=False)
 
     return render(request, 'users/allocationcoordinator1.html', {
-        'Location': unique_locations,
+        'Institution': sorted_unique_institution_name,
+        'Modalities': sorted_unique_modality,
         'total': total_cases,
         'count': total_current_uploaded,
         'patients': page_obj,
         'Date': sorted_unique_dates,
+        'Study_time' : sorted_unique_study_time,
+        'Received_on_db': sorted_unique_recived_on_db,
+        'Study_description': sorted_unique_study_description,
         'radiologists': radiologist_objects,
         'page_obj': page_obj  # Pass page_obj for pagination controls
     })

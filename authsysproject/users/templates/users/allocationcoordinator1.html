@@ -522,7 +522,7 @@
                 <th>Gender</th>
                 <th>
                   <div class="filter-dropdown-container">
-                      <div>Test Date</div>
+                      <div>Study Date</div>
                         <div class="dropdown-select1" id="filter-date-dropdown-date">
                             <select id="filter-date-select-date" class="form-control">
                                 <option value="">All</option>
@@ -535,46 +535,86 @@
                 </th>
                 <th>
                    <div class="filter-dropdown-container">
-                        <div>Location</div>
-                        <div class="dropdown-select1" id="filter-location-dropdown">
-                            <select id="filter-location-select-location" class="form-control">
+                        <div>Study Time</div>
+                        <div class="dropdown-select1" id="filter-studytime-dropdown">
+                            <select id="filter-studytime-select-studytime" class="form-control">
                                 <option value="">All</option>
-                                {% for location in Location %}
-                                    <option value="{{ location }}" data-city="{{ location.city.name }}">{{ location }}</option>
+                                {% for studytime in Study_time %}
+                                    <option value="{{ studytime }}">{{ studytime }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                     </div>
                 </th>
-                <th>Institution</th>
-                <th>Modality</th>
                 <th>
                   <div class="filter-dropdown-container">
-                      <div>Coordinator</div>
-                      <div class="dropdown-select1" id="filter-coordinator-select-coordinator">
-                          <select id="filter-coordinator-select-coordinator" class="form-control">
+                       <div>Received Date and Time</div>
+                       <div class="dropdown-select1" id="filter-Received-dropdown">
+                           <select id="filter-Received-select-Received" class="form-control">
+                               <option value="">All</option>
+                               {% for Received in Received_on_db %}
+                                   <option value="{{ Received }}">{{ Received }}</option>
+                               {% endfor %}
+                           </select>
+                       </div>
+                   </div>
+               </th>
+                <th>
+                  <div class="filter-dropdown-container">
+                       <div>Institution</div>
+                       <div class="dropdown-select1" id="filter-institution_name-dropdown">
+                           <select id="filter-institution_name-select-institution_name" class="form-control">
+                               <option value="">All</option>
+                               {% for institution_name in Institution %}
+                                   <option value="{{ institution_name }}">{{ institution_name }}</option>
+                               {% endfor %}
+                           </select>
+                       </div>
+                   </div>
+               </th>
+
+                <th>
+                  <div class="filter-dropdown-container">
+                     <div>Modality</div>
+                     <div class="dropdown-select1" id="filter-Modality-dropdown">
+                         <select id="filter-Modality-select-Modality" class="form-control">
+                             <option value="">All</option>
+                             {% for Modality in Modalities %}
+                                 <option value="{{ Modality }}">{{ Modality }}</option>
+                             {% endfor %}
+                         </select>
+                     </div>
+                  </div>
+                </th>
+                <th>
+                  <div class="filter-dropdown-container">
+                      <div>Study Dscreption</div>
+                      <div class="dropdown-select1" id="filter-Studydescription-dropdown-Studydescription">
+                          <select id="filter-Studydescription-select-Studydescription" class="form-control">
                               <option value="">All</option>
-                              {% for corporatecoordinator in corporatecoordinators %}
-                                  <option value="{{ corporatecoordinator }}">{{ corporatecoordinator.first_name }}</option>
+                              {% for Studydescription in Study_description %}
+                                  <option value="{{ Studydescription }}">{{ Studydescription }}</option>
                               {% endfor %}
                           </select>
                       </div>
                   </div>
-              </th>
+                </th>
                 <th>
-                    <div class="filter-dropdown-container">
-                        <div>Allocated</div>
-                        <div class="dropdown-select1" id="filter-allocate-dropdown-allocate">
-                            <select id="filter-allocate-select-allocate" class="form-control">
-                                <option value="">All</option>
-                                {% for radiologist in radiologists %}
-                                    <option value="{{ radiologist }}">{{ radiologist.first_name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
+                  <!-- <div class="filter-dropdown-container">
+                      <div>Allocated</div>
+                      <div class="dropdown-select1" id="filter-allocate-dropdown-allocate">
+                          <select id="filter-allocate-select-allocate" class="form-control">
+                              <option value="">All</option>
+                              {% for radiologist in radiologists %}
+                                  <option value="{{ radiologist.id }}">{{ radiologist.first_name }}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
+                  </div> -->
+                  Allocated
                 </th>
                 <th>Clinical History</th>
+                <th>History Files</th>
                 <th>Image</th>
                 <th>
                     <div class="filter-dropdown-container">
@@ -600,15 +640,11 @@
             <td>{{ patient.age }}</td>
             <td>{{ patient.gender }}</td>
             <td>{{ patient.study_date }}</td>
-            <td>{{ patient.location}}</td>
+            <td>{{ patient.study_time }}</td>
+            <td>{{patient.recived_on_db}}</td>
             <td>{{ patient.institution_name }}</td>
             <td>{{ patient.Modality }}</td>
-            <td data-corporatecoordinator="{{ patient.corporatecoordinator }}">
-              {% for corporatecoordinator in patient.corporatecoordinator.all %}
-                  {{ corporatecoordinator.user.first_name }}
-                  {% if not forloop.last %}, {% endif %}
-              {% endfor %}
-          </td>
+            <td>{{ patient.study_description }}</td>
             <td data-radiologist="{{ patient.radiologist }}">
                 {% for radiologist in patient.radiologist.all %}
                     {{ radiologist.user.first_name }}
@@ -619,6 +655,14 @@
               <button class="openClinicalHistoryButton" data-clinical-history="{{ patient.notes }}">
                 View
               </button>
+            </td>
+
+            <td>
+              {% for file_url in patient.history_file_urls %}
+                <a class="imageButton" target="_blank" href="{{ file_url }}">
+                  History Files {{ forloop.counter }}
+                </a>
+              {% endfor %}
             </td>
 
             <td>
@@ -883,27 +927,64 @@
             filterTable();
         });
 
-        // Event handler for the change event of the location dropdown
-        $('#filter-location-select-location').change(function () {
+        // Event handler for the change event of the studytime dropdown
+        $('#filter-studytime-select-studytime').change(function () {
+            filterTable();
+        });
+
+        // Event handler for the change event of the Recivedtime dropdown
+        $('#filter-Received-select-Received').change(function () {
+            filterTable();
+        });
+
+        // Event handler for the change event of the institution_name dropdown
+        $('#filter-institution_name-select-institution_name').change(function () {
+            filterTable();
+        });
+
+
+        // Event handler for the change event of the Modality dropdown
+        $('#filter-Modality-select-Modality').change(function () {
+            filterTable();
+        });
+
+        // Event handler for the change event of the Studydescription dropdown
+        $('#filter-Studydescription-select-Studydescription').change(function () {
+            filterTable();
+        });
+
+        // Event handler for the change event of the allocate dropdown
+        $('#filter-allocate-select-allocate').change(function () {
             filterTable();
         });
 
         function filterTable() {
             var selectedDate = $('#filter-date-select-date').val();
-            var selectedLocation = $('#filter-location-select-location').val();
+            var selectedStudytime = $('#filter-studytime-select-studytime').val();
+            var selectedReceived = $('#filter-Received-select-Received').val();
+            var selectedInstitution_name = $('#filter-institution_name-select-institution_name').val();
+            var selectedModality = $('#filter-Modality-select-Modality').val();
+            var selectedStudydescription = $('#filter-Studydescription-select-Studydescription').val();
+            var selectedAllocate = $('#filter-allocate-select-allocate').val();
 
             // Loop through each row in the table
             $('#patientTable tbody tr').each(function () {
                 var rowDate = $(this).find('td:nth-child(5)').text(); // Get the test date from the table cell
-                var rowLocation = $(this).find('td:nth-child(6)').text(); // Get the location from the table cell
+                var rowStudytime = $(this).find('td:nth-child(6)').text(); // Get the location from the table cell
+                var rowReceived = $(this).find('td:nth-child(7)').text(); // Get the location from the table cell
+                var rowInstitution_name = $(this).find('td:nth-child(8)').text(); // Get the location from the table cell
+                var rowModality = $(this).find('td:nth-child(9)').text();
+                var rowStudydescription = $(this).find('td:nth-child(10)').text();
+                var rowAllocate = $(this).find('td:nth-child(12)').data('radiologist');
 
-                // Check if the row matches the selected date and location
+                
                 if ((selectedDate === '' || rowDate === selectedDate) &&
-                    (selectedLocation === '' || rowLocation === selectedLocation)) {
-                    // Show the row if it matches the selected date and location
+                    (selectedStudytime === '' || rowStudytime === selectedStudytime) &&
+                    (selectedReceived === '' || rowReceived === selectedReceived) && (selectedInstitution_name === '' || rowInstitution_name === selectedInstitution_name) && (selectedModality === '' || rowModality === selectedModality) && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription)
+                    && (selectedAllocate === '' || rowAllocate === selectedAllocate)) {
+                    
                     $(this).show();
                 } else {
-                    // Hide the row if it does not match the selected date and location
                     $(this).hide();
                 }
             });
@@ -912,44 +993,6 @@
   </script>
 
     <script>
-        // Function to filter the table by cardiologist
-        function filterTableByCardiologist(cardiologist) {
-            // Show all rows initially
-            $("tbody tr").show();
-            if (cardiologist) {
-                // Filter rows based on the selected cardiologist
-                console.log(cardiologist)
-                $("tbody tr").each(function () {
-                    var rowRadiologists = $(this).find("td[data-radiologist]").map(function() {
-                    return $(this).data("radiologist").trim();
-                }).get();
-                console.log(rowRadiologists);
-                if (rowRadiologists.indexOf(cardiologist) === -1) {
-                    $(this).hide();
-                }
-                });
-            }
-        }
-
-        // Function to filter the table by corporatecoordinator
-        function filterTableByCorporatecoordinator(corporatecoordinator) {
-            // Show all rows initially
-            $("tbody tr").show();
-            if (corporatecoordinator) {
-                // Filter rows based on the selected corporatecoordinator
-                console.log(corporatecoordinator)
-                $("tbody tr").each(function () {
-                    var rowCorporatecoordinators = $(this).find("td[data-corporatecoordinator]").map(function() {
-                    return $(this).data("corporatecoordinator").trim();
-                }).get();
-                console.log(rowCorporatecoordinators);
-                if (rowCorporatecoordinators.indexOf(corporatecoordinator) === -1) {
-                    $(this).hide();
-                }
-                });
-            }
-        }
-
         // Function to filter the table by status
         function filterTableByStatus(status) {
             // Show all rows initially
@@ -958,26 +1001,12 @@
             if (status) {
                 // Filter rows based on the selected status
                 $("tbody tr").filter(function() {
-                    var rowStatus = $(this).find("td").eq(9).text().trim(); // Assuming status is in the 10th column (adjust if needed)
+                    var rowStatus = $(this).find("td").eq(14).text().trim(); // Assuming status is in the 10th column (adjust if needed)
                     return rowStatus.toLowerCase() !== status.toLowerCase(); // Perform case-insensitive comparison
                 }).hide();
             }
             console.log("Filtered Rows:", $("tbody tr:visible").length);
         }
-
-        // Event handler for the "Allocate" dropdown filter
-        $(document).on("change", "#filter-allocate-select-allocate", function() {
-            var selectedCardiologist = $(this).val();
-            filterTableByCardiologist(selectedCardiologist);
-        });
-
-
-        // Event handler for the "coordnator" dropdown filter
-        $(document).on("change", "#filter-coordinator-select-coordinator", function() {
-            var selectedCoordinator = $(this).val();
-            filterTableByCoordinator(selectedCoordinator);
-        });
-
          // Event handler for the "Status" dropdown filter
         $(document).on("change", "#filter-status-select", function () {
             var selectedStatus = $(this).val();
@@ -985,8 +1014,6 @@
         });
 
         // Call the filter functions on page load to initialize the table
-        filterTableByCardiologist($("#filter-allocate-select-allocate").val());
-        filterTableByCoordinator($("#filter-coordinator-select-coordinator").val());
         filterTableByStatus($("#filter-status-select").val());
     </script>
 
