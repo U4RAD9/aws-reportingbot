@@ -4,6 +4,7 @@ from .Xray_Location import XLocation
 from .corporatecoordinator import CorporateCoordinator
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.utils.timezone import now
+import pytz
 
 
 
@@ -35,7 +36,8 @@ class DICOMData(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.recived_on_db:  # Set the timestamp only if it isn't already set
-            self.recived_on_db = now()
+            india_tz = pytz.timezone("Asia/Kolkata")
+            self.recived_on_db = now().astimezone(india_tz)
         super(DICOMData, self).save(*args, **kwargs)
 
     def __str__(self):
