@@ -104,10 +104,9 @@ import logging
 import urllib
 # Importing this to use the aggregate function in the upated report status of xray view. - HImanshu.
 from django.db.models import Sum
-from django.utils.timezone import localtime
-from pytz import timezone
+from pytz import timezone as time
 
-india_tz = timezone("Asia/Kolkata")
+india_tz = time("Asia/Kolkata")
 
 
 def login(request):
@@ -804,7 +803,7 @@ def allocation1(request):
     for patient in page_obj:
         if patient.recived_on_db:
             if patient.recived_on_db.tzinfo is None:  # Localize naive datetime to UTC
-                patient.recived_on_db = timezone('UTC').localize(patient.recived_on_db)
+                patient.recived_on_db = time('UTC').localize(patient.recived_on_db)
             patient.recived_on_db = patient.recived_on_db.astimezone(india_tz)
 
     # Recived date time on db
@@ -4626,7 +4625,7 @@ def allocationcoordinator1(request):
     for patient in page_obj:
         if patient.recived_on_db:
             if patient.recived_on_db.tzinfo is None:  # Localize naive datetime to UTC
-                patient.recived_on_db = timezone('UTC').localize(patient.recived_on_db)
+                patient.recived_on_db = time('UTC').localize(patient.recived_on_db)
             patient.recived_on_db = patient.recived_on_db.astimezone(india_tz)
 
     # Recived date time on db
