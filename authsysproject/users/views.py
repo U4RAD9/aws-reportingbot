@@ -1213,8 +1213,18 @@ def xrayallocation(request):
     for patient in allocated_to_current_user:
         unique_dates.add(patient.study_date)
     sorted_unique_dates = sorted(unique_dates, reverse=False)
+
+    # unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
+    unique_institution_name = {patient.institution_name for patient in page_obj.object_list if patient.institution_name is not None}
+    sorted_unique_institution_name = sorted(unique_institution_name, reverse=False)
+
+    #Study Description of patent from dicom data
+    # Recived date time on db
+    unique_study_description = {patient.study_description for patient in page_obj.object_list if patient.study_description is not None}
+    sorted_unique_study_description = sorted(unique_study_description, reverse=False)
+
     return render(request, 'users/xrayallocation.html',
-                  {'reported': total_reported, 'patients': page_obj, 'Date': sorted_unique_dates,
+                  {'Study_description': sorted_unique_study_description, 'Institution': sorted_unique_institution_name, 'reported': total_reported, 'patients': page_obj, 'Date': sorted_unique_dates,
                    'locations': location, 'page_obj': page_obj, 'patient_urls': patient_urls})
 
 

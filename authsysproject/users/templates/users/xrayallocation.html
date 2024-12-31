@@ -467,10 +467,23 @@
                 <th>Patient Name</th>
                 <th>Age</th>
                 <th>Gender</th>
-                <th>Institution Name</th>
                 <th>
                   <div class="filter-dropdown-container">
-                    <div>Test Date</div>
+                       <div>Institution</div>
+                       <div class="dropdown-select1" id="filter-institution_name-dropdown">
+                           <select id="filter-institution_name-select-institution_name" class="form-control">
+                               <option value="">All</option>
+                               {% for institution_name in Institution %}
+                                   <option value="{{ institution_name }}">{{ institution_name }}</option>
+                               {% endfor %}
+                           </select>
+                        </div>
+                  </div>
+               </th>
+
+                <th>
+                  <div class="filter-dropdown-container">
+                    <div>Study Date</div>
                       <div class="dropdown-select1" id="filter-date-dropdown-date">
                           <select id="filter-date-select-date" class="form-control">
                             <option value="">All</option>
@@ -484,21 +497,19 @@
                 </th>
                 <th>
                   <div class="filter-dropdown-container">
-                    <div>Location</div>
-                    <div class="dropdown-select1" id="filter-location-dropdown">
-                      <select id="filter-location-select-location" class="form-control">
-                        <option value="">All</option>
-                        {% for location in locations %}
-                        <option value="{{ location }}" data-city="{{ location.name }}">{{ location }}</option>
-                        {% endfor %}
-                      </select>
-                    </div>
+                      <div>Study Dscreption</div>
+                      <div class="dropdown-select1" id="filter-Studydescription-dropdown-Studydescription">
+                          <select id="filter-Studydescription-select-Studydescription" class="form-control">
+                              <option value="">All</option>
+                              {% for Studydescription in Study_description %}
+                                  <option value="{{ Studydescription }}">{{ Studydescription }}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
                   </div>
                 </th>
-
                 <th>Clinical History</th>
                 <th>History Files</th>
-                <th>Pdf Reports</th>
                 <th>Actions</th>
               <!-- Add a column for the "Report" button -->
               </tr>
@@ -512,7 +523,7 @@
             <td>{{ patient.gender }}</td>
             <td>{{ patient.institution_name }}</td>
             <td>{{ patient.study_date }}</td>
-            <td>{{ patient.location }}</td>
+            <td>{{ patient.study_description }}</td>
             <td>
               <button class="openClinicalHistoryButton" data-clinical-history="{{ patient.notes }}">
                 View
@@ -525,18 +536,6 @@
                   History Files {{ forloop.counter }}
                 </a>
               {% endfor %}
-            </td>
-
-            <td>
-               {% for patient_url in patient_urls %}
-                  {% if patient_url.patient.id == patient.id %}
-                     {% for url in patient_url.urls %}
-                        <a class="imageButton" href="{{ url }}" target="_blank">
-                          View PDF Report
-                        </a>
-                     {% endfor %}
-                  {% endif %}
-               {% endfor %}
             </td>
 
             <td>
@@ -679,6 +678,7 @@
         updateRowCounts();
       });
   </script> -->
+  
   <script>
     $(document).ready(function () {
       $(".openClinicalHistoryButton").click(function () {
@@ -820,77 +820,43 @@
     }
 
     $(document).ready(function () {
-      function filterTableByDate(date) {
-        // Show all rows initially
-        $("tbody tr").show();
 
-        if (date) {
-          // Convert the selected date to the format "dd-mm-yyyy"
-          var selectedDateFormatted = formatDate(date);
+       // Event handler for the change event of the institution_name dropdown
+       $('#filter-institution_name-select-institution_name').change(function () {
+            filterTable();
+        });
 
-          // Hide rows that do not match the selected date
-          $("tbody tr").each(function () {
-            var rowDate = $(this).find("td:nth-child(5)").text();
-            if (formatDate(rowDate) !== selectedDateFormatted) {
-              $(this).hide();
-            }
-          });
+       // Event handler for the change event of the test date dropdown
+       $('#filter-date-select-date').change(function () {
+            filterTable();
+        });
+
+        // Event handler for the change event of the Studydescription dropdown
+        $('#filter-Studydescription-select-Studydescription').change(function () {
+            filterTable();
+        });
+
+        function filterTable() {
+            var selectedInstitution_name = $('#filter-institution_name-select-institution_name').val();
+            var selectedDate = $('#filter-date-select-date').val();
+            var selectedStudydescription = $('#filter-Studydescription-select-Studydescription').val();
+
+            // Loop through each row in the table
+            $('#patientTable tbody tr').each(function () {
+                var rowInstitution_name = $(this).find('td:nth-child(5)').text(); // Get the location from the table cell
+                var rowDate = $(this).find('td:nth-child(6)').text(); // Get the test date from the table cell
+                var rowStudydescription = $(this).find('td:nth-child(7)').text();
+
+                
+                if ((selectedDate === '' || rowDate === selectedDate) && (selectedInstitution_name === '' || rowInstitution_name === selectedInstitution_name) && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription))
+                {
+                    
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
         }
-      }
-
-      function filterTableByLocation(location) {
-        // Show all rows initially
-        $("tbody tr").show();
-
-        if (location) {
-          // Filter rows based on the selected location
-          $("tbody tr").each(function () {
-            var rowCity = $(this).find("td:nth-child(8)").text().trim();
-            var rowLocation = $(this).find("td:nth-child(6)").text().trim();
-            if (rowCity !== location && rowLocation !== location) {
-              $(this).hide();
-            }
-          });
-        }
-      }
-
-      // Event handler for the "Date" dropdown filter
-      $("#filter-date-select-date").change(function () {
-        var selectedDate = $(this).val();
-        filterTableByDate(selectedDate);
-      });
-
-      $(document).on("change", "#filter-location-select-location", function () {
-          var selectedLocation = $(this).val();
-          filterTableByLocation(selectedLocation);
-          updateLocationOptions(selectedLocation);
-        }
-      );
-
-      // Event handler for the "Allocate" dropdown filter
-      $(document).on("change", "#filter-allocate-select-allocate", function () {
-          var selectedCardiologist = $(this).val();
-          filterTableByCardiologist(selectedCardiologist);
-        }
-      );
-
-      // Event handler for the "City/Location" dropdown filter
-      $(document).on("change", "#filter-city-select-city", function () {
-        var selectedCity = $(this).val();
-        filterTableByLocation(selectedCity);
-      });
-
-      $(document).on("change", "#filter-location-select-location", function () {
-          var selectedLocation = $(this).val();
-          filterTableByLocation(selectedLocation);
-          updateLocationOptions(selectedLocation);
-        }
-      );
-
-      // Call the filter functions on page load to initialize the table
-      filterTableByDate($("#filter-date-select-date").val());
-      filterTableByCardiologist($("#filter-allocate-select-allocate").val());
-      filterTableByLocation($("#filter-city-select-city").val());
     });
   </script>
 
