@@ -415,7 +415,7 @@ def upload_ecg(request):
                 missing_id = [{'id': item['id'], 'name': item['name']} for item in missing_id]
 
             # Fetch and order patients
-            patients = PatientDetails.objects.all().order_by('-TestDate')
+            patients = PatientDetails.objects.all().order_by('-id')
 
             # Total counts for statistics
             total_current_uploaded = PatientDetails.objects.all().count()
@@ -549,7 +549,7 @@ def client_dashboard(request):
     if current_user_personal_info.institution_name:
         institution_name = current_user_personal_info.institution_name
         print("institution_name:", institution_name)
-        pdfs = XrayReport.objects.filter(institution_name=institution_name).order_by('-report_date')  # Matching location name
+        pdfs = XrayReport.objects.filter(institution_name=institution_name).order_by('-id')  # Matching location name
         # pdfs_list.extend(pdfs)
         # test_dates_set.update(pdf.test_date for pdf in pdfs)
         # report_dates_set.update(pdf.report_date for pdf in pdfs)
@@ -644,7 +644,7 @@ def logout(request):
 @user_type_required('ecgcoordinator')
 def allocation(request):
     # Fetch and order patients
-    patients = PatientDetails.objects.all().order_by('-TestDate')
+    patients = PatientDetails.objects.all().order_by('-id')
     
     # Total counts for statistics
     total_current_uploaded = PatientDetails.objects.all().count()
@@ -719,7 +719,7 @@ def allocation(request):
 @user_type_required('xraycoordinator')
 def allocation1(request):
     # Fetch and order patients
-    patients = DICOMData.objects.all().order_by('-study_date')
+    patients = DICOMData.objects.all().order_by('-id')
 
 
     # If a radiologist filter is applied, filter the patients
@@ -1119,7 +1119,7 @@ def ecgallocation(request):
     today = now().date()
     yesterday = today - timedelta(days=1)
 
-    allocated_to_current_user = PatientDetails.objects.filter(cardiologist=current_user_personal_info, isDone=False, status=False).order_by('TestDate')
+    allocated_to_current_user = PatientDetails.objects.filter(cardiologist=current_user_personal_info, isDone=False, status=False).order_by('-id')
     # Set up pagination
     paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
     page_number = request.GET.get('page', 1)  # Get the page number from the request
@@ -1184,7 +1184,7 @@ def xrayallocation(request):
     total_reported = current_user_personal_info.total_reported
     today = now().date()
     yesterday = today - timedelta(days=1)
-    allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=False).order_by('study_date')
+    allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=False).order_by('-id')
 
     # Set up pagination
     paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
@@ -1228,7 +1228,7 @@ def xrayallocationreverse(request):
     total_reported = current_user_personal_info.total_reported
     today = now().date()
     yesterday = today - timedelta(days=1)
-    allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=True).order_by('study_date')
+    allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=True).order_by('-id')
 
     # Set up pagination
     paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
@@ -2685,7 +2685,7 @@ def get_csrf_token(request):
 
 @user_type_required('xraycoordinator')
 def vitals_pdf_report(request):
-    pdfs = VitalsReport.objects.all().order_by('-report_date')
+    pdfs = VitalsReport.objects.all().order_by('-id')
 
     # Collect unique dates and locations from the PDFs
     test_dates = set(pdf.test_date for pdf in pdfs)
@@ -2749,7 +2749,7 @@ def upload_audiometry_pdf(request):
 
 @user_type_required('xraycoordinator')
 def audiometry_pdf_report(request):
-    pdfs = AudiometryReport.objects.all().order_by('-report_date')
+    pdfs = AudiometryReport.objects.all().order_by('-id')
 
     # Collect unique dates from the PDFs
     test_dates = set(pdf.test_date for pdf in pdfs)
@@ -2847,7 +2847,7 @@ def get_csrf_token(request):
 
 @user_type_required('xraycoordinator')
 def optometry_pdf_report(request):
-    pdfs = OptometryReport.objects.all().order_by('-report_date')
+    pdfs = OptometryReport.objects.all().order_by('-id')
 
     # Collect unique dates and locations from the PDFs
     test_dates = set(pdf.test_date for pdf in pdfs)
@@ -4553,7 +4553,7 @@ def allocationcoordinator1(request):
     logged_in_user = request.user
 
     # Fetch and filter patients assigned to the logged-in corporate coordinator
-    patients = DICOMData.objects.filter(corporatecoordinator__user=logged_in_user).order_by('-study_date')
+    patients = DICOMData.objects.filter(corporatecoordinator__user=logged_in_user).order_by('-id')
     
     # Total counts for statistics
     total_current_uploaded = patients.count()
@@ -4621,6 +4621,13 @@ def allocationcoordinator1(request):
     # unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
     unique_institution_name = {patient.institution_name for patient in page_obj.object_list if patient.institution_name is not None}
     sorted_unique_institution_name = sorted(unique_institution_name, reverse=False)
+
+    # Convert recived_on_db to IST
+    for patient in page_obj:
+        if patient.recived_on_db:
+            if patient.recived_on_db.tzinfo is None:  # Localize naive datetime to UTC
+                patient.recived_on_db = timezone('UTC').localize(patient.recived_on_db)
+            patient.recived_on_db = patient.recived_on_db.astimezone(india_tz)
 
     # Recived date time on db
     unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None}
