@@ -435,7 +435,7 @@
         color: #555;
     }
 
-    select, button {
+    select {
         width: 100%;
         padding: 10px;
         margin: 10px 0;
@@ -637,7 +637,7 @@
                 <select id="radiologist-select" name="radiologist" class="form-control">
                   <option value="">--Select Radiologist--</option>
                   {% for radiologist in radiologists %}
-                    <option value="{{ radiologist.id }}">{{ radiologist }}</option>
+                    <option value="{{ radiologist.id }}">{{ radiologist.first_name }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -654,7 +654,7 @@
                 <select id="corporatecoordinator-select" name="corporatecoordinator" class="form-control">
                   <option value="">--Select Corporate Coordinator--</option>
                   {% for coordinator in corporatecoordinators %}
-                    <option value="{{ coordinator.id }}">{{ coordinator }}</option>
+                    <option value="{{ coordinator.id }}">{{ coordinator.first_name }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -768,7 +768,7 @@
                           <select id="filter-coordinator-select-coordinator" class="form-control">
                               <option value="">All</option>
                               {% for corporatecoordinator in corporatecoordinators %}
-                                  <option value="{{ corporatecoordinator }}">{{ corporatecoordinator }}</option>
+                                  <option value="{{ corporatecoordinator.first_name }}">{{ corporatecoordinator.first_name }}</option>
                               {% endfor %}
                           </select>
                       </div>
@@ -781,7 +781,7 @@
                             <select id="filter-allocate-select-allocate" class="form-control">
                                 <option value="">All</option>
                                 {% for radiologist in radiologists %}
-                                    <option value="{{ radiologist }}">{{ radiologist }}</option>
+                                    <option value="{{ radiologist.first_name }}">{{ radiologist.first_name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -825,13 +825,13 @@
             <td>{{ patient.study_description }}</td>
             <td data-corporatecoordinator="{{ corporatecoordinator.user.id }}">
                 {% for corporatecoordinator in patient.corporatecoordinator.all %}
-                    {{ corporatecoordinator.user }}
+                    {{ corporatecoordinator.user.first_name }}
                     {% if not forloop.last %}, {% endif %}
                 {% endfor %}
             </td>
-            <td data-radiologist="{{ radiologist.user }}">
+            <td data-radiologist="{{ radiologist.user.id }}">
                 {% for radiologist in patient.radiologist.all %}
-                    {{ radiologist.user }}
+                    {{ radiologist.user.first_name }}
                     {% if not forloop.last %}, {% endif %}
                 {% endfor %}
             </td>
@@ -899,7 +899,7 @@
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
 
 
-  <script>
+  <!-- <script>
     document.addEventListener("DOMContentLoaded", () => {
       const masterCheckbox = document.getElementById("masterCheckbox");
       const patientCheckboxes = document.querySelectorAll(".patientCheckbox");
@@ -925,6 +925,40 @@
       });
     });
 
+  </script> -->
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const masterCheckbox = document.getElementById("masterCheckbox");
+        const tableBody = document.querySelector("#patientTable tbody");
+    
+        // Function to get all visible checkboxes
+        const getVisibleCheckboxes = () => {
+            return Array.from(tableBody.querySelectorAll(".patientCheckbox")).filter(checkbox => {
+                // Check if the parent row is visible
+                const row = checkbox.closest("tr");
+                return row && row.style.display !== "none";
+            });
+        };
+    
+        // Toggle visible checkboxes when master checkbox is clicked
+        masterCheckbox.addEventListener("change", () => {
+            const visibleCheckboxes = getVisibleCheckboxes();
+            visibleCheckboxes.forEach(checkbox => {
+                checkbox.checked = masterCheckbox.checked;
+            });
+        });
+    
+        // Update master checkbox status based on visible checkboxes
+        tableBody.addEventListener("change", (event) => {
+            if (event.target.classList.contains("patientCheckbox")) {
+                const visibleCheckboxes = getVisibleCheckboxes();
+                const allChecked = visibleCheckboxes.every(checkbox => checkbox.checked);
+                masterCheckbox.checked = allChecked;
+            }
+        });
+    });
+    
   </script>
 
   <script>
