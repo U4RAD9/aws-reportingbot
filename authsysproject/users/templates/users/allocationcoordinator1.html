@@ -412,6 +412,115 @@
         border: 1px solid #ced4da; /* Example: Add border to dropdown menu */
     }
 
+    /*for allocation*/
+    .form-container {
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 600px;
+        margin: auto;
+    }
+
+    .form-container h2 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #555;
+    }
+
+    select, button {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+        color: #333;
+    }
+
+    select:focus, button:focus {
+        border-color: #007bff;
+        outline: none;
+    }
+
+    button {
+        background-color: #007bff;
+        color: white;
+        cursor: pointer;
+        font-size: 14px;
+        border: none;
+        max-height: 50px;
+    }
+
+    button:hover {
+        background-color: #0056b3;
+    }
+
+    .button-group {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .button-group button {
+        width: 48%;
+    }
+
+    .select-group {
+        margin-bottom: 20px;
+    }
+
+    .form-container {
+        background-color: #fff;
+        padding: 5px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 100%;
+        margin: auto;
+    }
+
+    .form-container h2 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #555;
+    }
+
+    /* Layout for larger screens (side by side) */
+    .form-group {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .form-group .select-group {
+        flex: 1;
+    }
+
+    .form-group .button-group {
+        flex: 1;
+    }
+
+    .button-group {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
 
   </style>
 </head>
@@ -474,9 +583,9 @@
                   </div>
                   <div class='search-google'>
                       <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names/IDs/Test Date" title="Type in a name">
-                      <button type="button" class="refresh" onclick="refreshPage()">
+                      <!-- <button type="button" class="refresh" onclick="refreshPage()">
                           <i style="font-size: 19px" class="fa">&#xf021;</i>
-                        </button>
+                        </button> -->
                   </div>
                   <div class="greeting" id="greeting">
                     {% if user %}
@@ -512,10 +621,37 @@
         </span>
       </div>
       <div class="card-body">
+        <form method="POST" action="{% url 'assign_radiologist1' %}" id="radiologistForm">
+          {% csrf_token %}
+          <div class="form-container row">
+            <div class="form-group col">
+              <div class="select-group">
+                <label for="radiologist-select">Assign Radiologist:</label>
+                <select id="radiologist-select" name="radiologist" class="form-control">
+                  <option value="">--Select Radiologist--</option>
+                  {% for radiologist in radiologists %}
+                    <option value="{{ radiologist.id }}">{{ radiologist }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="button-group">
+                <button type="submit" name="action" value="assign">Assign Radiologist</button>
+                <button type="submit" name="action" value="replace">Replace Radiologist</button>
+              </div>
+            </div>
+          
+        
+          
+          </div>
+        
         <div class="table-container">
           <table id="patientTable">
             <thead>
               <tr>
+                <th>
+                  <input type="checkbox" id="masterCheckbox" />
+                </th>
                 <th>Patient ID</th>
                 <th>Patient Name</th>
                 <th>Age</th>
@@ -611,7 +747,18 @@
                           </select>
                       </div>
                   </div> -->
-                  Allocated
+                  <div class="filter-dropdown-container">
+                    <div>Allocated</div>
+                    <div class="dropdown-select1" id="filter-allocate-dropdown-allocate">
+                        <select id="filter-allocate-select-allocate" class="form-control">
+                            <option value="">All</option>
+                            {% for radiologist in radiologists %}
+                                <option value="{{ radiologist.first_name }}">{{ radiologist.first_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                  </div>
+                  <!-- Allocated -->
                 </th>
                 <th>Clinical History</th>
                 <th>History Files</th>
@@ -635,6 +782,9 @@
         <tbody>
           {% for patient in patients %}
           <tr class="patientRow" id="{{ patient.patient_id }}">
+            <td>
+              <input type="checkbox" class="patientCheckbox" name="patients" value="{{ patient.id }}" />
+            </td>
             <td>{{ patient.patient_id }}</td>
             <td>{{ patient.patient_name }}</td>
             <td>{{ patient.age }}</td>
@@ -645,11 +795,11 @@
             <td>{{ patient.institution_name }}</td>
             <td>{{ patient.Modality }}</td>
             <td>{{ patient.study_description }}</td>
-            <td data-radiologist="{{ patient.radiologist }}">
-                {% for radiologist in patient.radiologist.all %}
-                    {{ radiologist.user.first_name }}
-                    {% if not forloop.last %}, {% endif %}
-                {% endfor %}
+            <td data-radiologist="{{ radiologist.user.id }}">
+              {% for radiologist in patient.radiologist.all %}
+                  {{ radiologist.user.first_name }}
+                  {% if not forloop.last %}, {% endif %}
+              {% endfor %}
             </td>
             <td>
               <button class="openClinicalHistoryButton" data-clinical-history="{{ patient.notes }}">
@@ -693,6 +843,7 @@
           {% endfor %}
         </tbody>
         </table>
+      </form>  
       </div>
       <div id="reportingBotContainer"></div>
       <div id="dicomViewer"></div>
@@ -713,7 +864,33 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
 
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const masterCheckbox = document.getElementById("masterCheckbox");
+      const patientCheckboxes = document.querySelectorAll(".patientCheckbox");
+  
+      // Toggle all checkboxes when master checkbox is clicked
+      masterCheckbox.addEventListener("change", () => {
+          patientCheckboxes.forEach(checkbox => {
+              checkbox.checked = masterCheckbox.checked;
+          });
+      });
+  
+      // Uncheck the master checkbox if any individual checkbox is unchecked
+      patientCheckboxes.forEach(checkbox => {
+          checkbox.addEventListener("change", () => {
+              if (!checkbox.checked) {
+                  masterCheckbox.checked = false;
+              } else if (
+                  Array.from(patientCheckboxes).every(checkbox => checkbox.checked)
+              ) {
+                  masterCheckbox.checked = true;
+              }
+          });
+      });
+    });
 
+  </script>
 
 
   <script>
@@ -969,13 +1146,13 @@
 
             // Loop through each row in the table
             $('#patientTable tbody tr').each(function () {
-                var rowDate = $(this).find('td:nth-child(5)').text(); // Get the test date from the table cell
-                var rowStudytime = $(this).find('td:nth-child(6)').text(); // Get the location from the table cell
-                var rowReceived = $(this).find('td:nth-child(7)').text(); // Get the location from the table cell
-                var rowInstitution_name = $(this).find('td:nth-child(8)').text(); // Get the location from the table cell
-                var rowModality = $(this).find('td:nth-child(9)').text();
-                var rowStudydescription = $(this).find('td:nth-child(10)').text();
-                var rowAllocate = $(this).find('td:nth-child(12)').data('radiologist');
+                var rowDate = $(this).find('td:nth-child(6)').text(); // Get the test date from the table cell
+                var rowStudytime = $(this).find('td:nth-child(7)').text(); // Get the location from the table cell
+                var rowReceived = $(this).find('td:nth-child(8)').text(); // Get the location from the table cell
+                var rowInstitution_name = $(this).find('td:nth-child(9)').text(); // Get the location from the table cell
+                var rowModality = $(this).find('td:nth-child(10)').text();
+                var rowStudydescription = $(this).find('td:nth-child(11)').text();
+                var rowAllocate = $(this).find('td:nth-child(12)').text().trim();
 
                 
                 if ((selectedDate === '' || rowDate === selectedDate) &&
@@ -1001,7 +1178,7 @@
             if (status) {
                 // Filter rows based on the selected status
                 $("tbody tr").filter(function() {
-                    var rowStatus = $(this).find("td").eq(14).text().trim(); // Assuming status is in the 10th column (adjust if needed)
+                    var rowStatus = $(this).find("td").eq(15).text().trim(); // Assuming status is in the 10th column (adjust if needed)
                     return rowStatus.toLowerCase() !== status.toLowerCase(); // Perform case-insensitive comparison
                 }).hide();
             }

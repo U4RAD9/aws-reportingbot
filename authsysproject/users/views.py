@@ -724,14 +724,21 @@ def allocation1(request):
     # If a radiologist filter is applied, filter the patients
     radiologist_filter = request.GET.get('radiologist', None)
     if radiologist_filter:
-        patients = patients.filter(radiologist__user__first_name__icontains=radiologist_filter)
+        #patients = patients.filter(radiologist__user__first_name__icontains=radiologist_filter)
+        patients = patients.filter(radiologist__id__in=[radiologist_filter])
+
+    # Apply corporate coordinator filter
+    corporatecoordinator_filter = request.GET.get('corporatecoordinator', None)
+    if corporatecoordinator_filter:
+        patients = patients.filter(corporatecoordinator__id__in=[corporatecoordinator_filter])    
     
     # Total counts for statistics
     total_current_uploaded = DICOMData.objects.all().count()
 
     # Get radiologists from the group
     radiologist_group = Group.objects.get(name='radiologist')
-    radiologist_objects = radiologist_group.user_set.all()
+    # radiologist_objects = radiologist_group.user_set.all()
+    radiologist_objects = radiologist_group.user_set.filter(personalinfo__isnull=False)
 
     # Get corporatecoordinator from the group
     corporatecoordinator_group = Group.objects.get(name='corporatecoordinator')
@@ -832,9 +839,119 @@ def allocation1(request):
         'Received_on_db': sorted_unique_recived_on_db,
         'Study_description': sorted_unique_study_description,
         'radiologists': radiologist_objects,
-        'corporatecoordinator': corporatecoordinator_objects,
+        'corporatecoordinators': corporatecoordinator_objects,
         'page_obj': page_obj  # Pass page_obj for pagination controls
     })
+
+
+
+def assign_radiologist(request):
+    print("I'm in assign radiologist")
+    if request.method == "POST":
+        action = request.POST.get('action')
+        radiologist_id = request.POST.get('radiologist')
+        corporatecoordinator_id = request.POST.get('corporatecoordinator')
+        selected_patient_ids = request.POST.getlist('patients')
+
+        # Check if any of the fields are missing
+        if not selected_patient_ids:
+            messages.error(request, "Please select at least one patient.")
+            return redirect('xraycoordinator')
+
+        patients = DICOMData.objects.filter(id__in=selected_patient_ids)
+        if not patients.exists():
+            messages.error(request, "No valid patients selected.")
+            return redirect('xraycoordinator')
+
+        # Radiologist Assignment Logic
+        if action in ["assign", "replace"] and radiologist_id:
+            try:
+                radiologist = PersonalInfoModel.objects.get(user_id=radiologist_id)
+            except PersonalInfoModel.DoesNotExist:
+                messages.error(request, "Selected radiologist not found.")
+                return redirect('xraycoordinator')
+
+            if action == "assign":
+                for patient in patients:
+                    patient.radiologist.add(radiologist)
+                messages.success(request, f"Radiologist {radiologist} has been successfully assigned to the selected patients.")
+            elif action == "replace":
+                for patient in patients:
+                    patient.radiologist.clear()
+                    patient.radiologist.add(radiologist)
+                messages.success(request, f"Radiologist {radiologist} has been successfully replaced for the selected patients.")
+
+        # Corporate Coordinator Assignment Logic
+        elif action in ["assign_corporate", "replace_corporate"] and corporatecoordinator_id:
+            try:
+                corporatecoordinator = CorporateCoordinator.objects.get(user_id=corporatecoordinator_id)
+            except CorporateCoordinator.DoesNotExist:
+                messages.error(request, "Selected corporate coordinator not found.")
+                return redirect('xraycoordinator')
+
+            if action == "assign_corporate":
+                for patient in patients:
+                    patient.corporatecoordinator.add(corporatecoordinator)
+                messages.success(request, f"Corporate Coordinator {corporatecoordinator} has been successfully assigned to the selected patients.")
+            elif action == "replace_corporate":
+                for patient in patients:
+                    patient.corporatecoordinator.clear()
+                    patient.corporatecoordinator.add(corporatecoordinator)
+                messages.success(request, f"Corporate Coordinator {corporatecoordinator} has been successfully replaced for the selected patients.")
+        else:
+            messages.error(request, "Please select a valid action and coordinator.")
+            return redirect('xraycoordinator')
+
+        return redirect('xraycoordinator')
+
+    # Handle case if the form is not submitted (GET method)
+    return redirect('xraycoordinator')
+
+
+def assign_radiologist1(request):
+    if request.method == "POST":
+        # Get the selected action (assign or replace)
+        action = request.POST.get('action')
+        radiologist_id = request.POST.get('radiologist')
+        selected_patient_ids = request.POST.getlist('patients')
+
+        if not radiologist_id:
+            messages.error(request, "Please select a radiologist.")
+            return redirect('corporatecoordinator')
+
+        if not selected_patient_ids:
+            messages.error(request, "Please select at least one patient.")
+            return redirect('corporatecoordinator')
+
+        try:
+            radiologist = PersonalInfoModel.objects.get(user_id=radiologist_id)
+        except PersonalInfoModel.DoesNotExist:
+            messages.error(request, "Selected radiologist not found.")
+            return redirect('corporatecoordinator')
+
+        # Fetch the selected patients
+        patients = DICOMData.objects.filter(id__in=selected_patient_ids)
+
+        if not patients.exists():
+            messages.error(request, "No valid patients selected.")
+            return redirect('corporatecoordinator')
+
+        if action == "assign":
+            # Add the radiologist without removing existing ones
+            for patient in patients:
+                patient.radiologist.add(radiologist)
+            messages.success(request, f"Radiologist {radiologist} has been successfully assigned to the selected patients.")
+
+        elif action == "replace":
+            # Replace all existing radiologists with the selected one
+            for patient in patients:
+                patient.radiologist.clear()  # Remove all existing radiologists
+                patient.radiologist.add(radiologist)  # Add the selected radiologist
+            messages.success(request, f"Radiologist {radiologist} has been successfully replaced for the selected patients.")
+
+        return redirect('corporatecoordinator')
+
+    return redirect('corporatecoordinator')
 
 
 @user_type_required('ecgcoordinator')
@@ -1166,7 +1283,7 @@ def presigned_url(bucket_name, object_name, operation='get_object', inline=False
             ExpiresIn=3600
         )
     except (NoCredentialsError, PartialCredentialsError):
-        print("Credentials not available.")
+        #print("Credentials not available.")
         return None
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -4567,9 +4684,16 @@ def allocationcoordinator1(request):
     # Total counts for statistics
     total_current_uploaded = patients.count()
 
+    # If a radiologist filter is applied, filter the patients
+    radiologist_filter = request.GET.get('radiologist', None)
+    if radiologist_filter:
+        #patients = patients.filter(radiologist__user__first_name__icontains=radiologist_filter)
+        patients = patients.filter(radiologist__id__in=[radiologist_filter])
+
     # Get radiologists from the group
     radiologist_group = Group.objects.get(name='radiologist')
-    radiologist_objects = radiologist_group.user_set.all()
+    #radiologist_objects = radiologist_group.user_set.all()
+    radiologist_objects = radiologist_group.user_set.filter(personalinfo__isnull=False)
 
     # Retrieve total cases data
     total_uploaded_xray = Total_Cases.objects.values_list('total_uploaded_xray', flat=True).first()
