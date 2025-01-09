@@ -533,11 +533,17 @@
         </thead>
         <tbody>
           {% for patient in patients %}
-          <tr class="patientRow {% if patient.urgent %}urgent{% endif %}" id="{{ patient.patient_id }}">
-            <td>{{ patient.patient_id }}
-              {% if patient.urgent %}
-              <span class="urgent-label">Urgent</span>
-              {% endif %}
+          <tr class="patientRow {% if patient.urgent or patient.mlc or patient.vip %}urgent{% endif %}" id="{{ patient.PatientId }}">
+            <td>{{ patient.PatientId }}
+                {% if patient.urgent %}
+                    <span class="urgent-label">Urgent</span>
+                {% endif %}
+                {% if patient.mlc %}
+                    <span class="mlc-label">MLC</span>
+                {% endif %}
+                {% if patient.vip %}
+                    <span class="vip-label">VIP</span>
+                {% endif %}
             </td>
             <td>{{ patient.patient_name }}</td>
             <td>{{ patient.age }}</td>
