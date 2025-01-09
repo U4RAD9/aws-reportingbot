@@ -22,6 +22,9 @@ class DICOMData(models.Model):
     study_description = models.CharField(max_length=200, blank=True)
     isDone = models.BooleanField(default=False)
     NonReportable = models.BooleanField(default=False)
+    Mlc = models.BooleanField(default=False)
+    urgent = models.BooleanField(default=False)
+    vip = models.BooleanField(default=False)
     notes = models.TextField(max_length=50000, default=True)
     #location = models.ForeignKey(XLocation, on_delete=models.CASCADE, null=True, blank=True)
     location = models.CharField(max_length=100, blank=True, null=True)
@@ -59,6 +62,6 @@ class JPEGFile(models.Model):
 
 class PatientHistoryFile(models.Model):
     dicom_data = models.ForeignKey(DICOMData, related_name='history_files', on_delete=models.CASCADE)
-    history_file = models.FileField(upload_to='patient_history_files/',storage=S3Boto3Storage(), null=True)
-    #history_file = models.FileField(upload_to='patient_history_files/', null=True, default=None, blank=True)
+    #history_file = models.FileField(upload_to='patient_history_files/',storage=S3Boto3Storage(), null=True)
+    history_file = models.FileField(upload_to='patient_history_files/', null=True, default=None, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)    

@@ -718,7 +718,7 @@ def allocation(request):
 @user_type_required('xraycoordinator')
 def allocation1(request):
     # Fetch and order patients
-    patients = DICOMData.objects.all().order_by('-id')
+    patients = DICOMData.objects.all().order_by('-vip', '-urgent', '-Mlc', '-id')
 
 
     # If a radiologist filter is applied, filter the patients
@@ -906,6 +906,57 @@ def assign_radiologist(request):
 
     # Handle case if the form is not submitted (GET method)
     return redirect('xraycoordinator')
+
+
+@csrf_exempt  # Be cautious with this , I have to study about it a bit.
+@require_POST
+def update_urgent_status_xray(request, patient_id):
+    try:
+        data = json.loads(request.body)
+        urgent_status = data.get('urgent', False)
+
+        patient = DICOMData.objects.get(patient_id=patient_id)
+        patient.urgent = urgent_status
+        patient.save()
+
+        return JsonResponse({'success': True, 'urgent': patient.urgent})
+    except PatientDetails.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Patient not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+def update_mlc_status_xray(request, patient_id):
+    try:
+        data = json.loads(request.body)
+        mlc_status = data.get('status', False)
+
+        patient = DICOMData.objects.get(patient_id=patient_id)
+        patient.Mlc = mlc_status
+        patient.save()
+
+        return JsonResponse({'success': True, 'mlc': patient.Mlc})
+    except DICOMData.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Patient not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+def update_vip_status_xray(request, patient_id):
+    try:
+        data = json.loads(request.body)
+        vip_status = data.get('status', False)
+
+        patient = DICOMData.objects.get(patient_id=patient_id)
+        patient.vip = vip_status
+        patient.save()
+
+        return JsonResponse({'success': True, 'vip': patient.vip})
+    except DICOMData.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Patient not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
 
 
 def assign_radiologist1(request):
@@ -1300,7 +1351,7 @@ def xrayallocation(request):
     total_reported = current_user_personal_info.total_reported
     today = now().date()
     yesterday = today - timedelta(days=1)
-    allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=False).order_by('-id')
+    allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=False).order_by('-vip', '-urgent', '-Mlc', '-id')
 
     # Set up pagination
     paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
@@ -4235,7 +4286,7 @@ def clientdata(request):
     
     # Get the institution_name of the client
     institution_name = client.institution_name
-    dicom_data = DICOMData.objects.filter(institution_name=institution_name)
+    dicom_data = DICOMData.objects.filter(institution_name=institution_name).order_by('-vip', '-urgent', '-Mlc', '-id')
 
     # Get edit permissions for the client
     edit_permissions = {
@@ -4679,7 +4730,7 @@ def allocationcoordinator1(request):
     logged_in_user = request.user
 
     # Fetch and filter patients assigned to the logged-in corporate coordinator
-    patients = DICOMData.objects.filter(corporatecoordinator__user=logged_in_user).order_by('-id')
+    patients = DICOMData.objects.filter(corporatecoordinator__user=logged_in_user).order_by('-vip', '-urgent', '-Mlc', '-id')
     
     # Total counts for statistics
     total_current_uploaded = patients.count()
@@ -4690,10 +4741,26 @@ def allocationcoordinator1(request):
         #patients = patients.filter(radiologist__user__first_name__icontains=radiologist_filter)
         patients = patients.filter(radiologist__id__in=[radiologist_filter])
 
-    # Get radiologists from the group
-    radiologist_group = Group.objects.get(name='radiologist')
-    #radiologist_objects = radiologist_group.user_set.all()
-    radiologist_objects = radiologist_group.user_set.filter(personalinfo__isnull=False)
+    # # Get radiologists from the group
+    # radiologist_group = Group.objects.get(name='radiologist')
+    # #radiologist_objects = radiologist_group.user_set.all()
+    # radiologist_objects = radiologist_group.user_set.filter(personalinfo__isnull=False)
+    # Fetch the corporate coordinator for the logged-in user
+    corporate_coordinator = CorporateCoordinator.objects.filter(user=logged_in_user).first()
+
+    # If there is a corporate coordinator for the logged-in user
+    if corporate_coordinator:
+        # Fetch the radiologists (PersonalInfo) assigned to this corporate coordinator
+        radiologist_objects = corporate_coordinator.radiologist.all()
+        
+        # Get associated User objects
+        radiologist_users = [radiologist.user for radiologist in radiologist_objects]
+        
+        print("Radiologists' Users:", radiologist_users)
+    else:
+        # If no corporate coordinator is found, assign an empty queryset
+        radiologist_users = User.objects.none()
+        print("No corporate coordinator found, empty queryset:", radiologist_users)
 
     # Retrieve total cases data
     total_uploaded_xray = Total_Cases.objects.values_list('total_uploaded_xray', flat=True).first()
@@ -4786,7 +4853,7 @@ def allocationcoordinator1(request):
         'Study_time' : sorted_unique_study_time,
         'Received_on_db': sorted_unique_recived_on_db,
         'Study_description': sorted_unique_study_description,
-        'radiologists': radiologist_objects,
+        'radiologists': radiologist_users,
         'page_obj': page_obj  # Pass page_obj for pagination controls
     })
 

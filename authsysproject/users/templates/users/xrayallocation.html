@@ -383,6 +383,23 @@
       border-radius: 5px;
       width: 250px;
     }
+
+    /* css for the urgent button - Himanshu.*/
+    .urgent {
+        background-color: #ffcccc; /* Light red background */
+        border-left: 5px solid #ff0000; /* Red left border */
+    }
+
+    .urgent-label {
+      display: inline-block;
+      background-color: #ff0000; /* Red background */
+      color: #fff; /* White text */
+      padding: 2px 6px; /* Padding for the label */
+      border-radius: 3px; /* Rounded corners */
+      font-size: 0.8em; /* Smaller font size */
+      margin-left: 5px; /* Space between Patient ID and label */
+      vertical-align: middle; /* Align with text */
+    }
   </style>
 </head>
 
@@ -516,8 +533,12 @@
         </thead>
         <tbody>
           {% for patient in patients %}
-          <tr class="patientRow" id="{{ patient.patient_id }}">
-            <td>{{ patient.patient_id }}</td>
+          <tr class="patientRow {% if patient.urgent %}urgent{% endif %}" id="{{ patient.patient_id }}">
+            <td>{{ patient.patient_id }}
+              {% if patient.urgent %}
+              <span class="urgent-label">Urgent</span>
+              {% endif %}
+            </td>
             <td>{{ patient.patient_name }}</td>
             <td>{{ patient.age }}</td>
             <td>{{ patient.gender }}</td>
