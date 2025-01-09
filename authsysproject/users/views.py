@@ -913,7 +913,7 @@ def assign_radiologist(request):
 def update_urgent_status_xray(request, patient_id):
     try:
         data = json.loads(request.body)
-        urgent_status = data.get('urgent', False)
+        urgent_status = data.get('status', False)
 
         patient = DICOMData.objects.get(patient_id=patient_id)
         patient.urgent = urgent_status
