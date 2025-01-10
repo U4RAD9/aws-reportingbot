@@ -25,6 +25,7 @@ class DICOMData(models.Model):
     Mlc = models.BooleanField(default=False)
     urgent = models.BooleanField(default=False)
     vip = models.BooleanField(default=False)
+    twostepcheck = models.BooleanField(default=False)
     notes = models.TextField(max_length=50000, default=True)
     #location = models.ForeignKey(XLocation, on_delete=models.CASCADE, null=True, blank=True)
     location = models.CharField(max_length=100, blank=True, null=True)
