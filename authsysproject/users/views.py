@@ -541,7 +541,7 @@ def client_dashboard(request):
     except Client.DoesNotExist:
         return HttpResponse("Client object does not exist for this user.", status=404)
 
-    pdfs_list = []
+    #pdfs_list = []
     test_dates_set = set()
     report_dates_set = set()
 
@@ -554,15 +554,20 @@ def client_dashboard(request):
             # Replace underscores with spaces in the name for matching
             normalized_name = pdf.name.replace("_", " ") if pdf.name else None
             dicom_data = DICOMData.objects.filter(patient_id=pdf.patient_id, patient_name=normalized_name, twostepcheck=False).first()
-            pdf.whatsapp_number = dicom_data.whatsapp_number if dicom_data else None
-            pdfs_list.append(pdf)
+            # pdf.whatsapp_number = dicom_data.whatsapp_number if dicom_data else None
+            # pdfs_list.append(pdf)
 
-            test_dates_set.add(pdf.test_date)
-            report_dates_set.add(pdf.report_date)
+            # test_dates_set.add(pdf.test_date)
+            # report_dates_set.add(pdf.report_date)
+            if dicom_data:  # Only include if DICOMData exists with twostepcheck=False
+                pdf.whatsapp_number = dicom_data.whatsapp_number
+                filtered_pdfs.append(pdf)  # Add to the filtered list
+                test_dates_set.add(pdf.test_date)
+                report_dates_set.add(pdf.report_date)
 
     
         # Pagination
-        paginator = Paginator(pdfs, 50)  # Show 10 PDFs per page
+        paginator = Paginator(filtered_pdfs, 50)  # Show 10 PDFs per page
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
 
