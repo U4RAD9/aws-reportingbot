@@ -1580,6 +1580,12 @@ class CtHead extends Component {
       this.getImpression(impression, totalCovidPoints) +
       this.getCorads(current_user); // TO BE ADDED
 
+      if (frmData.reportimage) {
+        report += "<div class='image-container'>" +
+          "<img src='" + frmData.reportimage + "' alt='Report' class='report-image' />" +
+          "</div>";
+      }
+
     this.setState({ reportFrmData: report }, () => {
       this.props.generateReport(report);
     });
@@ -1587,7 +1593,7 @@ class CtHead extends Component {
   //TO BE ADDED
   getCorads(user) {
     return (
-      "<p><br><img src='" + user.signature + "' height='50' /><p>" + user.full_name + "<br>" + "<br>" + user.designation + ", MBBS</p></p>"
+      "<p><br><img src='" + user.signature + "' height='75' /><p>" + user.full_name + "<br>" + "<br>" + user.designation + ", MBBS</p></p>"
     );
   }
 
