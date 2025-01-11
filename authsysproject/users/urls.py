@@ -51,6 +51,7 @@ urlpatterns = [
     #path('upload_dicom/', views.upload_dicom, name='upload_dicom'),
     #path('upload_dicom.html', views.upload_dicom, name='upload_dicom'),
     path('api/update_patient_done_status/<str:patient_id>/', views.update_patient_done_status, name='update_patient_done_status'),
+    path('api/update_patient_done_status_xray/<str:patient_id>/', views.update_patient_done_status_xray, name='update_patient_done_status_xray'),
     path('update_urgent_status_xray/<str:patient_id>/', views.update_urgent_status_xray, name='update_urgent_status_xray'),
     path('update_mlc_status_xray/<str:patient_id>/', views.update_mlc_status_xray, name='update_mlc_status_xray'),
     path('update_vip_status_xray/<str:patient_id>/', views.update_vip_status_xray, name='update_vip_status_xray'),
