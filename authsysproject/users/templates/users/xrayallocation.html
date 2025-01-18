@@ -400,6 +400,27 @@
       margin-left: 5px; /* Space between Patient ID and label */
       vertical-align: middle; /* Align with text */
     }
+
+    .mlc-label {
+      display: inline-block;
+      background-color: #0000FF; /* Red background */
+      color: #fff; /* White text */
+      padding: 2px 6px; /* Padding for the label */
+      border-radius: 3px; /* Rounded corners */
+      font-size: 0.8em; /* Smaller font size */
+      margin-left: 5px; /* Space between Patient ID and label */
+      vertical-align: middle; /* Align with text */
+    }
+    .vip-label {
+      display: inline-block;
+      background-color: #FFD700; /* Red background */
+      color: #fff; /* White text */
+      padding: 2px 6px; /* Padding for the label */
+      border-radius: 3px; /* Rounded corners */
+      font-size: 0.8em; /* Smaller font size */
+      margin-left: 5px; /* Space between Patient ID and label */
+      vertical-align: middle; /* Align with text */
+    }
   </style>
 </head>
 
@@ -534,15 +555,15 @@
         <tbody>
           {% for patient in patients %}
           <tr class="patientRow {% if patient.urgent or patient.Mlc or patient.vip %}urgent{% endif %}" id="{{ patient.PatientId }}">
-            <td>{{ patient.PatientId }}
+            <td>{{ patient.patient_id }}
                 {% if patient.urgent %}
                     <span class="urgent-label">Urgent</span>
                 {% endif %}
                 {% if patient.Mlc %}
-                    <span class="urgent-label">MLC</span>
+                    <span class="mlc-label">MLC</span>
                 {% endif %}
                 {% if patient.vip %}
-                    <span class="urgent-label">VIP</span>
+                    <span class="vip-label">VIP</span>
                 {% endif %}
             </td>
             <td>{{ patient.patient_name }}</td>
