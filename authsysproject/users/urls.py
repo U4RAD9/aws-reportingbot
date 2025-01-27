@@ -54,6 +54,7 @@ urlpatterns = [
     path('api/update_patient_done_status_xray/<str:patient_id>/', views.update_patient_done_status_xray, name='update_patient_done_status_xray'),
     path('update_urgent_status_xray/<str:patient_id>/', views.update_urgent_status_xray, name='update_urgent_status_xray'),
     path('update_mlc_status_xray/<str:patient_id>/', views.update_mlc_status_xray, name='update_mlc_status_xray'),
+    path('update_isDone_status_xray/<str:patient_id>/', views.update_isDone_status_xray, name='update_isDone_status_xray'),
     path('update_vip_status_xray/<str:patient_id>/', views.update_vip_status_xray, name='update_vip_status_xray'),
     path('api/reject_patient_status/<str:patient_id>/', views.reject_patient_status, name='reject_patient_status'),
     path('upload_ecg_pdf/', views.upload_ecg_pdf, name='upload_ecg_pdf'),
@@ -109,6 +110,8 @@ urlpatterns = [
     path('supercoordinator/', views.supercoordinator_view, name='supercoordinator'),
     path('supercoordinator/edit/<int:client_id>/', views.supercoordinator_view, name='edit_client'),
     path('send_whatsapp/', views.send_whatsapp, name='send_whatsapp'),
+    path('update_twostepcheck/<str:patient_id>/', views.update_twostepcheck, name='update_twostepcheck'),
+    path('review_page', views.review_page, name='review_page'),
 
 
 ] 

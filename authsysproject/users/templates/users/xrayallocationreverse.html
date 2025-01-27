@@ -466,7 +466,6 @@
                 <th>Patient Name</th>
                 <th>Age</th>
                 <th>Gender</th>
-                <th>Institution Name</th>
                 <th>
                   <div class="filter-dropdown-container">
                     <div>Test Date</div>
@@ -481,23 +480,10 @@
                     </div>
                   </div>
                 </th>
-                <th>
-                  <div class="filter-dropdown-container">
-                    <div>Location</div>
-                    <div class="dropdown-select1" id="filter-location-dropdown">
-                      <select id="filter-location-select-location" class="form-control">
-                        <option value="">All</option>
-                        {% for location in locations %}
-                        <option value="{{ location }}" data-city="{{ location.name }}">{{ location }}</option>
-                        {% endfor %}
-                      </select>
-                    </div>
-                  </div>
-                </th>
 
                 <th>Clinical History</th>
                 <th>History Files</th>
-                <th>Image</th>
+                <th>Reports</th>
                 <th>Actions</th>
               <!-- Add a column for the "Report" button -->
               </tr>
@@ -509,9 +495,7 @@
             <td>{{ patient.patient_name }}</td>
             <td>{{ patient.age }}</td>
             <td>{{ patient.gender }}</td>
-            <td>{{ patient.institution_name }}</td>
             <td>{{ patient.study_date }}</td>
-            <td>{{ patient.location }}</td>
             <td>
               <button class="openClinicalHistoryButton" data-clinical-history="{{ patient.notes }}">
                 View
@@ -531,7 +515,7 @@
                  {% if patient_url.patient.id == patient.id %}
                     {% for url in patient_url.pdf_urls %}
                        <a class="imageButton" href="{{ url }}" target="_blank">
-                         View Image
+                         Report {{ forloop.counter }}
                        </a>
                     {% endfor %}
                  {% endif %}
@@ -715,13 +699,10 @@
       const PatientId = String(button.data("patient-id")).trim(); // Remove leading and trailing spaces
       const patientName = String(button.data("patientname")).trim();
       const age = String(button.data("age")).trim();
-      institution_name
       const gender = String(button.data("gender")).trim();
-      const institution_name = String(button.data("institution_name")).trim();
       const testDate = String(button.data("testdate")).trim();
       const reportDate = String(button.data("reportdate")).trim();
       const reportImage = String(button.data("reportimage")).trim();
-      const location = String(button.data("location")).trim();
 
       // Check the isDone status
       if (isDone) {
@@ -814,21 +795,7 @@
         }
       }
 
-      function filterTableByLocation(location) {
-        // Show all rows initially
-        $("tbody tr").show();
-
-        if (location) {
-          // Filter rows based on the selected location
-          $("tbody tr").each(function () {
-            var rowCity = $(this).find("td:nth-child(8)").text().trim();
-            var rowLocation = $(this).find("td:nth-child(6)").text().trim();
-            if (rowCity !== location && rowLocation !== location) {
-              $(this).hide();
-            }
-          });
-        }
-      }
+      
 
       // Event handler for the "Date" dropdown filter
       $("#filter-date-select-date").change(function () {

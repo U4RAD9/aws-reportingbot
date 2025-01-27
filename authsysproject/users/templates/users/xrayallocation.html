@@ -505,19 +505,6 @@
                 <th>Patient Name</th>
                 <th>Age</th>
                 <th>Gender</th>
-                <th>
-                  <div class="filter-dropdown-container">
-                       <div>Institution</div>
-                       <div class="dropdown-select1" id="filter-institution_name-dropdown">
-                           <select id="filter-institution_name-select-institution_name" class="form-control">
-                               <option value="">All</option>
-                               {% for institution_name in Institution %}
-                                   <option value="{{ institution_name }}">{{ institution_name }}</option>
-                               {% endfor %}
-                           </select>
-                        </div>
-                  </div>
-               </th>
 
                 <th>
                   <div class="filter-dropdown-container">
@@ -548,6 +535,7 @@
                 </th>
                 <th>Clinical History</th>
                 <th>History Files</th>
+                <th>Reports</th>
                 <th>Actions</th>
               <!-- Add a column for the "Report" button -->
               </tr>
@@ -569,7 +557,6 @@
             <td>{{ patient.patient_name }}</td>
             <td>{{ patient.age }}</td>
             <td>{{ patient.gender }}</td>
-            <td>{{ patient.institution_name }}</td>
             <td>{{ patient.study_date }}</td>
             <td>{{ patient.study_description }}</td>
             <td>
@@ -589,11 +576,22 @@
             <td>
               {% for patient_url in patient_urls %}
                  {% if patient_url.patient.id == patient.id %}
+                    {% for url in patient_url.pdf_urls %}
+                       <a class="imageButton" href="{{ url }}" target="_blank">
+                         Report {{ forloop.counter }}
+                       </a>
+                    {% endfor %}
+                 {% endif %}
+              {% endfor %}
+            </td>
+
+            <td>
+              {% for patient_url in patient_urls %}
+                 {% if patient_url.patient.id == patient.id %}
                     <a class="reportButton"
                        href="reporting-bot?data-patientid={{ patient.patient_id }}&data-patientname={{ patient.patient_name }}&data-study-id={{ patient.study_id }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-institution_name={{ patient.institution_name }}&data-testdate={{ patient.study_date }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ patient.dicom_file }}&data-location={{ patient.location }}&data-accession={{ patient.accession_number }}"
                        data-patient-id="{{ patient.patient_id }}" data-patientname="{{ patient.patient_name }}"
                        data-age="{{ patient.age }}" data-gender="{{ patient.gender }}"
-                       data-institution_name="{{ patient.institution_name }}"
                        data-testdate="{{ patient.study_date }}" data-reportdate="{% now 'Y-m-d' %}"
                        data-reportimage="{{ patient_url.urls.0|urlencode }}"
                        data-dicom-file="{% get_media_prefix %}{{ patient.dicom_file }}"
@@ -789,7 +787,6 @@
       const age = String(button.data("age")).trim();
       institution_name
       const gender = String(button.data("gender")).trim();
-      const institution_name = String(button.data("institution_name")).trim();
       const testDate = String(button.data("testdate")).trim();
       const reportDate = String(button.data("reportdate")).trim();
       const reportImage = String(button.data("reportimage")).trim();
@@ -869,11 +866,6 @@
 
     $(document).ready(function () {
 
-       // Event handler for the change event of the institution_name dropdown
-       $('#filter-institution_name-select-institution_name').change(function () {
-            filterTable();
-        });
-
        // Event handler for the change event of the test date dropdown
        $('#filter-date-select-date').change(function () {
             filterTable();
@@ -885,18 +877,16 @@
         });
 
         function filterTable() {
-            var selectedInstitution_name = $('#filter-institution_name-select-institution_name').val();
             var selectedDate = $('#filter-date-select-date').val();
             var selectedStudydescription = $('#filter-Studydescription-select-Studydescription').val();
 
             // Loop through each row in the table
             $('#patientTable tbody tr').each(function () {
-                var rowInstitution_name = $(this).find('td:nth-child(5)').text(); // Get the location from the table cell
-                var rowDate = $(this).find('td:nth-child(6)').text(); // Get the test date from the table cell
-                var rowStudydescription = $(this).find('td:nth-child(7)').text();
+                var rowDate = $(this).find('td:nth-child(5)').text(); // Get the test date from the table cell
+                var rowStudydescription = $(this).find('td:nth-child(6)').text();
 
                 
-                if ((selectedDate === '' || rowDate === selectedDate) && (selectedInstitution_name === '' || rowInstitution_name === selectedInstitution_name) && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription))
+                if ((selectedDate === '' || rowDate === selectedDate) && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription))
                 {
                     
                     $(this).show();

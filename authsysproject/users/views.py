@@ -550,7 +550,10 @@ def client_dashboard(request):
         print("institution_name:", institution_name)
         pdfs = XrayReport.objects.filter(institution_name=institution_name).order_by('-id')  # Matching location name
         filtered_pdfs = []
+        grouped_pdfs = groupby(pdfs, key=attrgetter('patient_id'))  # Group by patient_id
         for pdf in pdfs:
+            group = list(group)
+            most_recent_pdf = group[0]  # The first entry due to ordering by '-id'
             # Replace underscores with spaces in the name for matching
             normalized_name = pdf.name.replace("_", " ") if pdf.name else None
             dicom_data = DICOMData.objects.filter(patient_id=pdf.patient_id, patient_name=normalized_name, twostepcheck=False).first()
@@ -560,10 +563,10 @@ def client_dashboard(request):
             # test_dates_set.add(pdf.test_date)
             # report_dates_set.add(pdf.report_date)
             if dicom_data:  # Only include if DICOMData exists with twostepcheck=False
-                pdf.whatsapp_number = dicom_data.whatsapp_number
-                filtered_pdfs.append(pdf)  # Add to the filtered list
-                test_dates_set.add(pdf.test_date)
-                report_dates_set.add(pdf.report_date)
+                most_recent_pdf.whatsapp_number = dicom_data.whatsapp_number
+                filtered_pdfs.append(most_recent_pdf)  # Add to the filtered list
+                test_dates_set.add(most_recent_pdf.test_date)
+                report_dates_set.add(most_recent_pdf.report_date)
 
     
         # Pagination
@@ -942,6 +945,22 @@ def update_mlc_status_xray(request, patient_id):
         return JsonResponse({'success': False, 'error': 'Patient not found.'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+
+def update_isDone_status_xray(request, patient_id):
+    try:
+        data = json.loads(request.body)
+        isDone_status = data.get('status', False)
+
+        patient = DICOMData.objects.get(patient_id=patient_id)
+        patient.isDone = isDone_status
+        patient.save()
+
+        return JsonResponse({'success': True, 'isDone': patient.isDone})
+    except DICOMData.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Patient not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)    
 
 
 def update_vip_status_xray(request, patient_id):
@@ -1367,15 +1386,22 @@ def xrayallocation(request):
     for patient in page_obj:
         jpeg_files = patient.jpeg_files.all()
         urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
-        patient_urls.append({
-           'patient': patient,
-           'urls': urls
-        })
+        
+        # Fetch PDFs for the patient
+        patient_name_with_underscores = patient.patient_name.replace(" ", "_")
+        pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient.patient_id)
+        
+        pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
         # Get history files
         history_files = patient.history_files.all()
         patient.history_file_urls = [
             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
         ]
+        patient_urls.append({
+           'patient': patient,
+           'urls': urls,
+           'pdf_urls': pdf_urls  # Add PDFs URLs to the patient data
+        })
         print(jpeg_files)
 
     location = XLocation.objects.all()
@@ -2437,6 +2463,7 @@ def update_patient_done_status(request, patient_id):
         patient = PatientDetails.objects.get(PatientId=patient_id)
         patient.isDone = True
         patient.save()
+        
 
         return JsonResponse({'success': True})
     except PatientDetails.DoesNotExist:
@@ -4290,6 +4317,28 @@ def clientdata(request):
     institution_name = client.institution_name
     dicom_data = DICOMData.objects.filter(institution_name=institution_name).order_by('-vip', '-urgent', '-Mlc', '-id')
 
+    # Set up pagination
+    paginator = Paginator(dicom_data, 400)  # 200 patients per page
+    page_number = request.GET.get('page', 1)  # Get the page number from the request
+    try:
+        page_obj = paginator.get_page(page_number)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page
+        page_obj = paginator.get_page(1)
+    except EmptyPage:
+        # If page is out of range, deliver last page of results
+        page_obj = paginator.get_page(paginator.num_pages)
+
+    # Generate presigned URLs for JPEG files on the current page
+    bucket_name = 'u4rad-s3-reporting-bot'
+    for dicom_data in page_obj:   
+
+        # Get history files
+        history_files = dicom_data.history_files.all()
+        dicom_data.history_file_urls = [
+            presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+        ]
+
     # Get edit permissions for the client
     edit_permissions = {
         'patient_name': client.can_edit_patient_name,
@@ -4305,7 +4354,7 @@ def clientdata(request):
         'upload_history': True,  # Assuming all clients can upload history files
     }
 
-    return render(request, 'users/upload_dicom.html', {'dicom_data': dicom_data, 'edit_permissions': edit_permissions})
+    return render(request, 'users/upload_dicom.html', {'dicom_data': page_obj, 'edit_permissions': edit_permissions, 'page_obj': page_obj})
 
 
     
@@ -5064,8 +5113,99 @@ def coordinatorallocate1(request):
                                 patient.radiologist.add(radiologist)
                             elif action == 'unallocate':
                                 patient.radiologist.remove(radiologist)
-    return render(request, 'users/coordinatorallocate1.html', context)    
+    return render(request, 'users/coordinatorallocate1.html', context)
 
+
+
+def review_page(request):
+    test_dates_set = set()
+    report_dates_set = set()
+
+    # Fetch all files regardless of groups and location
+    pdfs = XrayReport.objects.all().order_by('-id')  # Removed the location filter
+    filtered_pdfs = []
+
+    for pdf in pdfs:
+        # Replace underscores with spaces in the name for matching
+        normalized_name = pdf.name.replace("_", " ") if pdf.name else None
+        dicom_data = DICOMData.objects.filter(
+            patient_id=pdf.patient_id,
+            patient_name=normalized_name,
+            twostepcheck=True
+        ).first()
+
+        if dicom_data:  # Only include if DICOMData exists with twostepcheck=False
+            pdf.dicom_data = dicom_data  # Attach dicom_data to the PDF for template use
+            pdf.twostepcheck = dicom_data.twostepcheck  # Pass the twostepcheck status
+            pdf.isDone = dicom_data.isDone
+            filtered_pdfs.append(pdf)  # Add to the filtered list
+            test_dates_set.add(pdf.test_date)
+            report_dates_set.add(pdf.report_date)
+
+
+    # Group the PDFs by patient_id and patient_name
+    grouped_pdfs = {}
+    for pdf in filtered_pdfs:
+        key = (pdf.patient_id, pdf.name)
+        if key not in grouped_pdfs:
+            grouped_pdfs[key] = []
+        grouped_pdfs[key].append(pdf)        
+
+    # Pagination
+    paginator = Paginator(filtered_pdfs, 50)  # Show 50 PDFs per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Generate presigned URLs for each PDF file
+    bucket_name = 'u4rad-s3-reporting-bot'
+    for pdf in page_obj:
+        if pdf.pdf_file:  # Ensure the file exists
+            pdf.signed_url = presigned_url(bucket_name, f'{pdf.pdf_file.name}')
+        else:
+            pdf.signed_url = None
+          #Get history files
+        history_files = PatientHistoryFile.objects.filter(dicom_data=pdf.dicom_data)
+        pdf.history_file_urls = [
+            presigned_url(bucket_name, history_file.history_file.name, inline=True)
+            for history_file in history_files
+        ]
+
+    # Use the get_pdf_url method to retrieve the file URL
+    # for pdf in page_obj:
+    #     pdf.signed_url = pdf.get_pdf_url() if pdf.pdf_file else None
+
+        
+
+
+    formatted_test_dates = sorted(test_date.strftime('%Y-%m-%d') for test_date in test_dates_set)
+    formatted_report_dates = sorted(report_date.strftime('%Y-%m-%d') for report_date in report_dates_set)
+
+    context = {
+        #'pdfs': page_obj,
+        'grouped_pdfs': grouped_pdfs,
+        'Test_Dates': formatted_test_dates,
+        'Report_Dates': formatted_report_dates,
+        'paginator': paginator,
+        'page_obj': page_obj
+    }
+
+    return render(request, 'users/review_page.html', context)
+
+
+def update_twostepcheck(request, patient_id):
+    try:
+        data = json.loads(request.body)
+        twostepcheck_status = data.get('status', False)
+
+        patient = DICOMData.objects.get(patient_id=patient_id)
+        patient.twostepcheck = twostepcheck_status
+        patient.save()
+    
+        return JsonResponse({'success': True, 'twostepcheck': patient.twostepcheck})
+    except DICOMData.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Patient not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 

@@ -49,6 +49,23 @@
         max-width: 600px; /* Adjust this to set a fixed width for the modal */
         width: 100%;      /* Allow full width within the max-width constraint */
       }
+      a.imageButton {
+        display: inline-block;
+        padding: 3px 5px;
+        background-color: brown;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      a.imageButton:hover {
+        background-color: #8B4513;
+        /* Change to the desired darker brown color */
+        color: #ffffff;
+        text-decoration: none;
+      }
     </style>
   </head>
   
@@ -78,6 +95,23 @@
     </nav>
   
     <div class="table-container container">
+      <div class="pagination">
+        <span class="step-links">
+          {% if page_obj.has_previous %}
+              <a href="?page=1">&laquo; first</a>
+              <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+          {% endif %}
+        
+          <span class="current">
+              Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+          </span>
+        
+          {% if page_obj.has_next %}
+              <a href="?page={{ page_obj.next_page_number }}">next</a>
+              <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+          {% endif %}
+        </span>
+      </div>
       <table class="table table-bordered table-striped table-responsive">
         <thead class="thead-dark">
           <tr>
@@ -91,6 +125,7 @@
             <th style="width: 150px;">Body Part Examined</th>
             <th style="width: 150px;">Referring Doctor Name</th>
             <th style="width: 150px;">WhatsApp Number</th>
+            <th style="width: 150px;">History Files</th>
             <th style="width: 150px;">Mark As Urgent</th>
             <th style="width: 150px;">Mark As MLC</th>
             <th style="width: 150px;">Mark As VIP</th>
@@ -98,7 +133,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for entry in dicom_data %}
+          {% for entry in page_obj %}
           <tr>
             <td>{{ entry.patient_name }}</td>
             <td>{{ entry.patient_id }}</td>
@@ -110,6 +145,13 @@
             <td>{{ entry.body_part_examined }}</td>
             <td>{{ entry.referring_doctor_name }}</td>
             <td>{{ entry.whatsapp_number }}</td>
+            <td>
+                {% for url in entry.history_file_urls %}
+                   <a class="imageButton" target="_blank" href="{{ url }}">
+                    History Files {{ forloop.counter }}
+                  </a>
+                {% endfor %}
+            </td>
             <td>
               <input type="checkbox" class="urgent-checkbox" data-patient-id="{{ entry.patient_id }}" 
                   {% if entry.urgent %}checked{% endif %}>
