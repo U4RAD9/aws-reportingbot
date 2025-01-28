@@ -2120,6 +2120,7 @@ def fetch_patient_data(request):
     
 
 
+
 def report_patient(request, patient_id):
     request.session[f"reportButtonState_{patient_id}"] = "reported"
 
@@ -5122,28 +5123,30 @@ def coordinatorallocate1(request):
 
 
 
+
+
 def review_page(request):
-    # Fetch all DICOMData objects and related information
+    # Fetch all DICOMData objects with twostepcheck=True
     dicom_data_objects = DICOMData.objects.filter(twostepcheck=True).order_by('-id')
     study_date_set = set()
 
-    # Prepare filtered data and add relevant details
+    # Prepare filtered data
     filtered_data = []
     bucket_name = 'u4rad-s3-reporting-bot'
 
     for dicom_data in dicom_data_objects:
-        # Generate presigned URLs for JPEG files
+        # Fetch related JPEG files
         jpeg_files = dicom_data.jpeg_files.all()
         jpeg_urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
 
-        # Generate presigned URLs for PDF reports
+        # Fetch related PDF reports
         patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_")
         pdf_reports = XrayReport.objects.filter(
             name=patient_name_with_underscores, patient_id=dicom_data.patient_id
         )
         pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
 
-        # Generate presigned URLs for history files
+        # Fetch related history files
         history_files = dicom_data.history_files.all()
         history_file_urls = [
             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
@@ -5155,14 +5158,21 @@ def review_page(request):
             'jpeg_urls': jpeg_urls,
             'pdf_urls': pdf_urls,
             'history_file_urls': history_file_urls,
+            'report_date': pdf_reports.first().report_date if pdf_reports.exists() else None,
+            'test_date': pdf_reports.first().test_date if pdf_reports.exists() else None,
         })
+        print(filtered_data)
 
-        # Collect unique test and report dates
+        # Collect unique study dates
         if dicom_data.study_date:
             study_date_set.add(dicom_data.study_date)
 
-    # Format dates for filtering
-    formatted_study_date = sorted(study_date.strftime('%Y-%m-%d') for study_date in study_date_set)
+    # Format study dates for filtering
+    formatted_study_date = sorted(
+        datetime.strptime(study_date, '%Y-%m-%d').strftime('%Y-%m-%d') 
+        if isinstance(study_date, str) else study_date.strftime('%Y-%m-%d')
+        for study_date in study_date_set
+    )
 
     # Pagination
     paginator = Paginator(filtered_data, 50)  # Show 50 entries per page
@@ -5172,11 +5182,9 @@ def review_page(request):
     context = {
         'filtered_data': page_obj,
         'Test_Dates': formatted_study_date,
-        'page_obj': page_obj,
     }
 
     return render(request, 'users/review_page.html', context)
-
 
 def update_twostepcheck(request, patient_id):
     try:

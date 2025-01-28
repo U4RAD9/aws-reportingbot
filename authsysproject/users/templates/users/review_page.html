@@ -499,76 +499,50 @@
               </tr>
             </thead>
             <tbody>
-              {% for patient_key, patient_pdfs in grouped_pdfs.items %}
+              {% for data in filtered_data %}
                 <tr class="patientRow">
-                  <td>{{ patient_key.0 }}</td>
-                  <td>{{ patient_key.1 }}</td>
-                  <td>{{ patient_pdfs.0.test_date|date:'Y-m-d' }}</td>
-                  <td>{{ patient_pdfs.0.report_date }}</td>
-                  <td>
-                    {% for pdf in patient_pdfs %}
-                      <a class="reportButton" href="{{ pdf.signed_url }}" target="_blank">View Report {{ forloop.counter }}</a>
-                    {% endfor %}
-                  </td>
-                  <!-- <td>
-                    <input type="checkbox" class="twostepcheck-checkbox" data-patient-id="{{ patient_key.0 }}"
-                           {% if patient_pdfs.0.twostepcheck %}checked{% endif %}>
-                  </td> -->
-                  <td>
-                      {% if pdf.history_file_urls %}
-                        <ul>
-                          {% for history_url in pdf.history_file_urls %}
-                            <li>
-                              <a href="{{ history_url }}" target="_blank">History File {{ forloop.counter }}</a>
-                            </li>
-                          {% endfor %}
-                        </ul>
-                      {% else %}
-                        No History Files
-                      {% endif %}
-                  </td>
-                  <td>
-                    <button class="twostepcheck-button btn btn-sm" 
-                            data-patient-id="{{ patient_key.0 }}" 
-                            style="background-color: {% if patient_pdfs.0.twostepcheck %}red{% else %}green{% endif %}; color: white;">
-                      {% if patient_pdfs.0.twostepcheck %}Ready to Go{% else %}Pending{% endif %}
-                    </button>
-                  </td>
-                  <!-- <td>
-                    <input type="checkbox" class="isDone-checkbox" data-patient-id="{{ patient_key.0 }}" 
-                        {% if patient_pdfs.0.isDone %}checked{% endif %}>
-                  </td> -->
-                  <td>
-                    <button class="isDone-button btn btn-sm" 
-                            data-patient-id="{{ patient_key.0 }}" 
-                            style="background-color: {% if patient_pdfs.0.isDone %}red{% else %}green{% endif %}; color: white;">
-                      {% if patient_pdfs.0.isDone %}Reassign{% else %}Not Reported Yet{% endif %}
-                    </button>
-                  </td>
-                  <td>
-                    {% for patient_url in patient_urls %}
-                       {% if patient_url.patient.id == patient.id %}
-                          <a class="reportButton"
-                             href="reporting-bot?data-patientid={{ patient.patient_id }}&data-patientname={{ patient.patient_name }}&data-study-id={{ patient.study_id }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-institution_name={{ patient.institution_name }}&data-testdate={{ patient.study_date }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ patient.dicom_file }}&data-location={{ patient.location }}&data-accession={{ patient.accession_number }}"
-                             data-patient-id="{{ patient.patient_id }}" data-patientname="{{ patient.patient_name }}"
-                             data-age="{{ patient.age }}" data-gender="{{ patient.gender }}"
-                             data-institution_name="{{ patient.institution_name }}"
-                             data-testdate="{{ patient.study_date }}" data-reportdate="{% now 'Y-m-d' %}"
-                             data-reportimage="{{ patient_url.urls.0|urlencode }}"
-                             data-dicom-file="{% get_media_prefix %}{{ patient.dicom_file }}"
-                             data-location="{{ patient.location }}"
-                             data-study-id="{{patient.study_id}}"
-                             data-accession="{{ patient.accession_number }}" onclick="changeButtonColor(this);">
-                              {% if patient.isDone %}
-                                 Reported
-                              {% else %}
-                                 Report
-                              {% endif %}
-                          </a>
-                       {% endif %}
-                    {% endfor %}
-                  </td>
-                  <td><input type="checkbox" class="rowCheckbox" /></td>
+                    <td>{{ data.dicom_data.patient_id }}</td>
+                    <td>{{ data.dicom_data.patient_name }}</td>
+                    <td>{{ data.dicom_data.study_date|date:'Y-m-d' }}</td>
+                    <td>{{ data.report_date|date:'Y-m-d' }}</td>
+                    <td>
+                        {% for pdf_url in data.pdf_urls %}
+                            <a class="reportButton" href="{{ pdf_url }}" target="_blank">View Report {{ forloop.counter }}</a>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if data.history_file_urls %}
+                            <ul>
+                                {% for history_url in data.history_file_urls %}
+                                    <li>
+                                        <a href="{{ history_url }}" target="_blank">History File {{ forloop.counter }}</a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            No History Files
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button class="twostepcheck-button btn btn-sm" 
+                                data-patient-id="{{ data.dicom_data.patient_id }}" 
+                                style="background-color: {% if data.dicom_data.twostepcheck %}red{% else %}green{% endif %}; color: white;">
+                            {% if data.dicom_data.twostepcheck %}Ready to Go{% else %}Pending{% endif %}
+                        </button>
+                    </td>
+                    <td>
+                        <button class="isDone-button btn btn-sm" 
+                                data-patient-id="{{ data.dicom_data.patient_id }}" 
+                                style="background-color: {% if data.dicom_data.isDone %}red{% else %}green{% endif %}; color: white;">
+                            {% if data.dicom_data.isDone %}Reassign{% else %}Not Reported Yet{% endif %}
+                        </button>
+                    </td>
+                    <td>
+                        {% for jpeg_url in data.jpeg_urls %}
+                            <a class="reportButton" href="{{ jpeg_url }}" target="_blank">View Image {{ forloop.counter }}</a>
+                        {% endfor %}
+                    </td>
+                    <td><input type="checkbox" class="rowCheckbox" /></td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -632,6 +606,37 @@
         }
       }
     }
+
+
+    function changeButtonColor(anchor) {
+      const button = $(anchor); // Convert the anchor to a jQuery object
+      const PatientId = String(button.data("patient-id")).trim(); // Remove leading and trailing spaces
+      const patientName = String(button.data("patientname")).trim();
+      const age = String(button.data("age")).trim();
+      const gender = String(button.data("gender")).trim();
+      const testDate = String(button.data("testdate")).trim();
+      const reportDate = String(button.data("reportdate")).trim();
+      const reportImage = String(button.data("reportimage")).trim();
+      const location = String(button.data("location")).trim();
+
+      // Check the isDone status
+      if (isDone) {
+        // If isDone is true, the button should already be in 'reported' state
+        return;
+      }
+
+      // If the button is not in 'reported' state, change its style
+      button.addClass("reported");
+      // Change the button text
+      button.text("Reported");
+
+      // Construct the URL with query parameters
+      const redirectURL = `reporting-bot?data-patientid=${PatientId}&data-patientname=${patientName}&data-age=${age}&data-gender=${gender}&data-institution_name=${institution_name}&data-testdate=${testDate}&data-reportdate=${reportDate}&data-reportimage=${reportImage}&data-location=${location}`;
+
+      // Redirect to the desired URL
+      window.location.href = redirectURL;
+    }
+
 
     // Function to show/hide the scroll-to-top button based on the scroll position
     function toggleScrollToTopButton() {
