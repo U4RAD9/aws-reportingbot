@@ -503,8 +503,8 @@
                 <tr class="patientRow">
                     <td>{{ data.dicom_data.patient_id }}</td>
                     <td>{{ data.dicom_data.patient_name }}</td>
-                    <td>{{ data.dicom_data.study_date|date:'Y-m-d' }}</td>
-                    <td>{{ data.report_date|date:'Y-m-d' }}</td>
+                    <td>{{ data.dicom_data.study_date }}</td>
+                    <td>{{ data.report_date }}</td>
                     <td>
                         {% for pdf_url in data.pdf_urls %}
                             <a class="reportButton" href="{{ pdf_url }}" target="_blank">View Report {{ forloop.counter }}</a>
