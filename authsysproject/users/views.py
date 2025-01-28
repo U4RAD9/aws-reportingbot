@@ -2075,7 +2075,6 @@ def vitalpatientDetails(request):
         return JsonResponse(status=200, data=response, safe=False)
 
 
-
 def fetch_patient_data(request):
     patient_id = request.GET.get('patientId')
     patient_name = request.GET.get('patientName')
@@ -2085,6 +2084,8 @@ def fetch_patient_data(request):
     test_date = request.GET.get('testDate')
     report_date = request.GET.get('reportDate')
     report_image = request.GET.get('reportImage')  # Report image URL
+    Modality  = request.GET.get('Modality')
+    Bodypart  = request.GET.get('body_part_examined')
 
     # You can modify this logic based on how you fetch patient data
     patient = request(
@@ -2096,13 +2097,17 @@ def fetch_patient_data(request):
         HeartRate=HeartRate,
         TestDate=test_date,
         ReportDate=report_date,
-        reportimage=report_image
+        reportimage=report_image,
+        Modality=Modality,
+        Bodypart=body_part_examined
     )
 
     # Create a dictionary to hold the patient data
     patient_data = {
         'PatientId': patient.PatientId,
         'PatientName': patient.PatientName,
+        'Modality' :  patient.modality,
+        'bodypart': patient.body_part_examined,
         'age': patient.age,
         'gender': patient.gender,
         'HeartRate': patient.HeartRate,
@@ -2112,7 +2117,7 @@ def fetch_patient_data(request):
     }
 
     return JsonResponse(patient_data)
-    # Check if the patient's report status is updated
+    
 
 
 def report_patient(request, patient_id):
@@ -5118,75 +5123,56 @@ def coordinatorallocate1(request):
 
 
 def review_page(request):
-    test_dates_set = set()
-    report_dates_set = set()
+    # Fetch all DICOMData objects and related information
+    dicom_data_objects = DICOMData.objects.filter(twostepcheck=True).order_by('-id')
+    study_date_set = set()
 
-    # Fetch all files regardless of groups and location
-    pdfs = XrayReport.objects.all().order_by('-id')  # Removed the location filter
-    filtered_pdfs = []
+    # Prepare filtered data and add relevant details
+    filtered_data = []
+    bucket_name = 'u4rad-s3-reporting-bot'
 
-    for pdf in pdfs:
-        # Replace underscores with spaces in the name for matching
-        normalized_name = pdf.name.replace("_", " ") if pdf.name else None
-        dicom_data = DICOMData.objects.filter(
-            patient_id=pdf.patient_id,
-            patient_name=normalized_name,
-            twostepcheck=True
-        ).first()
+    for dicom_data in dicom_data_objects:
+        # Generate presigned URLs for JPEG files
+        jpeg_files = dicom_data.jpeg_files.all()
+        jpeg_urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
 
-        if dicom_data:  # Only include if DICOMData exists with twostepcheck=False
-            pdf.dicom_data = dicom_data  # Attach dicom_data to the PDF for template use
-            pdf.twostepcheck = dicom_data.twostepcheck  # Pass the twostepcheck status
-            pdf.isDone = dicom_data.isDone
-            filtered_pdfs.append(pdf)  # Add to the filtered list
-            test_dates_set.add(pdf.test_date)
-            report_dates_set.add(pdf.report_date)
+        # Generate presigned URLs for PDF reports
+        patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_")
+        pdf_reports = XrayReport.objects.filter(
+            name=patient_name_with_underscores, patient_id=dicom_data.patient_id
+        )
+        pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
 
+        # Generate presigned URLs for history files
+        history_files = dicom_data.history_files.all()
+        history_file_urls = [
+            presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+        ]
 
-    # Group the PDFs by patient_id and patient_name
-    grouped_pdfs = {}
-    for pdf in filtered_pdfs:
-        key = (pdf.patient_id, pdf.name)
-        if key not in grouped_pdfs:
-            grouped_pdfs[key] = []
-        grouped_pdfs[key].append(pdf)        
+        # Collect data for rendering
+        filtered_data.append({
+            'dicom_data': dicom_data,
+            'jpeg_urls': jpeg_urls,
+            'pdf_urls': pdf_urls,
+            'history_file_urls': history_file_urls,
+        })
+
+        # Collect unique test and report dates
+        if dicom_data.study_date:
+            study_date_set.add(dicom_data.study_date)
+
+    # Format dates for filtering
+    formatted_study_date = sorted(study_date.strftime('%Y-%m-%d') for study_date in study_date_set)
 
     # Pagination
-    paginator = Paginator(filtered_pdfs, 50)  # Show 50 PDFs per page
+    paginator = Paginator(filtered_data, 50)  # Show 50 entries per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Generate presigned URLs for each PDF file
-    bucket_name = 'u4rad-s3-reporting-bot'
-    for pdf in page_obj:
-        if pdf.pdf_file:  # Ensure the file exists
-            pdf.signed_url = presigned_url(bucket_name, f'{pdf.pdf_file.name}')
-        else:
-            pdf.signed_url = None
-          #Get history files
-        history_files = PatientHistoryFile.objects.filter(dicom_data=pdf.dicom_data)
-        pdf.history_file_urls = [
-            presigned_url(bucket_name, history_file.history_file.name, inline=True)
-            for history_file in history_files
-        ]
-
-    # Use the get_pdf_url method to retrieve the file URL
-    # for pdf in page_obj:
-    #     pdf.signed_url = pdf.get_pdf_url() if pdf.pdf_file else None
-
-        
-
-
-    formatted_test_dates = sorted(test_date.strftime('%Y-%m-%d') for test_date in test_dates_set)
-    formatted_report_dates = sorted(report_date.strftime('%Y-%m-%d') for report_date in report_dates_set)
-
     context = {
-        #'pdfs': page_obj,
-        'grouped_pdfs': grouped_pdfs,
-        'Test_Dates': formatted_test_dates,
-        'Report_Dates': formatted_report_dates,
-        'paginator': paginator,
-        'page_obj': page_obj
+        'filtered_data': page_obj,
+        'Test_Dates': formatted_study_date,
+        'page_obj': page_obj,
     }
 
     return render(request, 'users/review_page.html', context)

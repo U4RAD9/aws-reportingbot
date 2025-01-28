@@ -172,9 +172,8 @@ const Tools = {"Length": cornerstoneTools.LengthTool, "Angle": cornerstoneTools.
   "FreehandROI": cornerstoneTools.PlanarFreehandROITool, "Bidirectional": cornerstoneTools.BidirectionalTool, "Zoom": cornerstoneTools.ZoomTool, 
   "Pan": cornerstoneTools.PanTool, "Contrast": cornerstoneTools.WindowLevelTool, "Probe": cornerstoneTools.ProbeTool,"Eraser": cornerstoneTools.EraserTool, 
   "PlanarRotate": cornerstoneTools.PlanarRotateTool, "Height": cornerstoneTools.HeightTool, "SplineROI": cornerstoneTools.SplineROITool, 
-  "StackScroll": cornerstoneTools.StackScrollMouseWheelTool, "ArrowAnnotate": cornerstoneTools.ArrowAnnotateTool
+  "StackScroll": cornerstoneTools.StackScrollMouseWheelTool, "ArrowAnnotate": cornerstoneTools.ArrowAnnotateTool, "Crosshairs":cornerstoneTools.CrosshairsTool,
 }
-
 
 var current_user = JSON.parse(
   document.getElementById("current-user").textContent
@@ -394,167 +393,191 @@ class App extends Component {
       }
     }
   }
-
-  
-  
-  async cornerstone(PARAM) {
+  async  cornerstone(PARAM) {
     try {
-      const previewTab = document.getElementById('previewTab');
-      const viewport = document.querySelector('.patientdata');
-      const studyid = PARAM;
-  
-      // get csrf token for POST request
-      const re = await fetch("/get-csrf-token/");
-      const FI = await re.json();
-      const token = FI.csrf_token;
-  
-      // fetch study details from view that accesses orthanc server, pass studyid as a parameter
-      const response = await fetch('/data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          "X-CSRFToken": token
-        },
-        body: studyid
-      });
-      const data = await response.json();
-  
-      // patient + study details
-      const study_uid = data.study_uid;
-      const series = data.series;
-      const name = data.name;
-      const id = data.id;
-      const study_date = data.date;
-      const study_time = data.time;
-  
-      let k = 0;
-      let imageIdIndex = 0;
-            // Assuming study_time is in a format like "hhmmss" (e.g., "134520" for 13:45:20)
-            function formatTime(study_time) {
-              const hours = study_time.slice(0, 2); // First two digits as hours
-              const minutes = study_time.slice(2, 4); // Next two digits as minutes
-              const seconds = study_time.slice(4, 6); // Last two digits as seconds
-              return `${hours} : ${minutes} : ${seconds} `;
-            }
-            const formattedTime = formatTime(study_time);
-      // Function to format the date as YYYY/MM/DD
-      function formatDate(date) {
-        if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-          const [year, month, day] = date.split("-");
-          return `${year}/${month}/${day}`;
-        } else if (/^\d{8}$/.test(date)) {
-          const year = date.slice(0, 4);
-          const month = date.slice(4, 6);
-          const day = date.slice(6, 8);
-          return `${year}/${month}/${day}`;
-        }
-      
-        console.error("Invalid date format:", date);
-        return "Invalid Date";
-      }
-      const formattedDate = formatDate(study_date);
-      
-             viewport.innerHTML += `<p style="margin-bottom:0">Name: ${name}<br>ID: ${id}<br>Study Date: ${formattedDate}<br>Study Time: ${formattedTime}<br></p>`
-      
-  
-      
-  
-      for (let item of series) {
-  
-        // create IDS and cache metadata of dicom files
-        let imageId = await createImageIdsAndCacheMetaData({
-          StudyInstanceUID: study_uid,
-          SeriesInstanceUID: item[0],
-  
-          // put the url of the orthanc server with /dicom-web
-          // example http://127.0.0.1:2002/dicom-web
-          wadoRsRoot: 'https://pacs.reportingbot.in/dicom-web',
+        const previewTab = document.getElementById('previewTab');
+        const viewport = document.querySelector('.patientdata');
+        const studyid = PARAM;
+
+        // Create a loading message div
+        const loadingMessage = document.createElement('div');
+        loadingMessage.id = 'loadingMessage';
+        loadingMessage.innerText = 'Please wait, images are loading...';
+        loadingMessage.style.position = 'absolute';
+        loadingMessage.style.top = '50%';
+        loadingMessage.style.left = '50%';
+        loadingMessage.style.transform = 'translate(-50%, -50%)';
+        loadingMessage.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        loadingMessage.style.color = '#fff';
+        loadingMessage.style.padding = '10px 20px';
+        loadingMessage.style.borderRadius = '5px';
+        loadingMessage.style.fontSize = '16px';
+        loadingMessage.style.zIndex = '1000';
+        loadingMessage.style.pointerEvents = 'none'; // Ensure it's non-interactive
+        document.body.appendChild(loadingMessage);
+
+
+        // Get CSRF token for POST request
+        const re = await fetch("/get-csrf-token/");
+        const FI = await re.json();
+        const token = FI.csrf_token;
+
+        // Fetch study details from view that accesses Orthanc server
+        const response = await fetch('/data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                "X-CSRFToken": token
+            },
+            body: studyid
         });
-        console.log("imageId:", imageId); // Check the structure of imageId
+        const data = await response.json();
 
-       
-  // Check if imageId is an array and get its length
-  let imageCount = 0;
-  if (Array.isArray(imageId)) {
-    imageCount = imageId.length;
-  } 
-        // populate preview tab
-        let image = document.createElement('img');
-        image.src = item[3];
-        console.log(item[3]);
-        image.style.height = '100px';
-        image.style.width = '120px';
-        image.style.marginBottom = '0px';
-  
-        // conditional to check whether modality is CT or anything else 
-        if (item[1] == 'CT' || item[1] == 'MR') {
-          // create unique volume id
-          let volumeId = 'cornerstoneStreamingImageVolume: myVolume' + k;
-          k += 1;
-          image.dataset.value = volumeId;
-  
-          // create volume object and put it in cache if the modality is CT
-          let volume = await cornerstone.volumeLoader.createAndCacheVolume(volumeId, { imageIds: imageId, });
-  
-          // cache optimization
-          cornerstone.utilities.cacheUtils.performCacheOptimizationForVolume(volumeId);
-  
-          // load the created volume
-          volume.load();
-  
-        } else {
-  
-          nonCT_ImageIds.push(imageId);
-          // store the index of the imageIDs for nonCT_Images
-          // the corresponding index in the list is stored as the data-value attribute in the preview image
-          image.dataset.value = imageIdIndex;
-          imageIdIndex += 1;
-        }
-  
-        // add previews to previewTab.innerHTML
-        image.dataset.modality = item[1];
-        image.dataset.description = item[2]; 
-        image.draggable = true;
-        const textContainer = document.createElement('div');
-        textContainer.style.border = '1px solid #ccc'; // Add a border
-        textContainer.style.padding = '10px'; // Add spacing inside the container
-        textContainer.style.marginBottom = '5px'; // Space below the container
-        textContainer.style.borderRadius = '2px'; // Rounded corners
-        textContainer.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)'; // Subtle shadow for better visuals
-        textContainer.style.backgroundColor = '#f9f9f9'; // Light background for contrast
-        textContainer.style.maxWidth = '100px'; // Restrict maximum width
-        textContainer.style.textAlign = 'center'; // Center the content
-        
-        textContainer.innerHTML = `
-        <p style="margin: 1px 0; line-height: 1.3; font-size: 10px;">
-          <strong>${item[1]}</strong><br>
-          <span> <strong>${item[2]}</strong><br></span>
-          <span>Image Count: <strong>${imageCount}</strong></span>
-        </p>
-      `;
-        
-        // Append the text container above the image
-        previewTab.appendChild(textContainer);
-        
-        previewTab.appendChild(image);
-        
-      }
-  
-      // event delegation to attach event listener to each preview image in the preview tab
-      previewTab.addEventListener('dragstart', (event) => {
-        if (event.target.tagName === 'IMG') {
-            const transferData = [event.target.dataset.value, event.target.dataset.modality, event.target.dataset.description];
-            console.log("Transferred Data: ", transferData); // Log the data being transferred
-            event.dataTransfer.setData("text", JSON.stringify(transferData));
-        }
-    });
+        // Patient + study details
+        const study_uid = data.study_uid;
+        const series = data.series;
+        const name = data.name;
+        const id = data.id;
+        const study_date = data.date;
+        const study_time = data.time;
     
-  
-    } catch (error) {
-      console.error(error);
-    }
-  }
 
+        let k = 0;
+        let imageIdIndex = 0;
+        const totalSeries = series.length;
+        let loadedSeriesCount = 0;
+
+        // Function to format time
+        function formatTime(study_time) {
+            const hours = study_time.slice(0, 2);
+            const minutes = study_time.slice(2, 4);
+            const seconds = study_time.slice(4, 6);
+            return `${hours}:${minutes}:${seconds}`;
+        }
+        const formattedTime = formatTime(study_time);
+
+        // Function to format the date as YYYY/MM/DD
+        function formatDate(date) {
+            if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                const [year, month, day] = date.split("-");
+                return `${year}/${month}/${day}`;
+            } else if (/^\d{8}$/.test(date)) {
+                const year = date.slice(0, 4);
+                const month = date.slice(4, 6);
+                const day = date.slice(6, 8);
+                return `${year}/${month}/${day}`;
+            }
+
+            console.error("Invalid date format:", date);
+            return "Invalid Date";
+        }
+        const formattedDate = formatDate(study_date);
+
+        viewport.innerHTML += `<p style="margin-bottom:0">Name: ${name}<br>ID: ${id}<br>Study Date: ${formattedDate}<br>Study Time: ${formattedTime}<br</p>`;
+
+        for (let item of series) {
+            let imageId = await createImageIdsAndCacheMetaData({
+                StudyInstanceUID: study_uid,
+                SeriesInstanceUID: item[0],
+                wadoRsRoot: 'https://pacs.reportingbot.in/dicom-web',
+            });
+
+            let imageCount = 0;
+            if (Array.isArray(imageId)) {
+                imageCount = imageId.length;
+            }
+
+            let image = document.createElement('img');
+            image.src = item[3];
+            image.style.height = '100px';
+            image.style.width = '120px';
+            image.style.marginBottom = '0px';
+
+            if (item[1] === 'CT' || item[1] === 'MR') {
+                let volumeId = 'cornerstoneStreamingImageVolume: myVolume' + k;
+                k += 1;
+                image.dataset.value = volumeId;
+
+                let volume = await cornerstone.volumeLoader.createAndCacheVolume(volumeId, { imageIds: imageId, });
+                cornerstone.utilities.cacheUtils.performCacheOptimizationForVolume(volumeId);
+                volume.load();
+            } else {
+                nonCT_ImageIds.push(imageId);
+                image.dataset.value = imageIdIndex;
+                imageIdIndex += 1;
+            }
+
+            // Add previews to previewTab.innerHTML
+            image.dataset.modality = item[1];
+            image.dataset.description = item[2];
+            image.draggable = true;
+
+            const textContainer = document.createElement('div');
+            textContainer.style.border = '1px solid #ccc';
+            textContainer.style.padding = '10px';
+            textContainer.style.marginBottom = '5px';
+            textContainer.style.borderRadius = '2px';
+            textContainer.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+            textContainer.style.backgroundColor = '#f9f9f9';
+            textContainer.style.maxWidth = '100px';
+            textContainer.style.textAlign = 'center';
+
+            textContainer.innerHTML = `
+                <p style="margin: 1px 0; line-height: 1.3; font-size: 10px;">
+                    <strong>${item[1]}</strong><br>
+                    <span><strong>${item[2]}</strong><br></span>
+                    <span>Image Count: <strong>${imageCount}</strong></span>
+                </p>
+            `;
+
+            previewTab.appendChild(textContainer);
+            previewTab.appendChild(image);
+
+            // Set up the image load event listener
+          // Assuming the loading message element is added dynamically somewhere
+const loadingMessageTimeout = setTimeout(() => {
+  const message = document.getElementById('loadingMessage');
+  if (message) {
+      document.body.removeChild(message); // Hide the loading message after 1 minute
+      console.log('Loading message removed after timeout');
+  }
+}, 60000); // 1 minute in milliseconds
+
+image.onload = () => {
+  loadedSeriesCount++;
+  console.log(`Image loaded: ${item[2]} - Loaded Series: ${loadedSeriesCount}`);
+
+  // Hide the loading message when all images are loaded
+  if (loadedSeriesCount === totalSeries) {
+      clearTimeout(loadingMessageTimeout); // Cancel the timeout when all images are loaded
+      const message = document.getElementById('loadingMessage');
+      if (message) {
+          document.body.removeChild(message); // Hide the loading message
+          console.log('All images loaded, loading message removed');
+      }
+  }
+};
+
+        }
+
+        previewTab.addEventListener('dragstart', (event) => {
+            if (event.target.tagName === 'IMG') {
+                const transferData = [event.target.dataset.value, event.target.dataset.modality, event.target.dataset.description];
+                event.dataTransfer.setData("text", JSON.stringify(transferData));
+            }
+        });
+
+    } catch (error) {
+        console.error(error);
+        const message = document.getElementById('loadingMessage');
+        if (message) {
+            document.body.removeChild(message); // Ensure loading message is removed on error as well
+        }
+    }
+}
+  
+  
+ 
 
 
   //function to set new tool active and previous tool passive
@@ -573,108 +596,136 @@ class App extends Component {
     curr_tool = tool;
   }
   // Viewport layout settings for single viewport, 2 viewports, or 4 viewports
-layoutSettings(event) {
-  const call = event.target.value;
-  const container = document.getElementById('viewport-container');
-  const viewport2 = document.getElementById('viewport2');
-  const viewport3 = document.getElementById('viewport3');
-  const viewport4 = document.getElementById('viewport4');
+  layoutSettings(event) {
+    const call = event.target.value;
+    const container = document.getElementById('viewport-container');
+    const viewport2 = document.getElementById('viewport2');
+    const viewport3 = document.getElementById('viewport3');
+    const viewport4 = document.getElementById('viewport4');
+    
+    // Ensure prev_layout is initialized
+    if (!prev_layout) {
+      prev_layout = 'one';  // Set the initial layout if not already set
+    }
+  
+  
+    switch (call) {
+      case 'one':
+        console.log('Switching to 1x1 layout (one)');
+        if (prev_layout == 'four') {
+          // Log the transition from four to one
+          console.log('Transitioning from 4 to 1 layout');
+          renderingEngine.disableElement(viewportIds[1]);
+          renderingEngine.disableElement(viewportIds[2]);
+          renderingEngine.disableElement(viewportIds[3]);
+          toolGroup.removeViewports(renderingEngineId, viewportIds[2]);
+          toolGroup.removeViewports(renderingEngineId, viewportIds[3]);
+          toolGroup.removeViewports(renderingEngineId, viewportIds[1]);
 
-  switch(call) {
-    case 'one':
-      if (prev_layout == 'four') {
-        // Disable and remove the last two viewports (3 and 4) from the rendering engine
-        renderingEngine.disableElement(viewportIds[2]);
-        renderingEngine.disableElement(viewportIds[3]);
-        toolGroup.removeViewports(renderingEngineId, viewportIds[2]);
-        toolGroup.removeViewports(renderingEngineId, viewportIds[3]);
-        // Hide viewports 3 and 4
-        viewport3.style.display = 'none';
-        viewport4.style.display = 'none';
-      }
-      // Disable second viewport and remove from the rendering engine
-      renderingEngine.disableElement(viewportIds[1]);
-      toolGroup.removeViewports(renderingEngineId, viewportIds[1]);
-      // Hide the second viewport
-      viewport2.style.display = 'none';
-      container.style.gridTemplateColumns = 'none';
-      container.style.gridTemplateRows = 'none';
-      break;
-    
-    case 'two':
-      if (prev_layout == 'four') {
-        // Disable and remove the last two viewports (3 and 4)
-        renderingEngine.disableElement(viewportIds[2]);
-        renderingEngine.disableElement(viewportIds[3]);
-        toolGroup.removeViewports(renderingEngineId, viewportIds[2]);
-        toolGroup.removeViewports(renderingEngineId, viewportIds[3]);
-        // Hide viewports 3 and 4
-        viewport3.style.display = 'none';
-        viewport4.style.display = 'none';
-      } else {
-        // Enable and add viewport 2
-        renderingEngine.enableElement(second_viewport);
-        toolGroup.addViewport(viewportIds[1], renderingEngineId);
-        // Display viewport 2
-        viewport2.style.display = 'block';
-      }
-      // Update grid layout for two viewports (50% split)
-      container.style.gridTemplateColumns = '50% 50%';
-      container.style.gridTemplateRows = 'none';
-      break;
-    
-    case 'three':
-      if (prev_layout == 'four') {
-        // Disable viewport 4 and remove it from rendering engine
-        renderingEngine.disableElement(viewportIds[3]);
-        toolGroup.removeViewports(renderingEngineId, viewportIds[3]);
-        // Hide viewports 3 and 4
-        viewport4.style.display = 'none';
-      } else {
-        // Enable and add viewport 2
-        renderingEngine.enableElement(second_viewport);
+          viewport2.style.display = 'none';
+          viewport3.style.display = 'none';
+          viewport4.style.display = 'none';
+        } else if (prev_layout == 'three') {
+          // Log the transition from three to one
+          console.log('Transitioning from 3 to 1 layout');
+          renderingEngine.disableElement(viewportIds[1]);
+          renderingEngine.disableElement(viewportIds[2]);
+          toolGroup.removeViewports(renderingEngineId, viewportIds[1]);
+          toolGroup.removeViewports(renderingEngineId, viewportIds[2]);
+  
+          viewport2.style.display = 'none';
+          viewport3.style.display = 'none';
+        } else if (prev_layout == "two") {
+          // Already in a 1 viewport layout
+          renderingEngine.disableElement(viewportIds[1]);
+          toolGroup.removeViewports(renderingEngineId, viewportIds[1]);
+          viewport2.style.display = 'none';
+        }
+        
+        container.style.gridTemplateColumns = 'none';
+        container.style.gridTemplateRows = 'none';
+        break;
+  
+      case 'two':
+        console.log('Switching to 2x1 layout');
+        if (prev_layout == 'four') {
+          console.log('Transitioning from 4 to 2 layout');
+          renderingEngine.disableElement(viewportIds[2]);
+          renderingEngine.disableElement(viewportIds[3]);
+          toolGroup.removeViewports(renderingEngineId, viewportIds[2]);
+          toolGroup.removeViewports(renderingEngineId, viewportIds[3]);
+  
+          viewport3.style.display = 'none';
+          viewport4.style.display = 'none';
+        }
+        else if(prev_layout == "three") {
+          renderingEngine.disableElement(viewportIds[2]);
+          toolGroup.removeViewports(renderingEngineId, viewportIds[2]);
+          viewport3.style.display = 'none';
+        }
+         else {
+          console.log('Enabling viewport 2');
+          renderingEngine.enableElement(second_viewport);
+          toolGroup.addViewport(viewportIds[1], renderingEngineId);
+          viewport2.style.display = 'block';
+        }
+  
+        container.style.gridTemplateColumns = '50% 50%';
+        container.style.gridTemplateRows = 'none';
+        break;
+  
+      case 'three':
+        console.log('Switching to 1x3 layout');
+        if (prev_layout == 'four') {
+          console.log('Transitioning from 4 to 3 layout');
+          renderingEngine.disableElement(viewportIds[3]);
+          toolGroup.removeViewports(renderingEngineId, viewportIds[3]);
+  
+          viewport4.style.display = 'none';
+        } else {
+          console.log('Enabling viewports 2 and 3');
+          renderingEngine.enableElement(second_viewport);
+          renderingEngine.enableElement(third_viewport);
+          toolGroup.addViewport(viewportIds[1], renderingEngineId);
+          toolGroup.addViewport(viewportIds[2], renderingEngineId);
+  
+          viewport2.style.display = 'block';
+          viewport3.style.display = 'block';
+        }
+  
+        container.style.gridTemplateColumns = '33.33% 33.33% 33.33%';
+        container.style.gridTemplateRows = 'none';
+        break;
+  
+      case 'four':
+        console.log('Switching to 2x2 layout');
+        if (prev_layout == 'one') {
+          console.log('Transitioning from 1 to 4 layout');
+          renderingEngine.enableElement(second_viewport);
+          viewport2.style.display = 'block';
+          toolGroup.addViewport(viewportIds[1], renderingEngineId);
+        }
+  
+        console.log('Enabling viewports 3 and 4');
         renderingEngine.enableElement(third_viewport);
-        toolGroup.addViewport(viewportIds[1], renderingEngineId);
+        renderingEngine.enableElement(fourth_viewport);
         toolGroup.addViewport(viewportIds[2], renderingEngineId);
-        // Display viewport 2
-        viewport2.style.display = 'block';
+        toolGroup.addViewport(viewportIds[3], renderingEngineId);
         viewport3.style.display = 'block';
-      }
-      // Update grid layout for 1x3 viewports (1 row, 3 columns)
-      container.style.gridTemplateColumns = '33.33% 33.33% 33.33%';  // Equal 3 columns
-      container.style.gridTemplateRows = 'none'; // One row, no need for multiple rows
-      break;
-    
-    case 'four':
-      if (prev_layout == 'one') {
-        // Enable and add viewport 2
-        renderingEngine.enableElement(second_viewport);
-        viewport2.style.display = 'block';
-        toolGroup.addViewport(viewportIds[1], renderingEngineId);
-      }
-      // Enable and add viewport 3 and 4
-      renderingEngine.enableElement(third_viewport);
-      renderingEngine.enableElement(fourth_viewport);
-      toolGroup.addViewport(viewportIds[2], renderingEngineId);
-      toolGroup.addViewport(viewportIds[3], renderingEngineId);
-      // Display viewports 3 and 4
-      viewport3.style.display = 'block';
-      viewport4.style.display = 'block';
-      // Update grid layout for 4 viewports (2x2 grid)
-      container.style.gridTemplateColumns = '50% 50%';
-      container.style.gridTemplateRows = '50% 50%';
-      break;
+        viewport4.style.display = 'block';
+  
+        container.style.gridTemplateColumns = '50% 50%';
+        container.style.gridTemplateRows = '50% 50%';
+        break;
+    }
+  
+    renderingEngine.resize(true, false);
+  
+    // Update prev_layout with the new layout state
+    prev_layout = call;
+  
+    event.target.value = '';
   }
-
-  // Resize the rendering engine to fit the updated layout
-  renderingEngine.resize(true, false);
-  
-  // Update the previous layout to the current one for tracking
-  prev_layout = call;
-  
-  // Reset the event target value for next use
-  event.target.value = '';
-}
   //volume slab thickness settings for volume viewports
   slabThickness(val, id){
     const viewport = renderingEngine.getViewport(id);
@@ -878,17 +929,25 @@ layoutSettings(event) {
       //create tool groups for storing all tools
       toolGroup = cornerstoneTools.ToolGroupManager.createToolGroup(toolGroupId);
   
-           
-      
       //adding tools to toolGroup
       for (const [key, value] of Object.entries(Tools)){
+    
         cornerstoneTools.addTool(value);
         toolGroup.addTool(value.toolName);
       }
+        // Enable tools
+
 
       //set scroll active
       toolGroup.setToolActive(cornerstoneTools.StackScrollMouseWheelTool.toolName);
-
+      toolGroup.setToolConfiguration(cornerstoneTools.CrosshairsTool.toolName, {
+        bindings: [
+          {
+            mouseButton: cornerstoneTools.Enums.MouseBindings.Primary,
+          },
+        ],
+      });
+      
      
       toolGroup.setToolConfiguration(cornerstoneTools.PlanarFreehandROITool.toolName, {
         calculateStats: true
@@ -975,7 +1034,6 @@ layoutSettings(event) {
     }
   }
 
-
   ////////////////////////////////////////
 
   generateReport(data) {
@@ -1023,22 +1081,96 @@ layoutSettings(event) {
   }
 
  //////////// Dynamic lists by aman gupta on 07/07/2023 ///////////////
-  choose() {
-    var list = document.createElement("select");
-    list.id = "choose_scan";
-    var optionSelect = document.createElement("option");
-    optionSelect.value = 0;
-    optionSelect.text = "Generate report";
-    list.appendChild(optionSelect);
-    options.forEach(({ label, id }) => {
-      var option = document.createElement("option");
+ choose() {
+  // Retrieve query parameters from the URL
+  const urlSearchParams = new URLSearchParams(window.location.search);
+  let modality = urlSearchParams.get("data-Modality"); // Default to null if not present
+  let Bodypart = urlSearchParams.get("data-bodypart");
+  // Create a dropdown element
+  let list = document.createElement("select");
+  list.id = "choose_scan";
+
+  // Map modality to modality1 (if conditions are met)
+  let modality1 = modality; // Default to modality itself
+  if (modality === "DX" || modality === "CR") {
+    modality1 = "Xray";
+  } else if (modality === "CT") {
+    modality1 = "CT";
+  }
+  else
+  {
+    modality1="MR"
+  }
+
+
+  // Default "Generate report" option
+  let optionSelect = document.createElement("option");
+  optionSelect.value = 0;
+  optionSelect.text = "Generate report";
+  list.appendChild(optionSelect);
+
+  // Loose comparison logic
+  options
+    .filter(({ label }) => {
+      const lowerLabel = label.toLowerCase();
+      if (modality1 === "Xray") {
+        // Match loosely if label contains "xray" or related terms
+        if (Bodypart.toLowerCase() === "shoulder")
+        {
+          return lowerLabel.includes("xray") || lowerLabel.includes("left-shoulder") ||  lowerLabel.includes("right-shoulder");;
+        }
+        else if(Bodypart.toLowerCase() === "knee")
+        {
+          return lowerLabel.includes("knee");
+        }
+        else if(Bodypart.toLowerCase() === "spine")
+        {
+          return lowerLabel.includes("spine")
+        }
+        else if (Bodypart.toLowerCase() === "chest")
+        {
+          return lowerLabel.includes("chest") ;
+        }
+        else
+        {
+          return lowerLabel.includes("blanks");
+        }
+        
+      } else if (modality1 === "CT") {
+        
+        // Match loosely if label contains "ct" or related terms
+        if(Bodypart.toLowerCase() === "head") 
+        {
+          return lowerLabel.includes("head");
+        }
+        else if(Bodypart.toLowerCase() === "abdomen") 
+        {
+          return lowerLabel.includes("abdomen");
+        }
+        else if(Bodypart.toLowerCase() === "pns")
+        {
+          return lowerLabel.includes("pns");
+        }
+        else
+        {
+          return lowerLabel.includes("blanks");
+        }
+      }  else {
+        return lowerLabel.includes("blanks");
+      }
+      return false; // No matches for other modalities
+    })
+    .forEach(({ label, id }) => {
+      let option = document.createElement("option");
       option.value = id;
       option.text = label;
       list.appendChild(option);
     });
-    list.onchange = this.handleSeletion;
-    return list;
-  }
+
+  // Assign a handler for onchange
+  list.onchange = this.handleSeletion; // You should define handleSelection method
+  return list;
+}
   actionDropDown() {
     var list = document.createElement("select");
     list.id = "export_data";
@@ -3339,6 +3471,9 @@ layoutSettings(event) {
 <div className="button-container"><button className='tool-button' value='Zoom'
 onClick={e => this.toggleTool(e.target.value)}> <AiOutlineZoomIn size={25} /> {/* Adjust size as 
 needed */}Zoom</button></div>
+<div className="button-container"><button className='tool-button' value='Crosshairs'
+onClick={e => this.toggleTool(e.target.value)}> <AiOutlineZoomIn size={25} /> {/* Adjust size as 
+needed */}Crosshairs</button></div>
 {/*Button for enabling Pan tool, drop down for changing alignment settings */}
 <div className="button-container" id='Pan Settings'>
 <button className='tool-button' value='Pan' onClick={e =>
