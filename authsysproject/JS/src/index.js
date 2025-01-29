@@ -165,14 +165,13 @@ var nonCT_ImageIds = [];
 
 var curr_tool = null;
 var prev_layout = 'one';
-
 //Dict of all cornerstone tools 
 const Tools = {"Length": cornerstoneTools.LengthTool, "Angle": cornerstoneTools.AngleTool, "CobbAngle": cornerstoneTools.CobbAngleTool, 
   "RectangleROI": cornerstoneTools.RectangleROITool, "CircleROI": cornerstoneTools.CircleROITool, "EllipticalROI": cornerstoneTools.EllipticalROITool,
   "FreehandROI": cornerstoneTools.PlanarFreehandROITool, "Bidirectional": cornerstoneTools.BidirectionalTool, "Zoom": cornerstoneTools.ZoomTool, 
   "Pan": cornerstoneTools.PanTool, "Contrast": cornerstoneTools.WindowLevelTool, "Probe": cornerstoneTools.ProbeTool,"Eraser": cornerstoneTools.EraserTool, 
   "PlanarRotate": cornerstoneTools.PlanarRotateTool, "Height": cornerstoneTools.HeightTool, "SplineROI": cornerstoneTools.SplineROITool, 
-  "StackScroll": cornerstoneTools.StackScrollMouseWheelTool, "ArrowAnnotate": cornerstoneTools.ArrowAnnotateTool, "Crosshairs":cornerstoneTools.CrosshairsTool,
+  "StackScroll": cornerstoneTools.StackScrollMouseWheelTool, "ArrowAnnotate": cornerstoneTools.ArrowAnnotateTool, "Crosshairs":cornerstoneTools.CrosshairsTool,"Magnify":cornerstoneTools.MagnifyTool,
 }
 
 var current_user = JSON.parse(
@@ -398,7 +397,7 @@ class App extends Component {
         const previewTab = document.getElementById('previewTab');
         const viewport = document.querySelector('.patientdata');
         const studyid = PARAM;
-
+  
         // Create a loading message div
         const loadingMessage = document.createElement('div');
         loadingMessage.id = 'loadingMessage';
@@ -415,13 +414,21 @@ class App extends Component {
         loadingMessage.style.zIndex = '1000';
         loadingMessage.style.pointerEvents = 'none'; // Ensure it's non-interactive
         document.body.appendChild(loadingMessage);
-
-
+  
+        // Timeout for the loading message - 1 minute
+        const loadingMessageTimeout = setTimeout(() => {
+            const message = document.getElementById('loadingMessage');
+            if (message) {
+                document.body.removeChild(message); // Hide the loading message after 1 minute
+                console.log('Loading message removed after timeout');
+            }
+        }, 60000); // 1 minute in milliseconds
+  
         // Get CSRF token for POST request
         const re = await fetch("/get-csrf-token/");
         const FI = await re.json();
         const token = FI.csrf_token;
-
+  
         // Fetch study details from view that accesses Orthanc server
         const response = await fetch('/data', {
             method: 'POST',
@@ -432,7 +439,7 @@ class App extends Component {
             body: studyid
         });
         const data = await response.json();
-
+  
         // Patient + study details
         const study_uid = data.study_uid;
         const series = data.series;
@@ -440,13 +447,12 @@ class App extends Component {
         const id = data.id;
         const study_date = data.date;
         const study_time = data.time;
-    
-
+  
         let k = 0;
         let imageIdIndex = 0;
         const totalSeries = series.length;
         let loadedSeriesCount = 0;
-
+  
         // Function to format time
         function formatTime(study_time) {
             const hours = study_time.slice(0, 2);
@@ -455,7 +461,7 @@ class App extends Component {
             return `${hours}:${minutes}:${seconds}`;
         }
         const formattedTime = formatTime(study_time);
-
+  
         // Function to format the date as YYYY/MM/DD
         function formatDate(date) {
             if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -467,114 +473,150 @@ class App extends Component {
                 const day = date.slice(6, 8);
                 return `${year}/${month}/${day}`;
             }
-
+  
             console.error("Invalid date format:", date);
             return "Invalid Date";
         }
         const formattedDate = formatDate(study_date);
-
-        viewport.innerHTML += `<p style="margin-bottom:0">Name: ${name}<br>ID: ${id}<br>Study Date: ${formattedDate}<br>Study Time: ${formattedTime}<br</p>`;
-
-        for (let item of series) {
+  
+        viewport.innerHTML += `<p style="margin-bottom:0">Name: ${name}<br>ID: ${id}<br>Study Date: ${formattedDate}<br>Study Time: ${formattedTime}<br></p>`;
+  
+        // Handle each series asynchronously in parallel using Promise.all + series.map()
+        const imagePromises = series.map(async (item, index) => {
+            const startTime = Date.now();  // Start time for performance tracking
+            
             let imageId = await createImageIdsAndCacheMetaData({
                 StudyInstanceUID: study_uid,
                 SeriesInstanceUID: item[0],
                 wadoRsRoot: 'https://pacs.reportingbot.in/dicom-web',
             });
-
+  
             let imageCount = 0;
             if (Array.isArray(imageId)) {
                 imageCount = imageId.length;
             }
-
+  
             let image = document.createElement('img');
             image.src = item[3];
             image.style.height = '100px';
             image.style.width = '120px';
             image.style.marginBottom = '0px';
-
+  
             if (item[1] === 'CT' || item[1] === 'MR') {
                 let volumeId = 'cornerstoneStreamingImageVolume: myVolume' + k;
                 k += 1;
                 image.dataset.value = volumeId;
-
-                let volume = await cornerstone.volumeLoader.createAndCacheVolume(volumeId, { imageIds: imageId, });
-                cornerstone.utilities.cacheUtils.performCacheOptimizationForVolume(volumeId);
+  
+                let volume = await cornerstone.volumeLoader.createAndCacheVolume(volumeId, { imageIds: imageId });
+                cornerstone.utilities.cacheUtils.performCacheOptimizationForVolume(volumeId); // Cache optimization
                 volume.load();
+  
+                image.dataset.modality = item[1];
+                image.dataset.description = item[2];
+                image.draggable = true;
+  
+                image.addEventListener('load', () => {
+                    loadedSeriesCount++;
+                    console.log(`Image loaded: ${item[2]} - Loaded Series: ${loadedSeriesCount}`);
+                });
+  
+                // Add to preview tab
+                const textContainer = document.createElement('div');
+                textContainer.style.border = '1px solid #ccc';
+                textContainer.style.padding = '10px';
+                textContainer.style.marginBottom = '5px';
+                textContainer.style.borderRadius = '2px';
+                textContainer.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                textContainer.style.backgroundColor = '#f9f9f9';
+                textContainer.style.maxWidth = '100px';
+                textContainer.style.textAlign = 'center';
+                textContainer.innerHTML = `
+                    <p style="margin: 1px 0; line-height: 1.3; font-size: 10px;">
+                        <strong>${item[1]}</strong><br>
+                        <span><strong>${item[2]}</strong><br></span>
+                        <span>Image Count: <strong>${imageCount}</strong></span>
+                    </p>
+                `;
+  
+                previewTab.appendChild(textContainer);
+                previewTab.appendChild(image);
             } else {
                 nonCT_ImageIds.push(imageId);
                 image.dataset.value = imageIdIndex;
                 imageIdIndex += 1;
+  
+                image.dataset.modality = item[1];
+                image.dataset.description = item[2];
+                image.draggable = true;
+                const textContainer = document.createElement('div');
+                textContainer.style.border = '1px solid #ccc';
+                textContainer.style.padding = '10px';
+                textContainer.style.marginBottom = '5px';
+                textContainer.style.borderRadius = '2px';
+                textContainer.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                textContainer.style.backgroundColor = '#f9f9f9';
+                textContainer.style.maxWidth = '100px';
+                textContainer.style.textAlign = 'center';
+                textContainer.innerHTML = `
+                    <p style="margin: 1px 0; line-height: 1.3; font-size: 10px;">
+                        <strong>${item[1]}</strong><br>
+                        <span><strong>${item[2]}</strong><br></span>
+                        <span>Image Count: <strong>${imageCount}</strong></span>
+                    </p>
+                `;
+  
+                // Add to the preview tab
+                previewTab.appendChild(textContainer);
+                previewTab.appendChild(image);
+  
+                // Non-CT image loading (no caching required)
+                image.addEventListener('load', () => {
+                    loadedSeriesCount++;
+                    console.log(`Non-CT Image loaded: ${item[2]} - Loaded Series: ${loadedSeriesCount}`);
+                });
             }
-
-            // Add previews to previewTab.innerHTML
-            image.dataset.modality = item[1];
-            image.dataset.description = item[2];
-            image.draggable = true;
-
-            const textContainer = document.createElement('div');
-            textContainer.style.border = '1px solid #ccc';
-            textContainer.style.padding = '10px';
-            textContainer.style.marginBottom = '5px';
-            textContainer.style.borderRadius = '2px';
-            textContainer.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-            textContainer.style.backgroundColor = '#f9f9f9';
-            textContainer.style.maxWidth = '100px';
-            textContainer.style.textAlign = 'center';
-
-            textContainer.innerHTML = `
-                <p style="margin: 1px 0; line-height: 1.3; font-size: 10px;">
-                    <strong>${item[1]}</strong><br>
-                    <span><strong>${item[2]}</strong><br></span>
-                    <span>Image Count: <strong>${imageCount}</strong></span>
-                </p>
-            `;
-
-            previewTab.appendChild(textContainer);
-            previewTab.appendChild(image);
-
-            // Set up the image load event listener
-          // Assuming the loading message element is added dynamically somewhere
-const loadingMessageTimeout = setTimeout(() => {
-  const message = document.getElementById('loadingMessage');
-  if (message) {
-      document.body.removeChild(message); // Hide the loading message after 1 minute
-      console.log('Loading message removed after timeout');
-  }
-}, 60000); // 1 minute in milliseconds
-
-image.onload = () => {
-  loadedSeriesCount++;
-  console.log(`Image loaded: ${item[2]} - Loaded Series: ${loadedSeriesCount}`);
-
-  // Hide the loading message when all images are loaded
-  if (loadedSeriesCount === totalSeries) {
-      clearTimeout(loadingMessageTimeout); // Cancel the timeout when all images are loaded
-      const message = document.getElementById('loadingMessage');
-      if (message) {
-          document.body.removeChild(message); // Hide the loading message
-          console.log('All images loaded, loading message removed');
-      }
-  }
-};
-
-        }
-
+  
+            const endTime = Date.now();
+            const elapsedTime = endTime - startTime;
+            console.log(`Series ${index + 1} (modality: ${item[1]}): Load Time = ${elapsedTime} ms`);
+            return item; // Ensure proper promise resolution
+        });
+  
+        // Once all promises are resolved, proceed to cleanup
+        Promise.all(imagePromises)
+            .then(() => {
+                clearTimeout(loadingMessageTimeout); // Cancel timeout if all images loaded
+                const message = document.getElementById('loadingMessage');
+                if (message) {
+                    document.body.removeChild(message); // Remove the loading message
+                    console.log('All images loaded, loading message removed');
+                }
+            })
+            .catch(error => {
+                // In case of error in loading images
+                clearTimeout(loadingMessageTimeout); // Cancel timeout on error
+                const message = document.getElementById('loadingMessage');
+                if (message) {
+                    document.body.removeChild(message); // Hide loading message on error
+                }
+                console.error('Error while loading images:', error);
+            });
+  
         previewTab.addEventListener('dragstart', (event) => {
             if (event.target.tagName === 'IMG') {
                 const transferData = [event.target.dataset.value, event.target.dataset.modality, event.target.dataset.description];
                 event.dataTransfer.setData("text", JSON.stringify(transferData));
             }
         });
-
+  
     } catch (error) {
         console.error(error);
         const message = document.getElementById('loadingMessage');
         if (message) {
-            document.body.removeChild(message); // Ensure loading message is removed on error as well
+            document.body.removeChild(message); // Ensure loading message is removed on error
         }
     }
-}
+  }
   
   
  
@@ -1080,97 +1122,99 @@ image.onload = () => {
     return "<img src='" + user.companylogo + "' height='' width='500' />";
   }
 
- //////////// Dynamic lists by aman gupta on 07/07/2023 ///////////////
- choose() {
-  // Retrieve query parameters from the URL
-  const urlSearchParams = new URLSearchParams(window.location.search);
-  let modality = urlSearchParams.get("data-Modality"); // Default to null if not present
-  let Bodypart = urlSearchParams.get("data-bodypart");
-  // Create a dropdown element
-  let list = document.createElement("select");
-  list.id = "choose_scan";
 
-  // Map modality to modality1 (if conditions are met)
-  let modality1 = modality; // Default to modality itself
-  if (modality === "DX" || modality === "CR") {
-    modality1 = "Xray";
-  } else if (modality === "CT") {
-    modality1 = "CT";
-  }
-  else
-  {
-    modality1="MR"
-  }
-
-
-  // Default "Generate report" option
-  let optionSelect = document.createElement("option");
-  optionSelect.value = 0;
-  optionSelect.text = "Generate report";
-  list.appendChild(optionSelect);
-
-  // Loose comparison logic
-  options
-    .filter(({ label }) => {
-      const lowerLabel = label.toLowerCase();
-      if (modality1 === "Xray") {
-        // Match loosely if label contains "xray" or related terms
-        if (Bodypart.toLowerCase() === "shoulder")
-        {
-          return lowerLabel.includes("xray") || lowerLabel.includes("left-shoulder") ||  lowerLabel.includes("right-shoulder");;
-        }
-        else if(Bodypart.toLowerCase() === "knee")
-        {
-          return lowerLabel.includes("knee");
-        }
-        else if(Bodypart.toLowerCase() === "spine")
-        {
-          return lowerLabel.includes("spine")
-        }
-        else if (Bodypart.toLowerCase() === "chest")
-        {
-          return lowerLabel.includes("chest") ;
-        }
-        else
-        {
+  choose() {
+    // Retrieve query parameters from the URL
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    let modality = urlSearchParams.get("data-Modality"); // Default to null if not present
+    let Bodypart = urlSearchParams.get("data-bodypart");
+    // Create a dropdown element
+    let list = document.createElement("select");
+    list.id = "choose_scan";
+  
+    // Map modality to modality1 (if conditions are met)
+    let modality1 = modality; // Default to modality itself
+    if (modality === "DX" || modality === "CR") {
+      modality1 = "Xray";
+    } else if (modality === "CT") {
+      modality1 = "CT";
+    }
+    else
+    {
+      modality1="MR"
+    }
+    console.log(modality1);
+  
+    // Default "Generate report" option
+    let optionSelect = document.createElement("option");
+    optionSelect.value = 0;
+    optionSelect.text = "Generate report";
+    list.appendChild(optionSelect);
+  
+    // Loose comparison logic
+    options
+      .filter(({ label }) => {
+        const lowerLabel = label.toLowerCase();
+        if (modality1 === "Xray") {
+          // Match loosely if label contains "xray" or related terms
+          if (Bodypart.toLowerCase() === "shoulder")
+          {
+            return lowerLabel.includes("xray") || lowerLabel.includes("left-shoulder") ||  lowerLabel.includes("right-shoulder") || lowerLabel.includes("blanks");
+          }
+          else if(Bodypart.toLowerCase() === "knee")
+          {
+            return lowerLabel.includes("knee") || lowerLabel.includes("blanks");
+          }
+          else if(Bodypart.toLowerCase() === "spine")
+          {
+            return lowerLabel.includes("spine") || lowerLabel.includes("blanks");
+          }
+          else if (Bodypart.toLowerCase() === "chest")
+          {
+            return lowerLabel.includes("chest") || lowerLabel.includes("blanks");
+          }
+          else
+          {
+            return lowerLabel.includes("blanks");
+          }
+          
+        } else if (modality1 === "CT") {
+          
+          // Match loosely if label contains "ct" or related terms
+          if(Bodypart.toLowerCase() === "head") 
+          {
+            return lowerLabel.includes("head") || lowerLabel.includes("blanks");
+          }
+          else if(Bodypart.toLowerCase() === "abdomen") 
+          {
+            return lowerLabel.includes("abdomen") || lowerLabel.includes("blanks");
+          }
+          else if(Bodypart.toLowerCase() === "pns")
+          {
+            return lowerLabel.includes("pns") || lowerLabel.includes("blanks");
+          }
+          else
+          {
+            return lowerLabel.includes("blanks");
+          }
+        }  else {
           return lowerLabel.includes("blanks");
         }
-        
-      } else if (modality1 === "CT") {
-        
-        // Match loosely if label contains "ct" or related terms
-        if(Bodypart.toLowerCase() === "head") 
-        {
-          return lowerLabel.includes("head");
-        }
-        else if(Bodypart.toLowerCase() === "abdomen") 
-        {
-          return lowerLabel.includes("abdomen");
-        }
-        else if(Bodypart.toLowerCase() === "pns")
-        {
-          return lowerLabel.includes("pns");
-        }
-        else
-        {
-          return lowerLabel.includes("blanks");
-        }
-      }  else {
-        return lowerLabel.includes("blanks");
-      }
-      return false; // No matches for other modalities
-    })
-    .forEach(({ label, id }) => {
-      let option = document.createElement("option");
-      option.value = id;
-      option.text = label;
-      list.appendChild(option);
-    });
+        return false; // No matches for other modalities
+      })
+      .forEach(({ label, id }) => {
+        let option = document.createElement("option");
+        option.value = id;
+        option.text = label;
+        list.appendChild(option);
+      });
+  
+    // Assign a handler for onchange
+    list.onchange = this.handleSeletion; // You should define handleSelection method
+    return list;
+  }  
 
-  // Assign a handler for onchange
-  list.onchange = this.handleSeletion; // You should define handleSelection method
-  return list;
-}
+
   actionDropDown() {
     var list = document.createElement("select");
     list.id = "export_data";
@@ -3474,6 +3518,10 @@ needed */}Zoom</button></div>
 <div className="button-container"><button className='tool-button' value='Crosshairs'
 onClick={e => this.toggleTool(e.target.value)}> <AiOutlineZoomIn size={25} /> {/* Adjust size as 
 needed */}Crosshairs</button></div>
+{/* {button for the magnify tool} */}
+<div className="button-container"><button className='tool-button' value='Magnify'
+onClick={e => this.toggleTool(e.target.value)}> <AiOutlineZoomIn size={25} /> {/* Adjust size as 
+needed */}Magnify</button></div>
 {/*Button for enabling Pan tool, drop down for changing alignment settings */}
 <div className="button-container" id='Pan Settings'>
 <button className='tool-button' value='Pan' onClick={e =>
