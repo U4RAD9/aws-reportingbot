@@ -5124,7 +5124,6 @@ def coordinatorallocate1(request):
 
 
 
-
 def review_page(request):
     # Fetch all DICOMData objects with twostepcheck=True
     dicom_data_objects = DICOMData.objects.filter(twostepcheck=True).order_by('-id')
@@ -5161,18 +5160,13 @@ def review_page(request):
             'report_date': pdf_reports.first().report_date if pdf_reports.exists() else None,
             'test_date': pdf_reports.first().test_date if pdf_reports.exists() else None,
         })
-        print(filtered_data)
 
         # Collect unique study dates
         if dicom_data.study_date:
             study_date_set.add(dicom_data.study_date)
 
-    # Format study dates for filtering
-    formatted_study_date = sorted(
-        datetime.strptime(study_date, '%Y-%m-%d').strftime('%Y-%m-%d') 
-        if isinstance(study_date, str) else study_date.strftime('%Y-%m-%d')
-        for study_date in study_date_set
-    )
+    # Sort study dates (no formatting applied)
+    sorted_study_dates = sorted(study_date_set)
 
     # Pagination
     paginator = Paginator(filtered_data, 50)  # Show 50 entries per page
@@ -5181,10 +5175,11 @@ def review_page(request):
 
     context = {
         'filtered_data': page_obj,
-        'Test_Dates': formatted_study_date,
+        'Test_Dates': sorted_study_dates,  # Pass the sorted study dates directly
     }
 
     return render(request, 'users/review_page.html', context)
+
 
 def update_twostepcheck(request, patient_id):
     try:
