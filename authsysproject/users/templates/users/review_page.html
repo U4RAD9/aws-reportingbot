@@ -538,9 +538,28 @@
                         </button>
                     </td>
                     <td>
-                        {% for jpeg_url in data.jpeg_urls %}
-                            <a class="reportButton" href="{{ jpeg_url }}" target="_blank">View Image {{ forloop.counter }}</a>
-                        {% endfor %}
+                      {% for data in filtered_data %}
+                         {% if data.dicom_data.patient.id == patient.id %}
+                            <a class="reportButton"
+                            href="reporting-bot?data-patientid={{ data.dicom_data.patient_id }}&data-patientname={{ data.dicom_data.patient_name }}&data-bodypart={{ data.dicom_data.body_part_examined }}&data-Modality={{ data.dicom_data.Modality }}&data-study-id={{ data.dicom_data.study_id }}&data-age={{ data.dicom_data.age }}&data-gender={{ data.dicom_data.gender }}&data-testdate={{ data.dicom_data.study_date }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ data.dicom_data.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ data.dicom_data.dicom_file }}&data-location={{ data.dicom_data.location }}&data-accession={{ data.dicom_data.accession_number }}"
+                            data-patient-id="{{ data.dicom_data.patient_id }}" data-patientname="{{ data.dicom_data.patient_name }}"
+                            data-age="{{ data.dicom_data.age }}" data-gender="{{ data.dicom_data.gender }}"
+                            data-testdate="{{ data.dicom_data.study_date }}" data-reportdate="{% now 'Y-m-d' %}"
+                            data-reportimage="{{ data.dicom_data.urls.0|urlencode }}"
+                            data-dicom-file="{% get_media_prefix %}{{ data.dicom_data.dicom_file }}"
+                            data-location="{{ data.dicom_data.location }}"
+                            data-study-id="{{data.dicom_data.study_id}}"
+                            data-Modality="{{data.dicom_data.Modality}}"
+                            data-bodypart="{{data.dicom_data.body_part_examined}}"
+                            data-accession="{{ data.dicom_data.accession_number }}" onclick="changeButtonColor(this);">
+                                {% if data.dicom_data.isDone %}
+                                   Reported
+                                {% else %}
+                                   Report
+                                {% endif %}
+                            </a>
+                         {% endif %}
+                      {% endfor %}
                     </td>
                     <td><input type="checkbox" class="rowCheckbox" /></td>
                 </tr>
