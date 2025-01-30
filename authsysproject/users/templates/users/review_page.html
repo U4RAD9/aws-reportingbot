@@ -468,104 +468,129 @@
         </span>
       </div>
       <div class="card-body">
-        <div class="table-container">
-          <table id="patientTable">
-            <thead>
-              <tr>
-                <th>Patient ID</th>
-                <th>Name</th>
-                <th>
-                  <div class="filter-dropdown-container">
-                    <div>Test Date</div>
-                    <div class="dropdown-select1" id="filter-date-dropdown-date">
-                      <select id="filter-date-select-date" class="form-control">
-                        <option value="">All</option>
-                        {% for date in Test_Dates %}
-                        <option value="{{ date }}">{{ date }}</option>
-                        {% endfor %}
+        <form method="POST" action="{% url 'assign_radiologist2' %}" id="radiologistForm">
+          {% csrf_token %}
+          <div class="form-container row">
+              <div class="form-group col">
+                  <div class="select-group">
+                      <label for="radiologist-select">Assign Radiologist:</label>
+                      <select id="radiologist-select" name="radiologist" class="form-control">
+                          <option value="">--Select Radiologist--</option>
+                          {% for radiologist in radiologists %}
+                              <option value="{{ radiologist.id }}">{{ radiologist.first_name }}</option>
+                          {% endfor %}
                       </select>
-                    </div>
                   </div>
-                </th>
-                <th>Report Date</th>
-                <th>Actions</th>
-                <th>History Files</th>
-                <th>Mark As Correct</th>
-                <th>Reassign to Doctor</th>
-                <th>Check Image</th>
-                <th>
-                  Select All<input class="ml-1" type="checkbox" id="selectAllCheckbox" />
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for data in filtered_data %}
-                <tr class="patientRow">
-                    <td>{{ data.dicom_data.patient_id }}</td>
-                    <td>{{ data.dicom_data.patient_name }}</td>
-                    <td>{{ data.dicom_data.study_date }}</td>
-                    <td>{{ data.report_date }}</td>
-                    <td>
-                        {% for pdf_url in data.pdf_urls %}
-                            <a class="reportButton" href="{{ pdf_url }}" target="_blank">View Report {{ forloop.counter }}</a>
-                        {% endfor %}
-                    </td>
-                    <td>
-                        {% if data.history_file_urls %}
-                            <ul>
-                                {% for history_url in data.history_file_urls %}
-                                    <li>
-                                        <a href="{{ history_url }}" target="_blank">History File {{ forloop.counter }}</a>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            No History Files
-                        {% endif %}
-                    </td>
-                    <td>
-                        <button class="twostepcheck-button btn btn-sm" 
-                                data-patient-id="{{ data.dicom_data.patient_id }}" 
-                                style="background-color: {% if data.dicom_data.twostepcheck %}red{% else %}green{% endif %}; color: white;">
-                            {% if data.dicom_data.twostepcheck %}Ready to Go{% else %}Pending{% endif %}
-                        </button>
-                    </td>
-                    <td>
-                        <button class="isDone-button btn btn-sm" 
-                                data-patient-id="{{ data.dicom_data.patient_id }}" 
-                                style="background-color: {% if data.dicom_data.isDone %}red{% else %}green{% endif %}; color: white;">
-                            {% if data.dicom_data.isDone %}Reassign{% else %}Not Reported Yet{% endif %}
-                        </button>
-                    </td>
-                    <td>
+      
+                  <div class="button-group">
+                      <button type="submit" name="action" value="assign">Assign Radiologist</button>
+                      <button type="submit" name="action" value="replace">Replace Radiologist</button>
+                  </div>
+              </div>
+          </div>
+      
+          <div class="table-container">
+              <table id="patientTable">
+                  <thead>
+                      <tr>
+                          <th>
+                            Select All <input type="checkbox" id="masterCheckbox" />
+                          </th>
+                          <th>Patient ID</th>
+                          <th>Name</th>
+                          <th>
+                              <div class="filter-dropdown-container">
+                                  <div>Test Date</div>
+                                  <div class="dropdown-select1" id="filter-date-dropdown-date">
+                                      <select id="filter-date-select-date" class="form-control">
+                                          <option value="">All</option>
+                                          {% for date in Test_Dates %}
+                                              <option value="{{ date }}">{{ date }}</option>
+                                          {% endfor %}
+                                      </select>
+                                  </div>
+                              </div>
+                          </th>
+                          <th>Report Date</th>
+                          <th>Actions</th>
+                          <th>History Files</th>
+                          <th>Mark As Correct</th>
+                          <th>Reassign to Doctor</th>
+                          <th>Check Image</th>
+                      </tr>
+                  </thead>
+                  <tbody>
                       {% for data in filtered_data %}
-                         {% if data.dicom_data.patient.id == patient.id %}
-                            <a class="reportButton"
-                            href="reporting-bot?data-patientid={{ data.dicom_data.patient_id }}&data-patientname={{ data.dicom_data.patient_name }}&data-bodypart={{ data.dicom_data.body_part_examined }}&data-Modality={{ data.dicom_data.Modality }}&data-study-id={{ data.dicom_data.study_id }}&data-age={{ data.dicom_data.age }}&data-gender={{ data.dicom_data.gender }}&data-testdate={{ data.dicom_data.study_date }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ data.dicom_data.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ data.dicom_data.dicom_file }}&data-location={{ data.dicom_data.location }}&data-accession={{ data.dicom_data.accession_number }}"
-                            data-patient-id="{{ data.dicom_data.patient_id }}" data-patientname="{{ data.dicom_data.patient_name }}"
-                            data-age="{{ data.dicom_data.age }}" data-gender="{{ data.dicom_data.gender }}"
-                            data-testdate="{{ data.dicom_data.study_date }}" data-reportdate="{% now 'Y-m-d' %}"
-                            data-reportimage="{{ data.dicom_data.urls.0|urlencode }}"
-                            data-dicom-file="{% get_media_prefix %}{{ data.dicom_data.dicom_file }}"
-                            data-location="{{ data.dicom_data.location }}"
-                            data-study-id="{{data.dicom_data.study_id}}"
-                            data-Modality="{{data.dicom_data.Modality}}"
-                            data-bodypart="{{data.dicom_data.body_part_examined}}"
-                            data-accession="{{ data.dicom_data.accession_number }}" onclick="changeButtonColor(this);">
-                                {% if data.dicom_data.isDone %}
-                                   Reported
-                                {% else %}
-                                   Report
-                                {% endif %}
-                            </a>
-                         {% endif %}
+                          <tr class="patientRow" id="{{ data.dicom_data.patient_id }}">
+                              <td>
+                                <input type="checkbox" class="patientCheckbox" name="patients" value="{{ data.dicom_data.id }}" />
+                              </td>
+                              <td>{{ data.dicom_data.patient_id }}</td>
+                              <td>{{ data.dicom_data.patient_name }}</td>
+                              <td>{{ data.dicom_data.study_date }}</td>
+                              <td>{{ data.report_date }}</td>
+                              <td>
+                                  {% for pdf_url in data.pdf_urls %}
+                                      <a class="reportButton" href="{{ pdf_url }}" target="_blank">View Report {{ forloop.counter }}</a>
+                                  {% endfor %}
+                              </td>
+                              <td>
+                                  {% if data.history_file_urls %}
+                                      <ul>
+                                          {% for history_url in data.history_file_urls %}
+                                              <li>
+                                                  <a href="{{ history_url }}" target="_blank">History File {{ forloop.counter }}</a>
+                                              </li>
+                                          {% endfor %}
+                                      </ul>
+                                  {% else %}
+                                      No History Files
+                                  {% endif %}
+                              </td>
+                              <td>
+                                  <button class="twostepcheck-button btn btn-sm" 
+                                          data-patient-id="{{ data.dicom_data.patient_id }}" 
+                                          style="background-color: {% if data.dicom_data.twostepcheck %}red{% else %}green{% endif %}; color: white;">
+                                      {% if data.dicom_data.twostepcheck %}Ready to Go{% else %}Pending{% endif %}
+                                  </button>
+                              </td>
+                              <td>
+                                  {% for radiologist in data.dicom_data.radiologist.all %}
+                                      {{ radiologist.user.first_name }}
+                                      {% if not forloop.last %}, {% endif %}
+                                  {% endfor %}
+                                  <button class="isDone-button btn btn-sm" 
+                                          data-patient-id="{{ data.dicom_data.patient_id }}" 
+                                          style="background-color: {% if data.dicom_data.isDone %}red{% else %}green{% endif %}; color: white;">
+                                      {% if data.dicom_data.isDone %}Reassign{% else %}Not Reported Yet{% endif %}
+                                  </button>
+                              </td>
+                              <td>
+                                  <a class="reportButton"
+                                     href="reporting-bot?data-patientid={{ data.dicom_data.patient_id }}&data-patientname={{ data.dicom_data.patient_name }}&data-bodypart={{ data.dicom_data.body_part_examined }}&data-Modality={{ data.dicom_data.Modality }}&data-study-id={{ data.dicom_data.study_id }}&data-age={{ data.dicom_data.age }}&data-gender={{ data.dicom_data.gender }}&data-testdate={{ data.dicom_data.study_date }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ data.dicom_data.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ data.dicom_data.dicom_file }}&data-location={{ data.dicom_data.location }}&data-accession={{ data.dicom_data.accession_number }}"
+                                     data-patient-id="{{ data.dicom_data.patient_id }}" data-patientname="{{ data.dicom_data.patient_name }}"
+                                     data-age="{{ data.dicom_data.age }}" data-gender="{{ data.dicom_data.gender }}"
+                                     data-testdate="{{ data.dicom_data.study_date }}" data-reportdate="{% now 'Y-m-d' %}"
+                                     data-reportimage="{{ data.dicom_data.urls.0|urlencode }}"
+                                     data-dicom-file="{% get_media_prefix %}{{ data.dicom_data.dicom_file }}"
+                                     data-location="{{ data.dicom_data.location }}"
+                                     data-study-id="{{ data.dicom_data.study_id }}"
+                                     data-Modality="{{ data.dicom_data.Modality }}"
+                                     data-bodypart="{{ data.dicom_data.body_part_examined }}"
+                                     data-accession="{{ data.dicom_data.accession_number }}" onclick="changeButtonColor(this);">
+                                      {% if data.dicom_data.isDone %}
+                                          Reported
+                                      {% else %}
+                                          Report
+                                      {% endif %}
+                                  </a>
+                              </td>
+                          </tr>
                       {% endfor %}
-                    </td>
-                    <td><input type="checkbox" class="rowCheckbox" /></td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+                  </tbody>
+              </table>
+          </div>
+        </form>
         </div>
 
         <div class="scroll-to-top">
@@ -581,6 +606,16 @@
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-core@latest/dist/cornerstone.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-wado-image-loader@latest/dist/cornerstoneWADOImageLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-tools@latest/dist/cornerstoneTools.js"></script>
+
+
+  <script>
+    document.getElementById('selectAllCheckbox').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.rowCheckbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+    });
+  </script>
 
   <script>
     // Function to update the counts of rows with 'Report' and 'Reported' button states
@@ -701,6 +736,93 @@
       getGreeting();
     });
   </script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+      const masterCheckbox = document.getElementById("masterCheckbox");
+      const tableBody = document.querySelector("#patientTable tbody");
+  
+      // Function to get all visible checkboxes
+      const getVisibleCheckboxes = () => {
+          return Array.from(tableBody.querySelectorAll(".patientCheckbox")).filter(checkbox => {
+              // Check if the parent row is visible
+              const row = checkbox.closest("tr");
+              return row && row.style.display !== "none";
+          });
+      };
+  
+      // Toggle visible checkboxes when master checkbox is clicked
+      masterCheckbox.addEventListener("change", () => {
+          const visibleCheckboxes = getVisibleCheckboxes();
+          visibleCheckboxes.forEach(checkbox => {
+              checkbox.checked = masterCheckbox.checked;
+          });
+      });
+  
+      // Update master checkbox status based on visible checkboxes
+      tableBody.addEventListener("change", (event) => {
+          if (event.target.classList.contains("patientCheckbox")) {
+              const visibleCheckboxes = getVisibleCheckboxes();
+              const allChecked = visibleCheckboxes.every(checkbox => checkbox.checked);
+              masterCheckbox.checked = allChecked;
+          }
+      });
+  });
+  
+  
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const csrfToken = '{{ csrf_token }}'; // CSRF token for Django
+
+    // Function to handle checkbox changes
+    function handleCheckboxChange(checkboxClass, endpoint) {
+        document.querySelectorAll(`.${checkboxClass}`).forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                const patientId = this.getAttribute('data-patient-id');
+                const isChecked = this.checked;
+
+                console.log(`Checkbox for Patient ID ${patientId} (${checkboxClass}) is now ${isChecked ? 'checked' : 'unchecked'}.`);
+
+                // Send AJAX request to update status in the database
+                fetch(`/${endpoint}/${patientId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken,
+                    },
+                    body: JSON.stringify({ status: isChecked })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        console.log(`Successfully updated ${checkboxClass} status for Patient ID ${patientId} to ${isChecked}.`);
+                    } else {
+                        console.error(`Failed to update ${checkboxClass} status for Patient ID ${patientId}: ${data.error}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error during update:', error);
+                    // Revert checkbox state if there was an error
+                    this.checked = !isChecked;
+                    console.log(`Reverted checkbox for Patient ID ${patientId} (${checkboxClass}) due to an error.`);
+                });
+            });
+        });
+    }
+
+    // Initialize for both urgent and mlc checkboxes
+    handleCheckboxChange('urgent-checkbox', 'update_urgent_status_xray');
+    handleCheckboxChange('mlc-checkbox', 'update_mlc_status_xray');
+    handleCheckboxChange('vip-checkbox', 'update_vip_status_xray');
+  });
+</script>
 
   <script>
     // Function to handle checkbox state changes

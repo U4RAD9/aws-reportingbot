@@ -42,6 +42,7 @@ urlpatterns = [
     path('allocation1', views.allocation1, name='xraycoordinator'),
     path('assign-radiologist/', views.assign_radiologist, name='assign_radiologist'),
     path('assign-radiologist1/', views.assign_radiologist1, name='assign_radiologist1'),
+    path('assign-radiologist2/', views.assign_radiologist2, name='assign_radiologist2'),
     path('allocationcoordinator1', views.allocationcoordinator1, name='corporatecoordinator'),
     path('allocate/', views.allocate, name='allocate'),
     path('allocate1/', views.allocate1, name='allocate1'),

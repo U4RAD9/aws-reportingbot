@@ -139,6 +139,8 @@ def login(request):
                 return redirect('clientdata')
             elif group == 'campautomation':
                 return redirect('optometrylist')
+            elif group == 'reviewer':
+                return redirect('review_page')
             elif group == 'supercoordinator':
                 return redirect('supercoordinator')
             else:
@@ -908,6 +910,46 @@ def assign_radiologist(request):
             return redirect('xraycoordinator')
 
         return redirect('xraycoordinator')
+
+    # Handle case if the form is not submitted (GET method)
+    return redirect('xraycoordinator')
+
+def assign_radiologist2(request):
+    print("I'm in assign radiologist")
+    if request.method == "POST":
+        action = request.POST.get('action')
+        radiologist_id = request.POST.get('radiologist')
+        selected_patient_ids = request.POST.getlist('patients')
+
+        # Check if any of the fields are missing
+        if not selected_patient_ids:
+            messages.error(request, "Please select at least one patient.")
+            return redirect('review_page')
+
+        patients = DICOMData.objects.filter(id__in=selected_patient_ids)
+        if not patients.exists():
+            messages.error(request, "No valid patients selected.")
+            return redirect('review_page')
+
+        # Radiologist Assignment Logic
+        if action in ["assign", "replace"] and radiologist_id:
+            try:
+                radiologist = PersonalInfoModel.objects.get(user_id=radiologist_id)
+            except PersonalInfoModel.DoesNotExist:
+                messages.error(request, "Selected radiologist not found.")
+                return redirect('review_page')
+
+            if action == "assign":
+                for patient in patients:
+                    patient.radiologist.add(radiologist)
+                messages.success(request, f"Radiologist {radiologist} has been successfully assigned to the selected patients.")
+            elif action == "replace":
+                for patient in patients:
+                    patient.radiologist.clear()
+                    patient.radiologist.add(radiologist)
+                messages.success(request, f"Radiologist {radiologist} has been successfully replaced for the selected patients.")
+
+        return redirect('review_page')
 
     # Handle case if the form is not submitted (GET method)
     return redirect('xraycoordinator')
@@ -5123,11 +5165,22 @@ def coordinatorallocate1(request):
 
 
 
-
+@user_type_required('reviewer')
 def review_page(request):
     # Fetch all DICOMData objects with twostepcheck=True
     dicom_data_objects = DICOMData.objects.filter(twostepcheck=True).order_by('-id')
     study_date_set = set()
+
+    # If a radiologist filter is applied, filter the patients
+    radiologist_filter = request.GET.get('radiologist', None)
+    if radiologist_filter:
+        #patients = patients.filter(radiologist__user__first_name__icontains=radiologist_filter)
+        patients = patients.filter(radiologist__id__in=[radiologist_filter])
+
+    # Get radiologists from the group
+    radiologist_group = Group.objects.get(name='radiologist')
+    # radiologist_objects = radiologist_group.user_set.all()
+    radiologist_objects = radiologist_group.user_set.filter(personalinfo__isnull=False)
 
     # Prepare filtered data
     filtered_data = []
@@ -5161,6 +5214,8 @@ def review_page(request):
             'test_date': pdf_reports.first().test_date if pdf_reports.exists() else None,
         })
 
+        print(filtered_data)
+
         # Collect unique study dates
         if dicom_data.study_date:
             study_date_set.add(dicom_data.study_date)
@@ -5176,6 +5231,7 @@ def review_page(request):
     context = {
         'filtered_data': page_obj,
         'Test_Dates': sorted_study_dates,  # Pass the sorted study dates directly
+        'radiologists': radiologist_objects,
     }
 
     return render(request, 'users/review_page.html', context)
