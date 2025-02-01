@@ -777,8 +777,8 @@
 
             // Loop through each row in the table
             $('#patientTable tbody tr').each(function () {
-                var rowDate = $(this).find('td:nth-child(3)').text(); // Get the test date from the table cell
-                var rowLocation = $(this).find('td:nth-child(5)').text(); // Get the location from the table cell
+                var rowDate = $(this).find('td:nth-child(4)').text(); // Get the test date from the table cell
+                var rowLocation = $(this).find('td:nth-child(6)').text(); // Get the location from the table cell
 
                 // Check if the row matches the selected date and location
                 if ((selectedDate === '' || rowDate === selectedDate) &&
