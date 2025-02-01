@@ -1127,7 +1127,7 @@ class App extends Component {
     // Retrieve query parameters from the URL
     const urlSearchParams = new URLSearchParams(window.location.search);
     let modality = urlSearchParams.get("data-Modality"); // Default to null if not present
-    let Bodypart = urlSearchParams.get("data-bodypart");
+    // let Bodypart = urlSearchParams.get("data-bodypart");
     // Create a dropdown element
     let list = document.createElement("select");
     list.id = "choose_scan";
@@ -1157,46 +1157,46 @@ class App extends Component {
         const lowerLabel = label.toLowerCase();
         if (modality1 === "Xray") {
           // Match loosely if label contains "xray" or related terms
-          if (Bodypart.toLowerCase() === "shoulder")
-          {
-            return lowerLabel.includes("xray") || lowerLabel.includes("left-shoulder") ||  lowerLabel.includes("right-shoulder") || lowerLabel.includes("blanks");
-          }
-          else if(Bodypart.toLowerCase() === "knee")
-          {
-            return lowerLabel.includes("knee") || lowerLabel.includes("blanks");
-          }
-          else if(Bodypart.toLowerCase() === "spine")
-          {
-            return lowerLabel.includes("spine") || lowerLabel.includes("blanks");
-          }
-          else if (Bodypart.toLowerCase() === "chest")
-          {
-            return lowerLabel.includes("chest") || lowerLabel.includes("blanks");
-          }
-          else
-          {
-            return lowerLabel.includes("blanks");
-          }
+          // if (Bodypart.toLowerCase() === "shoulder")
+          
+            return lowerLabel.includes("xray") || lowerLabel.includes("left-shoulder") ||  lowerLabel.includes("right-shoulder") || lowerLabel.includes("blanks") || lowerLabel.includes("knee") || lowerLabel.includes("spine") || lowerLabel.includes("chest");
+          
+          // else if(Bodypart.toLowerCase() === "knee")
+          // {
+          //   return lowerLabel.includes("knee") || lowerLabel.includes("blanks");
+          // }
+          // else if(Bodypart.toLowerCase() === "spine")
+          // {
+          //   return lowerLabel.includes("spine") || lowerLabel.includes("blanks");
+          // }
+          // else if (Bodypart.toLowerCase() === "chest")
+          // {
+          //   return lowerLabel.includes("chest") || lowerLabel.includes("blanks");
+          // }
+          // else
+          // {
+          //   return lowerLabel.includes("blanks");
+          // }
           
         } else if (modality1 === "CT") {
           
           // Match loosely if label contains "ct" or related terms
-          if(Bodypart.toLowerCase() === "head") 
-          {
-            return lowerLabel.includes("head") || lowerLabel.includes("blanks");
-          }
-          else if(Bodypart.toLowerCase() === "abdomen") 
-          {
-            return lowerLabel.includes("abdomen") || lowerLabel.includes("blanks");
-          }
-          else if(Bodypart.toLowerCase() === "pns")
-          {
-            return lowerLabel.includes("pns") || lowerLabel.includes("blanks");
-          }
-          else
-          {
-            return lowerLabel.includes("blanks");
-          }
+          // if(Bodypart.toLowerCase() === "head") 
+          // {
+            return lowerLabel.includes("head") || lowerLabel.includes("blanks") || lowerLabel.includes("abdomen") ||  lowerLabel.includes("pns");
+          // }
+          // else if(Bodypart.toLowerCase() === "abdomen") 
+          // {
+          //   return lowerLabel.includes("abdomen") || lowerLabel.includes("blanks");
+          // }
+          // else if(Bodypart.toLowerCase() === "pns")
+          // {
+          //   return lowerLabel.includes("pns") || lowerLabel.includes("blanks");
+          // }
+          // else
+          // {
+          //   return lowerLabel.includes("blanks");
+          // }
         }  else {
           return lowerLabel.includes("blanks");
         }
