@@ -229,6 +229,7 @@ class App extends Component {
     this.allowDrop = this.allowDrop.bind(this);  
     this.toggleDivs = this.toggleDivs.bind(this); 
     this.togglePatientData = this.togglePatientData.bind(this); 
+    this.openImageInViewport = this.openImageInViewport.bind(this);
     
   }
   allowDrop(event){
@@ -292,6 +293,78 @@ class App extends Component {
     //important, resizes the image inside the viewport when the viewport size changes
     renderingEngine.resize(true, false);
   }  
+  async  openImageInViewport(ID, modality, description, viewport_ID) {
+    let newViewport;
+  
+    // Determine orientation based on description
+    let orientation = cornerstone.Enums.OrientationAxis.AXIAL;
+    if (description.toLowerCase().includes('sag')) {
+      orientation = cornerstone.Enums.OrientationAxis.SAGITTAL;
+    } else if (description.toLowerCase().includes('cor')) {
+      orientation = cornerstone.Enums.OrientationAxis.CORONAL;
+    }
+  
+    const viewport = renderingEngine.getViewport(viewport_ID);
+  
+    // Clear previous data
+    if (viewport.type === cornerstone.Enums.ViewportType.STACK) {
+      viewport.setStack([]);
+    } else if (viewport.type === cornerstone.Enums.ViewportType.VOLUME) {
+      viewport.setVolumes([]);
+    }
+    viewport.render();
+  
+    // Handle single image (e.g., non-DICOM)
+     if (modality === 'CT' || modality === 'MR') {
+      const volume = cornerstone.cache.getVolume(ID);
+      const hasMultipleSlices = volume?.imageIds?.length > 1;
+  
+      if (hasMultipleSlices) {
+        newViewport = await cornerstone.utilities.convertStackToVolumeViewport({
+          options: { volumeId: ID, viewportId: viewport_ID, orientation },
+          viewport,
+        });
+        newViewport.setProperties({ rotation: 0 });
+        toolGroup.addViewport(newViewport.id, renderingEngineId);
+        newViewport.render();
+  
+        // Update slice index display
+        newViewport.element.addEventListener(cornerstone.EVENTS.VOLUME_NEW_IMAGE, () => {
+          const index = newViewport.getSliceIndex() + 1;
+          document.getElementById(indexMap[newViewport.id]).innerHTML = `Image: ${index}`;
+        });
+      } else {
+        viewport.setStack(volume.imageIds);
+        viewport.render();
+      }
+    } else {
+      // Handle non-CT/MR (e.g., XA, CR)
+      if (viewport.type === cornerstone.Enums.ViewportType.STACK) {
+        viewport.setStack(nonCT_ImageIds[Number(ID)]);
+        viewport.render();
+      } else {
+        renderingEngine.disableElement(viewport_ID);
+        const curr = viewport_list[viewport_ID];
+        curr.type = cornerstone.Enums.ViewportType.STACK;
+        delete curr.defaultOptions;
+        renderingEngine.enableElement(curr);
+        
+        const newViewport = renderingEngine.getViewport(viewport_ID);
+        newViewport.setProperties({ rotation: 0 });
+        toolGroup.addViewport(newViewport.id, renderingEngineId);
+        newViewport.setStack(nonCT_ImageIds[Number(ID)]);
+        newViewport.render();
+  
+        // Update image index display
+        newViewport.element.addEventListener(cornerstone.EVENTS.STACK_NEW_IMAGE, () => {
+          const index = newViewport.getCurrentImageIdIndex() + 1;
+          document.getElementById(indexMap[newViewport.id]).innerHTML = index;
+        });
+      }
+    }
+  }
+
+
   drop(event) {
     event.preventDefault();
   
@@ -326,17 +399,7 @@ class App extends Component {
     }
   
     // Handle single-image condition
-    if (ID && ID.includes('http')) {
-      this.getDataUri(ID).then((dataUri) => {
-        const imageId = cornerstone.imageCache.putImage(dataUri);
-  
-        // Use a stack viewport for single images
-        if (viewport.type === cornerstone.Enums.ViewportType.STACK) {
-          viewport.setStack([imageId]);
-        }
-        viewport.render();
-      });
-    } else if (modality === 'CT' || modality === 'MR') {
+      if (modality === 'CT' || modality === 'MR') {
       (async () => {
         const volume = cornerstone.cache.getVolume(ID);
   
@@ -575,6 +638,15 @@ class App extends Component {
                     console.log(`Non-CT Image loaded: ${item[2]} - Loaded Series: ${loadedSeriesCount}`);
                 });
             }
+            image.addEventListener('click', (event) => {
+              const ID = event.target.dataset.value;
+              const modality = event.target.dataset.modality;
+              const description = event.target.dataset.description;
+              const targetViewportId = viewportIds[0]; // Or implement viewport selection logic
+            
+             this. openImageInViewport(ID, modality, description, targetViewportId);
+            });
+            
   
             const endTime = Date.now();
             const elapsedTime = endTime - startTime;
