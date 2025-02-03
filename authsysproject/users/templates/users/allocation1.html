@@ -1374,7 +1374,7 @@
             if (status) {
                 // Filter rows based on the selected status
                 $("tbody tr").filter(function() {
-                    var rowStatus = $(this).find("td").eq(16).text().trim(); // Assuming status is in the 10th column (adjust if needed)
+                    var rowStatus = $(this).find("td").eq(20).text().trim(); // Assuming status is in the 10th column (adjust if needed)
                     return rowStatus.toLowerCase() !== status.toLowerCase(); // Perform case-insensitive comparison
                 }).hide();
             }
