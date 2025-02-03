@@ -426,6 +426,7 @@
                         <th>Test Date</th>
                         <th>Report Date</th>
                         <th>Xray Report</th>
+                        <th>history file</th>
                         <th>View Image</th>
                     </tr>
                 </thead>
@@ -440,11 +441,26 @@
                         <td>{{ item.report_date|default:"N/A" }}</td>
                         <td>
                             {% if item.pdf_urls and item.pdf_urls.0 %}
-                                <a href="{{ item.pdf_urls.0|urlencode }}" target="_blank" class="btn btn-primary btn-sm">
+                                <a href="{{ item.pdf_urls.0 }}" target="_blank" class="btn btn-primary btn-sm">
                                     View Report
                                 </a>
                             {% else %}
                                 <span class="text-muted">No Report Available</span>
+                            {% endif %}
+                        </td>
+            
+                        <!-- History Files -->
+                        <td>
+                            {% if item.history_file_urls %}
+                                <ul>
+                                    {% for history_url in item.history_file_urls %}
+                                        <li>
+                                            <a href="{{ history_url }}" target="_blank">History File {{ forloop.counter }}</a>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <span class="text-muted">No History Files</span>
                             {% endif %}
                         </td>
                         

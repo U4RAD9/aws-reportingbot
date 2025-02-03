@@ -5244,47 +5244,42 @@ def review_page(request):
 
 @login_required
 def corporate_doctor_dashboard(request):
-    # Get the logged-in corporate doctor
     corporate_doctor = get_object_or_404(CorporateDoctor, user=request.user)
-    
-    # Filter DICOMData based on the institution name
     dicom_data_objects = DICOMData.objects.filter(institution_name=corporate_doctor.institution_name)
-    
-    # Prepare filtered data
+
     filtered_data = []
-    bucket_name = 'u4rad-s3-reporting-bot'  # Replace with your S3 bucket name
+    bucket_name = 'u4rad-s3-reporting-bot'
 
     for dicom_data in dicom_data_objects:
-        # Fetch related XrayReport
-        xray_report = XrayReport.objects.filter(patient_id=dicom_data.patient_id).first()
-        
+        # Fetch related XrayReports (fix: get all matching reports instead of just one)
+        patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_")
+        pdf_reports = XrayReport.objects.filter(
+            name=patient_name_with_underscores, patient_id=dicom_data.patient_id
+        )
+        pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
+
         # Fetch related JPEG files
         jpeg_files = dicom_data.jpeg_files.all()
         jpeg_urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
 
-        # Fetch related PDF reports
-        pdf_urls = []
-        if xray_report:
-            pdf_urls.append(presigned_url(bucket_name, xray_report.pdf_file.name, inline=True))
-
-        # Fetch related history files
+        # ✅ **Fetch all history files**
         history_files = dicom_data.history_files.all()
         history_file_urls = [
             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
-        ]
+        ] if history_files.exists() else []  # Ensure empty list if no history files exist
 
         # Collect data for rendering
         filtered_data.append({
             'dicom_data': dicom_data,
             'jpeg_urls': jpeg_urls,
-            'pdf_urls': pdf_urls,
-            'history_file_urls': history_file_urls,
-            'report_date': xray_report.report_date if xray_report else None,
-            'test_date': xray_report.test_date if xray_report else None,
+            'pdf_urls': pdf_urls,  # ✅ Now includes all reports
+            'history_file_urls': history_file_urls,  # ✅ Now correctly handles multiple files or no file
+            'report_date': pdf_reports.first().report_date if pdf_reports.exists() else None,
+            'test_date': pdf_reports.first().test_date if pdf_reports.exists() else None,
         })
 
     # Pagination
-    paginator = Paginator(filtered_data, 50)  # Show 50 entries per page
+    paginator = Paginator(filtered_data, 50)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
