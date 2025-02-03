@@ -32,6 +32,7 @@ from users.models.optometrydata import optopatientDetails
 from users.models.vitalpatientdata import vitalPatientDetails
 from users.models.VaccinationPatientData import vaccinationPatientDetails
 from users.models.DICOMData import DICOMData, DICOMFile, JPEGFile, PatientHistoryFile
+from users.models.corporatedoctor import CorporateDoctor
 from users.models.EcgPdfReport import EcgReport
 from users.models.XrayPdfReport import XrayReport
 from django.core.files.storage import default_storage
@@ -141,6 +142,8 @@ def login(request):
                 return redirect('optometrylist')
             elif group == 'reviewer':
                 return redirect('review_page')
+            elif group == 'corporatedoctor':
+                return redirect('corporate-doctor-dashboard/')
             elif group == 'supercoordinator':
                 return redirect('supercoordinator')
             else:
@@ -5235,6 +5238,61 @@ def review_page(request):
     }
 
     return render(request, 'users/review_page.html', context)
+
+
+
+
+@login_required
+def corporate_doctor_dashboard(request):
+    # Get the logged-in corporate doctor
+    corporate_doctor = get_object_or_404(CorporateDoctor, user=request.user)
+    
+    # Filter DICOMData based on the institution name
+    dicom_data_objects = DICOMData.objects.filter(institution_name=corporate_doctor.institution_name)
+    
+    # Prepare filtered data
+    filtered_data = []
+    bucket_name = 'u4rad-s3-reporting-bot'  # Replace with your S3 bucket name
+
+    for dicom_data in dicom_data_objects:
+        # Fetch related XrayReport
+        xray_report = XrayReport.objects.filter(patient_id=dicom_data.patient_id).first()
+        
+        # Fetch related JPEG files
+        jpeg_files = dicom_data.jpeg_files.all()
+        jpeg_urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
+
+        # Fetch related PDF reports
+        pdf_urls = []
+        if xray_report:
+            pdf_urls.append(presigned_url(bucket_name, xray_report.pdf_file.name, inline=True))
+
+        # Fetch related history files
+        history_files = dicom_data.history_files.all()
+        history_file_urls = [
+            presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+        ]
+
+        # Collect data for rendering
+        filtered_data.append({
+            'dicom_data': dicom_data,
+            'jpeg_urls': jpeg_urls,
+            'pdf_urls': pdf_urls,
+            'history_file_urls': history_file_urls,
+            'report_date': xray_report.report_date if xray_report else None,
+            'test_date': xray_report.test_date if xray_report else None,
+        })
+
+    # Pagination
+    paginator = Paginator(filtered_data, 50)  # Show 50 entries per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'filtered_data': page_obj,
+    }
+
+    return render(request, 'users/corporate_doctor_dashboard.html', context)
 
 
 def update_twostepcheck(request, patient_id):

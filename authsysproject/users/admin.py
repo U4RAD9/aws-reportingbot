@@ -8,6 +8,7 @@ from .models.instpersonalinfo import InstPersonalInfo
 from .models.institutionmodalities import InstitutionModalities
 from .models.patientdata import PatientInfo
 from .models.corporatecoordinator import CorporateCoordinator
+from .models.corporatedoctor import CorporateDoctor
 
 from .models.patientdetails import PatientDetails
 from .models.City import City
@@ -38,6 +39,7 @@ from .models.DailyCountECG import ECGSetCount
 
 admin.site.register(PersonalInfo)
 admin.site.register(CorporateCoordinator)
+admin.site.register(CorporateDoctor)
 admin.site.register(WorkExp)
 admin.site.register(QualificationDetails)
 admin.site.register(BankingInfo)

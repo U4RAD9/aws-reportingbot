@@ -113,6 +113,7 @@ urlpatterns = [
     path('send_whatsapp/', views.send_whatsapp, name='send_whatsapp'),
     path('update_twostepcheck/<str:patient_id>/', views.update_twostepcheck, name='update_twostepcheck'),
     path('review_page', views.review_page, name='review_page'),
+    path('corporate-doctor-dashboard/', views.corporate_doctor_dashboard, name='corporate-doctor-dashboard/'),
 
 
 ] 
