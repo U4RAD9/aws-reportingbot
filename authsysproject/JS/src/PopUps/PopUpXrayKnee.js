@@ -8,6 +8,69 @@ export default class PopUpXrayKnee extends React.Component {
     super();
     this.state = {
       data: {
+        degenerativeChanges: false,
+        osteophytes: false,
+        //XrayTypes: false,
+        NormalLeft: false,
+        //NormalRight: false,
+        KneeNormal: false,
+        LeftKnee: false,
+        RightKnee: false,
+        DegenerativeDeformity: false,
+        Degenerative: false,
+        LeftDegenerative: false,
+        LeftJointsSpace: false,
+        RightDegenerative: false,
+        RightJointsSpace: false,
+        RightDeformity: false,
+        LeftDegenerativeDeformity: false,
+        RightDegenerativeDeformity: false,
+        Fracture: false,
+        LeftFracture: false,
+        LeftTibia: false,
+        LeftFibula: false,
+        LeftLowerThirdofFemur: false,
+        LeftOrthopaedicImplants: false,
+        LeftLinearUndisplacedFracture: false,
+        LeftLineardisplacedFracture: false,
+        LeftComminutedUndisplacedFracture: false,
+        LeftComminuteddisplacedFracture: false,
+        LeftComminutedDepressedFracture: false,
+
+        LeftLinearUndisplacedFracture1: false,
+        LeftLineardisplacedFracture1: false,
+        LeftComminutedUndisplacedFracture1: false,
+        LeftComminuteddisplacedFracture1: false,
+        LeftComminutedDepressedFracture1: false,
+
+        LeftLinearUndisplacedFracture2: false,
+        LeftLineardisplacedFracture2: false,
+        LeftComminutedUndisplacedFracture2: false,
+        LeftComminuteddisplacedFracture2: false,
+        LeftComminutedDepressedFracture2: false,
+        RightFracture: false,
+
+        RightTibia: false,
+        RightFibula: false,
+        RightLowerThirdofFemur: false,
+        RightOrthopaedicImplants: false,
+        RightLinearUndisplacedFracture: false,
+        RightLineardisplacedFracture: false,
+        RightComminutedUndisplacedFracture: false,
+        RightComminuteddisplacedFracture: false,
+        RightComminutedDepressedFracture: false,
+
+        RightLinearUndisplacedFracture1: false,
+        RightLineardisplacedFracture1: false,
+        RightComminutedUndisplacedFracture1: false,
+        RightComminuteddisplacedFracture1: false,
+        RightComminutedDepressedFracture1: false,
+
+        RightLinearUndisplacedFracture2: false,
+        RightLineardisplacedFracture2: false,
+        RightComminutedUndisplacedFracture2: false,
+        RightComminuteddisplacedFracture2: false,
+        RightComminutedDepressedFracture2: false,
       },
       err: false,
     };
@@ -184,6 +247,7 @@ export default class PopUpXrayKnee extends React.Component {
     const reportimage = urlSearchParams.get("data-reportimage");
 
     const formData = {
+      ...this.state.data,  // Preserve initial state values
       NameTextFR15: patientName,
       IDTextFR15: patientId,
       AgeTextFR15: age,

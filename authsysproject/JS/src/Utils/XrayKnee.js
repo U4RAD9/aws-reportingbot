@@ -11,12 +11,12 @@ class XrayKnee extends Component {
     super(props);
     this.state = {
       frmData: {
-        name: "John Doe",
-        description: "",
-        measurements: 0,
-        done: true,
-        recurrence: "Daily",
-        rating: 3,
+        // name: "John Doe",
+        // description: "",
+        // measurements: 0,
+        // done: true,
+        // recurrence: "Daily",
+        // rating: 3,
         degenerativeChanges: false,
         osteophytes: false,
         //XrayTypes: false,
@@ -29,7 +29,6 @@ class XrayKnee extends Component {
         Degenerative: false,
         LeftDegenerative: false,
         LeftJointsSpace: false,
-        LeftDegenerative: false,
         RightDegenerative: false,
         RightJointsSpace: false,
         RightDeformity: false,

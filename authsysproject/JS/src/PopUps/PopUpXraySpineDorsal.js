@@ -8,7 +8,79 @@ export default class PopUp extends React.Component {
     super();
     this.state = {
       data: {
+        Cervical: false,
+        CervicalNormal: false,
+        CervicalDegenerative: false,
+        cervicalLordosis: false,
+        CervicalOsteophytes: false,
+        CervicalEndplateSclerosis: false,
+        CervicalVacuumPhenomenon: false,
+        CervicalSchmorlsNode: false,
+        CervicalReducedDiscHeight: false,
+        CervicalCompressionFracture: false,
+        CervicalRetropultionFracture: false,
+        CervicalBurstFracture: false,
+        CervicalChanceFracture: false,
+        CervicalFlexionTearDropFracture: false,
+        CervicalExtensionTearDropFracture: false,
+        CervicalDonsFrature: false,
+        CervicalSpinousProcessFracture: false,
+        CervicalFracture: false,
+        CervicalSpondylolisthesis: false,
+        Cervicalretrolisthesis: false,
+        CervicalretrolisthesisOver: false,
+        Cervicalanterolisthesis: false,
+        CervicalanterolisthesisOver: false,
+        CervicalretrolisthesisOf: false,
+        CervicalanterolisthesisOf: false,
+        // CervicalanterolisthesisOver: false,
+        CervicalFacetJointDislocationFrature: false,
+        CervicalOssification: false,
+        CervicalCollapse: false,
+        CervicalGibbusDeformity: false,
+        CervicalInterVertebralDiscSpace: false,
 
+
+
+        CervicalanterolisthesisOfC1: false,
+        CervicalanterolisthesisOfC2: false,
+        CervicalanterolisthesisOfC3: false,
+        CervicalanterolisthesisOfC4: false,
+        CervicalanterolisthesisOfC5: false,
+        CervicalanterolisthesisOfC6: false,
+        CervicalanterolisthesisOfC7: false,
+
+        CervicalEndplateSclerosisC1: false,
+        CervicalEndplateSclerosisC2: false,
+        CervicalEndplateSclerosisC3: false,
+        CervicalEndplateSclerosisC4: false,
+        CervicalEndplateSclerosisC5: false,
+        CervicalEndplateSclerosisC6: false,
+        CervicalEndplateSclerosisC7: false,
+
+        CervicalInterVertebralDiscSpaceC1C2: false,
+        CervicalInterVertebralDiscSpaceC2C3: false,
+        CervicalInterVertebralDiscSpaceC3C4: false,
+        CervicalInterVertebralDiscSpaceC4C5: false,
+        CervicalInterVertebralDiscSpaceC5C6: false,
+        // CervicalEndplateSclerosisC6: false,
+        // CervicalEndplateSclerosisC7: false,
+
+        CervicalVacuumPhenomenonC1: false,
+        CervicalVacuumPhenomenonC2: false,
+        CervicalVacuumPhenomenonC3: false,
+        CervicalVacuumPhenomenonC4: false,
+        CervicalVacuumPhenomenonC5: false,
+        CervicalVacuumPhenomenonC6: false,
+        CervicalVacuumPhenomenonC7: false,
+
+        CervicalSchmorlsNodeC1: false,
+        CervicalSchmorlsNodeC2: false,
+        CervicalSchmorlsNodeC3: false,
+        CervicalSchmorlsNodeC4: false,
+        CervicalSchmorlsNodeC5: false,
+        CervicalSchmorlsNodeC6: false,
+        CervicalSchmorlsNodeC7: false,
       },
       err: false,
     };
@@ -448,6 +520,7 @@ export default class PopUp extends React.Component {
     const reportimage = urlSearchParams.get("data-reportimage");
 
     const formData = {
+      ...this.state.data,  // Preserve initial state values
       NameTextFR14: patientName,
       IDTextFR14: patientId,
       AgeTextFR14: age,

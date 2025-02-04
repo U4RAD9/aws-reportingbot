@@ -10,12 +10,12 @@ class XraySpineDorsal extends Component {
     super(props);
     this.state = {
       frmData: {
-        name: "John Doe",
-        description: "",
-        measurements: 0,
-        done: true,
-        recurrence: "Daily",
-        rating: 3,
+        // name: "John Doe",
+        // description: "",
+        // measurements: 0,
+        // done: true,
+        // recurrence: "Daily",
+        // rating: 3,
         Cervical: false,
         CervicalNormal: false,
         CervicalDegenerative: false,
@@ -41,7 +41,7 @@ class XraySpineDorsal extends Component {
         CervicalanterolisthesisOver: false,
         CervicalretrolisthesisOf: false,
         CervicalanterolisthesisOf: false,
-        CervicalanterolisthesisOver: false,
+        // CervicalanterolisthesisOver: false,
         CervicalFacetJointDislocationFrature: false,
         CervicalOssification: false,
         CervicalCollapse: false,
@@ -71,8 +71,8 @@ class XraySpineDorsal extends Component {
         CervicalInterVertebralDiscSpaceC3C4: false,
         CervicalInterVertebralDiscSpaceC4C5: false,
         CervicalInterVertebralDiscSpaceC5C6: false,
-        CervicalEndplateSclerosisC6: false,
-        CervicalEndplateSclerosisC7: false,
+        // CervicalEndplateSclerosisC6: false,
+        // CervicalEndplateSclerosisC7: false,
 
         CervicalVacuumPhenomenonC1: false,
         CervicalVacuumPhenomenonC2: false,

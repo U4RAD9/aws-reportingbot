@@ -10,13 +10,13 @@ class XraySpineCervical extends Component {
     super(props);
     this.state = {
       frmData: {
-        name: "John Doe",
-        description: "",
-        measurements: 0,
-        done: true,
-        recurrence: "Daily",
-        rating: 3,
-        Cervical: false,
+        // name: "John Doe",
+        // description: "",
+        // measurements: 0,
+        // done: true,
+        // recurrence: "Daily",
+        // rating: 3,
+        // Cervical: false,
 
         CervicalNormal: false,
         CervicalDegenerative: false,
@@ -42,7 +42,7 @@ class XraySpineCervical extends Component {
         CervicalanterolisthesisOver: false,
         CervicalretrolisthesisOf: false,
         CervicalanterolisthesisOf: false,
-        CervicalanterolisthesisOver: false,
+        // CervicalanterolisthesisOver: false,
         CervicalFacetJointDislocationFrature: false,
         CervicalOssification: false,
         CervicalCollapse: false,

@@ -8,6 +8,18 @@ export default class PopUpXrayLeftShoulder extends React.Component {
     super();
     this.state = {
       data: {
+        Normal: false,
+        NormalHCS: false,
+        NormalLA: false,
+        NormalR: false,
+        NormalS: false,
+        fracture: false,
+        humerus: false,
+        clavicle: false,
+        scapula: false,
+
+        dislocation: false,
+        degenerative: false
       },
       err: false,
     };
@@ -170,6 +182,7 @@ export default class PopUpXrayLeftShoulder extends React.Component {
     const reportimage = urlSearchParams.get("data-reportimage");
 
     const formData = {
+      ...this.state.data,  // Preserve initial state values
       NameTextFR11: patientName,
       IDTextFR11: patientId,
       AgeTextFR11: age,

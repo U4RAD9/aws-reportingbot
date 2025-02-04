@@ -13,12 +13,12 @@ class PnsAbnormal extends Component {
     super(props);
     this.state = {
       frmData: {
-        name: "John Doe",
-        description: "",
-        measurements: 0,
-        done: true,
-        recurrence: "Daily",
-        rating: 3,
+        // name: "John Doe",
+        // description: "",
+        // measurements: 0,
+        // done: true,
+        // recurrence: "Daily",
+        // rating: 3,
 
         PnsSinuses: false,
 
