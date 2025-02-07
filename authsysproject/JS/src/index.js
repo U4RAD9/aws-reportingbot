@@ -2464,8 +2464,9 @@ class App extends Component {
       const testDate = urlParams.get("data-testdate");
       const reportDate = urlParams.get("data-reportdate");
       const location = urlParams.get("data-location");
+      const institution_name = urlParams.get("data-institution_name");
 
-      return { patientId, patientName, testDate, reportDate, location };
+      return { patientId, patientName, testDate, reportDate, location, institution_name };
     };
 
     const showNotification = (message) => {
@@ -2617,7 +2618,7 @@ class App extends Component {
           const pdfBlob = pdf.output("blob");
 
           // Extract data from URL
-          const { patientId, patientName, testDate, reportDate, location } =
+          const { patientId, patientName, testDate, reportDate, location, institution_name } =
             extractDataFromURL();
 
           // Send the FormData to Django backend using fetch
@@ -2636,6 +2637,7 @@ class App extends Component {
           formData.append("testDate", testDate);
           formData.append("reportDate", reportDate);
           formData.append("location", location);
+          formData.append("institution_name", institution_name);
 
           //console.log("FormData:", formData);
 
@@ -2701,7 +2703,7 @@ class App extends Component {
       const dataFromId = document.getElementById("reportEditor");
       console.log("This is the data i got from the id reportEditor :", dataFromId);
 
-      const { location, accession, institutionName } = this.extractDataFromURL();
+      const { location, accession, institution_name } = this.extractDataFromURL();
       
       const images = data.querySelectorAll("img");
       const signatureElement = images[1];
@@ -2793,7 +2795,7 @@ class App extends Component {
             formData.append("reportDate", reportDate);
             formData.append("location", location);
             formData.append("accession", accession);
-            formData.append("institution_name", institutionName);
+            formData.append("institution_name", institution_name);
 
             await axios.post("/upload_xray_pdf/", formData, {
                 headers: {
@@ -3918,40 +3920,67 @@ onInit={(editor) => {
       return;  // Exit the function, nothing further to do
   }
 
-  // Step 3: Retrieve previously saved study ID from sessionStorage
-  const savedStudyId = sessionStorage.getItem('savedStudyId');
+  // // Step 3: Retrieve previously saved study ID from sessionStorage
+  // const savedStudyId = sessionStorage.getItem('savedStudyId');
 
-  // Step 4: Handle the case when study ID is missing or changed
-  if (!savedStudyId) {
-      // No study ID saved, store the current one for future use
-      sessionStorage.setItem('savedStudyId', currentStudyId);
-  } else if (savedStudyId !== currentStudyId) {
-      // Study ID has changed, clear the old data and store the new ID
-      sessionStorage.removeItem(`editorContent-${savedStudyId}`); // Remove old content
-      sessionStorage.removeItem('savedStudyId'); // Remove old study ID
-      sessionStorage.setItem('savedStudyId', currentStudyId); // Store new study ID
-  }
+  // // Step 4: Handle the case when study ID is missing or changed
+  // if (!savedStudyId) {
+  //     // No study ID saved, store the current one for future use
+  //     sessionStorage.setItem('savedStudyId', currentStudyId);
+  // } else if (savedStudyId !== currentStudyId) {
+  //     // Study ID has changed, clear the old data and store the new ID
+  //     sessionStorage.removeItem(`editorContent-${savedStudyId}`); // Remove old content
+  //     sessionStorage.removeItem('savedStudyId'); // Remove old study ID
+  //     sessionStorage.setItem('savedStudyId', currentStudyId); // Store new study ID
+  // }
 
-  // Step 5: Retrieve saved content specific to the current study ID
-  const savedContent = sessionStorage.getItem(`editorContent-${currentStudyId}`);
+  // // Step 5: Retrieve saved content specific to the current study ID
+  // const savedContent = sessionStorage.getItem(`editorContent-${currentStudyId}`);
 
-  // Step 6: If content exists for this study ID, restore it
-  if (savedContent && savedStudyId === currentStudyId) {
-      editor.setData(savedContent); // Restore saved content to CKEditor
-  }
+  // // Step 6: If content exists for this study ID, restore it
+  // if (savedContent && savedStudyId === currentStudyId) {
+  //     editor.setData(savedContent); // Restore saved content to CKEditor
+  // }
 
-  // Step 7: Save editor content to sessionStorage on every change
-  editor.model.document.on('change:data', () => {
-      const content = editor.getData(); // Get current content from the editor
-      sessionStorage.setItem(`editorContent-${currentStudyId}`, content); // Save content tied to the current study ID
+  // // Step 7: Save editor content to sessionStorage on every change
+  // editor.model.document.on('change:data', () => {
+  //     const content = editor.getData(); // Get current content from the editor
+  //     sessionStorage.setItem(`editorContent-${currentStudyId}`, content); // Save content tied to the current study ID
+  // });
+
+  // // Step 8: Function to clear session storage when reporting is done
+  // function clearSessionData() {
+  //     sessionStorage.removeItem(`editorContent-${currentStudyId}`); // Remove editor content for current patient
+  //     sessionStorage.removeItem('savedStudyId'); // Remove saved study ID
+  // }
+
+  const fetchEditorContent = async () => {
+    try {
+      const response = await fetch(`/get-editor-content/${currentStudyId}/`);
+      const data = await response.json();
+      if (data.editor_content) {
+        editor.setData(data.editor_content);
+      }
+    } catch (error) {
+      console.error('Error fetching editor content:', error);
+    }
+  };
+
+   fetchEditorContent(); // Load existing content
+
+  // Save editor content to backend on every change
+  editor.model.document.on('change:data', async () => {
+    const content = editor.getData();
+    try {
+      await fetch('/save-editor-content/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ study_id: currentStudyId, editor_content: content }),
+      });
+    } catch (error) {
+      console.error('Error saving editor content:', error);
+    }
   });
-
-  // Step 8: Function to clear session storage when reporting is done
-  function clearSessionData() {
-      sessionStorage.removeItem(`editorContent-${currentStudyId}`); // Remove editor content for current patient
-      sessionStorage.removeItem('savedStudyId'); // Remove saved study ID
-  }
-
 
   
   const toolbarContainer = document.querySelector(".document-editor__toolbar");

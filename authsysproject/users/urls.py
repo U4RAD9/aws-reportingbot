@@ -3,6 +3,8 @@ from django.conf import settings
 from django.urls import path
 from . import views
 
+from .views import save_editor_content, get_editor_content
+
 # from django.contrib.auth import views
 
 urlpatterns = [
@@ -114,6 +116,9 @@ urlpatterns = [
     path('update_twostepcheck/<str:patient_id>/', views.update_twostepcheck, name='update_twostepcheck'),
     path('review_page', views.review_page, name='review_page'),
     path('corporate-doctor-dashboard/', views.corporate_doctor_dashboard, name='corporate-doctor-dashboard/'),
+    path('save-editor-content/', save_editor_content, name='save_editor_content'),
+    path('get-editor-content/<str:study_id>/', get_editor_content, name='get_editor_content'),
+
 
 
 ] 

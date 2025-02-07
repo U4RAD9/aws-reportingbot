@@ -35,6 +35,7 @@ from users.models.DICOMData import DICOMData, DICOMFile, JPEGFile, PatientHistor
 from users.models.corporatedoctor import CorporateDoctor
 from users.models.EcgPdfReport import EcgReport
 from users.models.XrayPdfReport import XrayReport
+from users.models.StudyReport import StudyReport
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from users.forms import DICOMDataForm
@@ -5308,6 +5309,30 @@ def update_twostepcheck(request, patient_id):
 
 
 
+@csrf_exempt
+def save_editor_content(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        study_id = data.get('study_id')
+        editor_content = data.get('editor_content')
+
+        if not study_id:
+            return JsonResponse({"error": "Study ID is required"}, status=400)
+
+        # Save or update the study report
+        report, created = StudyReport.objects.update_or_create(
+            study_id=study_id,
+            defaults={'editor_content': editor_content}
+        )
+        return JsonResponse({"message": "Content saved successfully"})
+
+@csrf_exempt
+def get_editor_content(request, study_id):
+    try:
+        report = StudyReport.objects.get(study_id=study_id)
+        return JsonResponse({"editor_content": report.editor_content})
+    except StudyReport.DoesNotExist:
+        return JsonResponse({"editor_content": ""})  # Return empty if no content found
 
 
 

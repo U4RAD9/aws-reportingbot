@@ -34,6 +34,7 @@ from .models.AudiometryPdfReport import AudiometryReport
 from .models.DailyCount import SetCount
 from .models.DailyCountECG import ECGSetCount
 
+from .models .StudyReport import StudyReport
 
 
 
@@ -69,6 +70,7 @@ admin.site.register(AudiometryReport)
 admin.site.register(VitalsReport)
 admin.site.register(SetCount)
 admin.site.register(ECGSetCount)
+admin.site.register(StudyReport)
 
 # Register your models here.
 class DICOMFileInline(admin.TabularInline):
