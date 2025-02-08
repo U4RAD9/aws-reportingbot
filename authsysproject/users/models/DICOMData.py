@@ -63,6 +63,6 @@ class JPEGFile(models.Model):
 
 class PatientHistoryFile(models.Model):
     dicom_data = models.ForeignKey(DICOMData, related_name='history_files', on_delete=models.CASCADE)
-    history_file = models.FileField(upload_to='patient_history_files/',storage=S3Boto3Storage(), null=True)
-    #history_file = models.FileField(upload_to='patient_history_files/', null=True, default=None, blank=True)
+    #history_file = models.FileField(upload_to='patient_history_files/',storage=S3Boto3Storage(), null=True)
+    history_file = models.FileField(upload_to='patient_history_files/', null=True, default=None, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)    

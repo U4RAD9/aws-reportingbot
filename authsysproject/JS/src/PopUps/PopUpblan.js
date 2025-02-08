@@ -25,43 +25,52 @@ export default class PopUpblan extends React.Component {
 
   handleDone() {
     const { data, err } = this.state;
+    console.log("======data", data);
 
-    if (err) {
-      console.error("Error detected in data");
-      return;
-    }
+    
 
-    // Make an API call to update the isDone field
-    const urlSearchParams = new URLSearchParams(window.location.search);
-    const patientId = urlSearchParams.get("data-patientid");
+    // if (!err) {
+    //   this.props.handleClick();
+    // }
+    if (!err) {
+      // Make an API call to update the isDone field
+      const urlSearchParams = new URLSearchParams(window.location.search);
+      const studyId = urlSearchParams.get("data-study-id");
 
-    const csrftoken = document.cookie.match(/csrftoken=([\w-]+)/);
-    if (!csrftoken) {
-      console.error("CSRF token not found!");
-      return;
-    }
-    const csrftokenValue = csrftoken[1];
+      // Get the CSRF token from cookies
+      const csrftoken = document.cookie.match(/csrftoken=([\w-]+)/)[1];
 
-    fetch(`/api/update_patient_done_status_xray/${patientId}/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": csrftokenValue,
-      },
-      body: JSON.stringify({ isDone: true }),
-    })
-      .then((response) => {
+      // Make a POST request to your Django backend to update the isDone field
+      fetch(`/api/update_patient_done_status_xray/${studyId}/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken,  // Include CSRF token in headers
+          // Add any additional headers as needed
+        },
+        body: JSON.stringify({ isDone: true }),
+      })
+      .then(response => {
         if (response.ok) {
+          // Close the popup after the API call
           this.setState({ isDone: true }, () => {
             this.props.handleClick();
           });
         } else {
-          console.error("Failed to update isDone status");
+          // Handle errors
+          console.error('Failed to update isDone status');
         }
       })
-      .catch((error) => {
-        console.error("Error:", error);
+      .catch(error => {
+        console.error('Error:', error);
       });
+    }
+
+
+
+    this.setState({ isDone: true }, () => {
+      this.props.handleClick();
+    });
   }
 
   handleSendWhatsAppMessage() {

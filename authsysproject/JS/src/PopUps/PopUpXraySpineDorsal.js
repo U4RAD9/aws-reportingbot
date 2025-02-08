@@ -469,13 +469,13 @@ export default class PopUp extends React.Component {
     if (!err) {
       // Make an API call to update the isDone field
       const urlSearchParams = new URLSearchParams(window.location.search);
-      const patientId = urlSearchParams.get("data-patientid");
+      const studyId = urlSearchParams.get("data-study-id");
 
       // Get the CSRF token from cookies
       const csrftoken = document.cookie.match(/csrftoken=([\w-]+)/)[1];
 
       // Make a POST request to your Django backend to update the isDone field
-      fetch(`/api/update_patient_done_status_xray/${patientId}/`, {
+      fetch(`/api/update_patient_done_status_xray/${studyId}/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

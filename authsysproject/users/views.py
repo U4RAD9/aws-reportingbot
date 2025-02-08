@@ -109,6 +109,7 @@ from operator import attrgetter
 # Importing this to use the aggregate function in the upated report status of xray view. - HImanshu.
 from django.db.models import Sum
 from pytz import timezone as time
+from django.db.models import Count, Q
 
 india_tz = time("Asia/Kolkata")
 
@@ -815,8 +816,20 @@ def allocation1(request):
     if corporatecoordinator_filter:
         patients = patients.filter(corporatecoordinator__id__in=[corporatecoordinator_filter])    
     
-    # Total counts for statistics
-    total_current_uploaded = DICOMData.objects.all().count()
+    # **Updated Total Counts for Statistics**
+    total_current_uploaded = DICOMData.objects.count()  # Total number of DICOMData records
+    total_current_reported = DICOMData.objects.filter(isDone=True).count()  # Total cases marked as Done
+    total_unreported_cases = DICOMData.objects.filter(isDone=False).count()  # Total cases not marked as Done
+    total_unallocated_cases = DICOMData.objects.filter(radiologist__isnull=True).count()  # Cases with no assigned radiologist
+    total_nonreported_cases = DICOMData.objects.filter(NonReportable=True).count()  # Cases marked as NonReportable
+
+    total_cases = {
+        'total_uploaded': total_current_uploaded,
+        'current_reported': total_current_reported,
+        'unreported_cases': total_unreported_cases,
+        'unallocated_cases': total_unallocated_cases,
+        'nonreported_cases': total_nonreported_cases,
+    }
 
     # Get radiologists from the group
     radiologist_group = Group.objects.get(name='radiologist')
@@ -827,27 +840,6 @@ def allocation1(request):
     corporatecoordinator_group = Group.objects.get(name='corporatecoordinator')
     corporatecoordinator_objects = corporatecoordinator_group.user_set.all()
 
-    # Retrieve total cases data
-    total_uploaded_xray = Total_Cases.objects.values_list('total_uploaded_xray', flat=True).first()
-    total_reported_xray = Total_Cases.objects.values_list('total_reported_xray', flat=True).first()
-    total_nonreported_xray = Total_Cases.objects.values_list('total_nonreported_xray', flat=True).first()
-
-    # Calculate various patient counts
-    total_reported_patients = DICOMData.objects.filter(isDone=True).count()
-    total_nonreported_patients = DICOMData.objects.filter(NonReportable=True).count()
-    total_unreported_and_unallocated_patients = DICOMData.objects.filter(radiologist=None, isDone=False, NonReportable=False).count()
-    total_unreported_and_allocated_patients = DICOMData.objects.filter(radiologist__isnull=False, isDone=False, NonReportable=False).values('patient_id').distinct().count()
-    total_unreported_patients = total_unreported_and_unallocated_patients + total_unreported_and_allocated_patients
-
-    total_cases = {
-        'total_uploaded': total_uploaded_xray,
-        'alltime_reported': total_reported_xray,
-        'total_nonreported': total_nonreported_xray,
-        'total_reported': total_reported_patients,
-        'total_unreported': total_unreported_patients,
-        'unallocated': total_unreported_and_unallocated_patients,
-        'nonreported': total_nonreported_patients
-    }
 
     # Set up pagination
     paginator = Paginator(patients, 400)  # 200 patients per page
@@ -915,7 +907,6 @@ def allocation1(request):
         'Institution': sorted_unique_institution_name,
         'Modalities': sorted_unique_modality,
         'total': total_cases,
-        'count': total_current_uploaded,
         'patients': page_obj,
         'Date': sorted_unique_dates,
         'Study_time' : sorted_unique_study_time,
@@ -1490,7 +1481,24 @@ def xrayallocation(request):
     total_reported = current_user_personal_info.total_reported
     today = now().date()
     yesterday = today - timedelta(days=1)
+
+    allocated = DICOMData.objects.filter(radiologist=current_user_personal_info)
+
+    # Count total assigned cases
+    total_assigned_cases = allocated.count()
+
+    # Count total reported cases (isDone = True)
+    total_reported_cases = allocated.filter(isDone=True).count()
+
+    # Count total pending cases (total assigned cases - total reported cases)
+    total_pending_cases = total_assigned_cases - total_reported_cases
+
+    # Filter cases that are not yet reported (isDone = False)
+    pending_cases = allocated.filter(isDone=False).order_by('-vip', '-urgent', '-Mlc', '-id')
+
     allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=False).order_by('-vip', '-urgent', '-Mlc', '-id')
+
+    
 
     # Set up pagination
     paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
@@ -1539,7 +1547,7 @@ def xrayallocation(request):
 
     return render(request, 'users/xrayallocation.html',
                   {'Study_description': sorted_unique_study_description, 'Institution': sorted_unique_institution_name, 'reported': total_reported, 'patients': page_obj, 'Date': sorted_unique_dates,
-                   'locations': location, 'page_obj': page_obj, 'patient_urls': patient_urls})
+                   'locations': location, 'total_assigned_cases': total_assigned_cases, 'total_reported_cases': total_reported_cases, 'total_pending_cases': total_pending_cases, 'page_obj': page_obj, 'patient_urls': patient_urls})
 
 
 @user_type_required('radiologist')
@@ -1551,6 +1559,18 @@ def xrayallocationreverse(request):
     total_reported = current_user_personal_info.total_reported
     today = now().date()
     yesterday = today - timedelta(days=1)
+
+    allocated = DICOMData.objects.filter(radiologist=current_user_personal_info)
+
+    # Count total assigned cases
+    total_assigned_cases = allocated.count()
+
+    # Count total reported cases (isDone = True)
+    total_reported_cases = allocated.filter(isDone=True).count()
+
+    # Count total pending cases (total assigned cases - total reported cases)
+    total_pending_cases = total_assigned_cases - total_reported_cases
+
     allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=True).order_by('-id')
 
     # Set up pagination
@@ -1592,7 +1612,7 @@ def xrayallocationreverse(request):
     sorted_unique_dates = sorted(unique_dates, reverse=False)
     return render(request, 'users/xrayallocationreverse.html',
                   {'reported': total_reported, 'patients': page_obj, 'Date': sorted_unique_dates,
-                   'locations': location, 'page_obj': page_obj, 'patient_urls': patient_urls})
+                   'locations': location, 'page_obj': page_obj, 'total_assigned_cases': total_assigned_cases, 'total_reported_cases': total_reported_cases, 'total_pending_cases': total_pending_cases, 'patient_urls': patient_urls})
 
 
 
@@ -2636,7 +2656,7 @@ def update_patient_done_status(request, patient_id):
 # we can ensure that the API behaves correctly in both local and deployed environments.
 # The key issue with our original code was the incorrect comparison between QuerySet objects. - Himanshu.
 @require_POST
-def update_patient_done_status_xray(request, patient_id):
+def update_patient_done_status_xray(request, study_id):
     try:
         # Fetch the personal info of the current user
         current_user_personal_info = PersonalInfoModel.objects.get(user=request.user)
@@ -2660,7 +2680,7 @@ def update_patient_done_status_xray(request, patient_id):
             Total_Cases.objects.update(total_reported_xray=models.F('total_reported_xray') + 1)
 
         # Fetch the DICOMData object for the patient and mark it as done
-        patient = get_object_or_404(DICOMData, patient_id=patient_id)
+        patient = get_object_or_404(DICOMData, study_id=study_id)
         patient.isDone = True
         patient.save()
 
@@ -2895,7 +2915,10 @@ def generate_presigned_url (key):
 
 @user_type_required('xraycoordinator')
 def xray_pdf_report(request):
+    institution_filter = request.GET.get('institution_name', '')  # Get filter value from request
     pdfs = XrayReport.objects.all().order_by('-id')
+    if institution_filter:
+        pdfs = pdfs.filter(institution_name=institution_filter)
     #pdfs = XrayReport.objects.all()
     paginator = Paginator(pdfs, 200)  # Show 10 PDF reports per page
     page_number = request.GET.get('page')
@@ -2915,7 +2938,8 @@ def xray_pdf_report(request):
     formatted_dates = [date.strftime('%Y-%m-%d') for date in test_dates]
     report_dates = set(pdf.report_date for pdf in pdfs)
     unique_locations = XLocation.objects.all()
-    institution_name = set(pdf.institution_name for pdf in pdfs)
+    #institution_name = set(pdf.institution_name for pdf in pdfs)
+    institution_names = XrayReport.objects.values_list('institution_name', flat=True).distinct()
 
     context = {
         'pdfs': page_obj,
@@ -2923,7 +2947,8 @@ def xray_pdf_report(request):
         'Test_Date': sorted(formatted_dates),
         'Report_Date': sorted(report_dates),  # Ensure dates are sorted for dropdown
         'Location': unique_locations,  # Ensure locations are sorted for dropdown
-        'institution_name': institution_name,
+        'institution_names': sorted(institution_names),
+        'selected_institution': institution_filter,  # Keep track of selected value
         'paginator': paginator,  # Include the paginator object
         'page_obj': page_obj,  # Include the current page object
     }

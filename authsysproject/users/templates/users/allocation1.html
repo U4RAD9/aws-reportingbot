@@ -576,16 +576,17 @@
               <div class="row-container">
                   <div class="row-container1">
                       <div class="count-container1">
-                        <span id="count1">Current Uploaded: <strong><span id="totalRowCount">{{count}}</span></span></strong>
-                        <span id="count1">Current Reported: <strong><span id="totalRowCount">{{total.total_reported}}</span></span></strong>
-                        <span id="count1">Unreported Cases: <strong><span id="totalRowCount">{{ total.total_unreported }}</span></span></strong>
-                        <span id="count1">Unallocated Cases: <strong><span id="totalRowCount">{{ total.unallocated }}</span></span></strong>
-                        <span id="count1">Nonreported Cases: <strong><span id="totalRowCount">{{ total.nonreported }}</span></span></strong>
+                        <span id="count1">Current Uploaded: <strong><span id="totalRowCount">{{ total.total_uploaded }}</span></strong></span>
+                        <span id="count1">Current Reported: <strong><span id="totalRowCount">{{ total.current_reported }}</span></strong></span>
+                        <span id="count1">Unreported Cases: <strong><span id="totalRowCount">{{ total.unreported_cases }}</span></strong></span>
+                        <span id="count1">Unallocated Cases: <strong><span id="totalRowCount">{{ total.unallocated_cases }}</span></strong></span>
+                        <span id="count1">Nonreported Cases: <strong><span id="totalRowCount">{{ total.nonreported_cases }}</span></strong></span>
                       </div>
                       <div class="count-container">
-                           <span id="count1">Total Uploaded Cases: <strong><span id="totalRowCount">{{total.total_uploaded}}</span></span></strong>
-                          <span id="count1">Reported Cases: <strong><span id="totalRowCount">{{ total.alltime_reported }}</span></span></strong>
-                          <span id="count1">Non-Reported Cases: <strong><span id="totalRowCount">{{ total.total_nonreported }}</span></span></strong>
+                        <div class="filtered-count-container">
+                            <span id="count1">Filtered Row Count: <strong><span id="filteredRowCount">0</span></strong></span>
+                        </div>
+                      
                       </div>
                   </div>
                   <div class='search-google'>
@@ -918,76 +919,8 @@
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
 
 
-  <!-- <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const masterCheckbox = document.getElementById("masterCheckbox");
-      const patientCheckboxes = document.querySelectorAll(".patientCheckbox");
-  
-      // Toggle all checkboxes when master checkbox is clicked
-      masterCheckbox.addEventListener("change", () => {
-          patientCheckboxes.forEach(checkbox => {
-              checkbox.checked = masterCheckbox.checked;
-          });
-      });
-  
-      // Uncheck the master checkbox if any individual checkbox is unchecked
-      patientCheckboxes.forEach(checkbox => {
-          checkbox.addEventListener("change", () => {
-              if (!checkbox.checked) {
-                  masterCheckbox.checked = false;
-              } else if (
-                  Array.from(patientCheckboxes).every(checkbox => checkbox.checked)
-              ) {
-                  masterCheckbox.checked = true;
-              }
-          });
-      });
-    });
-
-  </script> -->
-
   <script>
-    // document.querySelectorAll('.urgent-checkbox').forEach(function(checkbox) {  
-    //     checkbox.addEventListener('change', function() {
-    //         const patientId = this.getAttribute('data-patient-id'); // Get the patient ID
-    //         const isUrgent = this.checked; // Get the current state of the checkbox
-    
-    //         // Log the current action
-    //         console.log(`Checkbox for Patient ID ${patientId} is now ${isUrgent ? 'checked' : 'unchecked'}.`);
-    
-    //         // Send AJAX request to update the urgent status in the database
-    //         fetch(`/update_urgent_status_xray/${patientId}/`, {
-    //             method: 'POST',
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //                 'X-CSRFToken': '{{ csrf_token }}',  // Include CSRF token for Django
-    //             },
-    //             body: JSON.stringify({ urgent: isUrgent }) // Send the updated urgent status
-    //         })
-    //         .then(response => {
-    //             if (!response.ok) {
-    //                 throw new Error('Network response was not ok');
-    //             }
-    //             return response.json();
-    //         })
-    //         .then(data => {
-    //             console.log('Success:', data);
-    //             // You can add additional UI feedback here if needed
-    //             if (data.success) {
-    //                 console.log(`Successfully updated urgent status for Patient ID ${patientId} to ${isUrgent}.`);
-    //             } else {
-    //                 console.error(`Failed to update urgent status for Patient ID ${patientId}: ${data.error}`);
-    //             }
-    //         })
-    //         .catch((error) => {
-    //             console.error('Error during update:', error);
-    //             // Revert checkbox state if there was an error
-    //             this.checked = !isUrgent;
-    //             console.log(`Reverted checkbox for Patient ID ${patientId} due to an error.`);
-    //         });
-    //     });
-    // });
-
+   
     document.addEventListener("DOMContentLoaded", function() {
       const csrfToken = '{{ csrf_token }}'; // CSRF token for Django
   
@@ -1333,6 +1266,7 @@
             var selectedStudydescription = $('#filter-Studydescription-select-Studydescription').val();
             var selectedAllocate = $('#filter-allocate-select-allocate').val();
             var selectedCorporatecoordinator = $('#filter-coordinator-select-coordinator').val();
+            var visibleRowCount = 0;
 
             // Loop through each row in the table
             $('#patientTable tbody tr').each(function () {
@@ -1356,11 +1290,16 @@
                 && (selectedAllocate === "" || rowAllocate === selectedAllocate)) {
                     
                     $(this).show();
+                    visibleRowCount++; // Increment visible row count
                 } else {
                     $(this).hide();
                 }
             });
+            // Update the displayed filtered row count
+            $('#filteredRowCount').text(visibleRowCount);
         }
+        // Initialize row count on page load
+        filterTable();
     });
   </script>
 

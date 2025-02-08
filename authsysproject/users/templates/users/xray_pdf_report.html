@@ -506,7 +506,19 @@
               <tr>
                 <th>Patient ID</th>
                 <th>Name</th>
-                <th>Institution Name</th>
+                <th>
+                  <div class="filter-dropdown-container">
+                    <div>Institution Name</div>
+                    <div class="dropdown-select1" id="filter-institution-dropdown">
+                      <select id="filter-institution-select" class="form-control">
+                        <option value="">All</option>
+                        {% for name in institution_names %}
+                        <option value="{{ name }}">{{ name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>                  
+                </th>
                 <th>
                   <div class="filter-dropdown-container">
                     <div>Test Date</div>
@@ -771,18 +783,25 @@
             filterTable();
         });
 
+        $('#filter-institution-select').change(function () {
+            filterTable();
+        });
+
         function filterTable() {
             var selectedDate = $('#filter-date-select-date').val();
             var selectedLocation = $('#filter-location-select-location').val();
+            var selectedInstitution = $('#filter-institution-select').val();
 
             // Loop through each row in the table
             $('#patientTable tbody tr').each(function () {
                 var rowDate = $(this).find('td:nth-child(4)').text(); // Get the test date from the table cell
                 var rowLocation = $(this).find('td:nth-child(6)').text(); // Get the location from the table cell
+                var rowInstitution = $(this).find('td:nth-child(3)').text().trim(); // Institution Name
 
                 // Check if the row matches the selected date and location
                 if ((selectedDate === '' || rowDate === selectedDate) &&
-                    (selectedLocation === '' || rowLocation === selectedLocation)) {
+                    (selectedLocation === '' || rowLocation === selectedLocation) &&
+                    (selectedInstitution === '' || rowInstitution === selectedInstitution)) {
                     // Show the row if it matches the selected date and location
                     $(this).show();
                 } else {
