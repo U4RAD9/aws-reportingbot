@@ -105,6 +105,7 @@ from pyorthanc import Orthanc, find_patients
 import logging
 import urllib
 from itertools import groupby
+from operator import attrgetter
 # Importing this to use the aggregate function in the upated report status of xray view. - HImanshu.
 from django.db.models import Sum
 from pytz import timezone as time
