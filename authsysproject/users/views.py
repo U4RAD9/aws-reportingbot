@@ -543,42 +543,115 @@ def user_type_required(user_type):
     return decorator
 
 
+# def client_dashboard(request):
+#     try:
+#         current_user_personal_info = Client.objects.get(user=request.user)
+#     except Client.DoesNotExist:
+#         return HttpResponse("Client object does not exist for this user.", status=404)
+
+#     #pdfs_list = []
+#     test_dates_set = set()
+#     report_dates_set = set()
+
+#     if current_user_personal_info.institution_name:
+#         institution_name = current_user_personal_info.institution_name
+#         print("institution_name:", institution_name)
+#         pdfs = XrayReport.objects.filter(institution_name=institution_name).order_by('-id')  # Matching location name
+#         filtered_pdfs = []
+#         grouped_pdfs = groupby(pdfs, key=attrgetter('patient_id'))  # Group by patient_id
+#         for pdf in pdfs:
+#             group = list(group)
+#             most_recent_pdf = group[0]  # The first entry due to ordering by '-id'
+#             # Replace underscores with spaces in the name for matching
+#             normalized_name = pdf.name.replace("_", " ") if pdf.name else None
+#             dicom_data = DICOMData.objects.filter(patient_id=pdf.patient_id, patient_name=normalized_name, twostepcheck=False).first()
+#             # pdf.whatsapp_number = dicom_data.whatsapp_number if dicom_data else None
+#             # pdfs_list.append(pdf)
+
+#             # test_dates_set.add(pdf.test_date)
+#             # report_dates_set.add(pdf.report_date)
+#             if dicom_data:  # Only include if DICOMData exists with twostepcheck=False
+#                 most_recent_pdf.whatsapp_number = dicom_data.whatsapp_number
+#                 filtered_pdfs.append(most_recent_pdf)  # Add to the filtered list
+#                 test_dates_set.add(most_recent_pdf.test_date)
+#                 report_dates_set.add(most_recent_pdf.report_date)
+
+    
+#         # Pagination
+#         paginator = Paginator(filtered_pdfs, 50)  # Show 10 PDFs per page
+#         page_number = request.GET.get('page')
+#         page_obj = paginator.get_page(page_number)
+
+#         # Generate presigned URLs for each PDF file
+#         bucket_name = 'u4rad-s3-reporting-bot'
+#         for pdf in page_obj:
+#             if pdf.pdf_file:  # Ensure the file exists
+#                 pdf.signed_url = presigned_url(bucket_name, f'{pdf.pdf_file.name}')
+#             else:
+#                 pdf.signed_url = None
+
+#             # Add WhatsApp number from related DICOMData if available
+#             #pdf.whatsapp_number = pdf.dicom_data.whatsapp_number if pdf.dicom_data else None    
+
+
+#     formatted_test_dates = sorted(test_date.strftime('%Y-%m-%d') for test_date in test_dates_set)
+#     formatted_report_dates = sorted(report_date.strftime('%Y-%m-%d') for report_date in report_dates_set)
+
+#     context = {
+#         'pdfs': page_obj,
+#         'Test_Dates': formatted_test_dates,
+#         'Report_Dates': formatted_report_dates,
+#         'Location': current_user_personal_info.institution_name,
+#         'paginator': paginator,
+#         'page_obj': page_obj
+#     }
+
+#     return render(request, 'users/client.html', context)
+
+
+
 def client_dashboard(request):
     try:
         current_user_personal_info = Client.objects.get(user=request.user)
     except Client.DoesNotExist:
         return HttpResponse("Client object does not exist for this user.", status=404)
 
-    #pdfs_list = []
     test_dates_set = set()
     report_dates_set = set()
+    filtered_pdfs = []
 
     if current_user_personal_info.institution_name:
         institution_name = current_user_personal_info.institution_name
         print("institution_name:", institution_name)
-        pdfs = XrayReport.objects.filter(institution_name=institution_name).order_by('-id')  # Matching location name
-        filtered_pdfs = []
-        grouped_pdfs = groupby(pdfs, key=attrgetter('patient_id'))  # Group by patient_id
-        for pdf in pdfs:
-            group = list(group)
-            most_recent_pdf = group[0]  # The first entry due to ordering by '-id'
-            # Replace underscores with spaces in the name for matching
-            normalized_name = pdf.name.replace("_", " ") if pdf.name else None
-            dicom_data = DICOMData.objects.filter(patient_id=pdf.patient_id, patient_name=normalized_name, twostepcheck=False).first()
-            # pdf.whatsapp_number = dicom_data.whatsapp_number if dicom_data else None
-            # pdfs_list.append(pdf)
 
-            # test_dates_set.add(pdf.test_date)
-            # report_dates_set.add(pdf.report_date)
+        # Fetch and sort PDFs by patient_id
+        pdfs = XrayReport.objects.filter(institution_name=institution_name).order_by('patient_id', '-id')
+
+        # Group PDFs by patient_id
+        grouped_pdfs = groupby(pdfs, key=attrgetter('patient_id'))
+
+        for patient_id, group in grouped_pdfs:
+            group = list(group)  # Convert the group iterator to a list
+            most_recent_pdf = group[0]  # The first entry due to ordering by '-id'
+
+            # Replace underscores with spaces in the name for matching
+            normalized_name = most_recent_pdf.name.replace("_", " ") if most_recent_pdf.name else None
+
+            # Fetch DICOMData for the patient
+            dicom_data = DICOMData.objects.filter(
+                patient_id=patient_id,
+                patient_name=normalized_name,
+                twostepcheck=False
+            ).first()
+
             if dicom_data:  # Only include if DICOMData exists with twostepcheck=False
                 most_recent_pdf.whatsapp_number = dicom_data.whatsapp_number
                 filtered_pdfs.append(most_recent_pdf)  # Add to the filtered list
                 test_dates_set.add(most_recent_pdf.test_date)
                 report_dates_set.add(most_recent_pdf.report_date)
 
-    
         # Pagination
-        paginator = Paginator(filtered_pdfs, 50)  # Show 10 PDFs per page
+        paginator = Paginator(filtered_pdfs, 50)  # Show 50 PDFs per page
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
 
@@ -590,13 +663,11 @@ def client_dashboard(request):
             else:
                 pdf.signed_url = None
 
-            # Add WhatsApp number from related DICOMData if available
-            #pdf.whatsapp_number = pdf.dicom_data.whatsapp_number if pdf.dicom_data else None    
-
-
+    # Format dates
     formatted_test_dates = sorted(test_date.strftime('%Y-%m-%d') for test_date in test_dates_set)
     formatted_report_dates = sorted(report_date.strftime('%Y-%m-%d') for report_date in report_dates_set)
 
+    # Prepare context for rendering
     context = {
         'pdfs': page_obj,
         'Test_Dates': formatted_test_dates,
@@ -607,7 +678,6 @@ def client_dashboard(request):
     }
 
     return render(request, 'users/client.html', context)
-
 
 user_type_required('client')
 def update_clinical_history(request):
