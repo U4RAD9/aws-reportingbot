@@ -1598,7 +1598,7 @@ class CtHead extends Component {
   }
 
   getImpression(impression, totalCovidPoints) {
-    let text = "<p><strong>IMPRESSION:</strong></p><p>";
+    let text = "<p><strong><u>IMPRESSION:</u></strong></p><p>";
     return (
       text +
       (impression.length !== 0

@@ -22,7 +22,8 @@ import XraySpineDorsal from "./Utils/XraySpineDorsal";
 import Vitals from "./Utils/Vitals";
 import CtHead from "./Utils/CtHead";
 import CtAbdomen from "./Utils/CtAbdomen";
-import Blanks   from './Utils/Blanks'
+import Blanks from './Utils/Blanks';
+import TbChest from './Utils/TbChest';
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { Test } from "@jsonforms/core";
@@ -1231,7 +1232,7 @@ class App extends Component {
           // Match loosely if label contains "xray" or related terms
           // if (Bodypart.toLowerCase() === "shoulder")
           
-            return lowerLabel.includes("xray") || lowerLabel.includes("left-shoulder") ||  lowerLabel.includes("right-shoulder") || lowerLabel.includes("blanks") || lowerLabel.includes("knee") || lowerLabel.includes("spine") || lowerLabel.includes("chest");
+            return lowerLabel.includes("xray") || lowerLabel.includes("left-shoulder") ||  lowerLabel.includes("right-shoulder") || lowerLabel.includes("blanks") || lowerLabel.includes("knee") || lowerLabel.includes("spine") || lowerLabel.includes("chest") || lowerLabel.includes("TbChest");
           
           // else if(Bodypart.toLowerCase() === "knee")
           // {
@@ -3768,8 +3769,14 @@ this.allowDrop(e)} onDrop={e => this.drop(e)}></div>
         generateReport={this.generateReport}
         generatePatientTable={this.generatePatientTable()}
       />
-    ) 
-    : this.state.modal && options_label === "CT PNS" ? (
+    ) : this.state.modal && options_label === "TbChest" ? (
+      <TbChest
+        handleClick={this.handleClick}
+        reportFrmData={reportFrmData}
+        generateReport={this.generateReport}
+        generatePatientTable={this.generatePatientTable()}
+      />  
+    ) : this.state.modal && options_label === "CT PNS" ? (
       <PnsAbnormal
         handleClick={this.handleClick}
         reportFrmData={reportFrmData}
