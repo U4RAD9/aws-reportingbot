@@ -39,11 +39,9 @@
           body {
             background-color: white;
           }
-
           #selected-data {
             background-color: white;
           }
-
           table {
             width: 100%;
             border-collapse: collapse;
@@ -52,19 +50,24 @@
   
           td {
             border: 2px solid black;
-            height: 35px;
             padding: 2px;
             font-size: 16px;
             width: auto; /* Adjust this value as needed */
             text-align: center;
           }
-          
+
           tr {
             height: 50px;
           }
 
           #main-container {
             margin: 15px;
+            background-color: white;
+          }
+
+          img {
+            max-width: 80%;
+            height: auto;
             background-color: white;
           }
         </style>
@@ -95,7 +98,10 @@
           .replace(/^Patient Name: /, "");
 
         // Construct the file name
-        var fileName = patientId + "_" + patientName + ".pdf";
+        var fileName = patientId + "_" + patientName + "_Doctor_Report.pdf";
+        
+
+        
 
         // Include text content in PDF
         var textContent = selectedDataContainer.innerText;
@@ -134,11 +140,9 @@
                   <br>
                     <table>
                         <tr>
-                            <td id="patient-id">
-                                Patient ID: ${row[1].innerText}
+                            <td id="patient-id">Patient ID: ${row[1].innerText}
                             </td>
-                            <td id="patient-name">    
-                                Patient Name: ${row[0].innerText}
+                            <td id="patient-name">Patient Name: ${row[0].innerText}
                             </td>
                             <td>    
                                 Age: ${row[2].innerText}
@@ -148,91 +152,67 @@
                             <td>    
                                 Gender: ${row[3].innerText}
                             </td>
-                            <td>    
-                                Test Date: ${row[4].innerText}
-                            </td>
-                            <td>    
-                                Report Date: ${row[5].innerText}
-                            </td>
+                            <td>Test Date: ${row[4].innerText}</td>
+                            <td>Report Date: ${row[5].innerText}</td>
                         </tr>
                     </table>
                     <br>
                     <br>
-                    <h4>VITALS REPORT</h4>
+                    <strong>Patient History</strong>:
                     <br>
-                    <table>
-                        <tr>
-                            <td>    
-                                Vitals
-                            </td>
-                            <td>    
-                                Values
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>    
-                                Height(in cm)
-                            </td>
-                            <td>    
-                              ${row[6].innerText}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>    
-                              Weight(in kg)
-                            </td>
-                            <td>    
-                              ${row[7].innerText}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>    
-                              BMI(kg/m2)
-                            </td>
-                            <td>    
-                              ${calculateBMI(row[6].innerText, row[7].innerText)}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>    
-                              Blood Pressure(mmHg)  
-                            </td>
-                            <td>    
-                              ${row[8].innerText}  
-                            </td>
-                        </tr>
-                        <tr>    
-                            <td>    
-                              Pulse(bpm)  
-                            </td>
-                            <td>    
-                                ${row[9].innerText}
-                            </td>
-                        </tr>
-                    </table>
+                    <p>${row[6].innerText}.</p>
+                    <br>
+                    <strong>Clinical Findings</strong>:
+                    <br>
+                    <p>${row[7].innerText}.</p>
+                    <br>
+                    <strong>Advice / Suggestions</strong>:
+                    <br>
+                    <p>${row[8].innerText}.</p>
+                    <br>
+                    <br>
+                    <img src="static/image/sarkar.png" alt="Description of image">
+                    <br>
+                    <br>
+                    Sayan De Sarkar 
+                    <br>
+                    M. B. B. S.
+                    <br>
+                    Reg. No. 85692 WBMC
                 </div>
             `;
   }
 
-  function calculateBMI(height, weight) {
-    // Convert height from cm to meters
-    var heightMeters = height / 100;
-
-    // Calculate BMI
-    var bmi = (weight / (heightMeters * heightMeters)).toFixed(2);
-
-    return bmi;
-  }
 </script>
-
 <script>
   function dismissError() {
     // Remove the error overlay from the DOM
     document.querySelector('.error-overlay').remove();
   }
 </script>
-
 <style>
+  body {
+    background-color: white;
+  }
+
+  p {
+    white-space: pre-wrap; /* Ensures text wraps properly */
+    word-wrap: break-word;  /* Breaks long words */
+    max-width: 100%;        /* Prevents overflow */
+    overflow-wrap: break-word;
+    margin-top: 10px;       /* Adds space between paragraphs */
+  }
+
+  #rowCount {
+    position: absolute;
+    top: 20px;
+    /* Adjust the top position as needed */
+    left: 20%;
+    color: white;
+    font-weight: bold;
+    /* Adjust the right position as needed */
+  }
+
   #selected-data {
     padding: 10px;
     width: 210mm;
@@ -247,20 +227,21 @@
     background-color: white;
     /* Background color of the container */
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    /* Ensure it appears above other content */
   }
 
   /* Styles for the patient details table */
   table {
-    margin-top: 20px;
     border-collapse: collapse;
     width: 100%;
   }
 
   th,
   td {
-    border: 1px solid #ddd;
-    padding: 8px;
+    border: 0.5px solid #ddd;
+    padding: 2px;
     text-align: left;
+    margin: 0;
   }
 
   th {
@@ -271,7 +252,7 @@
     max-width: 300px;
   }
 
-  
+ 
 
   #tools {
     padding: 10px;
@@ -288,7 +269,7 @@
     right: 20px;
     /* Adjust the right position as needed */
   }
-  
+
   /* Adjusted css. - Himanshu. */
   #routeContainer {
     position: absolute;
@@ -297,39 +278,40 @@
     right: 120px;
     /* Adjust the right position as needed */
   }
-  
-  /* css for the vaccination list button : */
+
+  /* css for the vaccination list button :*/
   #route2Container {
     position: absolute;
     top: 20px;
     /* Adjust the top position as needed */
-    right: 240px;
+    right: 200px;
     /*  Adjust the right position as needed */
+
   }
 
-  /* css for the ECG list button : */
   #route3Container {
     position: absolute;
     top: 20px;
     /* Adjust the top position as needed */
-    right: 372px;
+    right: 333px;
     /*  Adjust the right position as needed */
+
   }
 
-  /* css for the XRAY list button : */
   #route4Container {
     position: absolute;
     top: 20px;
     /* Adjust the top position as needed */
-    right: 432px;
+    right: 395px;
     /*  Adjust the right position as needed */
+
   }
 
   #route5Container {
     position: absolute;
     top: 20px;
     /* Adjust the top position as needed */
-    right: 500px;
+    right: 465px;
     /*  Adjust the right position as needed */
 
   }
@@ -337,19 +319,9 @@
     position: absolute;
     top: 20px;
     /* Adjust the top position as needed */
-    right: 590px;
+    right: 585px;
     /*  Adjust the right position as needed */
 
-  }
-
-  #rowCount {
-    position: absolute;
-    top: 20px;
-    /* Adjust the top position as needed */
-    left: 20%;
-    color: white;
-    font-weight: bold;
-    /* Adjust the right position as needed */
   }
 
   .hidden {
@@ -371,6 +343,7 @@
     left: 10px;
     /* Adjust the right position as needed */
   }
+
   .error-overlay {
     position: fixed;
     top: 0;
@@ -416,12 +389,23 @@
   .card-title {
     margin-bottom: 0;
   }
+
+  .buttons-container {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+  }
+
+  .inline-form {
+    display: inline;
+  }
+
 </style>
 
 <div id="Layout">
   <div class="row" id="tools">
     <div class="col-lg-8">
-      <form class="row" method="POST" enctype="multipart/form-data" action="{% url 'uploadcsvforvital' %}">
+      <form class="row" method="POST" enctype="multipart/form-data" action="{% url 'upload_doctor_csv' %}">
         {% csrf_token %}
         <input class="form-control col-lg-10" type="file" name="csv_file" accept=".csv" />
         <button class="btn btn-success col-lg-2" type="submit">Upload</button>
@@ -430,58 +414,15 @@
     <button class="btn btn-success col-lg-2" onclick="startProcess()">
       Start
     </button>
-    <form class="col-lg-2" method="post" action="{% url 'delete_all_patients' %}">
+    <form class="col-lg-2" method="post" action="{% url 'delete_all_patients_doctor' %}">
       {% csrf_token %}
       <button class="btn btn-danger" type="submit">Delete</button>
     </form>
-
-  </div>
-  <!-- Start button -->
   
-  <form method="POST" id="tools" action="{% url 'add_patient' %}">
-    {% csrf_token %}
-    <div class="row mb-3">
-      <div class="col-lg-4">
-        <input class="form-control" type="text" name="PatientName" placeholder="Patient Name" required>
-      </div>
-      <div class="col-lg-4">
-        <input class="form-control" type="text" name="PatientId" placeholder="Patient ID" required>
-      </div>
-      <div class="col-lg-4">
-        <input class="form-control" type="text" name="age" placeholder="Age" required>
-      </div>
-    </div>
-    <div class="row mb-3">
-      <div class="col-lg-4">
-        <input class="form-control" type="text" name="gender" placeholder="Gender" required>
-      </div>
-      <div class="col-lg-4">
-        <input class="form-control" type="text" name="TestDate" placeholder="Test Date" required>
-      </div>
-      <div class="col-lg-4">
-        <input class="form-control" type="text" name="ReportDate" placeholder="Report Date" required>
-      </div>
-    </div>
-    <div class="row mb-3">
-      <div class="col-lg-3">
-        <input class="form-control" type="text" name="height" placeholder="Height" required>
-      </div>
-      <div class="col-lg-3">
-        <input class="form-control" type="text" name="weight" placeholder="Weight" required>
-      </div>
-      <div class="col-lg-3">
-        <input class="form-control" type="text" name="blood" placeholder="BP" required>
-      </div>
-      <div class="col-lg-3">
-        <input class="form-control" type="text" name="pulse" placeholder="Pulse" required>
-      </div>
-    </div>
-    <div class="row">
-      <!-- Add input fields for other patient attributes as needed -->
-      <button id="add_patient" class="btn btn-success col-lg-12" type="submit">Add Patient</button>
-    </div>
-  </form>
-  <h5 id="center">Vitals Patient Details</h5>
+  </div>
+  
+
+  <h5>Doctor consultation Patient Details</h5>
   <form>
     <ul>
       {% for patient in patients %}
@@ -491,23 +432,22 @@
         <label>{{ patient.PatientId }}</label>
         <label>{{ patient.age }}</label>
         <label>{{ patient.gender }}</label>
-        <label class="hidden">{{ patient.TestDate }}</label>
-        <label class="hidden">{{ patient.ReportDate }}</label>
-        <label class="hidden">{{ patient.height }}</label>
-        <label class="hidden">{{ patient.weight }}</label>
-        <label class="hidden">{{ patient.blood }}</label>
-        <label class="hidden">{{ patient.pulse }}</label>
+        <label class="hidden">{{ patient.date }}</label>
+        <label class="hidden">{{ patient.date }}</label>
+        <label class="hidden">{{ patient.history }}</label>
+        <label class="hidden">{{ patient.findings }}</label>
+        <label class="hidden">{{ patient.advice }}</label>
       </li>
       {% endfor %}
     </ul>
   </form>
 </div>
-<!-- Fixed routing. - Himanshu. -->
+<!-- Fixed routing.- HImanshu. -->
 <div id="logoutContainer">
   <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
 </div>
 <div id="routeContainer">
-  <a href="{% url 'optometrylist' %}" class="btn btn-warning">OPTOMETRY</a>
+  <a href="{% url 'vitalslist' %}" class="btn btn-warning">VITALS</a>
 </div>
 <div id="route2Container">
   <a href="{% url 'vaccinationlist' %}" class="btn btn-warning">VACCINATION</a>
@@ -519,10 +459,10 @@
   <a href="{% url 'xraylist' %}" class="btn btn-warning">XRAY</a>
 </div>
 <div id="route5Container">
-  <a href="{% url 'dental_checkup_list' %}" class="btn btn-warning">DENTAL</a>
+  <a href="{% url 'optometrylist' %}" class="btn btn-warning">OPTOMETRY</a>
 </div>
 <div id="route6Container">
-  <a href="{% url 'doctor_checkup_list' %}" class="btn btn-warning">DOCTOR</a>
+  <a href="{% url 'dental_checkup_list' %}" class="btn btn-warning">DENTAL</a>
 </div>
 
 {% if messages %}
@@ -548,6 +488,8 @@
 <div id="rowCount">
   <p>Total number of Patients: {{ patients|length }}</p>
 </div>
+
+
 <div id="selected-data">
   <!-- Selected data will be displayed here -->
 </div>

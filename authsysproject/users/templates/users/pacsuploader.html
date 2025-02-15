@@ -6,17 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dicom File Upload</title>
     <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
     <style>
         body{
             font-family: Arial, sans-serif;
             text-align: center;
             background-color: #f4f4f4;
-            margin: 20px;
+            
         }
 
         .container{
             width: 50%;
-            margin: auto;
+            margin-top: 10px;
+
             background: white;
             padding: 20px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -33,7 +36,7 @@
             margin:10px;
             padding: 10px 15px;
             border: none;
-            background: #007bff;
+            background: red;
             color: white;
             cursor: pointer;
         }
@@ -60,6 +63,21 @@
     </style>
 </head>
 <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand">U4rad PACS</a>
+            <!-- <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+                <ul class="navbar-nav">
+                    
+                    <li class="nav-item">
+                        <a href="/job_relaunch" class="nav-link">
+                            <button class="logout-button btn btn-sm btn-danger"><strong>Job Relaunch</strong></button>
+                        </a>
+                    </li>
+                </ul>
+            </div> -->
+        </div>
+    </nav>
     <div class="container">
         <h2>Dicom File Upload</h2>
 
@@ -92,6 +110,7 @@
 
         let files = [];
         let xhrRequests = [];
+        let uploadedCount = 0; // ✅ Track successful uploads
 
         // ✅ Prevent default behavior (Fixes downloading issue)
         ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
@@ -109,7 +128,6 @@
         dropArea.addEventListener("drop", (e) => {
             e.preventDefault();
             e.stopPropagation();
-        
             dropArea.classList.remove("highlight");
             files = [...e.dataTransfer.files];
             updateFileList();
@@ -144,6 +162,7 @@
             progressContainer.innerHTML = "";
             statusText.textContent = "Uploading...";
             xhrRequests = []; // Reset previous requests
+            uploadedCount = 0; // Reset successful upload count
         
             files.forEach((file, index) => {
                 const formData = new FormData();
@@ -164,11 +183,15 @@
                 // ✅ Handle upload completion
                 xhr.onload = function () {
                     if (xhr.status == 200) {
-                        statusText.textContent = "Upload successful!";
+                        uploadedCount++; // ✅ Increment count for successful uploads
+                        if (uploadedCount === files.length) {
+                            statusText.textContent = "Upload successful!"; // ✅ Show success only when all files are uploaded
+                            cancelBtn.disabled = true;
+                        }
                     } else {
                         statusText.textContent = "Upload failed!";
+                        cancelBtn.disabled = true;
                     }
-                    cancelBtn.disabled = true;
                 };
         
                 xhrRequests.push(xhr);

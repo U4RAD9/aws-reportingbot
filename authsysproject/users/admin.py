@@ -9,7 +9,8 @@ from .models.institutionmodalities import InstitutionModalities
 from .models.patientdata import PatientInfo
 from .models.corporatecoordinator import CorporateCoordinator
 from .models.corporatedoctor import CorporateDoctor
-
+from .models.dentalpatientdetails import DentalPatientInfo
+from .models.doctorpatientdetails import DoctorPatientInfo
 from .models.patientdetails import PatientDetails
 from .models.City import City
 from .models.Client import Client
@@ -71,6 +72,8 @@ admin.site.register(VitalsReport)
 admin.site.register(SetCount)
 admin.site.register(ECGSetCount)
 admin.site.register(StudyReport)
+admin.site.register(DentalPatientInfo)
+admin.site.register(DoctorPatientInfo)
 
 # Register your models here.
 class DICOMFileInline(admin.TabularInline):

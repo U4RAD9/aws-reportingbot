@@ -35,8 +35,12 @@ from users.models.VaccinationPatientData import vaccinationPatientDetails
 from users.models.DICOMData import DICOMData, DICOMFile, JPEGFile, PatientHistoryFile
 from users.models.corporatedoctor import CorporateDoctor
 from users.models.EcgPdfReport import EcgReport
+from users.models.ECGPatientData import ecgPatientDetails
+from users.models.XRAYPatientData import xrayPatientDetails
 from users.models.XrayPdfReport import XrayReport
 from users.models.StudyReport import StudyReport
+from users.models.dentalpatientdetails import DentalPatientInfo
+from users.models.doctorpatientdetails import DoctorPatientInfo
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from users.forms import DICOMDataForm
@@ -69,7 +73,7 @@ import io
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import PyPDF2
 from users.models.Date import Date
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from users.models.Location import Location
 from users.models.City import City
 from users.models.Client import Client
@@ -3776,6 +3780,7 @@ def delete_all_patients_opto(request):
     return render(request, 'users/optometrylist.html')
 
 
+
 def delete_all_patients(request):
     if request.method == 'POST':
         vitalPatientDetails.objects.all().delete()
@@ -5437,14 +5442,7 @@ def get_editor_content(request, study_id):
 
 ################### Upload DICOM Data on PACS ####################
 
-# Orthanc API configurations
-ORTHANC_URL = "https://pacs.reportingbot.in/instances"  # Update if needed
-ORTHANC_USERNAME = "admin"
-ORTHANC_PASSWORD = "phP@123!"
 
-def pacsuploader(request):
-    """Render the upload page."""
-    return render(request, "users/pacsuploader.html")
 
 # @csrf_exempt
 # def upload_dicom(request):
@@ -5501,6 +5499,17 @@ def pacsuploader(request):
 
 #     return JsonResponse({'error': 'Invalid request'}, status=400)        
 
+##################################### START ORTHANC UPLOADER FAILEDE JOBS PUSHER ###################################################
+# Orthanc API configurations
+ORTHANC_URL = "https://pacs.reportingbot.in/instances"  # Update if needed
+ORTHANC_USERNAME = "admin"
+ORTHANC_PASSWORD = "phP@123!"
+
+
+def pacsuploader(request):
+    """Render the upload page."""
+    return render(request, "users/pacsuploader.html")
+
 
 @csrf_exempt
 def upload_dicom(request):
@@ -5537,6 +5546,213 @@ def upload_dicom(request):
 
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
+########################################$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$###################################################
+
+ORTHANC_URL = "http://localhost:8042"
+CLOUD_URL = "https://pacs.reportingbot.in"
+ORTHANC_AUTH = ("admin", "phP@123!")  # Replace with actual credentials
+CLOUD_AUTH = ("admin", "phP@123!")  # Replace with actual credentials
+
+def fetch_failed_jobs(request):
+    """
+    Fetch job IDs and check for failed jobs after forcing Orthanc to refresh job statuses.
+    """
+    try:
+        # Step 1: Force Orthanc to refresh its job list
+        refresh_response = requests.post(f"{ORTHANC_URL}/jobs/reconstruct", auth=ORTHANC_AUTH)
+
+        # Step 2: Get the updated list of job IDs
+        response = requests.get(f"{ORTHANC_URL}/jobs", auth=ORTHANC_AUTH)
+        response.raise_for_status()
+        job_ids = response.json()
+
+        failed_jobs = []  # Store failed jobs
+
+        # Step 3: Fetch details of each job
+        for job_id in job_ids:
+            job_response = requests.get(f"{ORTHANC_URL}/jobs/{job_id}", auth=ORTHANC_AUTH)
+            job_response.raise_for_status()
+            job_details = job_response.json()
+
+            job_state = job_details.get("State")  
+
+            # Check if the job state is 'Failure'
+            if job_state == "Failure":  
+                failed_jobs.append({
+                    "ID": job_id,
+                    "DicomInstance": job_details.get("Content", {}).get("ParentResources", ["N/A"])[0],  # Extract first resource
+                    "State": job_state,
+                    "Description": job_details.get("ErrorDescription", "No description"),
+                })
+
+        return JsonResponse({"failed_jobs": failed_jobs})
+
+    except requests.RequestException as e:
+        return JsonResponse({"error": str(e)}, status=500)
+    
+
+def retry_failed_jobs(request):
+    """
+    Retry failed jobs by resending their DICOM instances to the cloud.
+    """
+    try:
+        response = requests.get(f"{ORTHANC_URL}/jobs", auth=ORTHANC_AUTH)
+        response.raise_for_status()
+        job_ids = response.json()
+
+        retried_jobs = []
+
+        for job_id in job_ids:
+            job_response = requests.get(f"{ORTHANC_URL}/jobs/{job_id}", auth=ORTHANC_AUTH)
+            job_response.raise_for_status()
+            job_details = job_response.json()
+
+            job_state = job_details.get("State")
+
+            if job_state == "Failure":
+                parent_resources = job_details.get("Content", {}).get("ParentResources", [])
+                if not parent_resources:
+                    continue
+
+                dicom_id = parent_resources[0]
+
+                dicom_response = requests.get(f"{ORTHANC_URL}/instances/{dicom_id}/file", auth=ORTHANC_AUTH)
+                if dicom_response.status_code == 200:
+                    files = {"file": ("dicom.dcm", dicom_response.content)}
+
+                    cloud_response = requests.post(f"{CLOUD_URL}/instances", files=files, auth=CLOUD_AUTH)
+
+                    if cloud_response.status_code == 200:
+                        retried_jobs.append(job_id)
+
+                        # Delete old failed job after successful retry
+                        requests.delete(f"{ORTHANC_URL}/jobs/{job_id}", auth=ORTHANC_AUTH)
+
+        # Fetch updated failed jobs after retrying
+        updated_failed_jobs_response = fetch_failed_jobs(request)
+        updated_failed_jobs_data = updated_failed_jobs_response.content.decode("utf-8")
+
+        return JsonResponse({
+            "message": f"Retried {len(retried_jobs)} failed jobs.",
+            "failed_jobs": updated_failed_jobs_data  # Return updated failed jobs list
+        })
+
+    except requests.RequestException as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+def job_relaunch(request):
+    return render(request, "users/job_relaunch.html")
+
+##################################### END ORTHANC UPLOADER FAILEDE JOBS PUSHER ################################################
+
+################################################ Start of Dental reporting ####################################################
+
+def dental_checkup_list(request):
+    patients = DentalPatientInfo.objects.all()
+    return render(request, 'users/dental_checkup_list.html', {'patients': patients})
 
 
+def upload_dental_csv(request):
+    if request.method == 'POST' and request.FILES.get('csv_file'):
+        print("CSV upload request received")  # Debug print
+
+        csv_file = request.FILES['csv_file']
+        field_names = ['PatientName', 'gender', 'PatientId', 'age', 'history', 'findings', 'advice']
+
+        try:
+            decoded_file = csv_file.read().decode('utf-8').splitlines()
+            reader = csv.DictReader(decoded_file, fieldnames=field_names)
+            
+            if reader.fieldnames == field_names:
+                next(reader)  # Skip header row
+
+            for row in reader:
+                print(f"Inserting into DB: {row}")  # Debug print
+
+                DentalPatientInfo.objects.create(
+                    PatientId=row['PatientId'],
+                    PatientName=row['PatientName'],
+                    age=row['age'],
+                    gender=row['gender'],
+                    date= date.today(),
+                    history=row['history'],
+                    findings=row['findings'],
+                    advice=row['advice']
+                )
+            
+            print("Data inserted successfully")
+            messages.success(request, 'CSV data uploaded successfully.')
+            return redirect('dental_checkup_list')
+        
+        except Exception as e:
+            print(f"Error: {str(e)}")  # Debug print
+            messages.error(request, f'Error: {str(e)}')
+            return redirect('dental_checkup_list')
+    
+    return render(request, 'users/upload_dental_csv.html')
+
+
+def delete_all_patients_dental(request):
+    if request.method == 'POST':
+        DentalPatientInfo.objects.all().delete()
+        return redirect('dental_checkup_list')
+    return render(request, 'users/dental_checkup_list.html')    
+
+############################################# End of Dental reporting ###################################################### 
+
+
+################################################ Start of Doctor consultation reporting ####################################################
+
+def doctor_checkup_list(request):
+    patients = DoctorPatientInfo.objects.all()
+    return render(request, 'users/doctor_checkup_list.html', {'patients': patients})
+
+
+def upload_doctor_csv(request):
+    if request.method == 'POST' and request.FILES.get('csv_file'):
+        print("CSV upload request received")  # Debug print
+
+        csv_file = request.FILES['csv_file']
+        field_names = ['PatientName', 'gender', 'PatientId', 'age', 'history', 'findings', 'advice']
+
+        try:
+            decoded_file = csv_file.read().decode('utf-8').splitlines()
+            reader = csv.DictReader(decoded_file, fieldnames=field_names)
+            
+            if reader.fieldnames == field_names:
+                next(reader)  # Skip header row
+
+            for row in reader:
+                print(f"Inserting into DB: {row}")  # Debug print
+
+                DoctorPatientInfo.objects.create(
+                    PatientId=row['PatientId'],
+                    PatientName=row['PatientName'],
+                    age=row['age'],
+                    gender=row['gender'],
+                    date= date.today(),
+                    history=row['history'],
+                    findings=row['findings'],
+                    advice=row['advice']
+                )
+            
+            print("Data inserted successfully")
+            messages.success(request, 'CSV data uploaded successfully.')
+            return redirect('doctor_checkup_list')
+        
+        except Exception as e:
+            print(f"Error: {str(e)}")  # Debug print
+            messages.error(request, f'Error: {str(e)}')
+            return redirect('doctor_checkup_list')
+    
+    return render(request, 'users/upload_doctor_csv.html')
+
+
+def delete_all_patients_doctor(request):
+    if request.method == 'POST':
+        DoctorPatientInfo.objects.all().delete()
+        return redirect('doctor_checkup_list')
+    return render(request, 'users/doctor_checkup_list.html')    
+
+############################################# End of Doctor consultation reporting ######################################################
 

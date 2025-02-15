@@ -3,8 +3,6 @@ from django.conf import settings
 from django.urls import path
 from . import views
 
-from .views import save_editor_content, get_editor_content
-
 # from django.contrib.auth import views
 
 urlpatterns = [
@@ -116,8 +114,17 @@ urlpatterns = [
     path('update_twostepcheck/<str:patient_id>/', views.update_twostepcheck, name='update_twostepcheck'),
     path('review_page', views.review_page, name='review_page'),
     path('corporate-doctor-dashboard/', views.corporate_doctor_dashboard, name='corporate-doctor-dashboard/'),
-    path('save-editor-content/', save_editor_content, name='save_editor_content'),
-    path('get-editor-content/<str:study_id>/', get_editor_content, name='get_editor_content'),
+    path('save-editor-content/', views.save_editor_content, name='save_editor_content'),
+    path('get-editor-content/<str:study_id>/', views.get_editor_content, name='get_editor_content'),
+    path('dental-checkup', views.dental_checkup_list, name='dental_checkup_list'),
+    path('delete_all_patients_dental', views.delete_all_patients_dental, name='delete_all_patients_dental'),
+    path('upload-dental-csv/', views.upload_dental_csv, name='upload_dental_csv'),
+    path('doctor-checkup', views.doctor_checkup_list, name='doctor_checkup_list'),
+    path('delete_all_patients_doctor', views.delete_all_patients_doctor, name='delete_all_patients_doctor'),
+    path('upload-doctor-csv/', views.upload_doctor_csv, name='upload_doctor_csv'),
+    path('job_relaunch', views.job_relaunch, name='job_relaunch'),
+    path('fetch-failed-jobs/', views.fetch_failed_jobs, name='fetch_failed_jobs'),
+    path('retry-failed-jobs/', views.retry_failed_jobs, name='retry_failed_jobs'),
 
 
 
