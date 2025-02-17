@@ -49,8 +49,8 @@ urlpatterns = [
     path('allocatecoordinator1/', views.allocatecoordinator1, name='allocatecoordinator1'),
     path('coordinatorallocate1/', views.coordinatorallocate1, name='coordinatorallocate1'),
     path('fetch_patient_data', views.fetch_patient_data, name='fetch_patient_data'),
-    path('pacsuploader/', views.pacsuploader, name='pacsuploader'),
-    path('upload/', views.upload_dicom, name='upload_dicom'),
+    #path('pacsuploader/', views.pacsuploader, name='pacsuploader'),
+    #path('upload/', views.upload_dicom, name='upload_dicom'),
     path('api/update_patient_done_status/<str:patient_id>/', views.update_patient_done_status, name='update_patient_done_status'),
     path('api/update_patient_done_status_xray/<str:study_id>/', views.update_patient_done_status_xray, name='update_patient_done_status_xray'),
     path('update_urgent_status_xray/<str:patient_id>/', views.update_urgent_status_xray, name='update_urgent_status_xray'),
@@ -122,9 +122,11 @@ urlpatterns = [
     path('doctor-checkup', views.doctor_checkup_list, name='doctor_checkup_list'),
     path('delete_all_patients_doctor', views.delete_all_patients_doctor, name='delete_all_patients_doctor'),
     path('upload-doctor-csv/', views.upload_doctor_csv, name='upload_doctor_csv'),
-    path('job_relaunch', views.job_relaunch, name='job_relaunch'),
-    path('fetch-failed-jobs/', views.fetch_failed_jobs, name='fetch_failed_jobs'),
-    path('retry-failed-jobs/', views.retry_failed_jobs, name='retry_failed_jobs'),
+    # path('job_relaunch', views.job_relaunch, name='job_relaunch'),
+    # path('fetch-failed-jobs/', views.fetch_failed_jobs, name='fetch_failed_jobs'),
+    # path('retry-failed-jobs/', views.retry_failed_jobs, name='retry_failed_jobs'),
+    path('pacsuploader/', views.pacsuploader, name='index'),
+    path('upload_dicom_files/', views.upload_dicom_files, name='upload_dicom_files'),
 
 
 
