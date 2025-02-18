@@ -3803,6 +3803,9 @@ def add_patient(request):
             weight = request.POST.get('weight')
             blood = request.POST.get('blood')
             pulse = request.POST.get('pulse')
+            chest_inhale=request.POST.get('Chest Inhale')
+            chest_exhale=request.POST.get('Chest Exhale')
+            abdomen=request.POST.get('Abdomen')
             # Create a new Patient object and save it to the database
             patient = vitalPatientDetails(
                 PatientId=patient_id,
@@ -3815,6 +3818,9 @@ def add_patient(request):
                 weight=weight,
                 blood=blood,
                 pulse=pulse,
+                chest_inhale=chest_inhale,
+                chest_exhale=chest_exhale,
+                abdomen=abdomen
             )
             patient.save()
 
@@ -4018,7 +4024,7 @@ def uploadcsvforvital(request):
 
         # Adjust the field names according to your CSV file structure
         field_names = ['PatientId', 'PatientName', 'Age', 'Gender', 'TestDate', 'ReportDate', 'Height', 'Weight',
-                       'Blood', 'Pulse']
+                       'Blood', 'Pulse', 'Chest Inhale', 'Chest Exhale', 'Abdomen']
 
         try:
             # Decode the CSV file data and split it into lines
@@ -4038,7 +4044,10 @@ def uploadcsvforvital(request):
             # Check for missing data in each row
             for idx, row in enumerate(csv_data, start=1):
                 total_rows += 1
-                missing_fields = [field for field in field_names if not row.get(field)]
+                # missing_fields = [field for field in field_names if not row.get(field)]
+                # Required fields (excluding last three)
+                required_fields = field_names[:-3]  # Excluding 'Chest Inhale', 'Chest Exhale', 'Abdomen'
+                missing_fields = [field for field in required_fields if not row.get(field)]
                 if missing_fields:
                     # Append each missing data message separately for each row
                     error_message = f"Missing data for ID: {row.get('PatientId')} and Name: {row.get('PatientName')} in row {idx}: {', '.join(missing_fields)}"
@@ -4065,6 +4074,9 @@ def uploadcsvforvital(request):
                         weight=row['Weight'],
                         blood=row['Blood'],
                         pulse=row['Pulse'],
+                        chest_inhale=row.get('Chest Inhale', 'N/A'),  # Default to N/A
+                        chest_exhale=row.get('Chest Exhale', 'N/A'),  # Default to N/A
+                        abdomen=row.get('Abdomen', 'N/A')  # Default to N/A
                     )
 
             if missing_data_logs:

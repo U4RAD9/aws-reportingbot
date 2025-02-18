@@ -209,6 +209,30 @@
                                 ${row[9].innerText}
                             </td>
                         </tr>
+                        <tr>    
+                            <td>    
+                              Chest Inhale  
+                            </td>
+                            <td>    
+                                ${row[10].innerText}
+                            </td>
+                        </tr>
+                        <tr>    
+                            <td>    
+                              Chest Exhale 
+                            </td>
+                            <td>    
+                                ${row[11].innerText}
+                            </td>
+                        </tr>
+                        <tr>    
+                            <td>    
+                              Abdomen 
+                            </td>
+                            <td>    
+                                ${row[12].innerText}
+                            </td>
+                        </tr>
                     </table>
                 </div>
             `;
@@ -476,6 +500,17 @@
         <input class="form-control" type="text" name="pulse" placeholder="Pulse" required>
       </div>
     </div>
+    <div class="row mb-3">
+      <div class="col-lg-3">
+        <input class="form-control" type="text" name="chest_inhale" placeholder="chest_inhale">
+      </div>
+      <div class="col-lg-3">
+        <input class="form-control" type="text" name="chest_exhale" placeholder="chest_exhale">
+      </div>
+      <div class="col-lg-3">
+        <input class="form-control" type="text" name="abdomen" placeholder="abdomen">
+      </div>
+    </div>
     <div class="row">
       <!-- Add input fields for other patient attributes as needed -->
       <button id="add_patient" class="btn btn-success col-lg-12" type="submit">Add Patient</button>
@@ -497,6 +532,9 @@
         <label class="hidden">{{ patient.weight }}</label>
         <label class="hidden">{{ patient.blood }}</label>
         <label class="hidden">{{ patient.pulse }}</label>
+        <label class="hidden">{{ patient.chest_inhale }}</label>
+        <label class="hidden">{{ patient.chest_exhale }}</label>
+        <label class="hidden">{{ patient.abdomen }}</label>
       </li>
       {% endfor %}
     </ul>
@@ -533,9 +571,10 @@
     </div>
     <div class="card-body">
       <ul class="messages">
-        {% for message in messages %}
+        
+        {% if forloop.counter <= messages|length|add:"-3" %}
             <li>{{ message }}</li>
-        {% endfor %}
+        {% endif %}
       </ul>
     </div>
     <div class="card-footer text-center">

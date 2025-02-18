@@ -12,6 +12,9 @@ class vitalPatientDetails(models.Model):
     weight = models.CharField(max_length=250, null=True, default=None, blank=True)
     blood = models.CharField(max_length=250, null=True, default=None, blank=True)
     pulse = models.CharField(max_length=250, null=True, default=None, blank=True)
+    chest_inhale = models.CharField(max_length=250, null=True, default=None, blank=True)
+    chest_exhale = models.CharField(max_length=250, null=True, default=None, blank=True)
+    abdomen = models.CharField(max_length=250, null=True, default=None, blank=True)
 
     def __str__(self):
         return self.PatientId
