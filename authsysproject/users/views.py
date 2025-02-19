@@ -4485,6 +4485,11 @@ def clientdata(request):
     institution_name = client.institution_name
     dicom_data = DICOMData.objects.filter(institution_name=institution_name).order_by('-vip', '-urgent', '-Mlc', '-id')
 
+    # Total filtered count
+    total_filtered_count = dicom_data.count()
+    # Count of DICOMData where isDone=True
+    is_done_count = dicom_data.filter(isDone=True).count()
+
     # Set up pagination
     paginator = Paginator(dicom_data, 400)  # 200 patients per page
     page_number = request.GET.get('page', 1)  # Get the page number from the request
@@ -4522,7 +4527,13 @@ def clientdata(request):
         'upload_history': True,  # Assuming all clients can upload history files
     }
 
-    return render(request, 'users/upload_dicom.html', {'dicom_data': page_obj, 'edit_permissions': edit_permissions, 'page_obj': page_obj})
+    return render(request, 'users/upload_dicom.html', {
+        'dicom_data': page_obj,
+        'edit_permissions': edit_permissions,
+        'page_obj': page_obj,
+        'total_filtered_count': total_filtered_count,  # Total filtered count
+        'is_done_count': is_done_count  # Total count where isDone=True
+        })
 
 
     
@@ -5820,4 +5831,6 @@ def delete_all_patients_doctor(request):
     return render(request, 'users/doctor_checkup_list.html')    
 
 ############################################# End of Doctor consultation reporting ######################################################
+
+##################################################### Data Excel ###################################################
 

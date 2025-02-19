@@ -702,7 +702,7 @@
             // Continue with the next download after a delay (e.g., 500 milliseconds)
             setTimeout(function () {
               downloadSequentially(index + 1);
-            }, 500);
+            }, 1000);
           } else {
             // Skip to the next row
             downloadSequentially(index + 1);
