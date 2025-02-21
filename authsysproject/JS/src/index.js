@@ -1207,7 +1207,7 @@ class App extends Component {
   
     // Map modality to modality1 (if conditions are met)
     let modality1 = modality; // Default to modality itself
-    if (modality === "DX" || modality === "CR") {
+    if (modality === "DX" || modality === "CR" || modality ==="DR") {
       modality1 = "Xray";
     } else if (modality === "CT") {
       modality1 = "CT";
