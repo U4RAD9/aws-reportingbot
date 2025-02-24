@@ -2877,7 +2877,13 @@ class App extends Component {
       // This is the variable to handle the skipping of elemens(if needed).
       let skipNext = false;
 
-      const pdf = new jsPDF("p", "pt", "a4");
+      //const pdf = new jsPDF("p", "pt", "a4", true);
+      const pdf = new jsPDF({
+        orientation: "p",
+        unit: "pt",
+        format: "a4",
+        compress: true, // Enables compression
+      });
 
       let currentYPosition = 40;
 
@@ -2935,7 +2941,7 @@ class App extends Component {
             currentYPosition = await this.addReportImage(pdf, imageUrl, currentYPosition);
           }
           // Adding the data to blob to send it to backend.
-          const pdfBlob = pdf.output("blob");
+          const pdfBlob = pdf.output("blob", { compress: true });
 
           try {
             const csrfToken = await this.getCSRFToken();
@@ -4218,5 +4224,3 @@ onInit={(editor) => {
 }
 
 render(<App />, document.getElementById("root"));
-
-
