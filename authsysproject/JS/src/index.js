@@ -2842,312 +2842,312 @@ class App extends Component {
     })();
   }
 
-  // UploadDivContentOnPDF() {
-  //   (async () => {
-  //     this.showLoader();
-  //     const filename = this.createFilename();
-  //     const data = document.getElementsByClassName("ck-editor__editable")[0];
-  //     console.log("This is the data i got from the class :",data);
-  //     const dataFromId = document.getElementById("reportEditor");
-  //     console.log("This is the data i got from the id reportEditor :", dataFromId);
-
-  //     const { location, accession, institutionName } = this.extractDataFromURL();
-      
-  //     const images = data.querySelectorAll("img");
-  //     const signatureElement = images[1];
-  //     const signatureUrl = signatureElement ? signatureElement.src : null;
-  //     const logoElement = images[0];
-  //     const logoUrl = logoElement ? logoElement.src : null;
-  //     console.log("This is the signature Url:", signatureUrl);
-  //     console.log("This is the logo Url:", logoUrl);
-  //     // This is my new logic to add each captured image on the pdf. - Himanshu.
-  //     // The following code will convert the images nodelist to a array like thing (not actual array, a shallow array like object)
-  //     // I have done this so that i can directly use the slice method to remove the logo and sign from the images, and pass only 
-  //     // remaining required images at the end to reduce the time complexity.
-  //     const remainingReportImages = Array.prototype.slice.call(images, 2);
-
-  //     // Getting the table data from my function.
-  //     // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
-  //     const tableData = this.extractTableData(data);
-  //     const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
-  //     console.log("This is my extracted table data :",tableData);
-
-  //     // Getting all the children elements of the data (ckeditor content).
-  //     const elements = data.children;
-  //     // This is the variable to handle the skipping of elemens(if needed).
-  //     let skipNext = false;
-
-  //     const pdf = new jsPDF("p", "pt", "a4");
-
-  //     let currentYPosition = 40;
-
-  //     try {
-  //         currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
-
-  //         const tableData = [
-  //             ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
-  //             ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
-  //             ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"]
-  //         ];
-
-  //         currentYPosition += 20;
-
-  //         pdf.autoTable({
-  //             startY: currentYPosition,
-  //             body: tableData,
-  //             theme: 'grid',
-  //             styles: {
-  //                 cellPadding: 3,
-  //                 fontSize: 10,
-  //             },
-  //         });
-  //         currentYPosition = pdf.previousAutoTable.finalY + 20;
-
-  //         // Looping through each element inside the CKEditor.
-  //         for (let i = 0; i < elements.length; i++) {
-  //           const element = elements[i];
-  //           console.log("These are individual children elements of data :",element);
-  //           if (element.tagName === 'P') {
-  //             const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
-  //             if (isHeading) {
-  //                 // Add heading
-  //                 currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
-  //             } else {
-  //                 // Check if it's a "Dr." line and needs signature
-  //                 if (element.textContent.includes("Dr.")) {
-  //                     // Add signature first
-  //                     currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
-  //                 }
-
-  //                 // Splitting paragraphs based on <br> tags and processing each line
-  //                 // const lines = this.splitParagraphIntoLines(element);
-
-  //                 // Regular paragraph
-  //                 currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
-  //             }
-  //           }
-  //         }
-
-  //         // Passing the remaining images instead of the url fetched image directly to add all captured images.
-  //         for (const image of remainingReportImages) {
-  //           const imageUrl = image ? image.src : null;
-  //           console.log("This is the image Url:", imageUrl);
-  //           currentYPosition = await this.addReportImage(pdf, imageUrl, currentYPosition);
-  //         }
-  //         // Adding the data to blob to send it to backend.
-  //         const pdfBlob = pdf.output("blob");
-
-  //         try {
-  //           const csrfToken = await this.getCSRFToken();
-  //           const formData = new FormData();
-  //           formData.append("pdf", pdfBlob, filename ? filename + ".pdf" : "download.pdf");
-  //           formData.append("patientId", patientId);
-  //           formData.append("patientName", patientName);
-  //           formData.append("age", age);
-  //           formData.append("gender", gender);
-  //           formData.append("testDate", testDate);
-  //           formData.append("reportDate", reportDate);
-  //           formData.append("location", location);
-  //           formData.append("accession", accession);
-  //           formData.append("institution_name", institutionName);
-  //           await axios.post("/upload_xray_pdf/", formData, {
-  //               headers: {
-  //                   "Content-Type": "multipart/form-data",
-  //                   "X-CSRFToken": csrfToken,
-  //               },
-  //           });
-
-  //           console.log("PDF successfully sent to Django backend.");
-  //             this.showNotification("PDF successfully uploaded!");
-  //         } catch (error) {
-  //             console.error("Error sending PDF to Django backend.", error);
-  //             this.showNotification("Error uploading PDF. Please try again.");
-  //         }
-
-  //         const currentURL = window.location.href;
-
-  //         setTimeout(() => {
-  //             window.location.href = document.referrer + "?nocache=" + Date.now();
-  //         }, 200);
-
-  //         window.addEventListener("popstate", () => {
-  //             if (window.location.href !== currentURL) {
-  //                 setTimeout(() => {
-  //                     window.location.reload(true);
-  //                 }, 200);
-  //             }
-  //         });
-
-  //     } catch (error) {
-  //         console.error("Error generating PDF:", error);
-  //         this.showNotification("Error generating PDF. Please try again.");
-  //     } finally {
-  //         this.hideLoader();
-  //     }
-  //   })();
-  // }
-
-
   UploadDivContentOnPDF() {
     (async () => {
       this.showLoader();
       const filename = this.createFilename();
       const data = document.getElementsByClassName("ck-editor__editable")[0];
+      console.log("This is the data i got from the class :",data);
+      const dataFromId = document.getElementById("reportEditor");
+      console.log("This is the data i got from the id reportEditor :", dataFromId);
+
       const { location, accession, institutionName } = this.extractDataFromURL();
-  
-      // Image optimization function
-      const optimizeImage = async (imageUrl, maxWidth = 800, quality = 0.7) => {
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.src = imageUrl;
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const scale = Math.min(maxWidth / img.width, 1);
-            canvas.width = img.width * scale;
-            canvas.height = img.height * scale;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL('image/jpeg', quality));
-          };
-        });
-      };
-  
-      // Process all images
-      const images = data.querySelectorAll("img");
-      const [logoElement, signatureElement, ...reportImgElements] = images;
       
-      const logoUrl = logoElement ? await optimizeImage(logoElement.src) : null;
-      const signatureUrl = signatureElement ? await optimizeImage(signatureElement.src) : null;
-      const reportImages = await Promise.all(
-        Array.from(reportImgElements).map(img => optimizeImage(img.src))
-      );
-  
-      // Initialize PDF with compression
-      const pdf = new jsPDF({
-        orientation: "p",
-        unit: "pt",
-        format: "a4",
-        compress: true,
-      });
-  
-      let currentYPosition = 40;
-  
-      // Add logo
-      if (logoUrl) {
-        const logoImg = await new Promise(resolve => {
-          const img = new Image();
-          img.src = logoUrl;
-          img.onload = () => resolve(img);
-        });
-        const logoWidth = Math.min(logoImg.width, 200);
-        const logoHeight = (logoImg.height * logoWidth) / logoImg.width;
-        pdf.addImage(logoImg, "JPEG", 20, currentYPosition, logoWidth, logoHeight);
-        currentYPosition += logoHeight + 20;
-      }
-  
-      // Add patient table
+      const images = data.querySelectorAll("img");
+      const signatureElement = images[1];
+      const signatureUrl = signatureElement ? signatureElement.src : null;
+      const logoElement = images[0];
+      const logoUrl = logoElement ? logoElement.src : null;
+      console.log("This is the signature Url:", signatureUrl);
+      console.log("This is the logo Url:", logoUrl);
+      // This is my new logic to add each captured image on the pdf. - Himanshu.
+      // The following code will convert the images nodelist to a array like thing (not actual array, a shallow array like object)
+      // I have done this so that i can directly use the slice method to remove the logo and sign from the images, and pass only 
+      // remaining required images at the end to reduce the time complexity.
+      const remainingReportImages = Array.prototype.slice.call(images, 2);
+
+      // Getting the table data from my function.
+      // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
       const tableData = this.extractTableData(data);
       const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
-      
-      pdf.autoTable({
-        startY: currentYPosition,
-        body: [
-          ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
-          ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
-          ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"]
-        ],
-        theme: 'grid',
-        styles: { fontSize: 10, cellPadding: 3 },
-        margin: { horizontal: 10 }
-      });
-      currentYPosition = pdf.previousAutoTable.finalY + 20;
-  
-      // Process editor content
-      for (const element of data.children) {
-        if (element.tagName === 'P') {
-          const isHeading = element.querySelector('strong u');
-          const isSignatureLine = element.textContent.includes("Dr.");
-  
-          if (isHeading) {
-            pdf.setFontSize(13);
-            pdf.setFont("helvetica", "bold");
-            pdf.text(element.textContent, 20, currentYPosition);
-            currentYPosition += 20;
-          } else if (isSignatureLine) {
-            if (signatureUrl) {
-              const sigImg = await new Promise(resolve => {
-                const img = new Image();
-                img.src = signatureUrl;
-                img.onload = () => resolve(img);
-              });
-              const sigWidth = Math.min(sigImg.width, 120);
-              const sigHeight = (sigImg.height * sigWidth) / sigImg.width;
-              pdf.addImage(sigImg, "JPEG", 20, currentYPosition, sigWidth, sigHeight);
-              currentYPosition += sigHeight + 20;
-            }
-          } else {
-            pdf.setFontSize(12);
-            pdf.setFont("helvetica", "normal");
-            const splitText = pdf.splitTextToSize(element.textContent, pdf.internal.pageSize.width - 40);
-            pdf.text(splitText, 20, currentYPosition);
-            currentYPosition += splitText.length * 15 + 10;
-          }
-        }
-      }
-  
-      // Add report images
-      for (const imgUrl of reportImages) {
-        const img = await new Promise(resolve => {
-          const image = new Image();
-          image.src = imgUrl;
-          image.onload = () => resolve(image);
-        });
-        
-        const pageWidth = pdf.internal.pageSize.width - 40;
-        const scale = Math.min(pageWidth / img.width, 1);
-        const imgWidth = img.width * scale;
-        const imgHeight = img.height * scale;
-  
-        if (currentYPosition + imgHeight > pdf.internal.pageSize.height) {
-          pdf.addPage();
-          currentYPosition = 20;
-        }
-  
-        pdf.addImage(img, "JPEG", 20, currentYPosition, imgWidth, imgHeight);
-        currentYPosition += imgHeight + 20;
-      }
-  
-      // Finalize and upload
-      const pdfBlob = pdf.output("blob");
-      const formData = new FormData();
-      formData.append("pdf", pdfBlob, `${filename}.pdf`);
-      formData.append("patientId", patientId);
-      // ... append other fields ...
-      formData.append("patientName", patientName);
-      formData.append("age", age);
-      formData.append("gender", gender);
-      formData.append("testDate", testDate);
-      formData.append("reportDate", reportDate);
-      formData.append("location", location);
-      formData.append("accession", accession);
-      formData.append("institution_name", institutionName);
-  
+      console.log("This is my extracted table data :",tableData);
+
+      // Getting all the children elements of the data (ckeditor content).
+      const elements = data.children;
+      // This is the variable to handle the skipping of elemens(if needed).
+      let skipNext = false;
+
+      const pdf = new jsPDF("p", "pt", "a4");
+
+      let currentYPosition = 40;
+
       try {
-        await axios.post("/upload_xray_pdf/", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            "X-CSRFToken": await this.getCSRFToken(),
+          currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
+
+          const tableData = [
+              ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+              ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+              ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"]
+          ];
+
+          currentYPosition += 20;
+
+          pdf.autoTable({
+              startY: currentYPosition,
+              body: tableData,
+              theme: 'grid',
+              styles: {
+                  cellPadding: 3,
+                  fontSize: 10,
+              },
+          });
+          currentYPosition = pdf.previousAutoTable.finalY + 20;
+
+          // Looping through each element inside the CKEditor.
+          for (let i = 0; i < elements.length; i++) {
+            const element = elements[i];
+            console.log("These are individual children elements of data :",element);
+            if (element.tagName === 'P') {
+              const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
+              if (isHeading) {
+                  // Add heading
+                  currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
+              } else {
+                  // Check if it's a "Dr." line and needs signature
+                  if (element.textContent.includes("Dr.")) {
+                      // Add signature first
+                      currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+                  }
+
+                  // Splitting paragraphs based on <br> tags and processing each line
+                  // const lines = this.splitParagraphIntoLines(element);
+
+                  // Regular paragraph
+                  currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
+              }
+            }
           }
-        });
-        this.showNotification("PDF uploaded successfully!");
+
+          // Passing the remaining images instead of the url fetched image directly to add all captured images.
+          for (const image of remainingReportImages) {
+            const imageUrl = image ? image.src : null;
+            console.log("This is the image Url:", imageUrl);
+            currentYPosition = await this.addReportImage(pdf, imageUrl, currentYPosition);
+          }
+          // Adding the data to blob to send it to backend.
+          const pdfBlob = pdf.output("blob");
+
+          try {
+            const csrfToken = await this.getCSRFToken();
+            const formData = new FormData();
+            formData.append("pdf", pdfBlob, filename ? filename + ".pdf" : "download.pdf");
+            formData.append("patientId", patientId);
+            formData.append("patientName", patientName);
+            formData.append("age", age);
+            formData.append("gender", gender);
+            formData.append("testDate", testDate);
+            formData.append("reportDate", reportDate);
+            formData.append("location", location);
+            formData.append("accession", accession);
+            formData.append("institution_name", institutionName);
+            await axios.post("/upload_xray_pdf/", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                    "X-CSRFToken": csrfToken,
+                },
+            });
+
+            console.log("PDF successfully sent to Django backend.");
+              this.showNotification("PDF successfully uploaded!");
+          } catch (error) {
+              console.error("Error sending PDF to Django backend.", error);
+              this.showNotification("Error uploading PDF. Please try again.");
+          }
+
+          const currentURL = window.location.href;
+
+          setTimeout(() => {
+              window.location.href = document.referrer + "?nocache=" + Date.now();
+          }, 200);
+
+          window.addEventListener("popstate", () => {
+              if (window.location.href !== currentURL) {
+                  setTimeout(() => {
+                      window.location.reload(true);
+                  }, 200);
+              }
+          });
+
       } catch (error) {
-        console.error("Upload failed:", error);
-        this.showNotification("Upload failed. Please try again.");
+          console.error("Error generating PDF:", error);
+          this.showNotification("Error generating PDF. Please try again.");
       } finally {
-        this.hideLoader();
+          this.hideLoader();
       }
     })();
   }
+
+
+  // UploadDivContentOnPDF() {
+  //   (async () => {
+  //     this.showLoader();
+  //     const filename = this.createFilename();
+  //     const data = document.getElementsByClassName("ck-editor__editable")[0];
+  //     const { location, accession, institutionName } = this.extractDataFromURL();
+  
+  //     // Image optimization function
+  //     const optimizeImage = async (imageUrl, maxWidth = 800, quality = 0.7) => {
+  //       return new Promise((resolve) => {
+  //         const img = new Image();
+  //         img.src = imageUrl;
+  //         img.onload = () => {
+  //           const canvas = document.createElement('canvas');
+  //           const scale = Math.min(maxWidth / img.width, 1);
+  //           canvas.width = img.width * scale;
+  //           canvas.height = img.height * scale;
+  //           const ctx = canvas.getContext('2d');
+  //           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  //           resolve(canvas.toDataURL('image/jpeg', quality));
+  //         };
+  //       });
+  //     };
+  
+  //     // Process all images
+  //     const images = data.querySelectorAll("img");
+  //     const [logoElement, signatureElement, ...reportImgElements] = images;
+      
+  //     const logoUrl = logoElement ? await optimizeImage(logoElement.src) : null;
+  //     const signatureUrl = signatureElement ? await optimizeImage(signatureElement.src) : null;
+  //     const reportImages = await Promise.all(
+  //       Array.from(reportImgElements).map(img => optimizeImage(img.src))
+  //     );
+  
+  //     // Initialize PDF with compression
+  //     const pdf = new jsPDF({
+  //       orientation: "p",
+  //       unit: "pt",
+  //       format: "a4",
+  //       compress: true,
+  //     });
+  
+  //     let currentYPosition = 40;
+  
+  //     // Add logo
+  //     if (logoUrl) {
+  //       const logoImg = await new Promise(resolve => {
+  //         const img = new Image();
+  //         img.src = logoUrl;
+  //         img.onload = () => resolve(img);
+  //       });
+  //       const logoWidth = Math.min(logoImg.width, 200);
+  //       const logoHeight = (logoImg.height * logoWidth) / logoImg.width;
+  //       pdf.addImage(logoImg, "JPEG", 20, currentYPosition, logoWidth, logoHeight);
+  //       currentYPosition += logoHeight + 20;
+  //     }
+  
+  //     // Add patient table
+  //     const tableData = this.extractTableData(data);
+  //     const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
+      
+  //     pdf.autoTable({
+  //       startY: currentYPosition,
+  //       body: [
+  //         ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+  //         ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+  //         ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"]
+  //       ],
+  //       theme: 'grid',
+  //       styles: { fontSize: 10, cellPadding: 3 },
+  //       margin: { horizontal: 10 }
+  //     });
+  //     currentYPosition = pdf.previousAutoTable.finalY + 20;
+  
+  //     // Process editor content
+  //     for (const element of data.children) {
+  //       if (element.tagName === 'P') {
+  //         const isHeading = element.querySelector('strong u');
+  //         const isSignatureLine = element.textContent.includes("Dr.");
+  
+  //         if (isHeading) {
+  //           pdf.setFontSize(13);
+  //           pdf.setFont("helvetica", "bold");
+  //           pdf.text(element.textContent, 20, currentYPosition);
+  //           currentYPosition += 20;
+  //         } else if (isSignatureLine) {
+  //           if (signatureUrl) {
+  //             const sigImg = await new Promise(resolve => {
+  //               const img = new Image();
+  //               img.src = signatureUrl;
+  //               img.onload = () => resolve(img);
+  //             });
+  //             const sigWidth = Math.min(sigImg.width, 120);
+  //             const sigHeight = (sigImg.height * sigWidth) / sigImg.width;
+  //             pdf.addImage(sigImg, "JPEG", 20, currentYPosition, sigWidth, sigHeight);
+  //             currentYPosition += sigHeight + 20;
+  //           }
+  //         } else {
+  //           pdf.setFontSize(12);
+  //           pdf.setFont("helvetica", "normal");
+  //           const splitText = pdf.splitTextToSize(element.textContent, pdf.internal.pageSize.width - 40);
+  //           pdf.text(splitText, 20, currentYPosition);
+  //           currentYPosition += splitText.length * 15 + 10;
+  //         }
+  //       }
+  //     }
+  
+  //     // Add report images
+  //     for (const imgUrl of reportImages) {
+  //       const img = await new Promise(resolve => {
+  //         const image = new Image();
+  //         image.src = imgUrl;
+  //         image.onload = () => resolve(image);
+  //       });
+        
+  //       const pageWidth = pdf.internal.pageSize.width - 40;
+  //       const scale = Math.min(pageWidth / img.width, 1);
+  //       const imgWidth = img.width * scale;
+  //       const imgHeight = img.height * scale;
+  
+  //       if (currentYPosition + imgHeight > pdf.internal.pageSize.height) {
+  //         pdf.addPage();
+  //         currentYPosition = 20;
+  //       }
+  
+  //       pdf.addImage(img, "JPEG", 20, currentYPosition, imgWidth, imgHeight);
+  //       currentYPosition += imgHeight + 20;
+  //     }
+  
+  //     // Finalize and upload
+  //     const pdfBlob = pdf.output("blob");
+  //     const formData = new FormData();
+  //     formData.append("pdf", pdfBlob, `${filename}.pdf`);
+  //     formData.append("patientId", patientId);
+  //     // ... append other fields ...
+  //     formData.append("patientName", patientName);
+  //     formData.append("age", age);
+  //     formData.append("gender", gender);
+  //     formData.append("testDate", testDate);
+  //     formData.append("reportDate", reportDate);
+  //     formData.append("location", location);
+  //     formData.append("accession", accession);
+  //     formData.append("institution_name", institutionName);
+  
+  //     try {
+  //       await axios.post("/upload_xray_pdf/", formData, {
+  //         headers: {
+  //           "Content-Type": "multipart/form-data",
+  //           "X-CSRFToken": await this.getCSRFToken(),
+  //         }
+  //       });
+  //       this.showNotification("PDF uploaded successfully!");
+  //     } catch (error) {
+  //       console.error("Upload failed:", error);
+  //       this.showNotification("Upload failed. Please try again.");
+  //     } finally {
+  //       this.hideLoader();
+  //     }
+  //   })();
+  // }
 
   
   //////////////////// Upload XRAY PDF with IMAGE (END) ////////////////////////////////////
