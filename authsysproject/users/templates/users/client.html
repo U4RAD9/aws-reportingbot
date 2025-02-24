@@ -424,6 +424,7 @@
               <div class="row-container">
                 <div class="count-container">
                   <span id="count1"><strong>Total XRAY Reports:</strong><span id="totalRowCount">0</span></span>
+                  <span id="count1"><strong>Filtered Row Count:</strong><span id="filteredRowCount">0</span></span>
                 </div>
                 <div class="row-container1">
                   <div class="col">
@@ -502,9 +503,7 @@
               <tr class="patientRow">
                 <td>{{ pdf.patient_id }}</td>
                 <td>{{ pdf.name }}</td>
-                <td data-date="{{ pdf.test_date|date:'Y-m-d' }}">
-                  {{ pdf.test_date|date:'Y-m-d' }}
-                </td>
+                <td>{{ pdf.test_date }}</td>
                 <td>{{ pdf.report_date }}</td>
                 <td>{{ pdf.location }}</td>
                 <td>{{ pdf.whatsapp_number }}</td>
@@ -715,7 +714,7 @@
     }
   </script>
 
-  <script>
+  <!-- <script>
     $(document).ready(function () {
       // Event handler for the change event of the test date dropdown
       $("#filter-date-select-date").change(function () {
@@ -739,7 +738,41 @@
         });
       }
     });
+  </script> -->
+
+
+  <script>
+    $(document).ready(function () {
+        // Event handler for the change event of the test date dropdown
+        $('#filter-date-select-date').change(function () {
+            filterTable();
+        });
+  
+        function filterTable() {
+            var selectedDate = $('#filter-date-select-date').val();
+            var visibleRowCount = 0;
+  
+            // Loop through each row in the table
+            $('#patientTable tbody tr').each(function () {
+                var rowDate = $(this).find('td:nth-child(3)').text();
+                
+                
+                if ((selectedDate === '' || rowDate === selectedDate)) {
+                    
+                    $(this).show();
+                    visibleRowCount++; // Increment visible row count
+                } else {
+                    $(this).hide();
+                }
+            });
+            // Update the displayed filtered row count
+            $('#filteredRowCount').text(visibleRowCount);
+        }
+        // Initialize row count on page load
+        filterTable();
+    });
   </script>
+
 
   <script>
     // Event listener for the Send WhatsApp button

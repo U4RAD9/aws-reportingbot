@@ -89,6 +89,7 @@
         <ul class="casecountdata">
           <li class="casecountdata">Total Cases: {{ total_filtered_count }}</li>
           <li class="casecountdata">Reported Cases: {{ is_done_count }}</li>
+          <li class="casecountdata">Filtered Row Count:<span id="filteredRowCount">0</span></li>
         </ul>
         <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
           <ul class="navbar-nav">
@@ -125,14 +126,26 @@
           {% endif %}
         </span>
       </div>
-      <table class="table table-bordered table-striped table-responsive">
+      <table id="patientTable" class="table table-bordered table-striped table-responsive">
         <thead class="thead-dark">
           <tr>
             <th style="width: 150px;">Patient Name</th>
             <th style="width: 150px;">Patient ID</th>
             <th style="width: 150px;">Age</th>
             <th style="width: 150px;">Gender</th>
-            <th style="width: 150px;">Study Date</th>
+            <th style="width: 150px;">
+              <div class="filter-dropdown-container">
+                  <div>Study Date</div>
+                    <div class="dropdown-select1" id="filter-date-dropdown-date">
+                        <select id="filter-date-select-date" class="form-control">
+                            <option value="">All</option>
+                            {% for date in Date %}
+                                <option value="{{ date }}">{{ date }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </th>
             <th style="width: 150px;">Study Description</th>
             <th style="width: 150px;">Notes</th>
             <th style="width: 150px;">Body Part Examined</th>
@@ -422,6 +435,38 @@
                 'X-CSRFToken': csrftoken,
             }
         });
+    </script>
+
+    <script>
+      $(document).ready(function () {
+          // Event handler for the change event of the test date dropdown
+          $('#filter-date-select-date').change(function () {
+              filterTable();
+          });
+    
+          function filterTable() {
+              var selectedDate = $('#filter-date-select-date').val();
+              var visibleRowCount = 0;
+    
+              // Loop through each row in the table
+              $('#patientTable tbody tr').each(function () {
+                  var rowDate = $(this).find('td:nth-child(5)').text();
+                  
+                  
+                  if ((selectedDate === '' || rowDate === selectedDate)) {
+                      
+                      $(this).show();
+                      visibleRowCount++; // Increment visible row count
+                  } else {
+                      $(this).hide();
+                  }
+              });
+              // Update the displayed filtered row count
+              $('#filteredRowCount').text(visibleRowCount);
+          }
+          // Initialize row count on page load
+          filterTable();
+      });
     </script>
   
   </body>

@@ -4,6 +4,7 @@ from urllib.parse import urlparse, parse_qs
 from tkinter import Tk, filedialog
 from venv import logger
 from django.shortcuts import get_object_or_404, render, redirect
+#from django.core.files.storage import FileSystemStorage  # ✅ Import this!
 from django.http import JsonResponse
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -671,13 +672,16 @@ def client_dashboard(request):
                 pdf.signed_url = None
 
     # Format dates
-    formatted_test_dates = sorted(test_date.strftime('%Y-%m-%d') for test_date in test_dates_set)
+    #formatted_test_dates = sorted(test_date.strftime('%Y-%m-%d') for test_date in test_dates_set)
+        # Get unique dates from the patients on the current page
+    unique_dates = set(pdf.test_date for pdf in page_obj.object_list)
+    sorted_unique_dates = sorted(unique_dates, reverse=False)    
     formatted_report_dates = sorted(report_date.strftime('%Y-%m-%d') for report_date in report_dates_set)
 
     # Prepare context for rendering
     context = {
         'pdfs': page_obj,
-        'Test_Dates': formatted_test_dates,
+        'Test_Dates': sorted_unique_dates,
         'Report_Dates': formatted_report_dates,
         'Location': current_user_personal_info.institution_name,
         'paginator': paginator,
@@ -2890,6 +2894,65 @@ def upload_xray_pdf(request):
 
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
 
+# def upload_xray_pdf(request):
+#     if request.method == 'POST':
+#         try:
+#             print("Inside upload_xray_pdf view")
+#             pdf_file = request.FILES.get('pdf')
+#             patient_id = request.POST.get('patientId').replace(' ', '_')  # Replace spaces with underscores
+#             patient_name = request.POST.get('patientName').replace(' ', '_')  # Replace spaces with underscores
+#             location = request.POST.get('location')
+#             institution_name = request.POST.get('institution_name')
+#             accession_number = request.POST.get('accession')
+#             test_date_str = request.POST.get('testDate')
+#             report_date_str = request.POST.get('reportDate')
+
+#             if not pdf_file:
+#                 return JsonResponse({'error': 'No PDF file provided.'}, status=400)
+
+#             # Save file locally
+#             local_storage = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'xray_reports'))
+#             filename = f"{patient_id}_{patient_name}.pdf"
+#             saved_file_path = local_storage.save(filename, pdf_file)
+#             local_file_url = os.path.join(settings.MEDIA_URL, 'xray_reports', filename)
+
+#             # Save entry in database
+#             pdf_model_instance = XrayReport(
+#                 pdf_file=saved_file_path,
+#                 name=patient_name,
+#                 patient_id=patient_id,
+#                 location=location,
+#                 institution_name=institution_name,
+#                 test_date=datetime.strptime(test_date_str, "%d-%m-%Y").date(),
+#                 report_date=datetime.strptime(report_date_str, "%Y-%m-%d").date(),
+#                 accession_number=accession_number
+#             )
+#             pdf_model_instance.save()
+
+#             print("Saved locally at:", local_file_url)
+
+#             # Send WhatsApp message if accession_number is a valid phone number
+#             if re.fullmatch(r'\d{10}', accession_number):
+#                 account_sid = settings.TWILIO_ACCOUNT_SID
+#                 auth_token = settings.TWILIO_AUTH_TOKEN
+#                 client = tw(account_sid, auth_token)
+
+#                 message = client.messages.create(
+#                     content_sid='HX1a91399a3722754fdab9c0a1a3edf43f',
+#                     from_='MG228f0104ea3ddfc780cfcc1a0ca561d9',
+#                     to=f'whatsapp:+91{accession_number}',
+#                     content_variables=json.dumps({'1': patient_name, '2': local_file_url}),
+#                 )
+#                 print("WhatsApp Message Sent:", message.sid)
+
+#             return JsonResponse({'message': 'PDF successfully uploaded and saved locally.', 'file_url': local_file_url})
+
+#         except Exception as e:
+#             print("Error processing PDF:", e)
+#             return JsonResponse({'error': 'Internal server error.'}, status=500)
+
+#     return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
 
 
 def get_csrf_token(request):
@@ -4512,6 +4575,11 @@ def clientdata(request):
             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
         ]
 
+
+    # Get unique dates from the patients on the current page
+    unique_dates = set(dicom_data.study_date for dicom_data in page_obj.object_list)
+    sorted_unique_dates = sorted(unique_dates, reverse=False)    
+
     # Get edit permissions for the client
     edit_permissions = {
         'patient_name': client.can_edit_patient_name,
@@ -4532,7 +4600,8 @@ def clientdata(request):
         'edit_permissions': edit_permissions,
         'page_obj': page_obj,
         'total_filtered_count': total_filtered_count,  # Total filtered count
-        'is_done_count': is_done_count  # Total count where isDone=True
+        'is_done_count': is_done_count,  # Total count where isDone=True
+        'Date': sorted_unique_dates,
         })
 
 
