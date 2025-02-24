@@ -1626,7 +1626,7 @@ class App extends Component {
   // };
 
 
-  addParagraphToPdf = (pdf, element, fontSize, isHeading, currentYPosition) => {
+  addParagraphToPdf = (pdf, element, fontSize, isHeading, currentYPosition, pageWidth = 180) => {
     const lines = this.splitParagraphIntoLines(element).filter(line => line.trim().length > 0);
   
     // Define base X-coordinate for text placement
@@ -1648,10 +1648,14 @@ class App extends Component {
       }
       
       pdf.setFont("helvetica", fontStyle);
-      pdf.text(line, xCoordinate, currentYPosition);
+      // Wrap text to fit within the specified page width
+      let wrappedText = pdf.splitTextToSize(line, pageWidth - xCoordinate);
+      pdf.text(wrappedText, xCoordinate, currentYPosition);
       
       // Update Y position after each line
-      currentYPosition += extraSpacing;
+      // currentYPosition += extraSpacing;
+      // Update Y position after each paragraph (adjusting for multi-line wrapping)
+      currentYPosition += wrappedText.length * extraSpacing;
     }
   
     return currentYPosition;
