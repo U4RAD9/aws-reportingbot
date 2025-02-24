@@ -1558,73 +1558,107 @@ class App extends Component {
       return data;
   };
 
-  addParagraphToPdf = (pdf, element, fontSize, isHeading, currentYPosition) => {
-    // Extract the actual data from the element
-    // let textContent = element.textContent || "";
+  // addParagraphToPdf = (pdf, element, fontSize, isHeading, currentYPosition) => {
+  //   // Extract the actual data from the element
+  //   // let textContent = element.textContent || "";
 
-    // Decode HTML entities to normal characters (such as &nbsp; -> " ")
-    // textContent = this.decodeHtmlEntities(textContent);
+  //   // Decode HTML entities to normal characters (such as &nbsp; -> " ")
+  //   // textContent = this.decodeHtmlEntities(textContent);
   
-    // Remove extra spaces from the beginning and end of the content
-    // textContent = textContent.trim();
+  //   // Remove extra spaces from the beginning and end of the content
+  //   // textContent = textContent.trim();
   
-    // Check if the text contains <br> tags (i.e., multiple lines)
-    // Corrected to pass the element as it contains child nodes with <br> and again filtering any empty lines.
+  //   // Check if the text contains <br> tags (i.e., multiple lines)
+  //   // Corrected to pass the element as it contains child nodes with <br> and again filtering any empty lines.
+  //   const lines = this.splitParagraphIntoLines(element).filter(line => line.trim().length > 0);
+  
+  //   // Define the font size for the text
+  //   pdf.setFontSize(fontSize);
+  
+  //   // Loop through each line if there are multiple lines due to <br> tags
+  //   for (let line of lines) {
+  //     // Check if the element has both <strong> and <u> tags (Heading case)
+  //     const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
+      
+  //     if (isHeading) {
+  //       // Set the font to bold and underline, and set the X and Y positions
+  //       pdf.setFont("helvetica", "bold");  // Set the font style to bold
+  //       const xCoordinate = 40;  // X-coordinate for headings
+  //       // This increase in y i've done to make the impression come with space.
+  //       currentYPosition += 5;
+  //       pdf.text(line, xCoordinate, currentYPosition);
+        
+  //       // Update Y position after adding heading
+  //       currentYPosition += 20;  // Update Y by 20 for headings
+  //     } else {
+  //       // Check if only <strong> is present (bold, but no underline)
+  //     //   const isBold = element.querySelector('strong'); // Check if it's bold (strong)
+        
+  //     //   if (isBold) {
+  //     //     // Set the font to bold and normal style (without underline)
+  //     //     pdf.setFont("helvetica", "bold");  // Set the font style to bold
+  //     //     const xCoordinate = 60;  // X-coordinate for bold paragraphs
+  //     //     pdf.text(line, xCoordinate, currentYPosition);
+          
+  //     //     // Update Y position after adding bold text
+  //     //     currentYPosition += 15;  // Update Y by 15 for normal paragraphs
+  //     //   } else {
+  //     //     // For normal text (neither bold nor underlined)
+  //     //     pdf.setFont("helvetica", "normal");  // Set the font style to normal
+  //     //     const xCoordinate = 60;  // X-coordinate for normal text
+  //     //     pdf.text(line, xCoordinate, currentYPosition);
+          
+  //     //     // Update Y position after adding normal text
+  //     //     currentYPosition += 15;  // Update Y by 15 for normal paragraphs
+  //     //   }
+
+  //       // For normal text (neither bold nor underlined)
+  //           pdf.setFont("helvetica", "normal");  // Set the font style to normal
+  //           const xCoordinate = 60;  // X-coordinate for normal text
+  //           pdf.text(line, xCoordinate, currentYPosition);
+            
+  //           // Update Y position after adding normal text
+  //           currentYPosition += 15;  // Update Y by 15 for normal paragraphs
+  //      }
+  //   }
+  
+  //   return currentYPosition;
+  // };
+
+
+  addParagraphToPdf = (pdf, element, fontSize, isHeading, currentYPosition) => {
     const lines = this.splitParagraphIntoLines(element).filter(line => line.trim().length > 0);
   
+    // Define base X-coordinate for text placement
+    const baseX = 40;
+
     // Define the font size for the text
     pdf.setFontSize(fontSize);
   
     // Loop through each line if there are multiple lines due to <br> tags
     for (let line of lines) {
-      // Check if the element has both <strong> and <u> tags (Heading case)
-      const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
+      let fontStyle = "normal";
+      let xCoordinate = baseX + 20; // Indentation for normal text
+      let extraSpacing = 15;
       
-      if (isHeading) {
-        // Set the font to bold and underline, and set the X and Y positions
-        pdf.setFont("helvetica", "bold");  // Set the font style to bold
-        const xCoordinate = 40;  // X-coordinate for headings
-        // This increase in y i've done to make the impression come with space.
-        currentYPosition += 5;
-        pdf.text(line, xCoordinate, currentYPosition);
-        
-        // Update Y position after adding heading
-        currentYPosition += 20;  // Update Y by 20 for headings
-      } else {
-        // Check if only <strong> is present (bold, but no underline)
-      //   const isBold = element.querySelector('strong'); // Check if it's bold (strong)
-        
-      //   if (isBold) {
-      //     // Set the font to bold and normal style (without underline)
-      //     pdf.setFont("helvetica", "bold");  // Set the font style to bold
-      //     const xCoordinate = 60;  // X-coordinate for bold paragraphs
-      //     pdf.text(line, xCoordinate, currentYPosition);
-          
-      //     // Update Y position after adding bold text
-      //     currentYPosition += 15;  // Update Y by 15 for normal paragraphs
-      //   } else {
-      //     // For normal text (neither bold nor underlined)
-      //     pdf.setFont("helvetica", "normal");  // Set the font style to normal
-      //     const xCoordinate = 60;  // X-coordinate for normal text
-      //     pdf.text(line, xCoordinate, currentYPosition);
-          
-      //     // Update Y position after adding normal text
-      //     currentYPosition += 15;  // Update Y by 15 for normal paragraphs
-      //   }
-
-        // For normal text (neither bold nor underlined)
-            pdf.setFont("helvetica", "normal");  // Set the font style to normal
-            const xCoordinate = 60;  // X-coordinate for normal text
-            pdf.text(line, xCoordinate, currentYPosition);
-            
-            // Update Y position after adding normal text
-            currentYPosition += 15;  // Update Y by 15 for normal paragraphs
-       }
+      if (element.querySelector('strong u')) {
+          fontStyle = "bold";
+          xCoordinate = baseX; // No indentation for headings
+          extraSpacing = 20; // More space after headings
+      }
+      
+      pdf.setFont("helvetica", fontStyle);
+      pdf.text(line, xCoordinate, currentYPosition);
+      
+      // Update Y position after each line
+      currentYPosition += extraSpacing;
     }
   
     return currentYPosition;
   };
 
+
+  
   // Utility function to decode HTML entities into their character equivalents
   decodeHtmlEntities = (str) => {
     let doc = new DOMParser().parseFromString(str, "text/html");
@@ -2847,9 +2881,9 @@ class App extends Component {
       this.showLoader();
       const filename = this.createFilename();
       const data = document.getElementsByClassName("ck-editor__editable")[0];
-      console.log("This is the data i got from the class :",data);
+      //console.log("This is the data i got from the class :",data);
       const dataFromId = document.getElementById("reportEditor");
-      console.log("This is the data i got from the id reportEditor :", dataFromId);
+      //console.log("This is the data i got from the id reportEditor :", dataFromId);
 
       const { location, accession, institutionName } = this.extractDataFromURL();
       
@@ -2858,8 +2892,8 @@ class App extends Component {
       const signatureUrl = signatureElement ? signatureElement.src : null;
       const logoElement = images[0];
       const logoUrl = logoElement ? logoElement.src : null;
-      console.log("This is the signature Url:", signatureUrl);
-      console.log("This is the logo Url:", logoUrl);
+      //console.log("This is the signature Url:", signatureUrl);
+      //console.log("This is the logo Url:", logoUrl);
       // This is my new logic to add each captured image on the pdf. - Himanshu.
       // The following code will convert the images nodelist to a array like thing (not actual array, a shallow array like object)
       // I have done this so that i can directly use the slice method to remove the logo and sign from the images, and pass only 
@@ -2870,7 +2904,7 @@ class App extends Component {
       // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
       const tableData = this.extractTableData(data);
       const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
-      console.log("This is my extracted table data :",tableData);
+      //console.log("This is my extracted table data :",tableData);
 
       // Getting all the children elements of the data (ckeditor content).
       const elements = data.children;
@@ -2912,7 +2946,7 @@ class App extends Component {
           // Looping through each element inside the CKEditor.
           for (let i = 0; i < elements.length; i++) {
             const element = elements[i];
-            console.log("These are individual children elements of data :",element);
+            //console.log("These are individual children elements of data :",element);
             if (element.tagName === 'P') {
               const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
               if (isHeading) {
@@ -2963,10 +2997,10 @@ class App extends Component {
                 },
             });
 
-            console.log("PDF successfully sent to Django backend.");
+            //console.log("PDF successfully sent to Django backend.");
               this.showNotification("PDF successfully uploaded!");
           } catch (error) {
-              console.error("Error sending PDF to Django backend.", error);
+              //console.error("Error sending PDF to Django backend.", error);
               this.showNotification("Error uploading PDF. Please try again.");
           }
 
