@@ -18,6 +18,8 @@ class PersonalInfo(models.Model):
     signature = models.FileField(upload_to='static/signatures/', null=True, default=None, blank=True)
     companylogo = models.FileField(upload_to='static/companylogos/', null=True, default=None, blank=True)
     total_reported = models.IntegerField(default=0)
+    uploadpicture = models.ImageField(
+    upload_to='static/profile_pictures/', null=True, blank=True)
 
 
     def __str__(self):

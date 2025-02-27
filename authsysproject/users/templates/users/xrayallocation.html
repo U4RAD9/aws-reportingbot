@@ -17,6 +17,20 @@
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-tools@latest/dist/cornerstoneTools.js"></script>
 
   <style>
+    .profile-section {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .profile-pic {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #fff;
+    }
+    
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -480,20 +494,32 @@
                 </div>
                 <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names/IDs/Test Date"
                   title="Type in a name">
-                <div class="greeting" id="greeting">
-                  {% if user %}
-                  <h6>
-                    <strong>{{ user.first_name }}</strong>,
-                    <span id="greeting-text"></span>
-                  </h6>
-                  {% endif %}
-                </div>
+                  <div class="greeting" id="greeting">
+                    {% if user %}
+                    <div class="profile-section">
+                      {% if user.personalinfo.uploadpicture %}
+                      <img src="{{ user.personalinfo.uploadpicture.name }}" 
+                           alt="Profile Picture" 
+                           class="profile-pic">
+                      {% else %}
+                      <img src="{% static 'default-profile.png' %}" 
+                           alt="Default Profile Picture" 
+                           class="profile-pic">
+                      {% endif %}
+                      <h6>
+                        <strong>{{ user.first_name }}</strong>,
+                        <span id="greeting-text"></span>
+                      </h6>
+                    </div>
+                    {% endif %}
+                  </div>
               </div>
             </h1>
 
           </div>
         </div>
       </div>
+      
     </div>
     <div class="card">
       <div class="card-body">
@@ -522,7 +548,7 @@
                 </th>
                 <th>
                   <div class="filter-dropdown-container">
-                      <div>Study Dscreption</div>
+                      <div>Study Description</div>
                       <div class="dropdown-select1" id="filter-Studydescription-dropdown-Studydescription">
                           <select id="filter-Studydescription-select-Studydescription" class="form-control">
                               <option value="">All</option>

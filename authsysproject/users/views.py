@@ -1422,6 +1422,13 @@ def ecgallocation(request):
 
     # Fetch the corresponding PersonalInfo instance for the current user
     current_user_personal_info = PersonalInfoModel.objects.get(user=request.user)
+    # Fetch profile picture dynamically
+    profile_picture = None
+    if current_user_personal_info.uploadpicture:
+        profile_picture = current_user_personal_info.uploadpicture.url  # Get uploaded image URL
+    else:
+        profile_picture = settings.STATIC_URL + "profile_pictures/default.jpg"  # Default picture
+
     total_reported = current_user_personal_info.total_reported
     today = now().date()
     yesterday = today - timedelta(days=1)
@@ -1453,6 +1460,7 @@ def ecgallocation(request):
 
     return render(request, 'users/ecgallocation.html',
                   {
+                      'profile_picture': profile_picture,
                       'reported': total_reported,
                       'patients': page_obj,
                       'Date': formatted_dates,
@@ -1488,6 +1496,13 @@ def xrayallocation(request):
 
     # Fetch the corresponding PersonalInfo instance for the current user
     current_user_personal_info = PersonalInfoModel.objects.get(user=request.user)
+    # Fetch profile picture dynamically
+    profile_picture = None
+    if current_user_personal_info.uploadpicture:
+        profile_picture = current_user_personal_info.uploadpicture.url  # Get uploaded image URL
+    else:
+        profile_picture = settings.STATIC_URL + "profile_pictures/default.jpg"  # Default picture
+
     total_reported = current_user_personal_info.total_reported
     today = now().date()
     yesterday = today - timedelta(days=1)
@@ -1556,7 +1571,7 @@ def xrayallocation(request):
     sorted_unique_study_description = sorted(unique_study_description, reverse=False)
 
     return render(request, 'users/xrayallocation.html',
-                  {'Study_description': sorted_unique_study_description, 'Institution': sorted_unique_institution_name, 'reported': total_reported, 'patients': page_obj, 'Date': sorted_unique_dates,
+                  {'profile_picture': profile_picture, 'Study_description': sorted_unique_study_description, 'Institution': sorted_unique_institution_name, 'reported': total_reported, 'patients': page_obj, 'Date': sorted_unique_dates,
                    'locations': location, 'total_assigned_cases': total_assigned_cases, 'total_reported_cases': total_reported_cases, 'total_pending_cases': total_pending_cases, 'page_obj': page_obj, 'patient_urls': patient_urls})
 
 
@@ -1566,6 +1581,13 @@ def xrayallocationreverse(request):
 
     # Fetch the corresponding PersonalInfo instance for the current user
     current_user_personal_info = PersonalInfoModel.objects.get(user=request.user)
+    # Fetch profile picture dynamically
+    profile_picture = None
+    if current_user_personal_info.uploadpicture:
+        profile_picture = current_user_personal_info.uploadpicture.url  # Get uploaded image URL
+    else:
+        profile_picture = settings.STATIC_URL + "profile_pictures/default.jpg"  # Default picture
+
     total_reported = current_user_personal_info.total_reported
     today = now().date()
     yesterday = today - timedelta(days=1)
@@ -1621,7 +1643,7 @@ def xrayallocationreverse(request):
         unique_dates.add(patient.study_date)
     sorted_unique_dates = sorted(unique_dates, reverse=False)
     return render(request, 'users/xrayallocationreverse.html',
-                  {'reported': total_reported, 'patients': page_obj, 'Date': sorted_unique_dates,
+                  {'profile_picture': profile_picture, 'reported': total_reported, 'patients': page_obj, 'Date': sorted_unique_dates,
                    'locations': location, 'page_obj': page_obj, 'total_assigned_cases': total_assigned_cases, 'total_reported_cases': total_reported_cases, 'total_pending_cases': total_pending_cases, 'patient_urls': patient_urls})
 
 
