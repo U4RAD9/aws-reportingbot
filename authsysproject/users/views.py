@@ -2892,24 +2892,26 @@ def upload_xray_pdf(request):
                 return JsonResponse({'error': 'Failed to generate presigned URL.'}, status=500)
 
             # Send WhatsApp message if the accession_number is a valid phone number
+            # Send WhatsApp message if applicable (with error handling)
             if re.fullmatch(r'\d{10}', accession_number):
-                account_sid = settings.TWILIO_ACCOUNT_SID
-                auth_token = settings.TWILIO_AUTH_TOKEN
-                client = tw(account_sid, auth_token)
+                try:
+                    account_sid = settings.TWILIO_ACCOUNT_SID
+                    auth_token = settings.TWILIO_AUTH_TOKEN
+                    client = tw(account_sid, auth_token)
 
-                media_url = f'https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{s3_file_path}'
-                print("Media_url:", media_url)
+                    media_url = f'https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{s3_file_path}'
+                    print("Media_url:", media_url)
 
-                message = client.messages.create(
-                    content_sid='HX1a91399a3722754fdab9c0a1a3edf43f',
-                    from_='MG228f0104ea3ddfc780cfcc1a0ca561d9',
-                    to=f'whatsapp:+91{accession_number}',
-                    content_variables=json.dumps({'1': patient_name, '2': presigned_url}),
-                )
-                print(message)
-                print(patient_name, presigned_url)
-
-            return JsonResponse({'message': 'PDF successfully uploaded and processed.'})
+                    message = client.messages.create(
+                        content_sid='HX1a91399a3722754fdab9c0a1a3edf43f',
+                        from_='MG228f0104ea3ddfc780cfcc1a0ca561d9',
+                        to=f'whatsapp:+91{accession_number}',
+                        content_variables=json.dumps({'1': patient_name, '2': presigned_url}),
+                    )
+                    print("WhatsApp message sent:", message.sid)
+                except Exception as e:
+                    print("Error sending WhatsApp message:", str(e))  # Log but don't fail
+            return JsonResponse({'message': 'PDF successfully uploaded and processed.'})        
         except Exception as e:
             print("Error processing PDF:", e)
             return JsonResponse({'error': 'Internal server error.'}, status=500)
@@ -5523,6 +5525,22 @@ def update_twostepcheck(request, patient_id):
         return JsonResponse({'success': False, 'error': 'Patient not found.'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+
+def update_NonReportable(request, patient_id):
+    try:
+        data = json.loads(request.body)
+        NonReportable_status = data.get('status', False)
+
+        patient = DICOMData.objects.get(patient_id=patient_id)
+        patient.NonReportable = NonReportable_status
+        patient.save()
+    
+        return JsonResponse({'success': True, 'twostepcheck': patient.NonReportable})
+    except DICOMData.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Patient not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)    
 
 
 
