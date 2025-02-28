@@ -375,9 +375,9 @@ export default class PopUpPNS extends React.Component {
 
 
 
-    this.setState({ isDone: true }, () => {
-      this.props.handleClick();
-    });
+    // this.setState({ isDone: true }, () => {
+    //   this.props.handleClick();
+    // });
   }
 
   // event handling methods go here
