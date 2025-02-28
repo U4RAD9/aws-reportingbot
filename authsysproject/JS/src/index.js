@@ -2861,7 +2861,7 @@ class App extends Component {
 
             if (updateResponse.ok) {
               this.setState({ isDone: true }, () => {
-                this.props.handleClick();
+                this.handleClick();
               });
             } else {
               console.error('Failed to update isDone status');
@@ -2890,7 +2890,7 @@ class App extends Component {
 
       } catch (error) {
           console.error("Error generating PDF:", error);
-          this.showNotification("Error generating PDF. Please try again.");
+          // this.showNotification("Error generating PDF. Please try again.");
       } finally {
           this.hideLoader();
       }
