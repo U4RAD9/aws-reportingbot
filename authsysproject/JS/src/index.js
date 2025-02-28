@@ -2846,6 +2846,27 @@ class App extends Component {
                 },
             });
 
+            // AFTER SUCCESSFUL PDF UPLOAD - TRIGGER ISDONE UPDATE
+            const urlSearchParams = new URLSearchParams(window.location.search);
+            const studyId = urlSearchParams.get("data-study-id");
+
+            const updateResponse = await fetch(`/api/update_patient_done_status_xray/${studyId}/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+              },
+              body: JSON.stringify({ isDone: true }),
+            });
+
+            if (updateResponse.ok) {
+              this.setState({ isDone: true }, () => {
+                this.props.handleClick();
+              });
+            } else {
+              console.error('Failed to update isDone status');
+            }
+
             console.log("PDF successfully sent to Django backend.");
               this.showNotification("PDF successfully uploaded!");
           } catch (error) {
