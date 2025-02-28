@@ -809,6 +809,7 @@
                         </div>
                     </div>
                 </th>
+                <th>Mark for Unreported</th>
               <!-- Add a column for the "Report" button -->
               </tr>
         </thead>
@@ -893,6 +894,10 @@
                     Unreported
                 {% endif %}
             </td>
+            <td>
+              <input type="checkbox" class="NonReportable-checkbox" data-patient-id="{{ patient.patient_id }}" 
+                  {% if patient.NonReportable %}checked{% endif %}>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -970,6 +975,7 @@
       handleCheckboxChange('mlc-checkbox', 'update_mlc_status_xray');
       handleCheckboxChange('vip-checkbox', 'update_vip_status_xray');
       handleCheckboxChange('twostepcheck-checkbox', 'update_twostepcheck');
+      handleCheckboxChange('NonReportable-checkbox', 'update_NonReportable');
   });
   
   

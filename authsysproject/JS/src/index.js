@@ -1925,16 +1925,29 @@ class App extends Component {
 
           const currentURL = window.location.href;
 
+          // setTimeout(() => {
+          //     window.location.href = document.referrer + "?nocache=" + Date.now();
+          // }, 200);
           setTimeout(() => {
-              window.location.href = document.referrer + "?nocache=" + Date.now();
+            // Preserve current URL parameters for pagination/filters
+            const currentParams = new URLSearchParams(window.location.search);
+            currentParams.set('nocache', Date.now());
+            
+            // Redirect back to allocation1 with preserved parameters
+            window.location.href = window.location.pathname + '?' + currentParams.toString();
           }, 200);
 
+          // window.addEventListener("popstate", () => {
+          //     if (window.location.href !== currentURL) {
+          //         setTimeout(() => {
+          //             window.location.reload(true);
+          //         }, 200);
+          //     }
+          // });
+
           window.addEventListener("popstate", () => {
-              if (window.location.href !== currentURL) {
-                  setTimeout(() => {
-                      window.location.reload(true);
-                  }, 200);
-              }
+            // Refresh while preserving parameters
+            window.location.reload(true);
           });
 
       } catch (error) {

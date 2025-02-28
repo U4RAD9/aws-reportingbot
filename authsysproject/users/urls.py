@@ -112,6 +112,7 @@ urlpatterns = [
     path('supercoordinator/edit/<int:client_id>/', views.supercoordinator_view, name='edit_client'),
     path('send_whatsapp/', views.send_whatsapp, name='send_whatsapp'),
     path('update_twostepcheck/<str:patient_id>/', views.update_twostepcheck, name='update_twostepcheck'),
+    path('update_NonReportable/<str:patient_id>/', views.update_NonReportable, name='update_NonReportable'),
     path('review_page', views.review_page, name='review_page'),
     path('corporate-doctor-dashboard/', views.corporate_doctor_dashboard, name='corporate-doctor-dashboard/'),
     path('save-editor-content/', views.save_editor_content, name='save_editor_content'),
