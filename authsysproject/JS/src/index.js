@@ -1203,25 +1203,114 @@ class App extends Component {
   }
 
 
+  // choose() {
+  //   // Retrieve query parameters from the URL
+  //   const urlSearchParams = new URLSearchParams(window.location.search);
+  //   let modality = urlSearchParams.get("data-Modality"); // Default to null if not present
+  //   // let Bodypart = urlSearchParams.get("data-bodypart");
+  //   // Create a dropdown element
+  //   let list = document.createElement("select");
+  //   list.id = "choose_scan";
+  
+  //   // Map modality to modality1 (if conditions are met)
+  //   let modality1 = modality; // Default to modality itself
+  //   if (modality === "DX" || modality === "CR" || modality ==="DR") {
+  //     modality1 = "Xray";
+  //   } else if (modality === "CT") {
+  //     modality1 = "CT";
+  //   }
+  //   else
+  //   {
+  //     modality1="MR"
+  //   }
+  //   console.log(modality1);
+  
+  //   // Default "Generate report" option
+  //   let optionSelect = document.createElement("option");
+  //   optionSelect.value = 0;
+  //   optionSelect.text = "Generate report";
+  //   list.appendChild(optionSelect);
+  
+  //   // Loose comparison logic
+  //   options
+  //     .filter(({ label }) => {
+  //       const lowerLabel = label.toLowerCase();
+  //       if (modality1 === "Xray") {
+  //         // Match loosely if label contains "xray" or related terms
+  //         // if (Bodypart.toLowerCase() === "shoulder")
+          
+  //           return lowerLabel.includes("xray") || lowerLabel.includes("left-shoulder") ||  lowerLabel.includes("right-shoulder") || lowerLabel.includes("blanks") || lowerLabel.includes("knee") || lowerLabel.includes("spine") || lowerLabel.includes("chest") || lowerLabel.includes("TbChest");
+          
+  //         // else if(Bodypart.toLowerCase() === "knee")
+  //         // {
+  //         //   return lowerLabel.includes("knee") || lowerLabel.includes("blanks");
+  //         // }
+  //         // else if(Bodypart.toLowerCase() === "spine")
+  //         // {
+  //         //   return lowerLabel.includes("spine") || lowerLabel.includes("blanks");
+  //         // }
+  //         // else if (Bodypart.toLowerCase() === "chest")
+  //         // {
+  //         //   return lowerLabel.includes("chest") || lowerLabel.includes("blanks");
+  //         // }
+  //         // else
+  //         // {
+  //         //   return lowerLabel.includes("blanks");
+  //         // }
+          
+  //       } else if (modality1 === "CT") {
+          
+  //         // Match loosely if label contains "ct" or related terms
+  //         // if(Bodypart.toLowerCase() === "head") 
+  //         // {
+  //           return lowerLabel.includes("head") || lowerLabel.includes("blanks") || lowerLabel.includes("abdomen") ||  lowerLabel.includes("pns");
+  //         // }
+  //         // else if(Bodypart.toLowerCase() === "abdomen") 
+  //         // {
+  //         //   return lowerLabel.includes("abdomen") || lowerLabel.includes("blanks");
+  //         // }
+  //         // else if(Bodypart.toLowerCase() === "pns")
+  //         // {
+  //         //   return lowerLabel.includes("pns") || lowerLabel.includes("blanks");
+  //         // }
+  //         // else
+  //         // {
+  //         //   return lowerLabel.includes("blanks");
+  //         // }
+  //       }  else {
+  //         return lowerLabel.includes("blanks");
+  //       }
+  //       return false; // No matches for other modalities
+  //     })
+  //     .forEach(({ label, id }) => {
+  //       let option = document.createElement("option");
+  //       option.value = id;
+  //       option.text = label;
+  //       list.appendChild(option);
+  //     });
+  
+  //   // Assign a handler for onchange
+  //   list.onchange = this.handleSeletion; // You should define handleSelection method
+  //   return list;
+  // }  
+
+
+
   choose() {
     // Retrieve query parameters from the URL
     const urlSearchParams = new URLSearchParams(window.location.search);
-    let modality = urlSearchParams.get("data-Modality"); // Default to null if not present
-    // let Bodypart = urlSearchParams.get("data-bodypart");
-    // Create a dropdown element
+    let modality = urlSearchParams.get("data-Modality");
     let list = document.createElement("select");
     list.id = "choose_scan";
   
-    // Map modality to modality1 (if conditions are met)
-    let modality1 = modality; // Default to modality itself
-    if (modality === "DX" || modality === "CR" || modality ==="DR") {
+    // Map modality to modality1
+    let modality1 = modality;
+    if (modality === "DX" || modality === "CR" || modality === "DR") {
       modality1 = "Xray";
     } else if (modality === "CT") {
       modality1 = "CT";
-    }
-    else
-    {
-      modality1="MR"
+    } else {
+      modality1 = "MR";
     }
     console.log(modality1);
   
@@ -1231,56 +1320,31 @@ class App extends Component {
     optionSelect.text = "Generate report";
     list.appendChild(optionSelect);
   
-    // Loose comparison logic
+    // Filter and append options
     options
       .filter(({ label }) => {
         const lowerLabel = label.toLowerCase();
         if (modality1 === "Xray") {
-          // Match loosely if label contains "xray" or related terms
-          // if (Bodypart.toLowerCase() === "shoulder")
-          
-            return lowerLabel.includes("xray") || lowerLabel.includes("left-shoulder") ||  lowerLabel.includes("right-shoulder") || lowerLabel.includes("blanks") || lowerLabel.includes("knee") || lowerLabel.includes("spine") || lowerLabel.includes("chest") || lowerLabel.includes("TbChest");
-          
-          // else if(Bodypart.toLowerCase() === "knee")
-          // {
-          //   return lowerLabel.includes("knee") || lowerLabel.includes("blanks");
-          // }
-          // else if(Bodypart.toLowerCase() === "spine")
-          // {
-          //   return lowerLabel.includes("spine") || lowerLabel.includes("blanks");
-          // }
-          // else if (Bodypart.toLowerCase() === "chest")
-          // {
-          //   return lowerLabel.includes("chest") || lowerLabel.includes("blanks");
-          // }
-          // else
-          // {
-          //   return lowerLabel.includes("blanks");
-          // }
-          
+          return (
+            lowerLabel.includes("xray") ||
+            lowerLabel.includes("left-shoulder") ||
+            lowerLabel.includes("right-shoulder") ||
+            lowerLabel.includes("blanks") ||
+            lowerLabel.includes("knee") ||
+            lowerLabel.includes("spine") ||
+            lowerLabel.includes("chest") ||
+            lowerLabel.includes("tbchest")
+          );
         } else if (modality1 === "CT") {
-          
-          // Match loosely if label contains "ct" or related terms
-          // if(Bodypart.toLowerCase() === "head") 
-          // {
-            return lowerLabel.includes("head") || lowerLabel.includes("blanks") || lowerLabel.includes("abdomen") ||  lowerLabel.includes("pns");
-          // }
-          // else if(Bodypart.toLowerCase() === "abdomen") 
-          // {
-          //   return lowerLabel.includes("abdomen") || lowerLabel.includes("blanks");
-          // }
-          // else if(Bodypart.toLowerCase() === "pns")
-          // {
-          //   return lowerLabel.includes("pns") || lowerLabel.includes("blanks");
-          // }
-          // else
-          // {
-          //   return lowerLabel.includes("blanks");
-          // }
-        }  else {
+          return (
+            lowerLabel.includes("head") ||
+            lowerLabel.includes("blanks") ||
+            lowerLabel.includes("abdomen") ||
+            lowerLabel.includes("pns")
+          );
+        } else {
           return lowerLabel.includes("blanks");
         }
-        return false; // No matches for other modalities
       })
       .forEach(({ label, id }) => {
         let option = document.createElement("option");
@@ -1290,11 +1354,16 @@ class App extends Component {
       });
   
     // Assign a handler for onchange
-    list.onchange = this.handleSeletion; // You should define handleSelection method
+    list.onchange = this.handleSeletion;
+  
+    // Auto-trigger handleSelection if only one option is available (excluding default)
+    if (list.options.length === 2) {
+      list.selectedIndex = 1;
+      list.dispatchEvent(new Event('change'));
+    }
+  
     return list;
-  }  
-
-
+  }
   actionDropDown() {
     var list = document.createElement("select");
     list.id = "export_data";

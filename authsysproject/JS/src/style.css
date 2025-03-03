@@ -58,6 +58,30 @@ body {
     transition: flex 0.3s ease;
     margin-top: 30px;
 }
+.document-editor__editable-container {
+  display: flex;
+  flex-direction: row; /* Arrange content vertically */
+  padding: calc(2 * var(--ck-spacing-large));
+  background: var(--ck-color-base-foreground);
+  padding-top: 15px;
+
+  flex: 1; /* Will take 50% width when shown */
+  transition: flex 0.3s ease;
+  height: 80vh;
+  overflow-y: auto; /* Adds vertical scroll if content exceeds height */
+  overflow-x: hidden;
+
+}
+
+@media (min-width: 1024px) {
+    .cornerstone-container {
+        width: 50vw;
+    }
+
+    .document-editor__editable-container {
+        width: 50vw;
+    }
+}
 
 .viewport-container {
     width: 100%;
@@ -168,20 +192,20 @@ body {
   }
   
 
-  .document-editor__editable-container {
+  /* .document-editor__editable-container {
     display: flex;
     flex-direction: column; /* Arrange content vertically */
-    padding: calc(2 * var(--ck-spacing-large));
+    /* padding: calc(2 * var(--ck-spacing-large));
     background: var(--ck-color-base-foreground);
     padding-top: 15px;
   
-    flex: 1; /* Will take 50% width when shown */
-    transition: flex 0.3s ease;
+    f lex: 1; /* Will take 50% width when shown */
+    /* transition: flex 0.3s ease;
     height: 80vh;
     overflow-y: auto; /* Adds vertical scroll if content exceeds height */
-    overflow-x: hidden;
-  
-}
+    /* overflow-x: hidden; */ */
+  */
+/* } */ */
 
 .document-editor__content {
   flex-grow: 1; /* Take up all available space */
