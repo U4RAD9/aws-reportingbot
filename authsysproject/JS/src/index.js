@@ -231,10 +231,21 @@ class App extends Component {
     this.toggleDivs = this.toggleDivs.bind(this); 
     this.togglePatientData = this.togglePatientData.bind(this); 
     this.openImageInViewport = this.openImageInViewport.bind(this);
+    this.toggleFullScreen=this.toggleFullScreen.bind(this);
     
   }
   allowDrop(event){
     event.preventDefault();
+  }
+  toggleFullScreen() {
+    const editorContainer = document.getElementById('reportEditor');
+    if (!document.fullscreenElement) {
+      editorContainer.requestFullscreen().catch((err) => {
+        // console.error(Error attempting to enable full-screen mode: ${err.message});
+      });
+    } else {
+      document.exitFullscreen();
+    }
   }
   toggleDivs() {
     this.setState((prevState) => ({
@@ -4348,6 +4359,7 @@ onInit={(editor) => {
   
   const toolbarContainer = document.querySelector(".document-editor__toolbar");
   
+  
   // Check if the toolbar already exists to avoid duplication
   if (!toolbarContainer.querySelector(".custom-toolbar")) {
     // Create a new div to hold the custom toolbar buttons
@@ -4356,6 +4368,12 @@ onInit={(editor) => {
     
     // Append the toolbar to the CKEditor toolbar
     toolbarContainer.appendChild(editor.ui.view.toolbar.element);
+    const fullScreenButton = document.createElement('button');
+    fullScreenButton.innerText = 'Fullscreen';
+    fullScreenButton.classList.add('full-screen-button');
+    fullScreenButton.onclick = this.toggleFullScreen;
+    
+    customToolbar.appendChild(fullScreenButton);
 
     // Append the custom buttons to the toolbar only if they haven't been added before
     window.editor.ui.view.toolbar.element.children[0].appendChild(this.copyAction());
