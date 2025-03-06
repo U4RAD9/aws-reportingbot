@@ -6000,7 +6000,6 @@ def all_patient_data(request):
     institutions = request.GET.getlist('institution', [])
     status = request.GET.get('status', '').strip()
     
-    # Get multiple Modality selections (now case-sensitive)
     selected_modalities = request.GET.getlist('Modality', [])
 
     has_valid_filters = any([
@@ -6014,14 +6013,19 @@ def all_patient_data(request):
         if name:
             filters &= Q(patient_name__iexact=name)
         if start_date and end_date:
-            filters &= Q(study_date__range=[start_date, end_date])
+            try:
+                start_date_obj = datetime.strptime(start_date, "%d-%m-%Y").date()
+                end_date_obj = datetime.strptime(end_date, "%d-%m-%Y").date()
+                filters &= Q(study_date__range=[start_date_obj, end_date_obj])
+            except ValueError:
+                pass  # Optional: add an error message or log this
         if radiologist_ids:
             filters &= Q(radiologist__user__id__in=radiologist_ids)
         if institutions:
             filters &= Q(institution_name__in=institutions)
         if status:
             filters &= Q(isDone=(status.lower() == "reported"))
-        if selected_modalities:  # ✅ Case-sensitive modality filter
+        if selected_modalities:
             modality_filters = Q()
             for modality in selected_modalities:
                 modality_filters |= Q(Modality__exact=modality)  
@@ -6042,6 +6046,6 @@ def all_patient_data(request):
         'clients': clients,
         'selected_radiologist_ids': radiologist_ids,
         'selected_institutions': institutions,
-        'selected_modalities': selected_modalities  # ✅ Pass to template
+        'selected_modalities': selected_modalities
     }
     return render(request, 'users/all_data.html', context)
