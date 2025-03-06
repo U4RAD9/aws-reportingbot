@@ -5992,6 +5992,75 @@ def export_patient_data(patients):
 
 
 @user_type_required('supercoordinator')
+# def all_patient_data(request):
+#     patients = DICOMData.objects.none()
+
+#     name = request.GET.get('name', '').strip()
+#     start_date = request.GET.get('start_date', '').strip()
+#     end_date = request.GET.get('end_date', '').strip()
+#     radiologist_ids = [int(id_str.strip()) for id_str in request.GET.getlist('radiologist', []) if id_str.strip().isdigit()]
+#     institutions = request.GET.getlist('institution', [])
+#     status = request.GET.get('status', '').strip()
+#     selected_modalities = request.GET.getlist('Modality', [])
+
+#     has_valid_filters = any([
+#         name, start_date and end_date, radiologist_ids, institutions, status, selected_modalities
+#     ])
+
+#     if has_valid_filters:
+#         patients = DICOMData.objects.all().prefetch_related('radiologist__user')
+#         filters = Q()
+
+#         if name:
+#             filters &= Q(patient_name__iexact=name)
+        
+#         if start_date and end_date:
+#             try:
+#                 # Parse the input dates in the format DD/MM/YYYY
+#                 start_date_obj = datetime.strptime(start_date, "%d/%m/%Y").date()
+#                 end_date_obj = datetime.strptime(end_date, "%d/%m/%Y").date()
+                
+#                 # Convert study_date from string to date for comparison
+#                 filters &= Q(study_date__isnull=False)  # Ensure study_date is not null
+                
+#                 # Add a custom filter to compare study_date as a date
+#                 filters &= Q(study_date__gte=start_date_obj.strftime("%d-%m-%Y"))  # Greater than or equal to start_date
+#                 filters &= Q(study_date__lte=end_date_obj.strftime("%d-%m-%Y"))  # Less than or equal to end_date
+#             except ValueError:
+#                 print("Invalid date format")  # Or log this properly
+        
+#         if radiologist_ids:
+#             filters &= Q(radiologist__user__id__in=radiologist_ids)
+#         if institutions:
+#             filters &= Q(institution_name__in=institutions)
+#         if status:
+#             filters &= Q(isDone=(status.lower() == "reported"))
+#         if selected_modalities:
+#             modality_filters = Q()
+#             for modality in selected_modalities:
+#                 modality_filters |= Q(Modality__exact=modality)  
+#             filters &= modality_filters
+
+#         patients = patients.filter(filters).distinct()
+
+#     radiologists = User.objects.filter(personalinfo__isnull=False).distinct()
+#     clients = Client.objects.exclude(institution_name__isnull=True).exclude(institution_name="None").values_list("institution_name", flat=True).distinct()
+
+#     if "export" in request.GET:
+#         return export_patient_data(patients)
+
+#     context = {
+#         'patients': patients,
+#         'request': request,
+#         'radiologists': radiologists,
+#         'clients': clients,
+#         'selected_radiologist_ids': radiologist_ids,
+#         'selected_institutions': institutions,
+#         'selected_modalities': selected_modalities
+#     }
+#     return render(request, 'users/all_data.html', context)
+
+
 def all_patient_data(request):
     patients = DICOMData.objects.none()
 
@@ -6017,15 +6086,19 @@ def all_patient_data(request):
         if start_date and end_date:
             try:
                 # Parse the input dates in the format DD/MM/YYYY
-                start_date_obj = datetime.strptime(start_date, "%d/%m/%Y").date()
-                end_date_obj = datetime.strptime(end_date, "%d/%m/%Y").date()
+                start_date_obj = datetime.strptime(start_date, "%d/%m/%Y")
+                end_date_obj = datetime.strptime(end_date, "%d/%m/%Y")
                 
-                # Convert study_date from string to date for comparison
-                filters &= Q(study_date__isnull=False)  # Ensure study_date is not null
+                # Convert the parsed dates to the database format (DD-MM-YYYY)
+                start_date_db_format = start_date_obj.strftime("%d-%m-%Y")
+                end_date_db_format = end_date_obj.strftime("%d-%m-%Y")
                 
-                # Add a custom filter to compare study_date as a date
-                filters &= Q(study_date__gte=start_date_obj.strftime("%d-%m-%Y"))  # Greater than or equal to start_date
-                filters &= Q(study_date__lte=end_date_obj.strftime("%d-%m-%Y"))  # Less than or equal to end_date
+                # Ensure study_date is in the correct format (DD-MM-YYYY)
+                filters &= Q(study_date__regex=r'^\d{2}-\d{2}-\d{4}$')  # Regex to match DD-MM-YYYY format
+                
+                # Compare study_date as strings in the correct format
+                filters &= Q(study_date__gte=start_date_db_format)  # Greater than or equal to start_date
+                filters &= Q(study_date__lte=end_date_db_format)  # Less than or equal to end_date
             except ValueError:
                 print("Invalid date format")  # Or log this properly
         
