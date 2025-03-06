@@ -1,8 +1,12 @@
 from collections import defaultdict
 import math
+#from multiprocessing import Value
+from django.db.models import Value
+from django.db.models.functions import Concat, Substr
 from urllib.parse import urlparse, parse_qs
 from tkinter import Tk, filedialog
 from venv import logger
+from django.forms import CharField
 from django.shortcuts import get_object_or_404, render, redirect
 #from django.core.files.storage import FileSystemStorage  # ✅ Import this!
 from django.http import JsonResponse
@@ -15,6 +19,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth import login as ContribLogin
 from django.contrib.auth import logout as ContribLogout
 from django.middleware.csrf import get_token
+import httpx
 from users.models.AudiometryPdfReport import AudiometryReport
 from users.models.OptometryPdfReport import OptometryReport
 from users.models.VitalsPdfReport import VitalsReport
