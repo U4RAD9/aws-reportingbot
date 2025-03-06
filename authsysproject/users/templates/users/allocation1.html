@@ -796,19 +796,20 @@
                 <th>Mark As VIP</th>
                 <th>Mark for Review</th>
                 <th>Image</th>
+                <!--THE UPDATE FROM ROHAN JANGID-->
                 <th>
-                    <div class="filter-dropdown-container">
-                        <div>Status</div>
-                        <div class="dropdown-select1" id="filter-status-dropdown">
-                            <select id="filter-status-select" class="form-control">
-                                <option value="">All</option>
-                                <option value="reported">Reported</option>
-                                <option value="unreported">Unreported</option>
-                                <option value="nonreported">Nonreported</option>
-                            </select>
-                        </div>
-                    </div>
-                </th>
+                  <div class="filter-dropdown-container">
+                      <div>Status</div>
+                      <div class="dropdown-select1" id="filter-status-dropdown">
+                          <select id="filter-status-select" class="form-control">
+                              <option value="">All</option>
+                              <option value="reported" {% if status_filter == 'reported' %}selected{% endif %}>Reported</option>
+                              <option value="unreported" {% if status_filter == 'unreported' %}selected{% endif %}>Unreported</option>
+                              <option value="nonreported" {% if status_filter == 'nonreported' %}selected{% endif %}>Nonreported</option>
+                          </select>
+                      </div>
+                  </div>
+              </th>
                 <th>Mark for Unreported</th>
               <!-- Add a column for the "Report" button -->
               </tr>
@@ -1018,28 +1019,38 @@
 
   <script>
 
-    function downloadExcel() {
-        /* Get the table data and convert it to a worksheet */
-        var table = document.querySelector('#patientTable');
-
-        // Clone the table to avoid modifying the original
-        var clonedTable = table.cloneNode(true);
-
-        // Exclude elements with class "form-control" within elements with class "dropdown-select1"
-        var excludedElements = clonedTable.querySelectorAll('.dropdown-select1 .form-control');
-        excludedElements.forEach(function (element) {
-            element.parentNode.removeChild(element);
-        });
-
-        var ws = XLSX.utils.table_to_sheet(clonedTable);
-
-        /* Create a workbook containing the worksheet */
-        var wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-
-        /* Save the workbook as an Excel file */
-        XLSX.writeFile(wb, 'dashboard_data.xlsx');
-    }
+      function downloadExcel() {
+              /* Get the table data and convert it to a worksheet */
+              var table = document.querySelector('#patientTable');
+          
+              if (!table) {
+                  alert("Table not found! Please check the table ID.");
+                  return;
+              }
+          
+              // Clone the table to avoid modifying the original
+              var clonedTable = table.cloneNode(true);
+          
+              // Remove elements with class "form-control" within elements with class "dropdown-select1"
+              clonedTable.querySelectorAll('.dropdown-select1 .form-control').forEach(element => element.remove());
+          
+              // Convert table to worksheet
+              var ws = XLSX.utils.table_to_sheet(clonedTable, { raw: true });
+          
+              // Loop through the sheet and force the institution name column to be text
+              Object.keys(ws).forEach(cell => {
+                  if (ws[cell].t === 'n' && typeof ws[cell].v === 'string' && ws[cell].v.includes("DOCTORS FOR YOU")) {
+                      ws[cell].t = 's';  // Set the cell type to string
+                  }
+              });
+          
+              // Create a workbook containing the worksheet
+              var wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+          
+              // Save the workbook as an Excel file
+              XLSX.writeFile(wb, 'dashboard_data.xlsx');
+          }
 
 
     $(document).ready(function () {
@@ -1219,124 +1230,109 @@
       getGreeting();
     });
   </script>
+<!--BELOW CODE ROHAN JANGID-->
+<script>
+  $(document).ready(function () {
+  $('#filter-date-select-date, #filter-studytime-select-studytime, #filter-Received-select-Received, #filter-institution_name-select-institution_name, #filter-Modality-select-Modality, #filter-Studydescription-select-Studydescription, #filter-allocate-select-allocate, #filter-coordinator-select-coordinator, #filter-status-select').change(function () {
+      filterTable();
+  });
+
+  function filterTable() {
+      var selectedDate = ($('#filter-date-select-date').val() || "").trim().toLowerCase();
+      var selectedStudytime = ($('#filter-studytime-select-studytime').val() || "").trim().toLowerCase();
+      var selectedReceived = ($('#filter-Received-select-Received').val() || "").trim().toLowerCase();
+      var selectedInstitution_name = ($('#filter-institution_name-select-institution_name').val() || "").trim().toLowerCase();
+      var selectedModality = ($('#filter-Modality-select-Modality').val() || "").trim().toLowerCase();
+      var selectedStudydescription = ($('#filter-Studydescription-select-Studydescription').val() || "").trim().toLowerCase();
+      var selectedAllocate = ($('#filter-allocate-select-allocate').val() || "").trim().toLowerCase();
+      var selectedCorporatecoordinator = ($('#filter-coordinator-select-coordinator').val() || "").trim().toLowerCase();
+      var selectedStatus = ($('#filter-status-select').val() || "").trim().toLowerCase();
+
+      var visibleRowCount = 0;
+
+      console.log("Filtering with values:", { selectedDate, selectedStudytime, selectedReceived, selectedInstitution_name, selectedModality, selectedStudydescription, selectedAllocate, selectedCorporatecoordinator, selectedStatus });
+
+      $('#patientTable tbody tr').each(function () {
+          var rowDate = ($(this).find('td:nth-child(6)').text() || "").trim().toLowerCase();
+          var rowStudytime = ($(this).find('td:nth-child(7)').text() || "").trim().toLowerCase();
+          var rowReceived = ($(this).find('td:nth-child(8)').text() || "").trim().toLowerCase();
+          var rowInstitution_name = ($(this).find('td:nth-child(9)').text() || "").trim().toLowerCase();
+          var rowModality = ($(this).find('td:nth-child(10)').text() || "").trim().toLowerCase();
+          var rowStudydescription = ($(this).find('td:nth-child(11)').text() || "").trim().toLowerCase();
+          var rowCorporatecoordinator = ($(this).find('td:nth-child(12)').text() || "").trim().toLowerCase();
+          var rowAllocate = ($(this).find('td:nth-child(13)').text() || "").trim().toLowerCase();
+          var rowStatus = ($(this).find('td:nth-child(21)').text() || "").trim().toLowerCase();
+
+          
+
+          if ((selectedDate === '' || rowDate === selectedDate) 
+              && (selectedCorporatecoordinator === "" || rowCorporatecoordinator === selectedCorporatecoordinator) 
+              && (selectedStudytime === '' || rowStudytime === selectedStudytime) 
+              && (selectedReceived === '' || rowReceived === selectedReceived) 
+              && (selectedInstitution_name === '' || rowInstitution_name === selectedInstitution_name) 
+              && (selectedModality === '' || rowModality === selectedModality) 
+              && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription)
+              && (selectedAllocate === "" || rowAllocate === selectedAllocate)
+              && (selectedStatus === "" || rowStatus === selectedStatus)) { 
+              $(this).show();
+              visibleRowCount++;
+          } else {
+              $(this).hide();
+          }
+      });
+
+      $('#filteredRowCount').text(visibleRowCount);
+  }
+
+  filterTable();
+});
+
+</script>
+<!--THE ABOVE CODE BY ROHAN JANGID -->
 
   <script>
-    $(document).ready(function () {
-        // Event handler for the change event of the test date dropdown
-        $('#filter-date-select-date').change(function () {
-            filterTable();
-        });
-
-        // Event handler for the change event of the studytime dropdown
-        $('#filter-studytime-select-studytime').change(function () {
-            filterTable();
-        });
-
-        // Event handler for the change event of the Recivedtime dropdown
-        $('#filter-Received-select-Received').change(function () {
-            filterTable();
-        });
-
-        // Event handler for the change event of the institution_name dropdown
-        $('#filter-institution_name-select-institution_name').change(function () {
-            filterTable();
-        });
-
-
-        // Event handler for the change event of the Modality dropdown
-        $('#filter-Modality-select-Modality').change(function () {
-            filterTable();
-        });
-
-        // Event handler for the change event of the Studydescription dropdown
-        $('#filter-Studydescription-select-Studydescription').change(function () {
-            filterTable();
-        });
-
-        // Event handler for the change event of the allocate dropdown
-        $('#filter-allocate-select-allocate').change(function () {
-            filterTable();
-        });
-
-        // Event handler for the change event of the allocate dropdown
-        $('#filter-coordinator-select-coordinator').change(function () {
-            filterTable();
-        });
-
-        function filterTable() {
-            var selectedDate = $('#filter-date-select-date').val();
-            var selectedStudytime = $('#filter-studytime-select-studytime').val();
-            var selectedReceived = $('#filter-Received-select-Received').val();
-            var selectedInstitution_name = $('#filter-institution_name-select-institution_name').val();
-            var selectedModality = $('#filter-Modality-select-Modality').val();
-            var selectedStudydescription = $('#filter-Studydescription-select-Studydescription').val();
-            var selectedAllocate = $('#filter-allocate-select-allocate').val();
-            var selectedCorporatecoordinator = $('#filter-coordinator-select-coordinator').val();
-            var visibleRowCount = 0;
-
-            // Loop through each row in the table
-            $('#patientTable tbody tr').each(function () {
-                var rowDate = $(this).find('td:nth-child(6)').text(); // Get the test date from the table cell
-                var rowStudytime = $(this).find('td:nth-child(7)').text(); // Get the location from the table cell
-                var rowReceived = $(this).find('td:nth-child(8)').text(); // Get the location from the table cell
-                var rowInstitution_name = $(this).find('td:nth-child(9)').text(); // Get the location from the table cell
-                var rowModality = $(this).find('td:nth-child(10)').text();
-                var rowStudydescription = $(this).find('td:nth-child(11)').text();
-                var rowCorporatecoordinator = $(this).find('td:nth-child(12)').text().trim();
-                var rowAllocate = $(this).find('td:nth-child(13)').text().trim();
-                
-                
-                if ((selectedDate === '' || rowDate === selectedDate) 
-                && (selectedCorporatecoordinator === "" || rowCorporatecoordinator === selectedCorporatecoordinator) 
-                && (selectedStudytime === '' || rowStudytime === selectedStudytime) 
-                && (selectedReceived === '' || rowReceived === selectedReceived) 
-                && (selectedInstitution_name === '' || rowInstitution_name === selectedInstitution_name) 
-                && (selectedModality === '' || rowModality === selectedModality) 
-                && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription)
-                && (selectedAllocate === "" || rowAllocate === selectedAllocate)) {
-                    
-                    $(this).show();
-                    visibleRowCount++; // Increment visible row count
-                } else {
-                    $(this).hide();
-                }
-            });
-            // Update the displayed filtered row count
-            $('#filteredRowCount').text(visibleRowCount);
+    // Function to filter the table by status
+    function filterTableByStatus(status) {
+        // Show all rows initially
+        $("tbody tr").show();
+  
+        if (status) {
+            // Filter rows based on the selected status
+            $("tbody tr").filter(function() {
+                var rowStatus = $(this).find("td").eq(20).text().trim(); // Adjust column index if needed
+                return rowStatus.toLowerCase() !== status.toLowerCase(); // Case-insensitive comparison
+            }).hide();
         }
-        // Initialize row count on page load
-        filterTable();
+        console.log("Filtered Rows:", $("tbody tr:visible").length);
+    }
+  
+    // Function to apply filter and update URL
+    function applyFilter() {
+        var selectedStatus = document.getElementById("filter-status-select").value;
+  
+        // Update URL without refreshing the page
+        var newUrl = window.location.pathname + (selectedStatus ? "?isdone=" + selectedStatus : "");
+        window.history.pushState({ path: newUrl }, "", newUrl);
+  
+        // Apply table filter
+        filterTableByStatus(selectedStatus);
+    }
+  
+    // Event handler for the "Status" dropdown filter
+    $(document).on("change", "#filter-status-select", function () {
+        applyFilter();
     });
-  </script>
-
-    <script>
-
-        // Function to filter the table by status
-        function filterTableByStatus(status) {
-            // Show all rows initially
-            $("tbody tr").show();
-
-            if (status) {
-                // Filter rows based on the selected status
-                $("tbody tr").filter(function() {
-                    var rowStatus = $(this).find("td").eq(20).text().trim(); // Assuming status is in the 10th column (adjust if needed)
-                    return rowStatus.toLowerCase() !== status.toLowerCase(); // Perform case-insensitive comparison
-                }).hide();
-            }
-            console.log("Filtered Rows:", $("tbody tr:visible").length);
+  
+    // Apply filter on page load based on URL parameter
+    $(document).ready(function () {
+        var urlParams = new URLSearchParams(window.location.search);
+        var statusFromUrl = urlParams.get("isdone");
+        if (statusFromUrl) {
+            $("#filter-status-select").val(statusFromUrl);
+            filterTableByStatus(statusFromUrl);
         }
-
-         // Event handler for the "Status" dropdown filter
-        $(document).on("change", "#filter-status-select", function () {
-            var selectedStatus = $(this).val();
-            filterTableByStatus(selectedStatus);
-        });
-
-        // Call the filter functions on page load to initialize the table
-        filterTableByStatus($("#filter-status-select").val());
-    </script>
-
-    <script>
+    });
+  
 
         function refreshPage() {
 

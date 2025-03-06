@@ -814,53 +814,64 @@ def allocation1(request):
     # Fetch and order patients
     patients = DICOMData.objects.all().order_by('-vip', '-urgent', '-Mlc', '-id')
 
-
-    # If a radiologist filter is applied, filter the patients
+    # Filter based on Radiologist
     radiologist_filter = request.GET.get('radiologist', None)
     if radiologist_filter:
-        #patients = patients.filter(radiologist__user__first_name__icontains=radiologist_filter)
-        patients = patients.filter(radiologist__id__in=[radiologist_filter])
+        patients = patients.filter(radiologist_id_in=[radiologist_filter])
 
-    # Apply corporate coordinator filter
+    # Filter based on Corporate Coordinator
     corporatecoordinator_filter = request.GET.get('corporatecoordinator', None)
     if corporatecoordinator_filter:
-        patients = patients.filter(corporatecoordinator__id__in=[corporatecoordinator_filter])    
-    
-    # **Updated Total Counts for Statistics**
+        patients = patients.filter(corporatecoordinator_id_in=[corporatecoordinator_filter])
+
+   # Apply status --Rohan Jangid
+    status_filter = request.GET.get('status', None)
+    if status_filter:
+        if status_filter == 'reported':
+            patients = patients.filter(isDone=True)
+        elif status_filter == 'unreported':
+            patients = patients.filter(isDone=False, NonReportable=False)
+        elif status_filter == 'nonreported':
+            patients = patients.filter(NonReportable=True)
+    #My filter upto this
+
+
+    # *Updated Total Counts for Statistics*
     total_current_uploaded = DICOMData.objects.count()  # Total number of DICOMData records
     total_current_reported = DICOMData.objects.filter(isDone=True).count()  # Total cases marked as Done
     total_unreported_cases = DICOMData.objects.filter(isDone=False).count()  # Total cases not marked as Done
-    total_unallocated_cases = DICOMData.objects.filter(radiologist__isnull=True).count()  # Cases with no assigned radiologist
-    total_nonreported_cases = DICOMData.objects.filter(NonReportable=True).count()  # Cases marked as NonReportable
+    total_nonreported_cases = DICOMData.objects.filter(isDone__isnull=True).count()  # Cases where isDone is not set
+
+    # *Dynamic Status Options for Dropdown*
+    status_options = {
+        'Reported': total_current_reported,
+        'Unreported': total_unreported_cases,
+        'Nonreported': total_nonreported_cases
+    }
 
     total_cases = {
         'total_uploaded': total_current_uploaded,
         'current_reported': total_current_reported,
         'unreported_cases': total_unreported_cases,
-        'unallocated_cases': total_unallocated_cases,
         'nonreported_cases': total_nonreported_cases,
     }
 
     # Get radiologists from the group
     radiologist_group = Group.objects.get(name='radiologist')
-    # radiologist_objects = radiologist_group.user_set.all()
     radiologist_objects = radiologist_group.user_set.filter(personalinfo__isnull=False)
 
     # Get corporatecoordinator from the group
     corporatecoordinator_group = Group.objects.get(name='corporatecoordinator')
     corporatecoordinator_objects = corporatecoordinator_group.user_set.all()
 
-
     # Set up pagination
-    paginator = Paginator(patients, 400)  # 200 patients per page
+    paginator = Paginator(patients, 400)  # 400 patients per page
     page_number = request.GET.get('page', 1)  # Get the page number from the request
     try:
         page_obj = paginator.get_page(page_number)
     except PageNotAnInteger:
-        # If page is not an integer, deliver first page
         page_obj = paginator.get_page(1)
     except EmptyPage:
-        # If page is out of range, deliver last page of results
         page_obj = paginator.get_page(paginator.num_pages)
 
     # Generate presigned URLs for JPEG files on the current page
@@ -877,41 +888,34 @@ def allocation1(request):
             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
         ]
 
-
     # Get unique dates from the patients on the current page
     unique_dates = set(patient.study_date for patient in page_obj.object_list)
     sorted_unique_dates = sorted(unique_dates, reverse=False)
 
-
-    #Get unique study time from the patients
+    # Get unique study time
     unique_study_time = {patient.study_time for patient in page_obj.object_list if patient.study_time is not None}
     sorted_unique_study_time = sorted(unique_study_time, reverse=False)
 
-    # unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
     unique_institution_name = {patient.institution_name for patient in page_obj.object_list if patient.institution_name is not None}
     sorted_unique_institution_name = sorted(unique_institution_name, reverse=False)
 
-    # Convert recived_on_db to IST
+    # Convert received_on_db to IST
     for patient in page_obj:
         if patient.recived_on_db:
             if patient.recived_on_db.tzinfo is None:  # Localize naive datetime to UTC
                 patient.recived_on_db = time('UTC').localize(patient.recived_on_db)
             patient.recived_on_db = patient.recived_on_db.astimezone(india_tz)
 
-    # Recived date time on db
     unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None}
     sorted_unique_recived_on_db = sorted(unique_recived_on_db, reverse=False)
 
-    #Study Description of patent from dicom data
-    # Recived date time on db
+    # Study Description of patients
     unique_study_description = {patient.study_description for patient in page_obj.object_list if patient.study_description is not None}
     sorted_unique_study_description = sorted(unique_study_description, reverse=False)
 
     # Modality
-    # Get unique modality values, ensuring None values are excluded
     unique_modality = {patient.Modality for patient in page_obj.object_list if patient.Modality is not None}
     sorted_unique_modality = sorted(unique_modality, reverse=False)
-    
 
     return render(request, 'users/allocation1.html', {
         'Institution': sorted_unique_institution_name,
@@ -924,9 +928,10 @@ def allocation1(request):
         'Study_description': sorted_unique_study_description,
         'radiologists': radiologist_objects,
         'corporatecoordinators': corporatecoordinator_objects,
-        'page_obj': page_obj  # Pass page_obj for pagination controls
+        'status_options': status_options,  # Pass the status options dynamically
+        'page_obj': page_obj,
+        'status_filter': status_filter #my code --Rohan Jangid
     })
-
 
 
 def assign_radiologist(request):
@@ -4676,6 +4681,7 @@ def edit_dicom_data(request, pk):
 
 
 @login_required
+@user_type_required('supercoordinator')
 def supercoordinator_view(request, client_id=None):
     # Initialize the edit permissions to False (or another default value)
     can_edit_patient_name = False
@@ -5943,3 +5949,99 @@ def delete_all_patients_doctor(request):
 
 ##################################################### Data Excel ###################################################
 
+
+
+def export_patient_data(patients):
+    if not patients.exists():
+        return HttpResponse("No data available for export.", content_type="text/plain")
+
+    # Define columns for the Excel file
+    data = []
+    for patient in patients:
+        data.append({
+            "Patient Name": patient.patient_name,
+            "Patient ID": patient.patient_id,
+            "Age": patient.age,
+            "Gender": patient.gender,
+            "Study Date": patient.study_date,
+            "Study Time": patient.study_time.strftime("%H:%M:%S") if patient.study_time else "",
+            "Received on DB": patient.recived_on_db.strftime("%Y-%m-%d %H:%M:%S") if patient.recived_on_db else "",
+            "Modality": patient.Modality,
+            "Urgent": "Yes" if patient.urgent else "No",
+            "Status": "Reported" if patient.isDone else "Unreported",
+            "Location": patient.location,
+            "Institution Name": patient.institution_name,
+            "Radiologists": ", ".join([str(radiologist) for radiologist in patient.radiologist.all()]),
+            "Corporate Coordinators": ", ".join([str(coordinator) for coordinator in patient.corporatecoordinator.all()]),
+        })
+
+    # Create a DataFrame using pandas
+    df = pd.DataFrame(data)
+
+    # Create an Excel file in memory
+    excel_file = BytesIO()
+    with pd.ExcelWriter(excel_file, engine="xlsxwriter") as writer:
+        df.to_excel(writer, index=False, sheet_name="Patients")
+
+    excel_file.seek(0)
+    response = HttpResponse(excel_file.read(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = 'attachment; filename="patient_data.xlsx"'
+
+    return response
+
+@user_type_required('supercoordinator')
+def all_patient_data(request):
+    patients = DICOMData.objects.none()
+
+    name = request.GET.get('name', '').strip()
+    start_date = request.GET.get('start_date', '').strip()
+    end_date = request.GET.get('end_date', '').strip()
+    radiologist_ids = [int(id_str.strip()) for id_str in request.GET.getlist('radiologist', []) if id_str.strip().isdigit()]
+    institutions = request.GET.getlist('institution', [])
+    status = request.GET.get('status', '').strip()
+    
+    # Get multiple Modality selections (now case-sensitive)
+    selected_modalities = request.GET.getlist('Modality', [])
+
+    has_valid_filters = any([
+        name, start_date and end_date, radiologist_ids, institutions, status, selected_modalities
+    ])
+
+    if has_valid_filters:
+        patients = DICOMData.objects.all().prefetch_related('radiologist__user')
+        filters = Q()
+
+        if name:
+            filters &= Q(patient_name__iexact=name)
+        if start_date and end_date:
+            filters &= Q(study_date__range=[start_date, end_date])
+        if radiologist_ids:
+            filters &= Q(radiologist__user__id__in=radiologist_ids)
+        if institutions:
+            filters &= Q(institution_name__in=institutions)
+        if status:
+            filters &= Q(isDone=(status.lower() == "reported"))
+        if selected_modalities:  # ✅ Case-sensitive modality filter
+            modality_filters = Q()
+            for modality in selected_modalities:
+                modality_filters |= Q(Modality__exact=modality)  
+            filters &= modality_filters
+
+        patients = patients.filter(filters).distinct()
+
+    radiologists = User.objects.filter(personalinfo__isnull=False).distinct()
+    clients = Client.objects.exclude(institution_name__isnull=True).exclude(institution_name="None").values_list("institution_name", flat=True).distinct()
+
+    if "export" in request.GET:
+        return export_patient_data(patients)
+
+    context = {
+        'patients': patients,
+        'request': request,
+        'radiologists': radiologists,
+        'clients': clients,
+        'selected_radiologist_ids': radiologist_ids,
+        'selected_institutions': institutions,
+        'selected_modalities': selected_modalities  # ✅ Pass to template
+    }
+    return render(request, 'users/all_data.html', context)
