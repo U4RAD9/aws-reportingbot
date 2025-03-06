@@ -6098,9 +6098,11 @@ def all_patient_data(request):
                 
                 # Compare study_date as strings in the correct format
                 filters &= Q(study_date__gte=start_date_db_format)  # Greater than or equal to start_date
-                filters &= Q(study_date__lte=end_date_db_format)  # Less than or equal to end_date
+                filters &= Q(study_date__lte=end_date_db_format)  # Less than or equal to 
+                print(patients.filter(filters).query)
             except ValueError:
                 print("Invalid date format")  # Or log this properly
+
         
         if radiologist_ids:
             filters &= Q(radiologist__user__id__in=radiologist_ids)
