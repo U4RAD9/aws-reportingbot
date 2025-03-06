@@ -5989,6 +5989,8 @@ def export_patient_data(patients):
 
     return response
 
+
+
 @user_type_required('supercoordinator')
 def all_patient_data(request):
     patients = DICOMData.objects.none()
@@ -6015,15 +6017,15 @@ def all_patient_data(request):
         if start_date and end_date:
             try:
                 # Parse the input dates in the format DD/MM/YYYY
-                start_date_obj = datetime.strptime(start_date, "%d/%m/%Y")
-                end_date_obj = datetime.strptime(end_date, "%d/%m/%Y")
+                start_date_obj = datetime.strptime(start_date, "%d/%m/%Y").date()
+                end_date_obj = datetime.strptime(end_date, "%d/%m/%Y").date()
                 
-                # Convert the parsed dates to the database format (DD-MM-YYYY)
-                start_date_db_format = start_date_obj.strftime("%d-%m-%Y")
-                end_date_db_format = end_date_obj.strftime("%d-%m-%Y")
+                # Convert study_date from string to date for comparison
+                filters &= Q(study_date__isnull=False)  # Ensure study_date is not null
                 
-                # Filter based on the study_date range in the database format
-                filters &= Q(study_date__gte=start_date_db_format) & Q(study_date__lte=end_date_db_format)
+                # Add a custom filter to compare study_date as a date
+                filters &= Q(study_date__gte=start_date_obj.strftime("%d-%m-%Y"))  # Greater than or equal to start_date
+                filters &= Q(study_date__lte=end_date_obj.strftime("%d-%m-%Y"))  # Less than or equal to end_date
             except ValueError:
                 print("Invalid date format")  # Or log this properly
         
