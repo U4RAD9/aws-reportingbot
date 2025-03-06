@@ -6085,24 +6085,31 @@ def all_patient_data(request):
         
         if start_date and end_date:
             try:
-                # Parse the input dates in the format DD/MM/YYYY
-                start_date_obj = datetime.strptime(start_date, "%d/%m/%Y")
-                end_date_obj = datetime.strptime(end_date, "%d/%m/%Y")
-                
-                # Convert the parsed dates to the database format (DD-MM-YYYY)
-                start_date_db_format = start_date_obj.strftime("%d-%m-%Y")
-                end_date_db_format = end_date_obj.strftime("%d-%m-%Y")
-                
-                # Ensure study_date is in the correct format (DD-MM-YYYY)
-                filters &= Q(study_date__regex=r'^\d{2}-\d{2}-\d{4}$')  # Regex to match DD-MM-YYYY format
-                
-                # Compare study_date as strings in the correct format
-                filters &= Q(study_date__gte=start_date_db_format)  # Greater than or equal to start_date
-                filters &= Q(study_date__lte=end_date_db_format)  # Less than or equal to 
-                print(patients.filter(filters).query)
-            except ValueError:
-                print("Invalid date format")  # Or log this properly
+                # Parse input dates
+                start_date_obj = datetime.strptime(start_date, "%d/%m/%Y").date()
+                end_date_obj = datetime.strptime(end_date, "%d/%m/%Y").date()
 
+                # Convert to YYYY-MM-DD format for comparison
+                start_yyyy_mm_dd = start_date_obj.strftime("%Y-%m-%d")
+                end_yyyy_mm_dd = end_date_obj.strftime("%Y-%m-%d")
+
+                # Annotate to split study_date into parts and reconstruct as YYYY-MM-DD
+                patients = patients.annotate(
+                    day_part=Substr('study_date', 1, 2),
+                    month_part=Substr('study_date', 4, 2),
+                    year_part=Substr('study_date', 7, 4),
+                    yyyy_mm_dd=Concat(
+                        'year_part', Value('-'), 'month_part', Value('-'), 'day_part',
+                        output_field=CharField()
+                    )
+                )
+
+                # Filter using the reconstructed date
+                filters &= Q(study_date__regex=r'^\d{2}-\d{2}-\d{4}$')  # Validate format
+                filters &= Q(yyyy_mm_dd__gte=start_yyyy_mm_dd)
+                filters &= Q(yyyy_mm_dd__lte=end_yyyy_mm_dd)
+            except ValueError:
+                print("Invalid date format")
         
         if radiologist_ids:
             filters &= Q(radiologist__user__id__in=radiologist_ids)
