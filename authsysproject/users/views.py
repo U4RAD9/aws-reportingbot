@@ -5999,7 +5999,6 @@ def all_patient_data(request):
     radiologist_ids = [int(id_str.strip()) for id_str in request.GET.getlist('radiologist', []) if id_str.strip().isdigit()]
     institutions = request.GET.getlist('institution', [])
     status = request.GET.get('status', '').strip()
-    
     selected_modalities = request.GET.getlist('Modality', [])
 
     has_valid_filters = any([
@@ -6012,13 +6011,22 @@ def all_patient_data(request):
 
         if name:
             filters &= Q(patient_name__iexact=name)
+        
         if start_date and end_date:
             try:
-                start_date_obj = datetime.strptime(start_date, "%d-%m-%Y").date()
-                end_date_obj = datetime.strptime(end_date, "%d-%m-%Y").date()
-                filters &= Q(study_date__range=[start_date_obj, end_date_obj])
+                # Parse the input dates in the format DD/MM/YYYY
+                start_date_obj = datetime.strptime(start_date, "%d/%m/%Y")
+                end_date_obj = datetime.strptime(end_date, "%d/%m/%Y")
+                
+                # Convert the parsed dates to the database format (DD-MM-YYYY)
+                start_date_db_format = start_date_obj.strftime("%d-%m-%Y")
+                end_date_db_format = end_date_obj.strftime("%d-%m-%Y")
+                
+                # Filter based on the study_date range in the database format
+                filters &= Q(study_date__gte=start_date_db_format) & Q(study_date__lte=end_date_db_format)
             except ValueError:
-                pass  # Optional: add an error message or log this
+                print("Invalid date format")  # Or log this properly
+        
         if radiologist_ids:
             filters &= Q(radiologist__user__id__in=radiologist_ids)
         if institutions:
