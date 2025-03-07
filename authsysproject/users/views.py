@@ -1,12 +1,13 @@
 from collections import defaultdict
 import math
-#from multiprocessing import Value
-from django.db.models import Value
-from django.db.models.functions import Concat, Substr
+# Corrected imports
+from django.db.models import Q, F, Value, CharField  # Core model fields/functions
+from django.db.models.functions import Substr, Concat, Cast  # Database functions
+from django.db.models.functions import Cast  # Add this import
 from urllib.parse import urlparse, parse_qs
 from tkinter import Tk, filedialog
 from venv import logger
-from django.forms import CharField
+from django.forms import CharField, DateField
 from django.shortcuts import get_object_or_404, render, redirect
 #from django.core.files.storage import FileSystemStorage  # ✅ Import this!
 from django.http import JsonResponse
@@ -6091,31 +6092,25 @@ def all_patient_data(request):
         if start_date and end_date:
             try:
                 # Parse input dates
-                start_date_obj = datetime.strptime(start_date, "%d/%m/%Y").date()
-                end_date_obj = datetime.strptime(end_date, "%d/%m/%Y").date()
-
-                # Convert to YYYY-MM-DD format for comparison
-                start_yyyy_mm_dd = start_date_obj.strftime("%Y-%m-%d")
-                end_yyyy_mm_dd = end_date_obj.strftime("%Y-%m-%d")
-
-                # Annotate to split study_date into parts and reconstruct as YYYY-MM-DD
-                patients = patients.annotate(
-                    day_part=Substr('study_date', 1, 2),
-                    month_part=Substr('study_date', 4, 2),
-                    year_part=Substr('study_date', 7, 4),
-                    yyyy_mm_dd=Concat(
-                        'year_part', Value('-'), 'month_part', Value('-'), 'day_part',
-                        output_field=CharField()
-                    )
-                )
-
-                # Filter using the reconstructed date
-                filters &= Q(study_date__regex=r'^\d{2}-\d{2}-\d{4}$')  # Validate format
-                filters &= Q(yyyy_mm_dd__gte=start_yyyy_mm_dd)
-                filters &= Q(yyyy_mm_dd__lte=end_yyyy_mm_dd)
-            except ValueError:
-                print("Invalid date format")
+                start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").date()
+                end_date_obj = datetime.strptime(end_date, "%Y-%m-%d").date()
         
+                # Convert to YYYYMMDD strings
+                start_yyyymmdd = start_date_obj.strftime("%Y%m%d")  # "20250202"
+                end_yyyymmdd = end_date_obj.strftime("%Y%m%d")      # "20250203"
+        
+                # Use raw SQL to filter study_date (DD-MM-YYYY)
+                patients = patients.extra(
+                    where=[
+                        # For SQLite/MySQL/PostgreSQL: Convert DD-MM-YYYY to YYYYMMDD
+                        "SUBSTR(study_date, 7, 4) || SUBSTR(study_date, 4, 2) || SUBSTR(study_date, 1, 2) BETWEEN %s AND %s"
+                    ],
+                    params=[start_yyyymmdd, end_yyyymmdd]
+                )
+            except ValueError as e:
+                print(f"Invalid date format: {e}")
+        
+        # Other filters remain unchanged
         if radiologist_ids:
             filters &= Q(radiologist__user__id__in=radiologist_ids)
         if institutions:
@@ -6130,6 +6125,7 @@ def all_patient_data(request):
 
         patients = patients.filter(filters).distinct()
 
+    # Rest of the view remains unchanged
     radiologists = User.objects.filter(personalinfo__isnull=False).distinct()
     clients = Client.objects.exclude(institution_name__isnull=True).exclude(institution_name="None").values_list("institution_name", flat=True).distinct()
 
