@@ -1614,7 +1614,7 @@ def xrayallocationreverse(request):
     # Count total pending cases (total assigned cases - total reported cases)
     total_pending_cases = total_assigned_cases - total_reported_cases
 
-    allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=True).order_by('-id')
+    allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=True).order_by('-vip', '-urgent', '-Mlc', '-id')
 
     # Set up pagination
     paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
