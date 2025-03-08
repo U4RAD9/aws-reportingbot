@@ -2,7 +2,6 @@ from django.conf.urls.static import static
 from django.conf import settings
 from django.urls import path
 from . import views
-from .views import all_patient_data
 
 # from django.contrib.auth import views
 
@@ -129,7 +128,8 @@ urlpatterns = [
     # path('retry-failed-jobs/', views.retry_failed_jobs, name='retry_failed_jobs'),
     path('pacsuploader/', views.pacsuploader, name='index'),
     path('upload_dicom_files/', views.upload_dicom_files, name='upload_dicom_files'),
-    path('all-data/', all_patient_data, name='all_patient_data'),
+    path('all-data/', views.all_patient_data, name='all_patient_data'),
+    path('all-tb-data/', views.all_tb_data, name='all_tb_data'),
 
 
 

@@ -8,6 +8,7 @@ class Client(models.Model):
     password = models.CharField(max_length=100, null=True, blank=True)
     location = models.ForeignKey(XLocation, on_delete=models.CASCADE, null=True, blank=True)
     institution_name = models.CharField(max_length=250, blank=True, null=True, default="None")
+    tbclient = models.BooleanField(default=False)
 
     # Field-level permissions for editable fields
     can_edit_patient_name = models.BooleanField(default=False)

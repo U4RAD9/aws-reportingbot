@@ -7,6 +7,7 @@ from django.db.models.functions import Cast  # Add this import
 from urllib.parse import urlparse, parse_qs
 from tkinter import Tk, filedialog
 from venv import logger
+from datetime import  time as dt_time  # Rename to dt_time
 from django.forms import CharField, DateField
 from django.shortcuts import get_object_or_404, render, redirect
 #from django.core.files.storage import FileSystemStorage  # ✅ Import this!
@@ -151,6 +152,8 @@ def login(request):
                 return redirect('xraycoordinator')
             elif group == 'corporatecoordinator':
                 return redirect('corporatecoordinator')
+            elif group == 'tbcoordinator':
+                return redirect('all_tb_data')
             elif group == 'technician':
                 return redirect('upload_dicom')
             elif group == 'client':
@@ -6069,6 +6072,9 @@ def export_patient_data(patients):
 
 def all_patient_data(request):
     patients = DICOMData.objects.none()
+    # New parameters for received_on_db
+    received_start_date_str = request.GET.get('received_start_date', '').strip()
+    received_end_date_str = request.GET.get('received_end_date', '').strip()
 
     name = request.GET.get('name', '').strip()
     start_date = request.GET.get('start_date', '').strip()
@@ -6109,6 +6115,18 @@ def all_patient_data(request):
                 )
             except ValueError as e:
                 print(f"Invalid date format: {e}")
+
+        # Other filters remain unchanged
+        if received_start_date_str and received_end_date_str:
+            try:
+                received_start_date = datetime.strptime(received_start_date_str, "%Y-%m-%d").date()
+                received_end_date = datetime.strptime(received_end_date_str, "%Y-%m-%d").date()
+                # Create datetime objects covering the entire day
+                start_datetime = datetime.combine(received_start_date, dt_time.min)  # 00:00:00
+                end_datetime = datetime.combine(received_end_date, dt_time(23, 59, 59))  # 23:59:59
+                filters &= Q(recived_on_db__range=(start_datetime, end_datetime))
+            except ValueError:
+                pass  # Handle invalid date formats        
         
         # Other filters remain unchanged
         if radiologist_ids:
@@ -6142,3 +6160,174 @@ def all_patient_data(request):
         'selected_modalities': selected_modalities
     }
     return render(request, 'users/all_data.html', context)
+
+
+
+    ##################################################### TB dashboard #####################################################
+# def all_tb_data(request):
+#     patients = DICOMData.objects.none()
+
+#     name = request.GET.get('name', '').strip()
+#     start_date = request.GET.get('start_date', '').strip()
+#     end_date = request.GET.get('end_date', '').strip()
+#     radiologist_ids = [int(id_str.strip()) for id_str in request.GET.getlist('radiologist', []) if id_str.strip().isdigit()]
+#     institutions = request.GET.getlist('institution', [])
+#     status = request.GET.get('status', '').strip()
+#     selected_modalities = request.GET.getlist('Modality', [])
+
+#     has_valid_filters = any([
+#         name, start_date and end_date, radiologist_ids, institutions, status, selected_modalities
+#     ])
+
+#     if has_valid_filters:
+#         patients = DICOMData.objects.all().prefetch_related('radiologist__user')
+#         filters = Q()
+
+#         if name:
+#             filters &= Q(patient_name__iexact=name)
+        
+#         if start_date and end_date:
+#             try:
+#                 # Parse input dates
+#                 start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").date()
+#                 end_date_obj = datetime.strptime(end_date, "%Y-%m-%d").date()
+        
+#                 # Convert to YYYYMMDD strings
+#                 start_yyyymmdd = start_date_obj.strftime("%Y%m%d")  # "20250202"
+#                 end_yyyymmdd = end_date_obj.strftime("%Y%m%d")      # "20250203"
+        
+#                 # Use raw SQL to filter study_date (DD-MM-YYYY)
+#                 patients = patients.extra(
+#                     where=[
+#                         # For SQLite/MySQL/PostgreSQL: Convert DD-MM-YYYY to YYYYMMDD
+#                         "SUBSTR(study_date, 7, 4) || SUBSTR(study_date, 4, 2) || SUBSTR(study_date, 1, 2) BETWEEN %s AND %s"
+#                     ],
+#                     params=[start_yyyymmdd, end_yyyymmdd]
+#                 )
+#             except ValueError as e:
+#                 print(f"Invalid date format: {e}")
+        
+#         # Other filters remain unchanged
+#         if radiologist_ids:
+#             filters &= Q(radiologist__user__id__in=radiologist_ids)
+#         if institutions:
+#             filters &= Q(institution_name__in=institutions)
+#         if status:
+#             filters &= Q(isDone=(status.lower() == "reported"))
+#         if selected_modalities:
+#             modality_filters = Q()
+#             for modality in selected_modalities:
+#                 modality_filters |= Q(Modality__exact=modality)  
+#             filters &= modality_filters
+
+#         patients = patients.filter(filters).distinct()
+
+#     # Rest of the view remains unchanged
+#     radiologists = User.objects.filter(personalinfo__isnull=False).distinct()
+#     clients = Client.objects.exclude(institution_name__isnull=True).exclude(institution_name="None").values_list("institution_name", flat=True).distinct()
+
+#     if "export" in request.GET:
+#         return export_patient_data(patients)
+
+#     context = {
+#         'patients': patients,
+#         'request': request,
+#         'radiologists': radiologists,
+#         'clients': clients,
+#         'selected_radiologist_ids': radiologist_ids,
+#         'selected_institutions': institutions,
+#         'selected_modalities': selected_modalities
+#     }
+#     return render(request, 'users/all_tb_data.html', context)
+
+@user_type_required('tbcoordinator')
+def all_tb_data(request):
+    patients = DICOMData.objects.none()
+    # New parameters for received_on_db
+    received_start_date_str = request.GET.get('received_start_date', '').strip()
+    received_end_date_str = request.GET.get('received_end_date', '').strip()
+
+    name = request.GET.get('name', '').strip()
+    start_date = request.GET.get('start_date', '').strip()
+    end_date = request.GET.get('end_date', '').strip()
+    radiologist_ids = [int(id_str.strip()) for id_str in request.GET.getlist('radiologist', []) if id_str.strip().isdigit()]
+    institutions = request.GET.getlist('institution', [])
+    status = request.GET.get('status', '').strip()
+    selected_modalities = request.GET.getlist('Modality', [])
+
+    has_valid_filters = any([
+        name, start_date and end_date, radiologist_ids, institutions, status, selected_modalities
+    ])
+
+    if has_valid_filters:
+        patients = DICOMData.objects.all().prefetch_related('radiologist__user')
+        filters = Q()
+
+        if name:
+            filters &= Q(patient_name__iexact=name)
+
+        if start_date and end_date:
+            try:
+                start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").date()
+                end_date_obj = datetime.strptime(end_date, "%Y-%m-%d").date()
+                start_yyyymmdd = start_date_obj.strftime("%Y%m%d")
+                end_yyyymmdd = end_date_obj.strftime("%Y%m%d")
+
+                patients = patients.extra(
+                    where=[
+                        "SUBSTR(study_date, 7, 4) || SUBSTR(study_date, 4, 2) || SUBSTR(study_date, 1, 2) BETWEEN %s AND %s"
+                    ],
+                    params=[start_yyyymmdd, end_yyyymmdd]
+                )
+            except ValueError as e:
+                print(f"Invalid date format: {e}")
+
+        # Other filters remain unchanged
+        if received_start_date_str and received_end_date_str:
+            try:
+                received_start_date = datetime.strptime(received_start_date_str, "%Y-%m-%d").date()
+                received_end_date = datetime.strptime(received_end_date_str, "%Y-%m-%d").date()
+                # Create datetime objects covering the entire day
+                start_datetime = datetime.combine(received_start_date, dt_time.min)  # 00:00:00
+                end_datetime = datetime.combine(received_end_date, dt_time(23, 59, 59))  # 23:59:59
+                filters &= Q(recived_on_db__range=(start_datetime, end_datetime))
+            except ValueError:
+                pass  # Handle invalid date formats        
+
+        if radiologist_ids:
+            filters &= Q(radiologist__user__id__in=radiologist_ids)
+
+        if institutions:
+            filters &= Q(institution_name__in=institutions)
+
+        if status:
+            filters &= Q(isDone=(status.lower() == "reported"))
+
+        if selected_modalities:
+            modality_filters = Q()
+            for modality in selected_modalities:
+                modality_filters |= Q(Modality__exact=modality)
+            filters &= modality_filters
+
+        # **Filter by tbclient=True institutions**
+        tb_clients = Client.objects.filter(tbclient=True).values_list('institution_name', flat=True)
+        filters &= Q(institution_name__in=tb_clients)
+
+        patients = patients.filter(filters).distinct()
+
+    radiologists = User.objects.filter(personalinfo__isnull=False).distinct()
+    clients = Client.objects.filter(tbclient=True).exclude(institution_name__isnull=True).exclude(institution_name="None").values_list("institution_name", flat=True).distinct()
+
+    if "export" in request.GET:
+        return export_patient_data(patients)
+
+    context = {
+        'patients': patients,
+        'request': request,
+        'radiologists': radiologists,
+        'clients': clients,
+        'selected_radiologist_ids': radiologist_ids,
+        'selected_institutions': institutions,
+        'selected_modalities': selected_modalities
+    }
+    return render(request, 'users/all_tb_data.html', context)

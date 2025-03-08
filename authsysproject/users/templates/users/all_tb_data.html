@@ -30,7 +30,7 @@
     <h2 class="mb-4 text-center">Search Patient Records</h2>
 
     <!-- Filters Form -->
-    <form class="container mt-4" method="GET" action="{% url 'all_patient_data' %}">
+    <form class="container mt-4" method="GET" action="{% url 'all_tb_data' %}">
         <div class="row mb-3">
             <!-- Patient Name -->
             <div class="col-md-4">
@@ -112,7 +112,7 @@
 
         <button type="submit" class="btn btn-primary mb-3">Apply Filters</button>
         <button type="submit" name="export" value="1" class="btn btn-success mb-3">Get Excel</button>
-        <a href="{% url 'all_patient_data' %}" class="btn btn-danger mb-3">Reset Filters</a>  <!-- Reset Button -->
+        <a href="{% url 'all_tb_data' %}" class="btn btn-danger mb-3">Reset Filters</a>  <!-- Reset Button -->
     </form>
 
     {% if patients %}
