@@ -1458,7 +1458,8 @@ def ecgallocation(request):
     patient_urls = []
     for patient in page_obj:
         if patient.image:
-           image_url = presigned_url(bucket_name, patient.image.name)
+        #    image_url = presigned_url(bucket_name, patient.image.name)
+           image_url = presigned_url(bucket_name, patient.image.name, inline=True)
            patient_urls.append({
               'patient': patient,
               'url': image_url
@@ -1483,25 +1484,51 @@ def ecgallocation(request):
                       'patient_urls': patient_urls
                   })
 
+# def presigned_url(bucket_name, object_name, operation='get_object', inline=False):
+#     try:
+#         s3_client = boto3.client('s3', region_name='ap-south-1', config=boto3.session.Config(signature_version='s3v4'))
+
+#         # Set Content-Disposition based on the 'inline' parameter
+#         content_disposition = 'inline' if inline else 'attachment'
+
+#         url = s3_client.generate_presigned_url(
+#             ClientMethod=operation,
+#             Params={'Bucket': bucket_name, 'Key': object_name, 'ResponseContentDisposition': content_disposition},
+#             ExpiresIn=3600
+#         )
+#     except (NoCredentialsError, PartialCredentialsError):
+#         #print("Credentials not available.")
+#         return None
+#     except Exception as e:
+#         print(f"An error occurred: {e}")
+#         return None
+#     return 
+
 def presigned_url(bucket_name, object_name, operation='get_object', inline=False):
     try:
         s3_client = boto3.client('s3', region_name='ap-south-1', config=boto3.session.Config(signature_version='s3v4'))
 
-        # Set Content-Disposition based on the 'inline' parameter
-        content_disposition = 'inline' if inline else 'attachment'
+        # Set Content-Disposition only if inline is True
+        content_disposition = 'inline' if inline else None  
+
+        # Define parameters for the presigned URL
+        params = {'Bucket': bucket_name, 'Key': object_name}
+        if content_disposition:
+            params['ResponseContentDisposition'] = content_disposition
+        params['ResponseContentType'] = 'image/jpeg'  # Ensure correct content type
 
         url = s3_client.generate_presigned_url(
             ClientMethod=operation,
-            Params={'Bucket': bucket_name, 'Key': object_name, 'ResponseContentDisposition': content_disposition},
+            Params=params,
             ExpiresIn=3600
         )
     except (NoCredentialsError, PartialCredentialsError):
-        #print("Credentials not available.")
         return None
     except Exception as e:
         print(f"An error occurred: {e}")
         return None
     return url
+
 
 
 @user_type_required('radiologist')
