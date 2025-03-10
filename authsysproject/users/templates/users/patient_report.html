@@ -1066,7 +1066,8 @@
                     testDate: urlParams.get("data-testdate"),
                     reportDate: urlParams.get("data-reportdate"),
                     location: urlParams.get("data-location"),
-                    reportImage: reportImag // Extract image URL
+                    // reportImage: reportImag // Extract image URL
+                    reportImage: decodeURIComponent(params.reportImage || '') // ✅ Decoding
                 };
             }
         
