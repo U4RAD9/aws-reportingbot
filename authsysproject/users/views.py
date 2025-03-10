@@ -2772,6 +2772,33 @@ def upload_to_s3(file, s3_file_path):
         print(f"An error occurred: {e}")
 
 
+import logging
+
+# Create a logger
+logger = logging.getLogger(__name__)
+
+# Set the logger level
+logger.setLevel(logging.DEBUG)
+
+# Create a file handler
+file_handler = logging.FileHandler('upload_ecg_pdf.log')
+file_handler.setLevel(logging.DEBUG)
+
+# Create a console handler
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+
+# Create a formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# Add the formatter to the handlers
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
+
+# Add the handlers to the logger
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
 def upload_ecg_pdf(request):
     print("Inside upload_ecg_pdf")
     if request.method == 'POST':
@@ -2783,8 +2810,13 @@ def upload_ecg_pdf(request):
             location = request.POST.get('location')
             test_date_str = request.POST.get('testDate')
             report_date_str = request.POST.get('reportDate')
-
+            print("Received patient ID:", patient_id)
+            print("Received patient name:", patient_name)
+            print("Received test date:", test_date_str)
+            print("Received report date:", report_date_str)
+            print("Received location:", location)
             if not pdf_file:
+                logger.error('No PDF file provided.')
                 return JsonResponse({'error': 'No PDF file provided.'}, status=400)
             
             test_date = datetime.strptime(test_date_str, "%Y-%m-%d").date()
@@ -2798,17 +2830,17 @@ def upload_ecg_pdf(request):
                 location=location,
                 test_date=test_date,
                 report_date=report_date,
-
             )
             pdf_model_instance.save()
+            logger.info('PDF successfully uploaded and processed.')
 
             return JsonResponse({'message': 'PDF successfully uploaded and processed.'})
         except Exception as e:
-            print("Error processing PDF:", e)
+            logger.error(f"Error processing PDF: {e}")
             return JsonResponse({'error': 'Internal server error.'}, status=500)
 
+    logger.info('Invalid request method.')
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
-
 
 def get_csrf_token(request):
     csrf_token = {
@@ -4535,35 +4567,35 @@ def ECGSetTarget(request):
 #         logging.warning("Invalid HTTP method used for server_data.")
 #         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-def server_data(request):
-    if request.method == 'POST':
-        url = 'https://pacs.reportingbot.in/'
-        server = Orthanc(url, username='admin', password='u4rad')
-        for key in request.POST.keys():
-            study_id = key
-        study = server.get_studies_id(study_id)
-        series_ids = study['Series']
-        series = []
-        studyUID = ''
-        name = ''
-        id = ''
-        studyDate = ''
-        studyTime = ''
-        for i in series_ids:
-            sampleInstance = server.get_series_id(i)['Instances'][0]
-            tags = server.get_instances_id_tags(sampleInstance)
-            name = tags['0010,0010']['Value']
-            studyUID = tags['0020,000d']['Value']
-            studyDate = tags['0008,0020']['Value']
-            studyTime = tags['0008,0030']['Value']
-            seriesUID = tags['0020,000e']['Value']
-            seriesModality = tags['0008,0060']['Value']
-            id = tags['0010,0020']['Value']
-            seriesDescription = tags['0008,103e']['Value']
-            seriesPreview = 'https://pacs.reportingbot.in/instances/' + sampleInstance + '/preview'
-            series.append([seriesUID, seriesModality, seriesDescription, seriesPreview])
-        print(studyUID, series, name, id, studyDate, studyTime)
-        return JsonResponse ({'study_uid': studyUID, 'series': series, 'name': name, 'id': id, 'date': studyDate, 'time': studyTime})
+# def server_data(request):
+#     if request.method == 'POST':
+#         url = 'https://pacs.reportingbot.in/'
+#         server = Orthanc(url, username='admin', password='u4rad')
+#         for key in request.POST.keys():
+#             study_id = key
+#         study = server.get_studies_id(study_id)
+#         series_ids = study['Series']
+#         series = []
+#         studyUID = ''
+#         name = ''
+#         id = ''
+#         studyDate = ''
+#         studyTime = ''
+#         for i in series_ids:
+#             sampleInstance = server.get_series_id(i)['Instances'][0]
+#             tags = server.get_instances_id_tags(sampleInstance)
+#             name = tags['0010,0010']['Value']
+#             studyUID = tags['0020,000d']['Value']
+#             studyDate = tags['0008,0020']['Value']
+#             studyTime = tags['0008,0030']['Value']
+#             seriesUID = tags['0020,000e']['Value']
+#             seriesModality = tags['0008,0060']['Value']
+#             id = tags['0010,0020']['Value']
+#             seriesDescription = tags['0008,103e']['Value']
+#             seriesPreview = 'https://pacs.reportingbot.in/instances/' + sampleInstance + '/preview'
+#             series.append([seriesUID, seriesModality, seriesDescription, seriesPreview])
+#         print(studyUID, series, name, id, studyDate, studyTime)
+#         return JsonResponse ({'study_uid': studyUID, 'series': series, 'name': name, 'id': id, 'date': studyDate, 'time': studyTime})
 
         # patient = find_patients(server)[0]
         # study = patient.studies[0]
@@ -4574,6 +4606,48 @@ def server_data(request):
         #     series.append([i.uid, i.modality, i.description, preview]) 
         # return JsonResponse({'study_uid': study.uid, 'series': series, 'name' : patient.name, 'id' : patient.patient_id, 'date' : study.date.strftime("%d/%m/%Y"), 'time': study.date.strftime("%H:%M:%S")}) 
 
+
+
+def server_data(request):
+    if request.method == 'POST':
+        url = 'https://pacs.reportingbot.in/'
+        server = Orthanc(url, username='admin', password='u4rad')
+        
+        # Ensure there's at least one key in request.POST
+        if not request.POST:
+            return JsonResponse({'error': 'No data received in POST request'}, status=400)
+
+        study_id = list(request.POST.keys())[0]  # Get the first key safely
+        study = server.get_studies_id(study_id)
+        series_ids = study.get('Series', [])
+
+        series = []
+        studyUID = ''
+        name = ''
+        id = ''
+        studyDate = ''
+        studyTime = ''
+
+        for i in series_ids:
+            sampleInstance = server.get_series_id(i).get('Instances', [])[0]
+            tags = server.get_instances_id_tags(sampleInstance)
+
+            name = tags.get('0010,0010', {}).get('Value', '')
+            studyUID = tags.get('0020,000d', {}).get('Value', '')
+            studyDate = tags.get('0008,0020', {}).get('Value', '')
+            studyTime = tags.get('0008,0030', {}).get('Value', '')
+            seriesUID = tags.get('0020,000e', {}).get('Value', '')
+            seriesModality = tags.get('0008,0060', {}).get('Value', '')
+            id = tags.get('0010,0020', {}).get('Value', '')
+            seriesDescription = tags.get('0008,103e', {}).get('Value', '')
+            seriesPreview = f'https://pacs.reportingbot.in/instances/{sampleInstance}/preview'
+
+            series.append([seriesUID, seriesModality, seriesDescription, seriesPreview])
+
+        return JsonResponse({'study_uid': studyUID, 'series': series, 'name': name, 'id': id, 'date': studyDate, 'time': studyTime})
+    
+    # ✅ Handle GET requests properly
+    return JsonResponse({'error': 'GET method not allowed'}, status=405)
 
 
         #Edit option for client 07/12/24
@@ -6331,3 +6405,8 @@ def all_tb_data(request):
         'selected_modalities': selected_modalities
     }
     return render(request, 'users/all_tb_data.html', context)
+
+# def patient_report(request):
+#     return render(request, 'users/patient_report.html')
+
+    
