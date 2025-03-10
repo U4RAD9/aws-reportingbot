@@ -3182,7 +3182,6 @@ def xray_pdf_report(request):
     return render(request, 'users/xray_pdf_report.html', context)
 
 
-
 @login_required
 
 
