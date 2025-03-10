@@ -2799,47 +2799,107 @@ console_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
+# def upload_ecg_pdf(request):
+#     print("Inside upload_ecg_pdf")
+#     if request.method == 'POST':
+#         try:
+#             print("Inside upload_pdf view")
+#             pdf_file = request.FILES.get('pdf')
+#             patient_id = request.POST.get('patientId').replace(' ', '_')
+#             patient_name = request.POST.get('patientName').replace(' ', '_')
+#             location = request.POST.get('location')
+#             test_date_str = request.POST.get('testDate')
+#             report_date_str = request.POST.get('reportDate')
+#             print("Received patient ID:", patient_id)
+#             print("Received patient name:", patient_name)
+#             print("Received test date:", test_date_str)
+#             print("Received report date:", report_date_str)
+#             print("Received location:", location)
+#             if not pdf_file:
+#                 logger.error('No PDF file provided.')
+#                 return JsonResponse({'error': 'No PDF file provided.'}, status=400)
+#             # Specify the upload path and create a folder if it doesn't exist
+#             upload_path = os.path.join('uploads', 'ecg_pdfs')
+#             os.makedirs(upload_path, exist_ok=True)
+
+#             # Save the PDF file to the specified path
+#             pdf_file_path = os.path.join(upload_path, pdf_file.name)
+#             print("PDF file path:", pdf_file_path)
+
+#             with open(pdf_file_path, 'wb+') as destination:
+#                 for chunk in pdf_file.chunks():
+#                     destination.write(chunk)
+            
+#             test_date = datetime.strptime(test_date_str, "%Y-%m-%d").date()
+#             report_date = datetime.strptime(report_date_str, "%Y-%m-%d").date()
+
+#             # Save the PDF file path and additional data to the database
+#             pdf_model_instance = EcgReport(
+#                 pdf_file=pdf_file,
+#                 name=patient_name,
+#                 patient_id=patient_id,
+#                 location=location,
+#                 test_date=test_date,
+#                 report_date=report_date,
+#             )
+#             pdf_model_instance.save()
+#             logger.info('PDF successfully uploaded and processed.')
+
+#             return JsonResponse({'message': 'PDF successfully uploaded and processed.'})
+#         except Exception as e:
+#             logger.error(f"Error processing PDF: {e}")
+#             return JsonResponse({'error': 'Internal server error.'}, status=500)
+
+#     logger.info('Invalid request method.')
+#     return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
+
 def upload_ecg_pdf(request):
-    print("Inside upload_ecg_pdf")
     if request.method == 'POST':
         try:
             print("Inside upload_pdf view")
             pdf_file = request.FILES.get('pdf')
-            patient_id = request.POST.get('patientId').replace(' ', '_')
-            patient_name = request.POST.get('patientName').replace(' ', '_')
+            patient_id = request.POST.get('patientId')
+            patient_name = request.POST.get('patientName')
             location = request.POST.get('location')
             test_date_str = request.POST.get('testDate')
             report_date_str = request.POST.get('reportDate')
-            print("Received patient ID:", patient_id)
-            print("Received patient name:", patient_name)
-            print("Received test date:", test_date_str)
-            print("Received report date:", report_date_str)
-            print("Received location:", location)
+
             if not pdf_file:
-                logger.error('No PDF file provided.')
                 return JsonResponse({'error': 'No PDF file provided.'}, status=400)
-            
+
+            # Specify the upload path and create a folder if it doesn't exist
+            upload_path = os.path.join('uploads', 'ecg_pdfs')
+            os.makedirs(upload_path, exist_ok=True)
+
+            # Save the PDF file to the specified path
+            pdf_file_path = os.path.join(upload_path, pdf_file.name)
+            print("PDF file path:", pdf_file_path)
+
+            with open(pdf_file_path, 'wb+') as destination:
+                for chunk in pdf_file.chunks():
+                    destination.write(chunk)
+
+            # Convert report_date_str to a datetime object
             test_date = datetime.strptime(test_date_str, "%Y-%m-%d").date()
             report_date = datetime.strptime(report_date_str, "%Y-%m-%d").date()
 
             # Save the PDF file path and additional data to the database
             pdf_model_instance = EcgReport(
-                pdf_file=pdf_file,
+                pdf_file=pdf_file_path,
                 name=patient_name,
                 patient_id=patient_id,
                 location=location,
                 test_date=test_date,
                 report_date=report_date,
-            )
+                  )
             pdf_model_instance.save()
-            logger.info('PDF successfully uploaded and processed.')
 
             return JsonResponse({'message': 'PDF successfully uploaded and processed.'})
         except Exception as e:
-            logger.error(f"Error processing PDF: {e}")
+            print("Error processing PDF:", e)
             return JsonResponse({'error': 'Internal server error.'}, status=500)
 
-    logger.info('Invalid request method.')
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
 
 def get_csrf_token(request):
@@ -6406,7 +6466,7 @@ def all_tb_data(request):
     }
     return render(request, 'users/all_tb_data.html', context)
 
-# def patient_report(request):
-#     return render(request, 'users/patient_report.html')
+def patient_report(request):
+     return render(request, 'users/patient_report.html')
 
     

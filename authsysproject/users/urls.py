@@ -130,7 +130,7 @@ urlpatterns = [
     path('upload_dicom_files/', views.upload_dicom_files, name='upload_dicom_files'),
     path('all-data/', views.all_patient_data, name='all_patient_data'),
     path('all-tb-data/', views.all_tb_data, name='all_tb_data'),
-
+    path('ecgreporting/', views.patient_report, name='patient_report')
 
 
 ] 

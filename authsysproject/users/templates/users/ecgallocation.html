@@ -542,7 +542,7 @@
                    {% for patient_url in patient_urls %}
                      {% if patient_url.patient.id == patient.id %}
                        <a class="reportButton"
-                         href="reporting-bot?data-patientid={{ patient.PatientId }}&data-patientname={{ patient.PatientName }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-heartrate={{ patient.HeartRate }}&data-printerval={{patient.PRInterval}}&data-testdate={{ patient.TestDate }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.url|urlencode }}&data-location={{ patient.date.location.name }}"
+                         href="ecgreporting?data-patientid={{ patient.PatientId }}&data-patientname={{ patient.PatientName }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-heartrate={{ patient.HeartRate }}&data-printerval={{patient.PRInterval}}&data-testdate={{ patient.TestDate }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.url|urlencode }}&data-location={{ patient.date.location.name }}"
                          data-patient-id="{{ patient.PatientId }}" data-patientname="{{ patient.PatientName }}"
                          data-age="{{ patient.age }}" data-gender="{{ patient.gender }}"
                          data-heartrate="{{ patient.HeartRate }}" data-printerval="{{ patient.PRInterval }}"
