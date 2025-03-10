@@ -776,7 +776,8 @@
         
             // Extract data from URL query parameters
             const params = getQueryParams();
-            let reportImage = params.reportImage; // Base64 image
+            //let reportImage = params.reportImage; // Base64 image
+            let reportImage = decodeURIComponenturlParams.get("data-reportimage")
         
             if (!reportImage || !reportImage.startsWith("data:image/")) {
                 console.error("Invalid image data:", reportImage);
