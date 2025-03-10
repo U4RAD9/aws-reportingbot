@@ -775,9 +775,18 @@
             }
         
             // Extract data from URL query parameters
-            const params = getQueryParams();
-            //let reportImage = params.reportImage; // Base64 image
-            let reportImage = decodeURIComponenturlParams.get("data-reportimage")
+            // const params = getQueryParams();
+            // let reportImage = params.reportImage; // Base64 image
+            const urlParams = new URLSearchParams(window.location.search);
+            const patientId = urlParams.get("data-patientid");
+            const patientName = urlParams.get("data-patientname");
+            const reportImage = urlParams.get("data-reportimage");
+            
+            if (reportImage) {
+                const decodedImageUrl = decodeURIComponent(reportImage);
+                console.log(decodedImageUrl);
+            }
+
         
             if (!reportImage || !reportImage.startsWith("data:image/")) {
                 console.error("Invalid image data:", reportImage);
