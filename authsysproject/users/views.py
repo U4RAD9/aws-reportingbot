@@ -1502,7 +1502,7 @@ def presigned_url(bucket_name, object_name, operation='get_object', inline=False
     except Exception as e:
         print(f"An error occurred: {e}")
         return None
-    return 
+    return url
 
 # def presigned_url(bucket_name, object_name, operation='get_object', inline=False):
 #     try:
