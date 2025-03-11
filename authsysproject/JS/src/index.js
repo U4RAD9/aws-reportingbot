@@ -1706,34 +1706,68 @@ class App extends Component {
   // };
 
 
+  // addParagraphToPdf = (pdf, element, fontSize, isHeading, currentYPosition) => {
+  //   const lines = this.splitParagraphIntoLines(element).filter(line => line.trim().length > 0);
+  
+  //   // Define base X-coordinate for text placement
+  //   const baseX = 40;
+
+  //   // Define the font size for the text
+  //   pdf.setFontSize(fontSize);
+  
+  //   // Loop through each line if there are multiple lines due to <br> tags
+  //   for (let line of lines) {
+  //     let fontStyle = "normal";
+  //     let xCoordinate = baseX + 20; // Indentation for normal text
+  //     let extraSpacing = 15;
+      
+  //     if (element.querySelector('strong u')) {
+  //         fontStyle = "bold";
+  //         xCoordinate = baseX; // No indentation for headings
+  //         extraSpacing = 20; // More space after headings
+  //     }
+      
+  //     pdf.setFont("helvetica", fontStyle);
+  //     pdf.text(line, xCoordinate, currentYPosition);
+      
+  //     // Update Y position after each line
+  //     currentYPosition += extraSpacing;
+  //   }
+  
+  //   return currentYPosition;
+  // };
+
+
   addParagraphToPdf = (pdf, element, fontSize, isHeading, currentYPosition) => {
     const lines = this.splitParagraphIntoLines(element).filter(line => line.trim().length > 0);
-  
-    // Define base X-coordinate for text placement
+    pdf.setFontSize(fontSize);
     const baseX = 40;
 
-    // Define the font size for the text
-    pdf.setFontSize(fontSize);
-  
-    // Loop through each line if there are multiple lines due to <br> tags
     for (let line of lines) {
-      let fontStyle = "normal";
-      let xCoordinate = baseX + 20; // Indentation for normal text
-      let extraSpacing = 15;
-      
-      if (element.querySelector('strong u')) {
-          fontStyle = "bold";
-          xCoordinate = baseX; // No indentation for headings
-          extraSpacing = 20; // More space after headings
-      }
-      
-      pdf.setFont("helvetica", fontStyle);
-      pdf.text(line, xCoordinate, currentYPosition);
-      
-      // Update Y position after each line
-      currentYPosition += extraSpacing;
+        let fontStyle = "normal";
+        let xCoordinate = baseX + 20;
+        let extraSpacing = 15;
+        let maxWidth = pdf.internal.pageSize.width - xCoordinate - 40; // Adjust right margin
+
+        if (element.querySelector('strong u')) {
+            fontStyle = "bold";
+            xCoordinate = baseX;
+            extraSpacing = 20;
+            maxWidth = pdf.internal.pageSize.width - xCoordinate - 40; // Adjust for heading
+        }
+
+        pdf.setFont("helvetica", fontStyle);
+        const sublines = pdf.splitTextToSize(line, maxWidth);
+        
+        for (const subline of sublines) {
+            if (currentYPosition > pdf.internal.pageSize.height - 40) {
+                pdf.addPage();
+                currentYPosition = 40; // Reset Y position on new page
+            }
+            pdf.text(subline, xCoordinate, currentYPosition);
+            currentYPosition += extraSpacing;
+        }
     }
-  
     return currentYPosition;
   };
 
