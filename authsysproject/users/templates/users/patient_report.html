@@ -780,7 +780,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const patientId = urlParams.get("data-patientid");
             const patientName = urlParams.get("data-patientname");
-            const reportImage = urlParams.get("data-reportimage");
+            const reportImage = decodeURIComponent(urlParams.get("data-reportimage"));
             
             if (reportImage) {
                 const decodedImageUrl = decodeURIComponent(reportImage);
@@ -788,11 +788,16 @@
             }
 
         
-            if (!reportImage || !reportImage.startsWith("data:image/")) {
-                console.error("Invalid image data:", reportImage);
-                alert("Invalid report image. Please ensure the image is correctly passed.");
-                return;
-            }
+            // if (!reportImage || !reportImage.startsWith("data:image/")) {
+            //     console.error("Invalid image data:", reportImage);
+            //     alert("Invalid report image. Please ensure the image is correctly passed.");
+            //     return;
+            // }
+
+            const img = new Image();
+            img.src = reportImage; // Use the presigned URL directly
+            img.crossOrigin = "Anonymous";
+
         
             try {
                 const { jsPDF } = window.jspdf;
@@ -1077,7 +1082,7 @@
                     reportDate: urlParams.get("data-reportdate"),
                     location: urlParams.get("data-location"),
                     // reportImage: reportImag // Extract image URL
-                    reportImage: decodeURIComponenturlParams.get("data-reportimage"), // ✅ Decoding
+                    reportImage: decodeURIComponent(urlParams.get("data-reportimage"))
                 };
             }
         
