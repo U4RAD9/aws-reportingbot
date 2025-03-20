@@ -1200,6 +1200,7 @@
                 console.error("Error:", error);
             }
         }
+        
         async function uploadEcgPDF() {
             // Show loader
             function showLoader() {
@@ -1385,12 +1386,24 @@
                         },
                         body: formData,
                     });
+
+                    // AFTER SUCCESSFUL PDF UPLOAD - TRIGGER ISDONE UPDATE
+                    const urlSearchParams = new URLSearchParams(window.location.search);
+                    const studyId = urlSearchParams.get("data-study-id");
+        
+                    const updateResponse = await fetch(`/api/update_patient_done_status_xray/${studyId}/`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken,
+                      },
+                      body: JSON.stringify({ isDone: true }),
+                    });
+
         
                     if (response.ok) {
                         console.log("✅ PDF successfully sent to backend.");
                         showNotification("PDF successfully uploaded!");
-                        // ✅ Trigger `handleDone()` after successful PDF upload
-                        await handleDone();
                         setTimeout(() => {
                             window.location.href = document.referrer + "?nocache=" + Date.now();
                         }, 1000);
