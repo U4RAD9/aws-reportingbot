@@ -1391,6 +1391,7 @@
                     const urlSearchParams = new URLSearchParams(window.location.search);
         
                     const updateResponse = await fetch(`/api/update_patient_done_status/${patientId}/`, {
+                     
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
@@ -1398,6 +1399,7 @@
                       },
                       body: JSON.stringify({ isDone: true }),
                     });
+                    console.log("api call:", updateResponse); 
 
         
                     if (response.ok) {
