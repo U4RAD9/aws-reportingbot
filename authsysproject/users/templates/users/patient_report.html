@@ -1253,7 +1253,7 @@
             showLoader();
             // Extract data from URL
             const { patientId, patientName, testDate, reportDate, location, reportImage } = extractDataFromURL();
-            const filename = patientId_patientName;
+            const filename = `${patientId}_${patientName}`;
             const data = document.getElementById("show");
         
             if (!data) {
