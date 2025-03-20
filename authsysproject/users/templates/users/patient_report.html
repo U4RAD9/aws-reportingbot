@@ -1027,8 +1027,12 @@
                         pdf.text(textLines, margin, margin + 10);
         
                         pdf.addImage(imgData, "JPEG", 10, 120, pageWidth - 20, pageHeight - 300);
-                        pdf.save("Final_Report.pdf");
-                        console.log("✅ PDF saved successfully!");
+                        //pdf.save("Final_Report.pdf");
+                        // Generate the filename in the format: patientID_patientName.pdf
+                        const fileName = `${patientId.replace(/\s+/g, "_")}_${patientName.replace(/\s+/g, "_")}.pdf`;
+
+                        pdf.save(fileName);
+                        console.log(`✅ PDF saved successfully! as ${fileName}`);
                     });
                 }, 500);
             } catch (error) {

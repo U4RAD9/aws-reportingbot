@@ -2896,16 +2896,16 @@ def upload_ecg_pdf(request):
                 return JsonResponse({'error': 'No PDF file provided.'}, status=400)
 
             # Specify the upload path and create a folder if it doesn't exist
-            upload_path = os.path.join('uploads', 'ecg_pdfs')
-            os.makedirs(upload_path, exist_ok=True)
+            # upload_path = os.path.join('uploads', 'ecg_pdfs')
+            # os.makedirs(upload_path, exist_ok=True)
 
-            # Save the PDF file to the specified path
-            pdf_file_path = os.path.join(upload_path, pdf_file.name)
-            print("PDF file path:", pdf_file_path)
+            # # Save the PDF file to the specified path
+            # pdf_file_path = os.path.join(upload_path, pdf_file.name)
+            # print("PDF file path:", pdf_file_path)
 
-            with open(pdf_file_path, 'wb+') as destination:
-                for chunk in pdf_file.chunks():
-                    destination.write(chunk)
+            # with open(pdf_file_path, 'wb+') as destination:
+            #     for chunk in pdf_file.chunks():
+            #         destination.write(chunk)
 
             # Convert report_date_str to a datetime object
             test_date = datetime.strptime(test_date_str, "%Y-%m-%d").date()
@@ -2913,7 +2913,7 @@ def upload_ecg_pdf(request):
 
             # Save the PDF file path and additional data to the database
             pdf_model_instance = EcgReport(
-                pdf_file=pdf_file_path,
+                pdf_file=pdf_file,
                 name=patient_name,
                 patient_id=patient_id,
                 location=location,
@@ -2921,6 +2921,13 @@ def upload_ecg_pdf(request):
                 report_date=report_date,
                   )
             pdf_model_instance.save()
+
+            # Use the same filename to upload the file to S3 bucket
+            s3_file_path = pdf_model_instance.pdf_file.name
+            presigned_url = generate_presigned_url(s3_file_path)
+            print("presigned_url", presigned_url)
+            if presigned_url is None:
+                return JsonResponse({'error': 'Failed to generate presigned URL.'}, status=500)
 
             return JsonResponse({'message': 'PDF successfully uploaded and processed.'})
         except Exception as e:
