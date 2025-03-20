@@ -1253,7 +1253,7 @@
             showLoader();
             // Extract data from URL
             const { patientId, patientName, testDate, reportDate, location, reportImage } = extractDataFromURL();
-            const filename = patientName;
+            const filename = patientId_patientName;
             const data = document.getElementById("show");
         
             if (!data) {
@@ -1389,6 +1389,8 @@
                     if (response.ok) {
                         console.log("✅ PDF successfully sent to backend.");
                         showNotification("PDF successfully uploaded!");
+                        // ✅ Trigger `handleDone()` after successful PDF upload
+                        await handleDone();
                         setTimeout(() => {
                             window.location.href = document.referrer + "?nocache=" + Date.now();
                         }, 1000);
