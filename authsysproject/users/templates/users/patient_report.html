@@ -1369,49 +1369,68 @@
                         return;
                     }
         
-                    // Prepare form data
-                    const formData = new FormData();
-                    formData.append("pdf", pdfBlob, filename + ".pdf");
-                    formData.append("patientId", patientId);
-                    formData.append("patientName", patientName);
-                    formData.append("testDate", testDate);
-                    formData.append("reportDate", reportDate);
-                    formData.append("location", location);
-        
-                    // Upload PDF via API
-                    const response = await fetch("/upload_ecg_pdf/", {
-                        method: "POST",
-                        headers: {
-                            "X-CSRFToken": csrfToken,
-                        },
-                        body: formData,
-                    });
-
-                    // AFTER SUCCESSFUL PDF UPLOAD - TRIGGER ISDONE UPDATE
-                    const urlSearchParams = new URLSearchParams(window.location.search);
-        
-                    const updateResponse = await fetch(`/api/update_patient_done_status/${patientId}/`, {
-                     
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken,
-                      },
-                      body: JSON.stringify({ isDone: true }),
-                    });
-                    console.log("api call:", updateResponse); 
-
-        
-                    if (response.ok) {
-                        console.log("✅ PDF successfully sent to backend.");
-                        showNotification("PDF successfully uploaded!");
-                        setTimeout(() => {
-                            window.location.href = document.referrer + "?nocache=" + Date.now();
-                        }, 1000);
-                    } else {
-                        console.error("❌ Failed to upload PDF.");
-                        showNotification("Error uploading PDF. Please try again.");
+                    try{
+                        // Prepare form data
+                        const formData = new FormData();
+                        formData.append("pdf", pdfBlob, filename + ".pdf");
+                        formData.append("patientId", patientId);
+                        formData.append("patientName", patientName);
+                        formData.append("testDate", testDate);
+                        formData.append("reportDate", reportDate);
+                        formData.append("location", location);
+            
+                        // Upload PDF via API
+                        const response = await fetch("/upload_ecg_pdf/", {
+                            method: "POST",
+                            headers: {
+                                "X-CSRFToken": csrfToken,
+                            },
+                            body: formData,
+                        });
+    
+                        // AFTER SUCCESSFUL PDF UPLOAD - TRIGGER ISDONE UPDATE
+                        const urlSearchParams = new URLSearchParams(window.location.search);
+            
+                        const updateResponse = await fetch(`/api/update_patient_done_status/${patientId}/`, {
+                         
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken,
+                          },
+                          body: JSON.stringify({ isDone: true }),
+                        });
+                        console.log("api call:", updateResponse); 
+    
+            
+                        if (updateResponse.ok) {
+                          this.setState({ isDone: true }, () => {
+                            this.handleClick();
+                          });
+                        } else {
+                          console.error('Failed to update isDone status');
+                        }
+            
+                        console.log("PDF successfully sent to Django backend.");
+                          this.showNotification("PDF successfully uploaded!");
+                    } catch (error) {
+                        console.error("Error sending PDF to Django backend.", error);
+                        this.showNotification("Error uploading PDF. Please try again.");
                     }
+          
+                    const currentURL = window.location.href;
+          
+                    setTimeout(() => {
+                        window.location.href = document.referrer + "?nocache=" + Date.now();
+                    }, 200);
+          
+                    window.addEventListener("popstate", () => {
+                        if (window.location.href !== currentURL) {
+                            setTimeout(() => {
+                                window.location.reload(true);
+                            }, 200);
+                        }
+                    });
                 } catch (error) {
                     console.error("❌ Error generating PDF:", error);
                     showNotification("Error processing PDF.");
