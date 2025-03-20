@@ -1389,9 +1389,9 @@
 
                     // AFTER SUCCESSFUL PDF UPLOAD - TRIGGER ISDONE UPDATE
                     const urlSearchParams = new URLSearchParams(window.location.search);
-                    const studyId = urlSearchParams.get("data-study-id");
+                    const patientId = urlSearchParams.get("data-patientid");
         
-                    const updateResponse = await fetch(`/api/update_patient_done_status_xray/${studyId}/`, {
+                    const updateResponse = await fetch(`/api/update_patient_done_status/${patientId}/`, {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
