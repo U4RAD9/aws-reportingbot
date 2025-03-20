@@ -2656,35 +2656,46 @@ def patientDetails(request):
 #     })
 
 
-@require_POST
-def update_patient_done_status(request, patient_id):
-    try:
-        current_user_personal_info = PersonalInfoModel.objects.get(user=request.user)
-        total_unreported_and_allocated_patients = PatientDetails.objects.filter(cardiologist=current_user_personal_info,
-                                                                                isDone=False).count()
+# @require_POST
+# def update_patient_done_status(request, patient_id):
+#     try:
+#         current_user_personal_info = PersonalInfoModel.objects.get(user=request.user)
+#         total_unreported_and_allocated_patients = PatientDetails.objects.filter(cardiologist=current_user_personal_info,
+#                                                                                 isDone=False).count()
 
-        if total_unreported_and_allocated_patients > 0:
-            PersonalInfoModel.objects.filter(id=current_user_personal_info.id).update(
-                total_reported=F('total_reported') + 1)
+#         if total_unreported_and_allocated_patients > 0:
+#             PersonalInfoModel.objects.filter(id=current_user_personal_info.id).update(
+#                 total_reported=F('total_reported') + 1)
 
-        total_uploaded_ecg = Total_Cases.objects.values_list('total_uploaded_ecg', flat=True)
-        for value in total_uploaded_ecg:
-            total_uploaded_ecg = value
+#         total_uploaded_ecg = Total_Cases.objects.values_list('total_uploaded_ecg', flat=True)
+#         for value in total_uploaded_ecg:
+#             total_uploaded_ecg = value
 
-        total_reported_ecg = Total_Cases.objects.values_list('total_reported_ecg', flat=True)
-        for value in total_reported_ecg:
-            total_reported_ecg = value
+#         total_reported_ecg = Total_Cases.objects.values_list('total_reported_ecg', flat=True)
+#         for value in total_reported_ecg:
+#             total_reported_ecg = value
 
-        if total_uploaded_ecg > total_reported_ecg:
-            Total_Cases.objects.update(total_reported_ecg=F('total_reported_ecg') + 1)
-        patient = PatientDetails.objects.get(PatientId=patient_id)
-        patient.isDone = True
-        patient.save()
+#         if total_uploaded_ecg > total_reported_ecg:
+#             Total_Cases.objects.update(total_reported_ecg=F('total_reported_ecg') + 1)
+#         patient = PatientDetails.objects.get(PatientId=patient_id)
+#         patient.isDone = True
+#         patient.save()
         
 
-        return JsonResponse({'success': True})
-    except PatientDetails.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Patient not found'})
+#         return JsonResponse({'success': True})
+#     except PatientDetails.DoesNotExist:
+#         return JsonResponse({'success': False, 'error': 'Patient not found'})
+
+
+@csrf_exempt  # If CSRF is an issue, temporarily disable it for testing
+def update_patient_done_status(request, patient_id):
+    if request.method == "POST":
+        patient = get_object_or_404(PatientDetails, PatientId=patient_id)
+        patient.isDone = True  # Updating the isDone field
+        patient.save()
+        return JsonResponse({"success": True, "message": "Status updated"})
+    
+    return JsonResponse({"success": False, "message": "Invalid request method"}, status=400)
 
 # This is the view to update the report status using the done button, here the major issue is that this code might work
 # locally and on deployment sometimes, but this is not the actual approach because of unwanted looping over the query
