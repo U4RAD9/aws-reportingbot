@@ -2689,11 +2689,13 @@ def patientDetails(request):
 
 @csrf_exempt  # If CSRF is an issue, temporarily disable it for testing
 def update_patient_done_status(request, patient_id):
+    print("Inside update_patient_done_status")
     if request.method == "POST":
         with transaction.atomic():  # Ensures commit
             patient = get_object_or_404(PatientDetails, PatientId=patient_id)
             patient.isDone = True
             patient.save()
+            print("Complete update_patient_done_status")
         return JsonResponse({"success": True})
 
 # This is the view to update the report status using the done button, here the major issue is that this code might work
