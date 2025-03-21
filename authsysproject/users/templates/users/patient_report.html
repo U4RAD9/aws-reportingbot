@@ -916,6 +916,141 @@
 
 
 
+        // async function downloadPDF() {
+        //     const element = document.getElementById("show");
+        //     if (!element) {
+        //         console.error("❌ Element with ID 'show' not found.");
+        //         alert("Report not found. Please check if the report is visible.");
+        //         return;
+        //     }
+        
+        //     // Extract parameters from the URL
+        //     const urlParams = new URLSearchParams(window.location.search);
+        //     const patientId = urlParams.get("data-patientid");
+        //     const patientName = urlParams.get("data-patientname");
+        //     const reportImage = decodeURIComponent(urlParams.get("data-reportimage"));
+        
+        //     if (!reportImage) {
+        //         console.error("❌ No image URL provided.");
+        //         alert("No image URL found in the query parameters.");
+        //         return;
+        //     }
+        
+        //     console.log("Fetching image:", reportImage);
+        
+        //     try {
+        //         const { jsPDF } = window.jspdf;
+        //         const pdf = new jsPDF({
+        //             orientation: "portrait",
+        //             unit: "px",
+        //             format: "a4"
+        //         });
+        
+        //         const pageWidth = pdf.internal.pageSize.width;
+        //         const pageHeight = pdf.internal.pageSize.height;
+        
+        //         // 🔥 Convert the presigned URL to Base64
+        //         const base64Image = await fetchImageAsBase64(reportImage);
+        
+        //         if (!base64Image) {
+        //             console.error("❌ Failed to convert image to Base64.");
+        //             alert("Error loading the report image.");
+        //             return;
+        //         }
+        
+        //         console.log("✅ Image converted to Base64!");
+        
+        //         // 🔄 Create a canvas to rotate the image
+        //         const img = new Image();
+        //         img.src = base64Image;
+        //         await new Promise((resolve) => (img.onload = resolve));
+        
+        //         const canvas = document.createElement("canvas");
+        //         const ctx = canvas.getContext("2d");
+        
+        //         // Swap width and height for rotation
+        //         canvas.width = img.height;
+        //         canvas.height = img.width;
+        
+        //         // Rotate the image by 90 degrees
+        //         ctx.translate(canvas.width / 2, canvas.height / 2);
+        //         ctx.rotate(90 * Math.PI / 180);
+        //         ctx.drawImage(img, -img.width / 2, -img.height / 2);
+        
+        //         // Convert rotated image to Base64
+        //         const rotatedImage = canvas.toDataURL("image/png");
+        
+        //         console.log("✅ Rotated image generated!");
+        
+        //         // Ensure the image fits properly within the PDF page
+        //         let newWidth = pageWidth; // Leave some margin
+        //         let newHeight = (img.height / img.width) * newWidth * 1.75;
+        
+        //         if (newHeight > pageHeight - 40) {
+        //             newHeight = pageHeight;
+        //             newWidth = (img.width / img.height) * newHeight;
+        //         }
+        
+        //         // Center the image
+        //         const xPos = (pageWidth - newWidth) / 2;
+        //         const yPos = (pageHeight - newHeight) / 2;
+        
+        //         pdf.addImage(rotatedImage, "PNG", xPos, yPos, newWidth, newHeight);
+        
+        //         console.log("✅ Image added to PDF!");
+        
+        //         // Generate the second page with the final report
+        //         element.style.display = "block"; // Ensure visibility
+        //         setTimeout(() => {
+        //             html2canvas(element, {
+        //                 scale: 2,
+        //                 useCORS: true,
+        //                 allowTaint: true
+        //             }).then(canvas => {
+        //                 const imgData = canvas.toDataURL("image/jpeg", 0.98);
+        //                 pdf.addPage();
+        
+        //                 // Copy text from the report
+        //                 const textContent = element.innerText || element.textContent;
+        //                 if (!textContent.trim()) {
+        //                     console.warn("⚠️ No text found in 'show' element.");
+        //                 }
+        
+        //                 // Set font to monospaced (prevents structure distortion)
+        //                 pdf.setFont("courier", "normal");
+        //                 pdf.setFontSize(12);
+        
+        //                 const margin = 5;
+        //                 const maxWidth = pageWidth - 1 * margin;
+        //                 const textLines = pdf.splitTextToSize(textContent, maxWidth);
+        //                 pdf.setTextColor(255, 255, 255); // Hide text if needed
+        //                 pdf.text(textLines, margin, margin + 10);
+        
+        //                 pdf.addImage(imgData, "JPEG", 10, 120, pageWidth - 20, pageHeight - 300);
+        //                 //pdf.save("Final_Report.pdf");
+        //                 // Generate the filename in the format: patientID_patientName.pdf
+        //                 const fileName = `${patientId.replace(/\s+/g, "_")}_${patientName.replace(/\s+/g, "_")}.pdf`;
+
+        //                 pdf.save(fileName);
+        //                 console.log(`✅ PDF saved successfully! as ${fileName}`);
+        //             });
+        //         }, 500);
+        //     } catch (error) {
+        //         console.error("❌ Error generating PDF:", error);
+        //         alert("Failed to generate the report. Please try again.");
+        //     }
+        // }
+
+
+        // Add this at the top level of your script
+        function getCSRFToken() {
+            const cookieValue = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+            return cookieValue || '';
+        }
+
         async function downloadPDF() {
             const element = document.getElementById("show");
             if (!element) {
@@ -1006,7 +1141,7 @@
                         scale: 2,
                         useCORS: true,
                         allowTaint: true
-                    }).then(canvas => {
+                    }).then(async (canvas) => {
                         const imgData = canvas.toDataURL("image/jpeg", 0.98);
                         pdf.addPage();
         
@@ -1033,6 +1168,26 @@
 
                         pdf.save(fileName);
                         console.log(`✅ PDF saved successfully! as ${fileName}`);
+                        // ADD THIS SECTION FOR ISDONE UPDATE
+                        try {
+                            const csrfToken = getCSRFToken();
+                            
+                            const updateResponse = await fetch(`/api/update_patient_done_status/${patientId}/`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': csrfToken,
+                                },
+                                body: JSON.stringify({ isDone: true }),
+                            });
+                    
+                            if (!updateResponse.ok) {
+                                throw new Error('Failed to update status');
+                            }
+                            console.log("✅ isDone status updated successfully");
+                        } catch (error) {
+                            console.error("❌ Status update error:", error);
+                        }
                     });
                 }, 500);
             } catch (error) {
@@ -1040,7 +1195,6 @@
                 alert("Failed to generate the report. Please try again.");
             }
         }
-
 
         
         // Handle action select change
