@@ -1546,7 +1546,7 @@
                         // const urlSearchParams = new URLSearchParams(window.location.search);
             
                         // Replace the update_patient_done_status fetch call with:
-                        const updateResponse = await fetch(`/update_patient_done_status/${patientId}/`, {
+                        const updateResponse = await fetch(`/api/update_patient_done_status/${patientId}/`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
