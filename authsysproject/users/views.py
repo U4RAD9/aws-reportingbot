@@ -2689,8 +2689,11 @@ def patientDetails(request):
 
 @csrf_exempt  # If CSRF is an issue, temporarily disable it for testing
 def update_patient_done_status(request, patient_id):
+    print("Inside update_patient_done_status")
     if request.method == "POST":
+        print("Inside if block")
         try:
+            print("Inside try block")
             # Add authentication check if needed
             if not request.user.is_authenticated:
                 return JsonResponse({"error": "Unauthorized"}, status=401)
@@ -2699,7 +2702,9 @@ def update_patient_done_status(request, patient_id):
             patient = PatientDetails.objects.get(PatientId=patient_id)
             patient.isDone = data.get('isDone', False)
             patient.save()
+            print("Inside isDone")
             return JsonResponse({"success": True})
+            
             
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
