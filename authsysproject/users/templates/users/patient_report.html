@@ -1388,41 +1388,41 @@
                             body: formData,
                         });
     
-                        // AFTER SUCCESSFUL PDF UPLOAD - TRIGGER ISDONE UPDATE
-                        const urlSearchParams = new URLSearchParams(window.location.search);
+                        // // AFTER SUCCESSFUL PDF UPLOAD - TRIGGER ISDONE UPDATE
+                        // const urlSearchParams = new URLSearchParams(window.location.search);
             
+                        // Replace the update_patient_done_status fetch call with:
                         const updateResponse = await fetch(`/api/update_patient_done_status/${patientId}/`, {
-                         
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': csrfToken,
-                          },
-                          body: JSON.stringify({ isDone: true }),
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrfToken,
+                            },
+                            body: JSON.stringify({ isDone: true }),
                         });
                         console.log("api call:", updateResponse); 
     
             
-                        if (updateResponse.ok) {
-                          this.setState({ isDone: true }, () => {
-                            this.handleClick();
-                          });
-                        } else {
-                          console.error('Failed to update isDone status');
+                        if (!updateResponse.ok) {
+                            throw new Error('Failed to update isDone status');
                         }
-            
-                        console.log("PDF successfully sent to Django backend.");
-                          this.showNotification("PDF successfully uploaded!");
+                    
+                        console.log("✅ PDF and status updated successfully!");
+                        showNotification("PDF successfully uploaded!");
+                    
+                        // Redirect after 200ms
+                        setTimeout(() => {
+                            window.location.href = document.referrer + "?nocache=" + Date.now();
+                        }, 200);
                     } catch (error) {
                         console.error("Error sending PDF to Django backend.", error);
-                        this.showNotification("Error uploading PDF. Please try again.");
+                        showNotification("Error uploading PDF. Please try again.");
                     }
           
-                    const currentURL = window.location.href;
+                    
           
-                    setTimeout(() => {
-                        window.location.href = document.referrer + "?nocache=" + Date.now();
-                    }, 200);
+                    // setTimeout(() => {
+                    //     window.location.href = document.referrer + "?nocache=" + Date.now();
+                    // }, 200);
           
                     window.addEventListener("popstate", () => {
                         if (window.location.href !== currentURL) {

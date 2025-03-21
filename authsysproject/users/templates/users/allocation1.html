@@ -895,10 +895,19 @@
                     Unreported
                 {% endif %}
             </td>
-            <td>
+            <!-- <td>
               <input type="checkbox" class="NonReportable-checkbox" data-patient-id="{{ patient.patient_id }}" 
                   {% if patient.NonReportable %}checked{% endif %}>
+            </td> -->
+            <td>
+              <input type="checkbox" class="NonReportable-checkbox" data-patient-id="{{ patient.patient_id }}"
+                  {% if patient.NonReportable %}checked{% endif %} onclick="handleCheckboxClick(this)">
             </td>
+            <!-- <td>
+                <button id="alertButton-{{ patient.patient_id }}" style="display: none;" class="alert-button" onclick="markReported(this)">
+                    Alert
+                </button>
+            </td> -->
           </tr>
           {% endfor %}
         </tbody>
@@ -924,7 +933,25 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
 
+  <script>
+    function handleCheckboxClick(checkbox) {
+        var patientId = checkbox.getAttribute("data-patient-id");
+        var alertButton = document.getElementById("alertButton-" + patientId);
 
+        if (checkbox.checked) {
+            alert("Please Confirm to Mark as NonReported.");
+            alertButton.style.display = "block"; // 
+        } else {
+            alertButton.style.display = "none"; 
+        }
+    }
+
+    function markReported(button) {
+        button.innerText = "Reported"; 
+        button.disabled = true; 
+        alert("Reported successfully!"); 
+    }
+  </script>
   <script>
    
     document.addEventListener("DOMContentLoaded", function() {
