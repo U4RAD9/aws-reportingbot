@@ -656,7 +656,7 @@ def client_dashboard(request):
 
             # Fetch DICOMData for the patient
             dicom_data = DICOMData.objects.filter(
-                patient_id=patient_id,
+                #patient_id=patient_id,
                 patient_name=normalized_name,
                 twostepcheck=False
             ).first()
