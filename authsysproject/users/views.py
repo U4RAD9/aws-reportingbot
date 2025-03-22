@@ -637,8 +637,8 @@ def client_dashboard(request):
     report_dates_set = set()
     filtered_pdfs = []
 
-    if current_user_personal_info.name:
-        institution_name = current_user_personal_info.name
+    if current_user_personal_info.institution_name:
+        institution_name = current_user_personal_info.institution_name
         print("institution_name:", institution_name)
 
         # Fetch and sort PDFs by patient_id
