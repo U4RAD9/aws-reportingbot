@@ -702,104 +702,9 @@ def user_type_required(user_type):
 
 
 ######################## deepseek ##################################
-# def client_dashboard(request):
-#     try:
-#         current_user_personal_info = Client.objects.get(user=request.user)
-#     except Client.DoesNotExist:
-#         return HttpResponse("Client object does not exist for this user.", status=404)
-
-#     test_dates_set = set()
-#     report_dates_set = set()
-#     filtered_pdfs = []
-
-#     if current_user_personal_info.institution_name:
-#         institution_name = current_user_personal_info.institution_name
-
-#         # Fetch DICOMData entries for the institution where twostepcheck is False
-#         dicom_entries = DICOMData.objects.filter(
-#             institution_name=institution_name,
-#             twostepcheck=False
-#         )
-
-#         # Collect patient_ids and normalized patient_names (with spaces replaced by underscores)
-#         patient_ids = []
-#         normalized_names = []
-#         for entry in dicom_entries:
-#             if entry.patient_id:
-#                 patient_ids.append(entry.patient_id)
-#             if entry.patient_name:
-#                 normalized_name = entry.patient_name.replace(' ', '_')
-#                 normalized_names.append(normalized_name)
-
-#         # Remove duplicates
-#         patient_ids = list(set(patient_ids))
-#         normalized_names = list(set(normalized_names))
-
-#         # Fetch XrayReport entries that match either patient_id or normalized name, same institution
-#         pdfs = XrayReport.objects.filter(
-#             institution_name=institution_name
-#         ).filter(
-#             models.Q(patient_id__in=patient_ids) | models.Q(name__in=normalized_names)
-#         ).order_by('patient_id', '-id')
-
-#         # Group PDFs by patient_id
-#         grouped_pdfs = groupby(pdfs, key=attrgetter('patient_id'))
-
-#         for patient_id, group in grouped_pdfs:
-#             group = list(group)  # Convert the group iterator to a list
-#             most_recent_pdf = group[0]  # The first entry due to ordering by '-id'
-
-#             # Normalize the PDF's name (replace underscores with spaces) to match DICOMData's patient_name
-#             normalized_pdf_name = most_recent_pdf.name.replace('_', ' ') if most_recent_pdf.name else None
-
-#             # Find the corresponding DICOMData entry
-#             dicom_data = DICOMData.objects.filter(
-#                 institution_name=institution_name,
-#                 twostepcheck=False,
-#                 models.Q(patient_id=patient_id) | models.Q(patient_name=normalized_pdf_name)
-#             ).first()
-
-#             if dicom_data:  # Ensure DICOMData exists
-#                 most_recent_pdf.whatsapp_number = dicom_data.whatsapp_number
-#                 filtered_pdfs.append(most_recent_pdf)
-#                 test_dates_set.add(most_recent_pdf.test_date)
-#                 report_dates_set.add(most_recent_pdf.report_date)
-
-#         # Pagination
-#         paginator = Paginator(filtered_pdfs, 50)  # Show 50 PDFs per page
-#         page_number = request.GET.get('page')
-#         page_obj = paginator.get_page(page_number)
-
-#         # Generate presigned URLs for each PDF file
-#         bucket_name = 'u4rad-s3-reporting-bot'
-#         for pdf in page_obj:
-#             if pdf.pdf_file:  # Ensure the file exists
-#                 pdf.signed_url = presigned_url(bucket_name, f'{pdf.pdf_file.name}')
-#             else:
-#                 pdf.signed_url = None
-
-#         # Get unique dates from the patients on the current page
-#         unique_dates = set(pdf.test_date for pdf in page_obj.object_list if pdf.test_date)
-#         sorted_unique_dates = sorted(unique_dates, reverse=False)    
-#         formatted_report_dates = sorted(report_date.strftime('%Y-%m-%d') for report_date in report_dates_set if report_date)
-
-#     # Prepare context for rendering
-#     context = {
-#         'pdfs': page_obj,
-#         'Test_Dates': sorted_unique_dates,
-#         'Report_Dates': formatted_report_dates,
-#         'Location': current_user_personal_info.institution_name,
-#         'paginator': paginator,
-#         'page_obj': page_obj
-#     }
-
-#     return render(request, 'users/client.html', context)
-
-##################################deepseek###########################
-
 def client_dashboard(request):
     try:
-        current_user_personal_info = Client.objects.get(user=request.user)
+        current_user_personal_info = Client.objects.prefetch_related("institutions").get(user=request.user)
     except Client.DoesNotExist:
         return HttpResponse("Client object does not exist for this user.", status=404)
 
@@ -807,24 +712,26 @@ def client_dashboard(request):
     test_dates_set = set()
     report_dates_set = set()
 
-    if current_user_personal_info.institution_name:
-        institution_name = current_user_personal_info.institution_name
-        print("Institution Name:", institution_name)
+    institutions = current_user_personal_info.institutions.all()
+    institution_names = [inst.name for inst in institutions]
 
-        # 🔹 Get all DICOMData entries for the institution
+    if institution_names:
+        print("Client Institutions:", institution_names)
+
+        # 🔹 Fetch all DICOMData entries matching any of the client's institutions
         dicom_entries = DICOMData.objects.filter(
-            institution_name=institution_name, 
+            institution_name__in=institution_names,
             twostepcheck=False
         )
 
-        # 🔹 Normalize patient IDs and names from DICOMData (replace spaces with underscores)
+        # 🔹 Normalize patient IDs and names (replace spaces with underscores)
         dicom_patient_ids = {entry.patient_id.replace(" ", "_") for entry in dicom_entries if entry.patient_id}
         dicom_patient_names = {entry.patient_name.replace(" ", "_") for entry in dicom_entries if entry.patient_name}
 
         print("DICOM Patient IDs:", dicom_patient_ids)
         print("DICOM Patient Names:", dicom_patient_names)
 
-        # 🔹 Filter XrayReport using normalized patient_id and name
+        # 🔹 Fetch XrayReport entries matching patient IDs or names
         pdfs = XrayReport.objects.filter(
             Q(patient_id__in=dicom_patient_ids) |
             Q(name__in=dicom_patient_names)
@@ -865,12 +772,89 @@ def client_dashboard(request):
             'pdfs': page_obj,
             'Test_Dates': sorted_test_dates,
             'Report_Dates': sorted_report_dates,
-            'Location': institution_name,
+            'Institutions': institution_names,  # Show all assigned institutions
             'paginator': paginator,
             'page_obj': page_obj
         }
 
         return render(request, 'users/client.html', context)
+
+##################################deepseek###########################
+
+# def client_dashboard(request):
+#     try:
+#         current_user_personal_info = Client.objects.get(user=request.user)
+#     except Client.DoesNotExist:
+#         return HttpResponse("Client object does not exist for this user.", status=404)
+
+#     filtered_pdfs = []
+#     test_dates_set = set()
+#     report_dates_set = set()
+
+#     if current_user_personal_info.institution_name:
+#         institution_name = current_user_personal_info.institution_name
+#         print("Institution Name:", institution_name)
+
+#         # 🔹 Get all DICOMData entries for the institution
+#         dicom_entries = DICOMData.objects.filter(
+#             institution_name=institution_name, 
+#             twostepcheck=False
+#         )
+
+#         # 🔹 Normalize patient IDs and names from DICOMData (replace spaces with underscores)
+#         dicom_patient_ids = {entry.patient_id.replace(" ", "_") for entry in dicom_entries if entry.patient_id}
+#         dicom_patient_names = {entry.patient_name.replace(" ", "_") for entry in dicom_entries if entry.patient_name}
+
+#         print("DICOM Patient IDs:", dicom_patient_ids)
+#         print("DICOM Patient Names:", dicom_patient_names)
+
+#         # 🔹 Filter XrayReport using normalized patient_id and name
+#         pdfs = XrayReport.objects.filter(
+#             Q(patient_id__in=dicom_patient_ids) |
+#             Q(name__in=dicom_patient_names)
+#         ).order_by('patient_id', '-id')
+
+#         # 🔹 Group by patient_id to get the latest report per patient
+#         grouped_pdfs = groupby(pdfs, key=attrgetter('patient_id'))
+
+#         for patient_id, group in grouped_pdfs:
+#             group = list(group)  # Convert iterator to list
+#             most_recent_pdf = group[0]  # First entry is the latest
+
+#             # 🔹 Get corresponding DICOMData entry
+#             dicom_data = dicom_entries.filter(patient_id=patient_id.replace("_", " ")).first()
+
+#             if dicom_data:
+#                 most_recent_pdf.whatsapp_number = dicom_data.whatsapp_number
+#                 filtered_pdfs.append(most_recent_pdf)
+#                 test_dates_set.add(most_recent_pdf.test_date)
+#                 report_dates_set.add(most_recent_pdf.report_date)
+
+#         # 🔹 Pagination (50 PDFs per page)
+#         paginator = Paginator(filtered_pdfs, 50)
+#         page_number = request.GET.get('page')
+#         page_obj = paginator.get_page(page_number)
+
+#         # 🔹 Generate presigned URLs for PDFs
+#         bucket_name = 'u4rad-s3-reporting-bot'
+#         for pdf in page_obj:
+#             pdf.signed_url = presigned_url(bucket_name, pdf.pdf_file.name) if pdf.pdf_file else None
+
+#         # 🔹 Get unique sorted test dates for the current page
+#         sorted_test_dates = sorted({pdf.test_date for pdf in page_obj.object_list})
+#         sorted_report_dates = sorted(report_dates_set)
+
+#         # 🔹 Prepare context
+#         context = {
+#             'pdfs': page_obj,
+#             'Test_Dates': sorted_test_dates,
+#             'Report_Dates': sorted_report_dates,
+#             'Location': institution_name,
+#             'paginator': paginator,
+#             'page_obj': page_obj
+#         }
+
+#         return render(request, 'users/client.html', context)
 ################################chatgpt###############################
 
 user_type_required('client')
@@ -4942,46 +4926,116 @@ def server_data(request):
 
 
         #Edit option for client 07/12/24
-def clientdata(request):
-    """Display all DICOMData entries."""
-    # Get the logged-in user's associated client
-    client = request.user.client  # Assuming a one-to-one relationship between user and client
+# def clientdata(request):
+#     """Display all DICOMData entries."""
+#     # Get the logged-in user's associated client
+#     client = request.user.client  # Assuming a one-to-one relationship between user and client
     
-    # Get the institution_name of the client
-    institution_name = client.institution_name
-    dicom_data = DICOMData.objects.filter(institution_name=institution_name).order_by('-vip', '-urgent', '-Mlc', '-id')
+#     # Get the institution_name of the client
+#     institution_name = client.institution_name
+#     dicom_data = DICOMData.objects.filter(institution_name=institution_name).order_by('-vip', '-urgent', '-Mlc', '-id')
+
+#     # Total filtered count
+#     total_filtered_count = dicom_data.count()
+#     # Count of DICOMData where isDone=True
+#     is_done_count = dicom_data.filter(isDone=True).count()
+
+#     # Set up pagination
+#     paginator = Paginator(dicom_data, 400)  # 200 patients per page
+#     page_number = request.GET.get('page', 1)  # Get the page number from the request
+#     try:
+#         page_obj = paginator.get_page(page_number)
+#     except PageNotAnInteger:
+#         # If page is not an integer, deliver first page
+#         page_obj = paginator.get_page(1)
+#     except EmptyPage:
+#         # If page is out of range, deliver last page of results
+#         page_obj = paginator.get_page(paginator.num_pages)
+
+#     # Generate presigned URLs for JPEG files on the current page
+#     bucket_name = 'u4rad-s3-reporting-bot'
+#     for dicom_data in page_obj:   
+
+#         # Get history files
+#         history_files = dicom_data.history_files.all()
+#         dicom_data.history_file_urls = [
+#             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+#         ]
+
+
+#     # Get unique dates from the patients on the current page
+#     unique_dates = set(dicom_data.study_date for dicom_data in page_obj.object_list)
+#     sorted_unique_dates = sorted(unique_dates, reverse=False)    
+
+#     # Get edit permissions for the client
+#     edit_permissions = {
+#         'patient_name': client.can_edit_patient_name,
+#         'patient_id': client.can_edit_patient_id,
+#         'age': client.can_edit_age,
+#         'gender': client.can_edit_gender,
+#         'study_date': client.can_edit_study_date,
+#         'study_description': client.can_edit_study_description,
+#         'notes': client.can_edit_notes,
+#         'body_part_examined': client.can_edit_body_part_examined,
+#         'referring_doctor_name': client.can_edit_referring_doctor_name,
+#         'whatsapp_number': client.can_edit_whatsapp_number,
+#         'upload_history': True,  # Assuming all clients can upload history files
+#     }
+
+#     return render(request, 'users/upload_dicom.html', {
+#         'dicom_data': page_obj,
+#         'edit_permissions': edit_permissions,
+#         'page_obj': page_obj,
+#         'total_filtered_count': total_filtered_count,  # Total filtered count
+#         'is_done_count': is_done_count,  # Total count where isDone=True
+#         'Date': sorted_unique_dates,
+#         })
+
+
+
+
+def clientdata(request):
+    """Display all DICOMData entries for a client's multiple institutions."""
+    
+    # Get the logged-in user's associated client
+    client = request.user.client  # Assuming a one-to-one relationship between User and Client
+    
+    # Get all institution names associated with the client
+    institution_names = client.institutions.values_list("name", flat=True)  # Extract names as a list
+    
+    # Filter DICOMData for all institutions linked to the client
+    dicom_data = DICOMData.objects.filter(institution_name__in=institution_names).order_by(
+        '-vip', '-urgent', '-Mlc', '-id'
+    )
 
     # Total filtered count
     total_filtered_count = dicom_data.count()
+
     # Count of DICOMData where isDone=True
     is_done_count = dicom_data.filter(isDone=True).count()
 
-    # Set up pagination
-    paginator = Paginator(dicom_data, 400)  # 200 patients per page
-    page_number = request.GET.get('page', 1)  # Get the page number from the request
+    # Set up pagination (400 records per page)
+    paginator = Paginator(dicom_data, 400)
+    page_number = request.GET.get('page', 1)  # Get the requested page number
+
     try:
         page_obj = paginator.get_page(page_number)
     except PageNotAnInteger:
-        # If page is not an integer, deliver first page
-        page_obj = paginator.get_page(1)
+        page_obj = paginator.get_page(1)  # Deliver first page if invalid number
     except EmptyPage:
-        # If page is out of range, deliver last page of results
-        page_obj = paginator.get_page(paginator.num_pages)
+        page_obj = paginator.get_page(paginator.num_pages)  # Deliver last page if out of range
 
-    # Generate presigned URLs for JPEG files on the current page
+    # Generate presigned URLs for history files on the current page
     bucket_name = 'u4rad-s3-reporting-bot'
-    for dicom_data in page_obj:   
-
-        # Get history files
+    for dicom_data in page_obj:
         history_files = dicom_data.history_files.all()
         dicom_data.history_file_urls = [
             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
         ]
 
-
-    # Get unique dates from the patients on the current page
-    unique_dates = set(dicom_data.study_date for dicom_data in page_obj.object_list)
-    sorted_unique_dates = sorted(unique_dates, reverse=False)    
+    # Get unique sorted dates from the filtered DICOM data
+    unique_dates = set(dicom.study_date for dicom in page_obj.object_list)
+    sorted_unique_dates = sorted(unique_dates)
 
     # Get edit permissions for the client
     edit_permissions = {
@@ -5002,10 +5056,10 @@ def clientdata(request):
         'dicom_data': page_obj,
         'edit_permissions': edit_permissions,
         'page_obj': page_obj,
-        'total_filtered_count': total_filtered_count,  # Total filtered count
-        'is_done_count': is_done_count,  # Total count where isDone=True
+        'total_filtered_count': total_filtered_count,
+        'is_done_count': is_done_count,
         'Date': sorted_unique_dates,
-        })
+    })
 
 
     
