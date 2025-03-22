@@ -13,7 +13,7 @@ from .models.dentalpatientdetails import DentalPatientInfo
 from .models.doctorpatientdetails import DoctorPatientInfo
 from .models.patientdetails import PatientDetails
 from .models.City import City
-from .models.Client import Client, Institution
+from .models.Client import Client
 from .models.Date import Date
 from .models.Location import Location
 from .models.workexp import WorkExp
@@ -74,7 +74,6 @@ admin.site.register(ECGSetCount)
 admin.site.register(StudyReport)
 admin.site.register(DentalPatientInfo)
 admin.site.register(DoctorPatientInfo)
-admin.site.register(Institution)
 
 # Register your models here.
 class DICOMFileInline(admin.TabularInline):
