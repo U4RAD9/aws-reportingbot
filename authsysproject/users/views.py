@@ -653,10 +653,11 @@ def client_dashboard(request):
 
             # Replace underscores with spaces in the name for matching
             normalized_name = most_recent_pdf.name.replace("_", " ") if most_recent_pdf.name else None
+            normalized_id = most_recent_pdf.name.replace("_", " ") if most_recent_pdf.name else None
 
             # Fetch DICOMData for the patient
             dicom_data = DICOMData.objects.filter(
-                patient_id=patient_id,
+                patient_id=normalized_id,
                 patient_name=normalized_name,
                 twostepcheck=False
             ).first()
