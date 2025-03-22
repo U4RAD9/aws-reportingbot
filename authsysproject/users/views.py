@@ -803,77 +803,74 @@ def client_dashboard(request):
     except Client.DoesNotExist:
         return HttpResponse("Client object does not exist for this user.", status=404)
 
+    filtered_pdfs = []
     test_dates_set = set()
     report_dates_set = set()
-    filtered_pdfs = []
 
     if current_user_personal_info.institution_name:
         institution_name = current_user_personal_info.institution_name
         print("Institution Name:", institution_name)
 
-        # Step 1: Get all DICOMData entries matching the logged-in user's institution
+        # 🔹 Get all DICOMData entries for the institution
         dicom_entries = DICOMData.objects.filter(
-            institution_name=institution_name,
+            institution_name=institution_name, 
             twostepcheck=False
-        ).values('patient_id', 'patient_name', 'whatsapp_number')
+        )
 
-        # Step 2: Convert patient names by replacing spaces with underscores
-        patient_mapping = {
-            entry['patient_id']: entry for entry in dicom_entries
-        }
+        # 🔹 Normalize patient IDs and names from DICOMData (replace spaces with underscores)
+        dicom_patient_ids = {entry.patient_id.replace(" ", "_") for entry in dicom_entries if entry.patient_id}
+        dicom_patient_names = {entry.patient_name.replace(" ", "_") for entry in dicom_entries if entry.patient_name}
 
-        # Step 3: Get XrayReport PDFs that match patient_id and modified patient_name
+        print("DICOM Patient IDs:", dicom_patient_ids)
+        print("DICOM Patient Names:", dicom_patient_names)
+
+        # 🔹 Filter XrayReport using normalized patient_id and name
         pdfs = XrayReport.objects.filter(
-            institution_name=institution_name,
-            patient_id__in=patient_mapping.keys()
+            Q(patient_id__in=dicom_patient_ids) |
+            Q(name__in=dicom_patient_names)
         ).order_by('patient_id', '-id')
 
-        # Step 4: Group PDFs by patient_id and filter based on transformed names
+        # 🔹 Group by patient_id to get the latest report per patient
         grouped_pdfs = groupby(pdfs, key=attrgetter('patient_id'))
 
         for patient_id, group in grouped_pdfs:
-            group = list(group)
-            most_recent_pdf = group[0]  # Pick the most recent PDF
+            group = list(group)  # Convert iterator to list
+            most_recent_pdf = group[0]  # First entry is the latest
 
-            # Convert patient name to match XrayReport naming convention
-            dicom_entry = patient_mapping.get(patient_id)
-            if dicom_entry:
-                normalized_name = dicom_entry['patient_name'].replace(" ", "_")
-                if most_recent_pdf.name == normalized_name:
-                    most_recent_pdf.whatsapp_number = dicom_entry['whatsapp_number']
-                    filtered_pdfs.append(most_recent_pdf)
-                    test_dates_set.add(most_recent_pdf.test_date)
-                    report_dates_set.add(most_recent_pdf.report_date)
+            # 🔹 Get corresponding DICOMData entry
+            dicom_data = dicom_entries.filter(patient_id=patient_id.replace("_", " ")).first()
 
-        # Pagination
-        paginator = Paginator(filtered_pdfs, 50)  # Show 50 PDFs per page
+            if dicom_data:
+                most_recent_pdf.whatsapp_number = dicom_data.whatsapp_number
+                filtered_pdfs.append(most_recent_pdf)
+                test_dates_set.add(most_recent_pdf.test_date)
+                report_dates_set.add(most_recent_pdf.report_date)
+
+        # 🔹 Pagination (50 PDFs per page)
+        paginator = Paginator(filtered_pdfs, 50)
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
 
-        # Generate presigned URLs for each PDF file
+        # 🔹 Generate presigned URLs for PDFs
         bucket_name = 'u4rad-s3-reporting-bot'
         for pdf in page_obj:
-            if pdf.pdf_file:
-                pdf.signed_url = presigned_url(bucket_name, f'{pdf.pdf_file.name}')
-            else:
-                pdf.signed_url = None
+            pdf.signed_url = presigned_url(bucket_name, pdf.pdf_file.name) if pdf.pdf_file else None
 
-        # Get unique test dates for filtering
-        unique_dates = sorted(set(pdf.test_date for pdf in page_obj.object_list))
-        formatted_report_dates = sorted(report_date.strftime('%Y-%m-%d') for report_date in report_dates_set)
+        # 🔹 Get unique sorted test dates for the current page
+        sorted_test_dates = sorted({pdf.test_date for pdf in page_obj.object_list})
+        sorted_report_dates = sorted(report_dates_set)
 
-        # Prepare context for rendering
+        # 🔹 Prepare context
         context = {
             'pdfs': page_obj,
-            'Test_Dates': unique_dates,
-            'Report_Dates': formatted_report_dates,
-            'Location': current_user_personal_info.institution_name,
+            'Test_Dates': sorted_test_dates,
+            'Report_Dates': sorted_report_dates,
+            'Location': institution_name,
             'paginator': paginator,
             'page_obj': page_obj
         }
 
         return render(request, 'users/client.html', context)
-
 ################################chatgpt###############################
 
 user_type_required('client')
