@@ -712,13 +712,16 @@ def client_dashboard(request):
     test_dates_set = set()
     report_dates_set = set()
 
-    if current_user_personal_info.institutions.exists():
-        institutions = current_user_personal_info.institutions.all()
-        print("Institutions:", institutions)
+    # 🔹 Fetch all institution names associated with the client
+    institutions = current_user_personal_info.institutions.all()
+    institution_names = [inst.name for inst in institutions]
 
-        # 🔹 Get all DICOMData entries for the institutions
+    if institution_names:
+        print("Institutions:", institution_names)
+
+        # 🔹 Get all DICOMData entries for the client's institutions
         dicom_entries = DICOMData.objects.filter(
-            institution_name__in=[inst.name for inst in institutions],  # Filter using institution names
+            institution_name__in=institution_names,
             twostepcheck=False
         )
 
@@ -770,12 +773,14 @@ def client_dashboard(request):
             'pdfs': page_obj,
             'Test_Dates': sorted_test_dates,
             'Report_Dates': sorted_report_dates,
-            'Location': ", ".join(inst.name for inst in institutions),
+            'Location': ", ".join(institution_names),  # Show multiple institutions
             'paginator': paginator,
             'page_obj': page_obj
         }
 
         return render(request, 'users/client.html', context)
+
+    return HttpResponse("No institutions found for this client.", status=404)
 
 
 ##################################deepseek###########################
