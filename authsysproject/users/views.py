@@ -724,20 +724,24 @@ def client_dashboard(request):
             twostepcheck=False
         )
 
-        # Normalize patient IDs and names (replace spaces with underscores)
-        dicom_patient_ids = {entry.patient_id.strip().replace(" ", "_") for entry in dicom_entries if entry.patient_id}
-        dicom_patient_names = {entry.patient_name.strip().replace(" ", "_") for entry in dicom_entries if entry.patient_name}
+        # Normalize patient IDs and names consistently
+        dicom_patient_ids = {entry.patient_id.strip().replace(" ", "_").lower() for entry in dicom_entries if entry.patient_id}
+        dicom_patient_names = {entry.patient_name.strip().replace(" ", "_").lower() for entry in dicom_entries if entry.patient_name}
 
         print("DICOM Patient IDs:", dicom_patient_ids)
         print("DICOM Patient Names:", dicom_patient_names)
 
-        # Fetch XrayReport entries matching patient IDs or names
+        # Fetch XrayReport entries matching patient IDs or names (normalize IDs in filter too)
         pdfs = XrayReport.objects.filter(
             Q(patient_id__in=dicom_patient_ids) |
             Q(name__in=dicom_patient_names)
         ).order_by('patient_id', '-id')
 
-        # Sort by patient_id before grouping
+        # Ensure IDs are normalized before grouping
+        for pdf in pdfs:
+            pdf.patient_id = pdf.patient_id.strip().replace(" ", "_").lower()
+        
+        # Sort PDFs before grouping
         sorted_pdfs = sorted(pdfs, key=attrgetter('patient_id'))
         grouped_pdfs = groupby(sorted_pdfs, key=attrgetter('patient_id'))
 
