@@ -704,7 +704,7 @@ def user_type_required(user_type):
 ######################## deepseek ##################################
 def client_dashboard(request):
     try:
-        current_user_personal_info = Client.objects.prefetch_related("institutions").get(user=request.user)
+        current_user_personal_info = Client.objects.get(user=request.user)
     except Client.DoesNotExist:
         return HttpResponse("Client object does not exist for this user.", status=404)
 
@@ -712,44 +712,37 @@ def client_dashboard(request):
     test_dates_set = set()
     report_dates_set = set()
 
-    institutions = current_user_personal_info.institutions.all()
-    institution_names = [inst.name for inst in institutions]
+    if current_user_personal_info.institutions.exists():
+        institutions = current_user_personal_info.institutions.all()
+        print("Institutions:", institutions)
 
-    if institution_names:
-        print("Client Institutions:", institution_names)
-
-        # Fetch DICOMData for the client's institutions
+        # 🔹 Get all DICOMData entries for the institutions
         dicom_entries = DICOMData.objects.filter(
-            institution_name__in=institution_names,
+            institution_name__in=[inst.name for inst in institutions],  # Filter using institution names
             twostepcheck=False
         )
 
-        # Normalize patient IDs and names consistently
-        dicom_patient_ids = {entry.patient_id.strip().replace(" ", "_").lower() for entry in dicom_entries if entry.patient_id}
-        dicom_patient_names = {entry.patient_name.strip().replace(" ", "_").lower() for entry in dicom_entries if entry.patient_name}
+        # 🔹 Normalize patient IDs and names from DICOMData (replace spaces with underscores)
+        dicom_patient_ids = {entry.patient_id.replace(" ", "_") for entry in dicom_entries if entry.patient_id}
+        dicom_patient_names = {entry.patient_name.replace(" ", "_") for entry in dicom_entries if entry.patient_name}
 
         print("DICOM Patient IDs:", dicom_patient_ids)
         print("DICOM Patient Names:", dicom_patient_names)
 
-        # Fetch XrayReport entries matching patient IDs or names (normalize IDs in filter too)
+        # 🔹 Filter XrayReport using normalized patient_id and name
         pdfs = XrayReport.objects.filter(
             Q(patient_id__in=dicom_patient_ids) |
             Q(name__in=dicom_patient_names)
         ).order_by('patient_id', '-id')
 
-        # Ensure IDs are normalized before grouping
-        for pdf in pdfs:
-            pdf.patient_id = pdf.patient_id.strip().replace(" ", "_").lower()
-        
-        # Sort PDFs before grouping
-        sorted_pdfs = sorted(pdfs, key=attrgetter('patient_id'))
-        grouped_pdfs = groupby(sorted_pdfs, key=attrgetter('patient_id'))
+        # 🔹 Group by patient_id to get the latest report per patient
+        grouped_pdfs = groupby(pdfs, key=attrgetter('patient_id'))
 
         for patient_id, group in grouped_pdfs:
             group = list(group)  # Convert iterator to list
             most_recent_pdf = group[0]  # First entry is the latest
 
-            # Get corresponding DICOMData entry
+            # 🔹 Get corresponding DICOMData entry
             dicom_data = dicom_entries.filter(patient_id=patient_id.replace("_", " ")).first()
 
             if dicom_data:
@@ -758,26 +751,26 @@ def client_dashboard(request):
                 test_dates_set.add(most_recent_pdf.test_date)
                 report_dates_set.add(most_recent_pdf.report_date)
 
-        # Pagination (50 PDFs per page)
+        # 🔹 Pagination (50 PDFs per page)
         paginator = Paginator(filtered_pdfs, 50)
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
 
-        # Generate presigned URLs for PDFs
+        # 🔹 Generate presigned URLs for PDFs
         bucket_name = 'u4rad-s3-reporting-bot'
         for pdf in page_obj:
             pdf.signed_url = presigned_url(bucket_name, pdf.pdf_file.name) if pdf.pdf_file else None
 
-        # Get unique sorted test and report dates
-        sorted_test_dates = sorted(test_dates_set)
+        # 🔹 Get unique sorted test dates for the current page
+        sorted_test_dates = sorted({pdf.test_date for pdf in page_obj.object_list})
         sorted_report_dates = sorted(report_dates_set)
 
-        # Prepare context
+        # 🔹 Prepare context
         context = {
             'pdfs': page_obj,
             'Test_Dates': sorted_test_dates,
             'Report_Dates': sorted_report_dates,
-            'Institutions': institution_names,
+            'Location': ", ".join(inst.name for inst in institutions),
             'paginator': paginator,
             'page_obj': page_obj
         }
