@@ -4930,116 +4930,46 @@ def server_data(request):
 
 
         #Edit option for client 07/12/24
-# def clientdata(request):
-#     """Display all DICOMData entries."""
-#     # Get the logged-in user's associated client
-#     client = request.user.client  # Assuming a one-to-one relationship between user and client
-    
-#     # Get the institution_name of the client
-#     institution_name = client.institution_name
-#     dicom_data = DICOMData.objects.filter(institution_name=institution_name).order_by('-vip', '-urgent', '-Mlc', '-id')
-
-#     # Total filtered count
-#     total_filtered_count = dicom_data.count()
-#     # Count of DICOMData where isDone=True
-#     is_done_count = dicom_data.filter(isDone=True).count()
-
-#     # Set up pagination
-#     paginator = Paginator(dicom_data, 400)  # 200 patients per page
-#     page_number = request.GET.get('page', 1)  # Get the page number from the request
-#     try:
-#         page_obj = paginator.get_page(page_number)
-#     except PageNotAnInteger:
-#         # If page is not an integer, deliver first page
-#         page_obj = paginator.get_page(1)
-#     except EmptyPage:
-#         # If page is out of range, deliver last page of results
-#         page_obj = paginator.get_page(paginator.num_pages)
-
-#     # Generate presigned URLs for JPEG files on the current page
-#     bucket_name = 'u4rad-s3-reporting-bot'
-#     for dicom_data in page_obj:   
-
-#         # Get history files
-#         history_files = dicom_data.history_files.all()
-#         dicom_data.history_file_urls = [
-#             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
-#         ]
-
-
-#     # Get unique dates from the patients on the current page
-#     unique_dates = set(dicom_data.study_date for dicom_data in page_obj.object_list)
-#     sorted_unique_dates = sorted(unique_dates, reverse=False)    
-
-#     # Get edit permissions for the client
-#     edit_permissions = {
-#         'patient_name': client.can_edit_patient_name,
-#         'patient_id': client.can_edit_patient_id,
-#         'age': client.can_edit_age,
-#         'gender': client.can_edit_gender,
-#         'study_date': client.can_edit_study_date,
-#         'study_description': client.can_edit_study_description,
-#         'notes': client.can_edit_notes,
-#         'body_part_examined': client.can_edit_body_part_examined,
-#         'referring_doctor_name': client.can_edit_referring_doctor_name,
-#         'whatsapp_number': client.can_edit_whatsapp_number,
-#         'upload_history': True,  # Assuming all clients can upload history files
-#     }
-
-#     return render(request, 'users/upload_dicom.html', {
-#         'dicom_data': page_obj,
-#         'edit_permissions': edit_permissions,
-#         'page_obj': page_obj,
-#         'total_filtered_count': total_filtered_count,  # Total filtered count
-#         'is_done_count': is_done_count,  # Total count where isDone=True
-#         'Date': sorted_unique_dates,
-#         })
-
-
-
-
 def clientdata(request):
-    """Display all DICOMData entries for a client's multiple institutions."""
-    
+    """Display all DICOMData entries."""
     # Get the logged-in user's associated client
-    client = request.user.client  # Assuming a one-to-one relationship between User and Client
+    client = request.user.client  # Assuming a one-to-one relationship between user and client
     
-    # Get all institution names associated with the client
-    institution_names = client.institutions.values_list("name", flat=True)  # Extract names as a list
-    
-    # Filter DICOMData for all institutions linked to the client
-    dicom_data = DICOMData.objects.filter(institution_name__in=institution_names).order_by(
-        '-vip', '-urgent', '-Mlc', '-id'
-    )
+    # Get the institution_name of the client
+    institution_name = client.institution_name
+    dicom_data = DICOMData.objects.filter(institution_name=institution_name).order_by('-vip', '-urgent', '-Mlc', '-id')
 
     # Total filtered count
     total_filtered_count = dicom_data.count()
-
     # Count of DICOMData where isDone=True
     is_done_count = dicom_data.filter(isDone=True).count()
 
-    # Set up pagination (400 records per page)
-    paginator = Paginator(dicom_data, 400)
-    page_number = request.GET.get('page', 1)  # Get the requested page number
-
+    # Set up pagination
+    paginator = Paginator(dicom_data, 400)  # 200 patients per page
+    page_number = request.GET.get('page', 1)  # Get the page number from the request
     try:
         page_obj = paginator.get_page(page_number)
     except PageNotAnInteger:
-        page_obj = paginator.get_page(1)  # Deliver first page if invalid number
+        # If page is not an integer, deliver first page
+        page_obj = paginator.get_page(1)
     except EmptyPage:
-        page_obj = paginator.get_page(paginator.num_pages)  # Deliver last page if out of range
+        # If page is out of range, deliver last page of results
+        page_obj = paginator.get_page(paginator.num_pages)
 
-    # Generate presigned URLs for history files on the current page
+    # Generate presigned URLs for JPEG files on the current page
     bucket_name = 'u4rad-s3-reporting-bot'
-    for dicom_data in page_obj:
+    for dicom_data in page_obj:   
+
+        # Get history files
         history_files = dicom_data.history_files.all()
         dicom_data.history_file_urls = [
             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
         ]
 
-    # Get unique sorted dates from the filtered DICOM data
-    unique_dates = set(dicom.study_date for dicom in page_obj.object_list)
-    sorted_unique_dates = sorted(unique_dates)
+
+    # Get unique dates from the patients on the current page
+    unique_dates = set(dicom_data.study_date for dicom_data in page_obj.object_list)
+    sorted_unique_dates = sorted(unique_dates, reverse=False)    
 
     # Get edit permissions for the client
     edit_permissions = {
@@ -5060,10 +4990,80 @@ def clientdata(request):
         'dicom_data': page_obj,
         'edit_permissions': edit_permissions,
         'page_obj': page_obj,
-        'total_filtered_count': total_filtered_count,
-        'is_done_count': is_done_count,
+        'total_filtered_count': total_filtered_count,  # Total filtered count
+        'is_done_count': is_done_count,  # Total count where isDone=True
         'Date': sorted_unique_dates,
-    })
+        })
+
+
+
+
+# def clientdata(request):
+#     """Display all DICOMData entries for a client's multiple institutions."""
+    
+#     # Get the logged-in user's associated client
+#     client = request.user.client  # Assuming a one-to-one relationship between User and Client
+    
+#     # Get all institution names associated with the client
+#     institution_names = client.institutions.values_list("name", flat=True)  # Extract names as a list
+    
+#     # Filter DICOMData for all institutions linked to the client
+#     dicom_data = DICOMData.objects.filter(institution_name__in=institution_names).order_by(
+#         '-vip', '-urgent', '-Mlc', '-id'
+#     )
+
+#     # Total filtered count
+#     total_filtered_count = dicom_data.count()
+
+#     # Count of DICOMData where isDone=True
+#     is_done_count = dicom_data.filter(isDone=True).count()
+
+#     # Set up pagination (400 records per page)
+#     paginator = Paginator(dicom_data, 400)
+#     page_number = request.GET.get('page', 1)  # Get the requested page number
+
+#     try:
+#         page_obj = paginator.get_page(page_number)
+#     except PageNotAnInteger:
+#         page_obj = paginator.get_page(1)  # Deliver first page if invalid number
+#     except EmptyPage:
+#         page_obj = paginator.get_page(paginator.num_pages)  # Deliver last page if out of range
+
+#     # Generate presigned URLs for history files on the current page
+#     bucket_name = 'u4rad-s3-reporting-bot'
+#     for dicom_data in page_obj:
+#         history_files = dicom_data.history_files.all()
+#         dicom_data.history_file_urls = [
+#             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+#         ]
+
+#     # Get unique sorted dates from the filtered DICOM data
+#     unique_dates = set(dicom.study_date for dicom in page_obj.object_list)
+#     sorted_unique_dates = sorted(unique_dates)
+
+#     # Get edit permissions for the client
+#     edit_permissions = {
+#         'patient_name': client.can_edit_patient_name,
+#         'patient_id': client.can_edit_patient_id,
+#         'age': client.can_edit_age,
+#         'gender': client.can_edit_gender,
+#         'study_date': client.can_edit_study_date,
+#         'study_description': client.can_edit_study_description,
+#         'notes': client.can_edit_notes,
+#         'body_part_examined': client.can_edit_body_part_examined,
+#         'referring_doctor_name': client.can_edit_referring_doctor_name,
+#         'whatsapp_number': client.can_edit_whatsapp_number,
+#         'upload_history': True,  # Assuming all clients can upload history files
+#     }
+
+#     return render(request, 'users/upload_dicom.html', {
+#         'dicom_data': page_obj,
+#         'edit_permissions': edit_permissions,
+#         'page_obj': page_obj,
+#         'total_filtered_count': total_filtered_count,
+#         'is_done_count': is_done_count,
+#         'Date': sorted_unique_dates,
+#     })
 
 
     
