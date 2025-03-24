@@ -129,6 +129,13 @@
     var row = checkbox.parentElement.getElementsByTagName("label");
     var selectedDataContainer = document.getElementById("selected-data");
     selectedDataContainer.innerHTML = ""; // Clear previous data
+
+    // Handle color vision dynamically (case-insensitive check)
+    let colorVision = row[10].innerText.trim().toLowerCase();
+    let colorVisionStatement = colorVision === "normal" 
+        ? "Normal vision in both eyes."  // Capitalize "N" in Normal
+        : `${row[10].innerText} color blindness in both eyes.`;
+
     selectedDataContainer.innerHTML += `
                 <div id="main-container">
                   <br>
@@ -243,7 +250,7 @@
                     </table>
                     <br>
                     <br>
-                    <strong>Color vision check(Ishihara test): </strong> ${row[10].innerText} color blindness in both eyes.
+                    <strong>Color vision check(Ishihara test): </strong> ${colorVisionStatement}
                     <br>
                     <br>
                     <strong>Visual Acuity:</strong>
