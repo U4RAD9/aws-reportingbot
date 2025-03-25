@@ -2514,7 +2514,7 @@ def patientDetails(request):
         return JsonResponse(status=200, data=response, safe=False)
 
 
-@user_type_required('technician')
+#@user_type_required('technician')
 # def upload_dicom(request):
 #     form = DICOMDataForm()
 #     locations = XLocation.objects.all()
