@@ -1190,7 +1190,7 @@
             function extractDataFromURL() {
                 const urlParams = new URLSearchParams(window.location.search);
                 const params = getQueryParams();
-                const patientImage = document.getElementById('patientImage');
+                const patientImage = document.getElementById('ecgImage');
                 let reportImag = params.reportImage;
                 return {
                     patientId: urlParams.get("data-patientid"),
