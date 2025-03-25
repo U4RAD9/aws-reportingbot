@@ -1198,8 +1198,8 @@
                     testDate: urlParams.get("data-testdate"),
                     reportDate: urlParams.get("data-reportdate"),
                     location: urlParams.get("data-location"),
-                    reportImage: patientImage // Extract image URL
-                    //reportImage: decodeURIComponent(urlParams.get("data-reportimage"))
+                    // reportImage: patientImage // Extract image URL
+                    reportImage: decodeURIComponent(urlParams.get("data-reportimage"))
                     
                 };
             }
@@ -1249,15 +1249,31 @@
         
             async function loadImageAndRenderPDF() {
                 try {
+                    // const { jsPDF } = window.jspdf;
+                    // const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: "a4" });
+        
+                    // const pageWidth = pdf.internal.pageSize.width;
+                    // const pageHeight = pdf.internal.pageSize.height;
+        
+                    // // Load and rotate the image
+                    // const img = new Image();
+                    // img.src = reportImage;
+                    // Get image URL from the ECG image element's src
+                    const imageElement = document.getElementById('ecgImage');
+                    if (!imageElement || !imageElement.src) {
+                      throw new Error("ECG image not found");
+                    }
+              
                     const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: "a4" });
-        
-                    const pageWidth = pdf.internal.pageSize.width;
-                    const pageHeight = pdf.internal.pageSize.height;
-        
+                    const pdf = new jsPDF({ 
+                      orientation: "portrait", 
+                      unit: "px", 
+                      format: "a4" 
+                    });
+              
                     // Load and rotate the image
                     const img = new Image();
-                    img.src = reportImage;
+                    img.src = imageElement.src; // Use src string
                     img.crossOrigin = "Anonymous";
         
                     await new Promise((resolve, reject) => {
