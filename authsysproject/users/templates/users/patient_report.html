@@ -438,8 +438,6 @@
         // Get URL parameters
         function getQueryParams() {
             const params = new URLSearchParams(window.location.search);
-            const urlparams = getQueryParams();
-                let reportImag = params.reportImage;
             
             return {
                 patientId: params.get('data-patientid') || '',
@@ -1192,15 +1190,15 @@
             function extractDataFromURL() {
                 const urlParams = new URLSearchParams(window.location.search);
                 const params = getQueryParams();
-                let reportImag = decodeURIComponent(params.get('data-reportimage') || '');
+                let reportImag = params.reportImage;
                 return {
                     patientId: urlParams.get("data-patientid"),
                     patientName: urlParams.get("data-patientname"),
                     testDate: urlParams.get("data-testdate"),
                     reportDate: urlParams.get("data-reportdate"),
                     location: urlParams.get("data-location"),
-                    reportImage: reportImag // Extract image URL
-                    //reportImage: decodeURIComponent(urlParams.get("data-reportimage"))
+                    // reportImage: reportImag // Extract image URL
+                    reportImage: decodeURIComponent(urlParams.get("data-reportimage"))
                 };
             }
         
