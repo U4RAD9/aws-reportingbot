@@ -790,6 +790,24 @@
             }
         }
 
+
+        showLoader = () => {
+          console.log("Showing loader");
+          const loader = document.querySelector(".loader");
+          if (loader) {
+              loader.style.display = "block";
+          }
+        };
+      
+        // This will hide the loader after report generation and doing respective task.
+        hideLoader = () => {
+          console.log("Hiding loader");
+          const loader = document.querySelector(".loader");
+          if (loader) {
+              loader.style.display = "none";
+          }
+        };
+
         
         async function downloadPDF() {
             const element = document.getElementById("show");
@@ -916,6 +934,16 @@
     
                         pdf.save(fileName);
                         handleDone().catch(console.error);
+                        if (response.ok) {
+                            console.log("✅ PDF successfully sent to backend.");
+                            showNotification("PDF successfully uploaded!");
+                            setTimeout(() => {
+                                window.location.href = document.referrer + "?nocache=" + Date.now();
+                            }, 2000);
+                        } else {
+                            console.error("❌ Failed to upload PDF.");
+                            showNotification("Error uploading PDF. Please try again.");
+                        }
                         console.log("✅ PDF saved successfully!");
                     });
                 }, 500);
@@ -992,6 +1020,7 @@
                 switchView();
             });
         }
+
         async function handleReject(event) {
             if (event) event.preventDefault(); // Prevent unintended redirection if event exists
         
@@ -1115,7 +1144,8 @@
                     testDate: urlParams.get("data-testdate"),
                     reportDate: urlParams.get("data-reportdate"),
                     location: urlParams.get("data-location"),
-                    reportImage: reportImag // Extract image URL
+                    // reportImage: reportImag // Extract image URL
+                    reportImage: decodeURIComponent(urlParams.get("data-reportimage"))
                 };
             }
         
@@ -1141,7 +1171,7 @@
             showLoader();
             // Extract data from URL
             const { patientId, patientName, testDate, reportDate, location, reportImage } = extractDataFromURL();
-            const filename = patientName;
+            const filename = `${patientId.replace(/\s+/g, "_")}_${patientName.replace(/\s+/g, "_")}.pdf`;
             const data = document.getElementById("show");
         
             if (!data) {
