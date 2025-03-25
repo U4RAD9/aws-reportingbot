@@ -1190,14 +1190,15 @@
             function extractDataFromURL() {
                 const urlParams = new URLSearchParams(window.location.search);
                 const params = getQueryParams();
+                let reportImag = params.reportImage;
                 return {
                     patientId: urlParams.get("data-patientid"),
                     patientName: urlParams.get("data-patientname"),
                     testDate: urlParams.get("data-testdate"),
                     reportDate: urlParams.get("data-reportdate"),
                     location: urlParams.get("data-location"),
-                    reportImage: params.reportImage, // Extract image URL
-                    // reportImage: decodeURIComponent(urlParams.get("data-reportimage"))
+                    // reportImage: reportImag // Extract image URL
+                    reportImage: decodeURIComponent(urlParams.get("data-reportimage"))
                 };
             }
         
