@@ -807,7 +807,7 @@
             try {
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({
-                    orientation: "portrait", // Keep portrait, rotate image instead
+                    orientation: "portrait",
                     unit: "px",
                     format: "a4"
                 });
@@ -829,7 +829,6 @@
                 // Load the image
                 const img = new Image();
                 img.src = base64Image;
-                img.crossOrigin = "Anonymous";
         
                 await new Promise((resolve) => (img.onload = resolve));
         
@@ -871,44 +870,45 @@
                 // Generate the second page with the final report
                 element.style.display = "block"; // Ensure visibility
                 setTimeout(() => {
-                    html2canvas(element, { scale: 2, useCORS: true }).then(canvas => {
+                    html2canvas(element, { scale: 2, useCORS: true, allowTaint: true 
+                    }).then(canvas => {
                             const imgData = canvas.toDataURL("image/jpeg", 0.98);
                             pdf.addPage();
 
-                    //used for copy the text
-                    const textContent = element.innerText || element.textContent;
+                        //used for copy the text
+                        const textContent = element.innerText || element.textContent;
         
-                    if (!textContent.trim()) {
-                        console.warn("⚠️ No text found in 'show' element.");
-                    }
+                        if (!textContent.trim()) {
+                            console.warn("⚠️ No text found in 'show' element.");
+                        }
                 
-                    // Set font to monospaced (prevents structure distortion)
-                    pdf.setFont("courier", "normal"); // Use 'courier' for fixed-width font
-                    pdf.setFontSize(12);
+                        // Set font to monospaced (prevents structure distortion)
+                        pdf.setFont("courier", "normal"); // Use 'courier' for fixed-width font
+                        pdf.setFontSize(12);
                 
-                    const margin = 5;
-                    const maxWidth = pageWidth - 1 * margin;
-                    const textLines = pdf.splitTextToSize(textContent, maxWidth);
-                    pdf.setTextColor(255, 255, 255); // Set text color to white (invisible on white background)
-                    pdf.text(textLines, margin, margin + 10);
+                        const margin = 5;
+                        const maxWidth = pageWidth - 1 * margin;
+                        const textLines = pdf.splitTextToSize(textContent, maxWidth);
+                        pdf.setTextColor(255, 255, 255); // Set text color to white (invisible on white background)
+                        pdf.text(textLines, margin, margin + 10);
 
-                    //end of copy text
+                        //end of copy text
 
-                    pdf.addImage(imgData, "JPEG", 10, 120, pageWidth - 20, pageHeight - 300);
+                        pdf.addImage(imgData, "JPEG", 10, 120, pageWidth - 20, pageHeight - 300);
 
-                    // Generate the filename in the format: patientID_patientName.pdf
-                    const fileName = `${patientId.replace(/\s+/g, "_")}_${patientName.replace(/\s+/g, "_")}.pdf`;
-
-                    pdf.save(fileName);
-                    handleDone().catch(console.error);
-                    console.log("✅ PDF saved successfully!");
+                        // Generate the filename in the format: patientID_patientName.pdf
+                        const fileName = `${patientId.replace(/\s+/g, "_")}_${patientName.replace(/\s+/g, "_")}.pdf`;
+    
+                        pdf.save(fileName);
+                        handleDone().catch(console.error);
+                        console.log("✅ PDF saved successfully!");
                     });
-                    }, 500);
+                }, 500);
         
-                img.onerror = function () {
-                    console.error("❌ Failed to load the image.");
-                    alert("Error loading the report image.");
-                };
+                // img.onerror = function () {
+                //     console.error("❌ Failed to load the image.");
+                //     alert("Error loading the report image.");
+                // };
         
             } catch (error) {
                 console.error("❌ Error generating PDF:", error);
