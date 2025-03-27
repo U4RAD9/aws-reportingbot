@@ -331,7 +331,7 @@
           <p id="notification-text"></p>
         </div>
         <div><h2>Patient Report</h2>
-            
+            <img id="patientImage" src="" alt="Patient Image">
             <img id="baseImage" alt="ECG Report Image" />
         </div>
         
@@ -493,11 +493,7 @@
         
         function updateReportingBotView() {
             const data = getQueryParams();
-            const patientImage = document.getElementById('patientImage');
-            
-            if (data.reportImage) {
-                patientImage.src = data.reportImage;
-            }
+            const patientImage = document.getElementById('baseImage');
         }
         
         // Update Camp ECG View
