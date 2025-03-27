@@ -858,6 +858,7 @@
 
 
         async function fetchImageAsBase64(imageUrl) {
+            console.log("Fetching image from:", imageUrl);
             try {
                 const response = await fetch(imageUrl, { mode: 'cors' }); // Ensure CORS mode
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
