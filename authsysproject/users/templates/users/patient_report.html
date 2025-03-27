@@ -419,6 +419,8 @@
         </div>
         
         <img id="ecgImage" src="" alt="ECG Graph">
+
+        <img id="baseImage" alt="ECG Report Image" />
         
         <!-- Generated Report Preview -->
         <div id="report-container" class="report-container">
@@ -436,17 +438,30 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            console.log("🚀 DOM fully loaded and parsed.");
+        
             let urlParams = new URLSearchParams(window.location.search);
             let patientId = urlParams.get("data-patientid");
         
+            console.log("🔍 Extracted Patient ID from URL:", patientId);
+        
             if (patientId) {
                 let base64Image = sessionStorage.getItem("base64_" + patientId);
+        
                 if (base64Image) {
-                    document.getElementById("reportImage").src = base64Image;
+                    console.log("✅ Base64 Image found in sessionStorage!");
+                    document.getElementById("baseImage").src = base64Image;
+                } else {
+                    console.warn("⚠️ No Base64 image found for Patient ID:", patientId);
                 }
+            } else {
+                console.warn("⚠️ No Patient ID found in URL parameters.");
             }
         });
-        </script>
+
+    </script>
+        
+        
         
 
     <script>
@@ -518,15 +533,8 @@
                 }
             }
             
-            // // Set ECG image
-            // document.getElementById('ecgImage').src = data.reportImage;
-
-            // Get Base64 image from sessionStorage
-            const base64Image = sessionStorage.getItem("base64_" + data.patientId);
-            
-            if (base64Image) {
-                document.getElementById('ecgImage').src = base64Image;  // Set base64 image as source
-            }
+            // Set ECG image
+            document.getElementById('ecgImage').src = data.reportImage;
             
             // Generate initial report
             generateReport();

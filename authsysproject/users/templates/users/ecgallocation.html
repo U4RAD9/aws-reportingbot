@@ -548,7 +548,7 @@
                          data-heartrate="{{ patient.HeartRate }}" data-printerval="{{ patient.PRInterval }}"
                          data-testdate="{{ patient.TestDate }}" data-reportdate="{% now 'Y-m-d' %}"
                          data-reportimage="{{ patient_url.url|urlencode }}" data-location="{{ patient.date.location.name }}" data-is-done="{{ patient.isDone }}"
-                         onclick="convertToBase64AndSetURL(this);">
+                         onclick="storeBase64Image(event, '{{ patient.PatientId }}', '{{ patient_url.url }}');">
                          {% if patient.isDone == False %}
                            {% if patient.status == True %}
                              Rejected
@@ -580,27 +580,35 @@
 
 
   <script>
-    function convertToBase64AndStore(button) {
-        let imageUrl = button.getAttribute("data-reportimage");
-        let patientId = button.getAttribute("data-patient-id");
+    function storeBase64Image(event, patientId, imageUrl) {
+        event.preventDefault(); // Prevent immediate navigation
+        console.log(`🚀 Initiating Base64 conversion for Patient ID: ${patientId}`);
+        console.log(`📸 Fetching image from URL: ${imageUrl}`);
     
         fetch(imageUrl)
-            .then(response => response.blob())  
-            .then(blob => {
-                let reader = new FileReader();
-                reader.onloadend = function () {
-                    let base64String = reader.result;  
-                    sessionStorage.setItem("base64_" + patientId, base64String);  // Store in sessionStorage
-    
-                    // Redirect to next page
-                    window.location.href = button.getAttribute("href");
-                };
-                reader.readAsDataURL(blob);
+            .then(response => {
+                console.log("✅ Image fetch response received:", response);
+                return response.blob();  // Convert to Blob
             })
-            .catch(error => console.error("Error converting image:", error));
-    
-        event.preventDefault(); // Prevent default navigation until Base64 is stored
+            .then(blob => {
+                console.log("🔄 Converting Blob to Base64...");
+                const reader = new FileReader();
+                reader.onloadend = function () {
+                    console.log("📥 Base64 conversion complete! Storing in sessionStorage...");
+                    sessionStorage.setItem("base64_" + patientId, reader.result); // Store Base64
+                    
+                    console.log(`🔗 Navigating to: ${event.target.href}`);
+                    window.location.href = event.target.href; // Navigate after storing
+                };
+                reader.readAsDataURL(blob);  // Convert Blob to Base64
+            })
+            .catch(error => {
+                console.error("❌ Error converting image to Base64:", error);
+                console.log(`🔗 Navigating to: ${event.target.href} (Fallback)`);
+                window.location.href = event.target.href; // Fallback to normal navigation
+            });
     }
+
   </script>
     
     
