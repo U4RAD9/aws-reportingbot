@@ -467,15 +467,16 @@
         // };
 
 
-        window.onload = async function () {
+        // Initialize the page with proper image handling
+        window.onload = async function() {
             const data = getQueryParams();
-        
+            
             // Set up views
             document.getElementById('viewSelect').value = 'reporting-bot';
             document.getElementById('reporting-bot').style.display = 'block';
             document.getElementById('camp-ecg').style.display = 'none';
-        
-            // Load images
+            
+            // Get image elements
             const imgElements = [
                 document.getElementById('patientImage'),
                 document.getElementById('ecgImage')
@@ -483,16 +484,78 @@
         
             try {
                 showLoader();
-                imgElements.forEach(img => {
-                    img.src = data.reportImage;  // Use the AWS presigned URL directly
-                });
+                
+                // Only convert if we have a valid URL
+                if (data.reportImage && data.reportImage.startsWith('http')) {
+                    const base64Img = await fetchImageAsBase64(data.reportImage);
+                    
+                    // Verify conversion worked before applying
+                    if (base64Img && base64Img.startsWith('data:image')) {
+                        imgElements.forEach(img => {
+                            img.src = base64Img;
+                            img.onerror = () => {
+                                // Fallback to original URL if converted image fails to load
+                                console.warn('Converted image failed, using original');
+                                img.src = data.reportImage;
+                            };
+                        });
+                        console.log('Successfully converted image to Base64');
+                    } else {
+                        throw new Error('Conversion returned invalid data URL');
+                    }
+                } else {
+                    throw new Error('Invalid image URL');
+                }
             } catch (error) {
-                console.warn("Error loading image:", error);
+                console.warn('Image conversion failed, using original URL:', error);
+                imgElements.forEach(img => {
+                    img.src = data.reportImage;
+                });
             } finally {
                 hideLoader();
                 initializeEventListeners();
             }
         };
+
+        // Enhanced image fetching function
+        async function fetchImageAsBase64(imageUrl) {
+            try {
+                // Skip processing if already a data URL
+                if (imageUrl.startsWith('data:image')) return imageUrl;
+                
+                // Create a clean URL object to handle query parameters properly
+                const url = new URL(imageUrl);
+                
+                // Important: Don't modify the URL as it will break the signature
+                // No timestamp parameter should be added
+                
+                const response = await fetch(url.toString(), {
+                    mode: 'cors',
+                    credentials: 'omit',
+                    headers: {
+                        'Accept': 'image/jpeg,image/png,image/*;q=0.8'
+                    }
+                });
+        
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+        
+                // Get the correct content type from response
+                const contentType = response.headers.get('content-type') || 'image/jpeg';
+                const blob = await response.blob();
+                
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(new Blob([blob], { type: contentType }));
+                });
+            } catch (error) {
+                console.error('Error in fetchImageAsBase64:', error);
+                throw error; // Re-throw to be caught by caller
+            }
+        }
 
         
         // Set up event listeners
