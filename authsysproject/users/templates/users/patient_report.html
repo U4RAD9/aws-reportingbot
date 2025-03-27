@@ -466,85 +466,85 @@
         //     }
         // };
 
-
-        // Initialize the page with proper image handling
-        window.onload = async function() {
-            const data = getQueryParams();
-            
-            // Set up views
-            document.getElementById('viewSelect').value = 'reporting-bot';
-            document.getElementById('reporting-bot').style.display = 'block';
-            document.getElementById('camp-ecg').style.display = 'none';
-            
-            // Get image elements
-            const imgElements = [
-                document.getElementById('patientImage'),
-                document.getElementById('ecgImage')
-            ].filter(Boolean);
         
-            try {
-                showLoader();
-                
-                // Only convert if we have a valid URL
-                if (data.reportImage && data.reportImage.startsWith('http')) {
-                    const base64Img = await fetchImageAsBase64(data.reportImage);
-                    
-                    // Verify conversion worked before applying
-                    if (base64Img && base64Img.startsWith('data:image')) {
-                        imgElements.forEach(img => {
-                            img.src = base64Img;
-                            img.onerror = () => {
-                                // Fallback to original URL if converted image fails to load
-                                console.warn('Converted image failed, using original');
-                                img.src = data.reportImage;
-                            };
-                        });
-                        console.log('Successfully converted image to Base64');
-                    } else {
-                        throw new Error('Conversion returned invalid data URL');
-                    }
-                } else {
-                    throw new Error('Invalid image URL');
-                }
-            } catch (error) {
-                console.warn('Image conversion failed, using original URL:', error);
-                imgElements.forEach(img => {
-                    img.src = data.reportImage;
-                });
-            } finally {
-                hideLoader();
-                initializeEventListeners();
-            }
-        };
 
-        async function fetchImageAsBase64(imageUrl) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.crossOrigin = 'Anonymous';
+        async function convertPresignedUrlToJpegDataUrl(presignedUrl) {
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous'; // Important for CORS
+            
+            img.onload = function() {
+              try {
+                // Create canvas to convert to JPEG
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
                 
-                img.onload = function() {
-                    try {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0);
-                        resolve(canvas.toDataURL('image/jpeg', 0.9));
-                    } catch (error) {
-                        console.error('Canvas conversion failed:', error);
-                        resolve(imageUrl); // Fallback to original URL
-                    }
-                };
+                // Draw image to canvas
+                ctx.drawImage(img, 0, 0);
                 
-                img.onerror = function() {
-                    console.warn('Image load failed, using original URL');
-                    resolve(imageUrl);
-                };
-                
-                img.src = imageUrl;
-            });
+                // Convert to JPEG data URL (quality 90%)
+                const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                resolve(jpegDataUrl);
+              } catch (error) {
+                console.error('Canvas conversion failed:', error);
+                resolve(presignedUrl); // Fallback to original URL
+              }
+            };
+            
+            img.onerror = function() {
+              console.warn('Image load failed, using original URL');
+              resolve(presignedUrl); // Fallback to original URL
+            };
+            
+            // Add timestamp to bypass cache
+            img.src = presignedUrl + (presignedUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+          });
         }
         
+        // Usage in your window.onload
+        window.onload = async function() {
+          const data = getQueryParams();
+          
+          // Set up views
+          document.getElementById('viewSelect').value = 'reporting-bot';
+          document.getElementById('reporting-bot').style.display = 'block';
+          document.getElementById('camp-ecg').style.display = 'none';
+          
+          // Get image elements
+          const imgElements = [
+            document.getElementById('patientImage'),
+            document.getElementById('ecgImage')
+          ].filter(Boolean);
+        
+          try {
+            showLoader();
+            
+            // First set src to presigned URL directly
+            imgElements.forEach(img => {
+              img.src = data.reportImage;
+            });
+            
+            // Then attempt conversion in background
+            const jpegDataUrl = await convertPresignedUrlToJpegDataUrl(data.reportImage);
+            
+            if (jpegDataUrl.startsWith('data:image/jpeg')) {
+              // Update images if conversion succeeded
+              imgElements.forEach(img => {
+                img.src = jpegDataUrl;
+              });
+            }
+          } catch (error) {
+            console.error('Image handling failed:', error);
+          } finally {
+            hideLoader();
+            initializeEventListeners();
+          }
+        };
+
+
+
         // Set up event listeners
         function initializeEventListeners() {
             // View switcher
