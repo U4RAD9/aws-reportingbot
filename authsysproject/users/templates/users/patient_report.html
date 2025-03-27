@@ -882,18 +882,24 @@
 
         async function fetchImageAsBase64(imageUrl) {
             try {
-                // Add a timestamp to bypass cache
-                const url = imageUrl + (imageUrl.includes('?') ? '&' : '?') + 'timestamp=' + Date.now();
+                // Ensure the URL is properly decoded
+                const decodedUrl = decodeURIComponent(imageUrl);
                 
-                const response = await fetch(url, {
+                // Check if the URL is already a data URL
+                if (decodedUrl.startsWith('data:image')) {
+                    return decodedUrl;
+                }
+        
+                // Use the URL as-is without adding any parameters
+                const response = await fetch(decodedUrl, {
                     mode: 'cors',
-                    credentials: 'omit' // Don't send cookies
+                    credentials: 'omit'
                 });
-                
+        
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+        
                 const blob = await response.blob();
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
