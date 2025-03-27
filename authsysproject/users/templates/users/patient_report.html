@@ -435,6 +435,42 @@
 
 
     <script>
+
+        window.onload = async function() {
+            const data = getQueryParams();
+        
+            // Initially display Reporting Bot View
+            document.getElementById('viewSelect').value = 'reporting-bot';
+            updateReportingBotView();
+        
+            // Set the original image URLs first (fallback)
+            document.getElementById('patientImage').src = data.reportImage;
+            document.getElementById('ecgImage').src = data.reportImage;
+        
+            // Try to convert to Base64
+            try {
+                showLoader();
+                const base64Image = await fetchImageAsBase64(data.reportImage);
+                
+                if (base64Image && base64Image.startsWith('data:image')) {
+                    document.getElementById('patientImage').src = base64Image;
+                    document.getElementById('ecgImage').src = base64Image;
+                    console.log("✅ Successfully converted image to Base64");
+                } else {
+                    console.warn("⚠️ Couldn't convert image to Base64, using original URL");
+                    // Keep the original URLs if conversion fails
+                }
+            } catch (error) {
+                console.error("❌ Error during image conversion:", error);
+            } finally {
+                hideLoader();
+            }
+        
+            initializeEventListeners();
+            switchView();
+        };
+
+
         // Get URL parameters
         function getQueryParams() {
             const params = new URLSearchParams(window.location.search);
@@ -828,18 +864,47 @@
             return cookieValue || '';
         }
 
+        // async function fetchImageAsBase64(imageUrl) {
+        //     try {
+        //         const response = await fetch(imageUrl, { mode: "cors" });
+        //         const blob = await response.blob();
+        //         return new Promise((resolve) => {
+        //             const reader = new FileReader();
+        //             reader.onloadend = () => resolve(reader.result);
+        //             reader.readAsDataURL(blob);
+        //         });
+        //     } catch (error) {
+        //         console.error("❌ Error fetching image:", error);
+        //         return null;
+        //     }
+        // }
+
+
         async function fetchImageAsBase64(imageUrl) {
             try {
-                const response = await fetch(imageUrl, { mode: "cors" });
+                // Add a timestamp to bypass cache
+                const url = imageUrl + (imageUrl.includes('?') ? '&' : '?') + 'timestamp=' + Date.now();
+                
+                const response = await fetch(url, {
+                    mode: 'cors',
+                    credentials: 'omit' // Don't send cookies
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const blob = await response.blob();
-                return new Promise((resolve) => {
+                return new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
                     reader.readAsDataURL(blob);
                 });
             } catch (error) {
                 console.error("❌ Error fetching image:", error);
-                return null;
+                // Return original URL as fallback
+                return imageUrl;
             }
         }
 
@@ -1673,35 +1738,6 @@
         //     switchView();
         // };
 
-        window.onload = async function() {
-            const data = getQueryParams();
-        
-            // Initially display Reporting Bot View
-            document.getElementById('viewSelect').value = 'reporting-bot';
-            updateReportingBotView();
-        
-            // Convert presigned URL to Base64 and set it in both views
-            try {
-                const base64Image = await fetchImageAsBase64(data.reportImage);
-                if (base64Image) {
-                    document.getElementById('patientImage').src = base64Image;
-                    document.getElementById('ecgImage').src = base64Image;
-                } else {
-                    console.error("Failed to convert image to Base64");
-                    // Fallback to original URL if conversion fails
-                    document.getElementById('patientImage').src = data.reportImage;
-                    document.getElementById('ecgImage').src = data.reportImage;
-                }
-            } catch (error) {
-                console.error("Error converting image:", error);
-                // Fallback to original URL if conversion fails
-                document.getElementById('patientImage').src = data.reportImage;
-                document.getElementById('ecgImage').src = data.reportImage;
-            }
-        
-            initializeEventListeners();
-            switchView();
-        };
 
     </script>
 </body>
