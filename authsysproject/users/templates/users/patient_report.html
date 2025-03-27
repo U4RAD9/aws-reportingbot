@@ -902,17 +902,15 @@
             console.log(typeof(patientId));
             const patientName = urlParams.get("data-patientname");
         
-            // Extract data from URL query parameters
-            const params = getQueryParams();
-            let reportImage = params.reportImage; // Base64 image
-        
-            if (!reportImage) {
-                console.error("❌ No image URL provided.");
-                alert("No image URL found in the query parameters.");
+            // Fetch the baseImage from the DOM
+            const baseImageElement = document.getElementById("baseImage");
+            if (!baseImageElement || !baseImageElement.src) {
+                console.error("❌ Base image not found in DOM.");
+                alert("Base image is missing.");
                 return;
             }
-        
-            console.log("Fetching image:", reportImage);
+            const base64Image = baseImageElement.src;
+            console.log("✅ Using baseImage:", base64Image);
         
             try {
                 const { jsPDF } = window.jspdf;
@@ -924,17 +922,6 @@
         
                 const pageWidth = pdf.internal.pageSize.width;
                 const pageHeight = pdf.internal.pageSize.height;
-
-                // 🔥 Convert the presigned URL to Base64
-                const base64Image = await fetchImageAsBase64(reportImage);
-        
-                if (!base64Image) {
-                    console.error("❌ Failed to convert image to Base64.");
-                    alert("Error loading the report image.");
-                    return;
-                }
-        
-                console.log("✅ Image converted to Base64!");
         
                 // Load the image
                 const img = new Image();
