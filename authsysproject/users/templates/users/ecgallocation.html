@@ -548,7 +548,7 @@
                          data-heartrate="{{ patient.HeartRate }}" data-printerval="{{ patient.PRInterval }}"
                          data-testdate="{{ patient.TestDate }}" data-reportdate="{% now 'Y-m-d' %}"
                          data-reportimage="{{ patient_url.url|urlencode }}" data-location="{{ patient.date.location.name }}" data-is-done="{{ patient.isDone }}"
-                         onclick="changeButtonColor(this);">
+                         onclick="convertToBase64AndSetURL(this);">
                          {% if patient.isDone == False %}
                            {% if patient.status == True %}
                              Rejected
@@ -577,6 +577,56 @@
     </div>
   </div>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
+  <script>
+    function convertToBase64AndSetURL(button) {
+        let imageUrl = button.getAttribute("data-reportimage"); // Get presigned URL
+        let patientId = button.getAttribute("data-patient-id");
+        
+        fetch(imageUrl)
+            .then(response => response.blob())  // Convert image to binary
+            .then(blob => {
+                let reader = new FileReader();
+                reader.onloadend = function () {
+                    let base64String = reader.result;  // Base64 conversion
+                    let reportURL = button.getAttribute("href");
+    
+                    // Encode base64 image and replace in href
+                    let updatedURL = reportURL.replace("data-reportimage=", "data-reportimage=" + encodeURIComponent(base64String));
+                    
+                    // Open the updated URL
+                    window.location.href = updatedURL;
+                };
+                reader.readAsDataURL(blob);
+            })
+            .catch(error => console.error("Error converting image:", error));
+    
+        // Prevent default behavior so JS handles navigation
+        event.preventDefault();
+    }
+  </script>
+    
+
+
+  <script>
+      document.addEventListener("DOMContentLoaded", function () {
+          document.querySelectorAll("img[data-url]").forEach(img => {
+              let url = img.getAttribute("data-url");
+  
+              fetch(url)
+                  .then(response => response.blob())
+                  .then(blob => {
+                      let reader = new FileReader();
+                      reader.onloadend = function () {
+                          img.src = reader.result; // Set Base64 data as image src
+                      };
+                      reader.readAsDataURL(blob);
+                  })
+                  .catch(error => console.error("Error loading image:", error));
+          });
+      });
+  </script>
 
 
   <script>
