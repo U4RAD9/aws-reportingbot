@@ -436,39 +436,54 @@
 
     <script>
 
+        // Initialize the page
         window.onload = async function() {
             const data = getQueryParams();
-        
-            // Initially display Reporting Bot View
+            
+            // Set up views
             document.getElementById('viewSelect').value = 'reporting-bot';
-            updateReportingBotView();
+            document.getElementById('reporting-bot').style.display = 'block';
+            document.getElementById('camp-ecg').style.display = 'none';
+            
+            // Load images
+            const imgElements = [
+                document.getElementById('patientImage'),
+                document.getElementById('ecgImage')
+            ].filter(Boolean);
         
-            // Set the original image URLs first (fallback)
-            document.getElementById('patientImage').src = data.reportImage;
-            document.getElementById('ecgImage').src = data.reportImage;
-        
-            // Try to convert to Base64
             try {
                 showLoader();
-                const base64Image = await fetchImageAsBase64(data.reportImage);
-                
-                if (base64Image && base64Image.startsWith('data:image')) {
-                    document.getElementById('patientImage').src = base64Image;
-                    document.getElementById('ecgImage').src = base64Image;
-                    console.log("✅ Successfully converted image to Base64");
-                } else {
-                    console.warn("⚠️ Couldn't convert image to Base64, using original URL");
-                    // Keep the original URLs if conversion fails
-                }
+                const base64Img = await fetchImageAsBase64(data.reportImage);
+                imgElements.forEach(img => {
+                    img.src = base64Img.startsWith('data:image') ? base64Img : data.reportImage;
+                });
             } catch (error) {
-                console.error("❌ Error during image conversion:", error);
+                console.warn("Using original image URL");
+                imgElements.forEach(img => img.src = data.reportImage);
             } finally {
                 hideLoader();
+                initializeEventListeners();
             }
-        
-            initializeEventListeners();
-            switchView();
         };
+        
+        // Set up event listeners
+        function initializeEventListeners() {
+            // View switcher
+            document.getElementById('viewSelect').addEventListener('change', switchView);
+            
+            // Action handler
+            document.getElementById('actionSelect').addEventListener('change', function() {
+                handleAction(this.value);
+                this.value = ''; // Reset selection
+            });
+            
+            // Form inputs
+            document.querySelectorAll('#camp-ecg input').forEach(input => {
+                input.addEventListener('change', generateReport);
+                input.addEventListener('input', generateReport);
+            });
+        }
+
 
 
         // Get URL parameters
@@ -487,6 +502,11 @@
                 reportImage: decodeURIComponent(params.get('data-reportimage') || ''),
                 location: decodeURIComponent(params.get('data-location') || '')
             };
+        }
+
+        // Extract data from URL (alternative to getQueryParams)
+        function extractDataFromURL() {
+            return getQueryParams(); // Reuse the existing function
         }
         
         // Initialize form data object
@@ -880,36 +900,64 @@
         // }
 
 
+        // async function fetchImageAsBase64(imageUrl) {
+        //     try {
+        //         // Ensure the URL is properly decoded
+        //         const decodedUrl = decodeURIComponent(imageUrl);
+                
+        //         // Check if the URL is already a data URL
+        //         if (decodedUrl.startsWith('data:image')) {
+        //             return decodedUrl;
+        //         }
+        
+        //         // Use the URL as-is without adding any parameters
+        //         const response = await fetch(decodedUrl, {
+        //             mode: 'cors',
+        //             credentials: 'omit'
+        //         });
+        
+        //         if (!response.ok) {
+        //             throw new Error(`HTTP error! status: ${response.status}`);
+        //         }
+        
+        //         const blob = await response.blob();
+        //         return new Promise((resolve) => {
+        //             const reader = new FileReader();
+        //             reader.onloadend = () => resolve(reader.result);
+        //             reader.readAsDataURL(blob);
+        //         });
+        //     } catch (error) {
+        //         console.error("❌ Error fetching image:", error);
+        //         // Return original URL as fallback
+        //         return decodedUrl;
+        //     }
+        // }
+
+
+        // Safe image fetching with CORS handling
         async function fetchImageAsBase64(imageUrl) {
             try {
-                // Ensure the URL is properly decoded
-                const decodedUrl = decodeURIComponent(imageUrl);
+                // Skip if already a data URL
+                if (imageUrl.startsWith('data:image')) return imageUrl;
                 
-                // Check if the URL is already a data URL
-                if (decodedUrl.startsWith('data:image')) {
-                    return decodedUrl;
-                }
-        
-                // Use the URL as-is without adding any parameters
-                const response = await fetch(decodedUrl, {
+                // Use fetch with CORS mode
+                const response = await fetch(imageUrl, {
                     mode: 'cors',
                     credentials: 'omit'
                 });
-        
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-        
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
                 const blob = await response.blob();
-                return new Promise((resolve) => {
+                return new Promise((resolve, reject) => {
                     const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
                     reader.readAsDataURL(blob);
                 });
             } catch (error) {
-                console.error("❌ Error fetching image:", error);
-                // Return original URL as fallback
-                return decodedUrl;
+                console.error("Image conversion failed:", error);
+                return imageUrl; // Fallback to original URL
             }
         }
 
@@ -1214,20 +1262,94 @@
 
 
 
+        // async function downloadPDF() {
+        //     try {
+        //         showLoader();
+                
+        //         // 1. Get the ECG image (try both possible locations)
+        //         let ecgImage = document.querySelector('#ecgImage img') || 
+        //                       document.getElementById('ecgImage') || 
+        //                       document.getElementById('patientImage');
+                
+        //         if (!ecgImage) {
+        //             throw new Error("No ECG image element found");
+        //         }
+        
+        //         // 2. Create PDF
+        //         const { jsPDF } = window.jspdf;
+        //         const pdf = new jsPDF({
+        //             orientation: "portrait",
+        //             unit: "px",
+        //             format: "a4"
+        //         });
+        
+        //         // 3. Add ECG image (rotated)
+        //         if (ecgImage.src && ecgImage.src.startsWith('http')) {
+        //             await addImageToPDF(pdf, ecgImage.src);
+        //         }
+        
+        //         // 4. Add report content
+        //         const reportElement = document.getElementById('show');
+        //         if (reportElement) {
+        //             const canvas = await html2canvas(reportElement, {
+        //                 scale: 2,
+        //                 useCORS: true,
+        //                 allowTaint: true
+        //             });
+        //             pdf.addPage();
+        //             pdf.addImage(canvas, 'JPEG', 10, 10, pdf.internal.pageSize.width - 20, 0);
+        //         }
+        
+        //         // 5. Save PDF
+        //         const params = new URLSearchParams(window.location.search);
+        //         const filename = `${params.get('data-patientid')}_${params.get('data-patientname')}.pdf`
+        //             .replace(/\s+/g, '_');
+        //         pdf.save(filename);
+                
+        //         // 6. Update backend
+        //         await handleDone();
+        //         showNotification("PDF downloaded successfully!");
+                
+        //     } catch (error) {
+        //         console.error("PDF generation failed:", error);
+        //         showNotification("Error: " + error.message);
+        //     } finally {
+        //         hideLoader();
+        //     }
+        // }
+        
+        // async function addImageToPDF(pdf, imageUrl) {
+        //     return new Promise((resolve) => {
+        //         const img = new Image();
+        //         img.crossOrigin = "Anonymous";
+        //         img.onload = function() {
+        //             const canvas = document.createElement('canvas');
+        //             canvas.width = img.height;
+        //             canvas.height = img.width;
+        //             const ctx = canvas.getContext('2d');
+        //             ctx.translate(canvas.width/2, canvas.height/2);
+        //             ctx.rotate(90 * Math.PI/180);
+        //             ctx.drawImage(img, -img.width/2, -img.height/2);
+                    
+        //             pdf.addImage(canvas.toDataURL(), 'PNG', 20, 20, pdf.internal.pageSize.width - 40, 0);
+        //             resolve();
+        //         };
+        //         img.onerror = resolve; // Skip if image fails to load
+        //         img.src = imageUrl;
+        //     });
+        // }
+
+
+        // Main PDF download function
         async function downloadPDF() {
             try {
                 showLoader();
                 
-                // 1. Get the ECG image (try both possible locations)
-                let ecgImage = document.querySelector('#ecgImage img') || 
-                              document.getElementById('ecgImage') || 
-                              document.getElementById('patientImage');
+                // Get patient data
+                const { patientId, patientName } = getQueryParams();
+                const fileName = `${patientId}_${patientName}.pdf`.replace(/\s+/g, '_');
                 
-                if (!ecgImage) {
-                    throw new Error("No ECG image element found");
-                }
-        
-                // 2. Create PDF
+                // Create PDF
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({
                     orientation: "portrait",
@@ -1235,30 +1357,29 @@
                     format: "a4"
                 });
         
-                // 3. Add ECG image (rotated)
-                if (ecgImage.src && ecgImage.src.startsWith('http')) {
+                // Add ECG image
+                const ecgImage = document.getElementById('ecgImage') || 
+                                document.getElementById('patientImage');
+                
+                if (ecgImage && ecgImage.src) {
                     await addImageToPDF(pdf, ecgImage.src);
                 }
         
-                // 4. Add report content
+                // Add report content
                 const reportElement = document.getElementById('show');
                 if (reportElement) {
                     const canvas = await html2canvas(reportElement, {
                         scale: 2,
                         useCORS: true,
-                        allowTaint: true
+                        allowTaint: true,
+                        logging: true
                     });
                     pdf.addPage();
                     pdf.addImage(canvas, 'JPEG', 10, 10, pdf.internal.pageSize.width - 20, 0);
                 }
         
-                // 5. Save PDF
-                const params = new URLSearchParams(window.location.search);
-                const filename = `${params.get('data-patientid')}_${params.get('data-patientname')}.pdf`
-                    .replace(/\s+/g, '_');
-                pdf.save(filename);
-                
-                // 6. Update backend
+                // Save and notify
+                pdf.save(fileName);
                 await handleDone();
                 showNotification("PDF downloaded successfully!");
                 
@@ -1270,6 +1391,7 @@
             }
         }
         
+        // Helper function to add rotated image to PDF
         async function addImageToPDF(pdf, imageUrl) {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -1286,7 +1408,7 @@
                     pdf.addImage(canvas.toDataURL(), 'PNG', 20, 20, pdf.internal.pageSize.width - 40, 0);
                     resolve();
                 };
-                img.onerror = resolve; // Skip if image fails to load
+                img.onerror = resolve; // Skip if image fails
                 img.src = imageUrl;
             });
         }
@@ -1657,155 +1779,303 @@
         //     loadImageAndRenderPDF();
         // }
 
-        async function uploadEcgPDF() {
-            showLoader();
-            const { patientId, patientName, testDate, reportDate, location } = extractDataFromURL();
-            const filename = `${patientId.replace(/\s+/g, "_")}_${patientName.replace(/\s+/g, "_")}.pdf`;
-            const data = document.getElementById("show");
+
+        // async function uploadEcgPDF() {
+        //     showLoader();
+        //     const { patientId, patientName, testDate, reportDate, location } = extractDataFromURL();
+        //     const filename = `${patientId.replace(/\s+/g, "_")}_${patientName.replace(/\s+/g, "_")}.pdf`;
+        //     const data = document.getElementById("show");
         
-            if (!data) {
-                console.error("Editor content not found.");
-                hideLoader();
-                showNotification("Error: No data found.");
-                return;
-            }
+        //     if (!data) {
+        //         console.error("Editor content not found.");
+        //         hideLoader();
+        //         showNotification("Error: No data found.");
+        //         return;
+        //     }
         
-            // Get the Base64 image from the page
-            const base64Image = document.getElementById('ecgImage').src;
+        //     // Get the Base64 image from the page
+        //     const base64Image = document.getElementById('ecgImage').src;
             
-            if (!base64Image) {
-                console.error("Error: No image found on page.");
-                hideLoader();
-                showNotification("Error: Report image not found.");
-                return;
-            }
+        //     if (!base64Image) {
+        //         console.error("Error: No image found on page.");
+        //         hideLoader();
+        //         showNotification("Error: Report image not found.");
+        //         return;
+        //     }
         
+        //     try {
+        //         const { jsPDF } = window.jspdf;
+        //         const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: "a4" });
+        
+        //         const pageWidth = pdf.internal.pageSize.width;
+        //         const pageHeight = pdf.internal.pageSize.height;
+        
+        //         // Load the existing Base64 image from the page
+        //         const img = new Image();
+        //         img.src = base64Image;
+        //         img.crossOrigin = "Anonymous";
+        
+        //         await new Promise((resolve, reject) => {
+        //             img.onload = resolve;
+        //             img.onerror = reject;
+        //         });
+        
+        //         console.log("✅ Image loaded successfully from page!");
+        
+        //         // Create a canvas to rotate the image
+        //         const canvas = document.createElement("canvas");
+        //         const ctx = canvas.getContext("2d");
+        
+        //         canvas.width = img.height;
+        //         canvas.height = img.width;
+        
+        //         ctx.translate(canvas.width / 2, canvas.height / 2);
+        //         ctx.rotate(90 * Math.PI / 180);
+        //         ctx.drawImage(img, -img.width / 2, -img.height / 2);
+        
+        //         const rotatedImage = canvas.toDataURL("image/png");
+        //         console.log("✅ Rotated image generated!");
+        
+        //         // Adjust image size for the PDF
+        //         let newWidth = pageWidth;
+        //         let newHeight = (img.height / img.width) * newWidth * 1.75;
+        
+        //         if (newHeight > pageHeight) {
+        //             newHeight = pageHeight;
+        //             newWidth = (img.width / img.height) * newHeight;
+        //         }
+        
+        //         // Center the image
+        //         const xPos = (pageWidth - newWidth) / 2;
+        //         const yPos = (pageHeight - newHeight) / 2;
+        
+        //         pdf.addImage(rotatedImage, "PNG", xPos, yPos, newWidth, newHeight);
+        //         console.log("✅ Image added to PDF!");
+        
+        //         // Add second page with the report
+        //         pdf.addPage();
+        //         const canvasReport = await html2canvas(data, { scale: 2, useCORS: true });
+        //         const reportImgData = canvasReport.toDataURL("image/jpeg", 0.98);
+                
+        //         // Copy text content (hidden)
+        //         const textContent = data.innerText || data.textContent;
+        //         if (!textContent.trim()) {
+        //             console.warn("⚠️ No text found in 'show' element.");
+        //         }
+        
+        //         pdf.setFont("courier", "normal");
+        //         pdf.setFontSize(12);
+        //         const margin = 5;
+        //         const maxWidth = pageWidth - 1 * margin;
+        //         const textLines = pdf.splitTextToSize(textContent, maxWidth);
+        //         pdf.setTextColor(255, 255, 255);
+        //         pdf.text(textLines, margin, margin + 10);
+        
+        //         pdf.addImage(reportImgData, "JPEG", 10, 120, pageWidth - 20, pageHeight - 300);
+        //         console.log("✅ Report added to second page!");
+        
+        //         // Convert PDF to Blob
+        //         const pdfBlob = pdf.output("blob");
+        
+        //         if (!patientId) {
+        //             console.error("Patient ID not found in URL.");
+        //             hideLoader();
+        //             showNotification("Error: Missing patient ID.");
+        //             return;
+        //         }
+        
+        //         const csrfToken = getCSRFToken();
+        //         if (!csrfToken) {
+        //             console.error("CSRF token not found.");
+        //             hideLoader();
+        //             showNotification("Error: Authentication failed.");
+        //             return;
+        //         }
+        
+        //         // Prepare form data
+        //         const formData = new FormData();
+        //         formData.append("pdf", pdfBlob, filename + ".pdf");
+        //         formData.append("patientId", patientId);
+        //         formData.append("patientName", patientName);
+        //         formData.append("testDate", testDate);
+        //         formData.append("reportDate", reportDate);
+        //         formData.append("location", location);
+        
+        //         // Upload PDF via API
+        //         const response = await fetch("/upload_ecg_pdf/", {
+        //             method: "POST",
+        //             headers: {
+        //                 "X-CSRFToken": csrfToken,
+        //             },
+        //             body: formData,
+        //         });
+                
+        //         handleDone().catch(console.error);
+        //         if (response.ok) {
+        //             console.log("✅ PDF successfully sent to backend.");
+        //             showNotification("PDF successfully uploaded!");
+        //             setTimeout(() => {
+        //                 window.location.href = document.referrer + "?nocache=" + Date.now();
+        //             }, 2000);
+        //         } else {
+        //             console.error("❌ Failed to upload PDF.");
+        //             showNotification("Error uploading PDF. Please try again.");
+        //         }
+        //     } catch (error) {
+        //         console.error("❌ Error generating PDF:", error);
+        //         showNotification("Error processing PDF.");
+        //     } finally {
+        //         hideLoader();
+        //     }
+        // }
+
+
+
+        async function uploadEcgPDF() {
+            // Show loading indicator
+            showLoader();
+            
             try {
+                // 1. Get patient data from URL parameters
+                const params = new URLSearchParams(window.location.search);
+                const patientId = params.get('data-patientid');
+                const patientName = params.get('data-patientname');
+                const testDate = params.get('data-testdate');
+                const reportDate = params.get('data-reportdate');
+                const location = params.get('data-location');
+                
+                if (!patientId || !patientName) {
+                    throw new Error('Missing patient information');
+                }
+        
+                // 2. Generate the PDF filename
+                const filename = `${patientId.replace(/\s+/g, '_')}_${patientName.replace(/\s+/g, '_')}.pdf`;
+        
+                // 3. Create PDF document
                 const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: "a4" });
+                const pdf = new jsPDF({
+                    orientation: "portrait",
+                    unit: "px",
+                    format: "a4"
+                });
         
                 const pageWidth = pdf.internal.pageSize.width;
                 const pageHeight = pdf.internal.pageSize.height;
         
-                // Load the existing Base64 image from the page
-                const img = new Image();
-                img.src = base64Image;
-                img.crossOrigin = "Anonymous";
-        
-                await new Promise((resolve, reject) => {
-                    img.onload = resolve;
-                    img.onerror = reject;
-                });
-        
-                console.log("✅ Image loaded successfully from page!");
-        
-                // Create a canvas to rotate the image
-                const canvas = document.createElement("canvas");
-                const ctx = canvas.getContext("2d");
-        
-                canvas.width = img.height;
-                canvas.height = img.width;
-        
-                ctx.translate(canvas.width / 2, canvas.height / 2);
-                ctx.rotate(90 * Math.PI / 180);
-                ctx.drawImage(img, -img.width / 2, -img.height / 2);
-        
-                const rotatedImage = canvas.toDataURL("image/png");
-                console.log("✅ Rotated image generated!");
-        
-                // Adjust image size for the PDF
-                let newWidth = pageWidth;
-                let newHeight = (img.height / img.width) * newWidth * 1.75;
-        
-                if (newHeight > pageHeight) {
-                    newHeight = pageHeight;
-                    newWidth = (img.width / img.height) * newHeight;
-                }
-        
-                // Center the image
-                const xPos = (pageWidth - newWidth) / 2;
-                const yPos = (pageHeight - newHeight) / 2;
-        
-                pdf.addImage(rotatedImage, "PNG", xPos, yPos, newWidth, newHeight);
-                console.log("✅ Image added to PDF!");
-        
-                // Add second page with the report
-                pdf.addPage();
-                const canvasReport = await html2canvas(data, { scale: 2, useCORS: true });
-                const reportImgData = canvasReport.toDataURL("image/jpeg", 0.98);
-                
-                // Copy text content (hidden)
-                const textContent = data.innerText || data.textContent;
-                if (!textContent.trim()) {
-                    console.warn("⚠️ No text found in 'show' element.");
-                }
-        
-                pdf.setFont("courier", "normal");
-                pdf.setFontSize(12);
-                const margin = 5;
-                const maxWidth = pageWidth - 1 * margin;
-                const textLines = pdf.splitTextToSize(textContent, maxWidth);
-                pdf.setTextColor(255, 255, 255);
-                pdf.text(textLines, margin, margin + 10);
-        
-                pdf.addImage(reportImgData, "JPEG", 10, 120, pageWidth - 20, pageHeight - 300);
-                console.log("✅ Report added to second page!");
-        
-                // Convert PDF to Blob
-                const pdfBlob = pdf.output("blob");
-        
-                if (!patientId) {
-                    console.error("Patient ID not found in URL.");
-                    hideLoader();
-                    showNotification("Error: Missing patient ID.");
-                    return;
-                }
-        
-                const csrfToken = getCSRFToken();
-                if (!csrfToken) {
-                    console.error("CSRF token not found.");
-                    hideLoader();
-                    showNotification("Error: Authentication failed.");
-                    return;
-                }
-        
-                // Prepare form data
-                const formData = new FormData();
-                formData.append("pdf", pdfBlob, filename + ".pdf");
-                formData.append("patientId", patientId);
-                formData.append("patientName", patientName);
-                formData.append("testDate", testDate);
-                formData.append("reportDate", reportDate);
-                formData.append("location", location);
-        
-                // Upload PDF via API
-                const response = await fetch("/upload_ecg_pdf/", {
-                    method: "POST",
-                    headers: {
-                        "X-CSRFToken": csrfToken,
-                    },
-                    body: formData,
-                });
-                
-                handleDone().catch(console.error);
-                if (response.ok) {
-                    console.log("✅ PDF successfully sent to backend.");
-                    showNotification("PDF successfully uploaded!");
-                    setTimeout(() => {
-                        window.location.href = document.referrer + "?nocache=" + Date.now();
-                    }, 2000);
+                // 4. Add ECG Image (rotated)
+                const ecgImageElement = document.getElementById('ecgImage') || document.getElementById('patientImage');
+                if (ecgImageElement && ecgImageElement.src) {
+                    await addImageToPDF(pdf, ecgImageElement.src);
                 } else {
-                    console.error("❌ Failed to upload PDF.");
-                    showNotification("Error uploading PDF. Please try again.");
+                    console.warn('No ECG image found to include in PDF');
                 }
+        
+                // 5. Add Report Content
+                const reportElement = document.getElementById('show');
+                if (reportElement) {
+                    const canvas = await html2canvas(reportElement, {
+                        scale: 2,
+                        useCORS: true,
+                        allowTaint: true,
+                        logging: true
+                    });
+                    pdf.addPage();
+                    pdf.addImage(canvas, 'JPEG', 10, 10, pageWidth - 20, 0);
+                }
+        
+                // 6. Convert PDF to Blob
+                const pdfBlob = pdf.output('blob');
+        
+                // 7. Prepare FormData for upload
+                const formData = new FormData();
+                formData.append('pdf', pdfBlob, filename);
+                formData.append('patientId', patientId);
+                formData.append('patientName', patientName);
+                formData.append('testDate', testDate || '');
+                formData.append('reportDate', reportDate || '');
+                formData.append('location', location || '');
+        
+                // 8. Get CSRF Token
+                function getCSRFToken() {
+                    const cookieValue = document.cookie
+                        .split('; ')
+                        .find(row => row.startsWith('csrftoken='))
+                        ?.split('=')[1];
+                    return cookieValue || '';
+                }
+        
+                // 9. Upload to Server
+                const response = await fetch('/upload_ecg_pdf/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: formData
+                });
+        
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `Server returned ${response.status}`);
+                }
+        
+                // 10. Update patient status
+                await handleDone();
+                
+                // 11. Show success and redirect
+                showNotification('PDF successfully uploaded!');
+                setTimeout(() => {
+                    window.location.href = document.referrer || '/ecgallocation';
+                }, 2000);
+        
             } catch (error) {
-                console.error("❌ Error generating PDF:", error);
-                showNotification("Error processing PDF.");
+                console.error('PDF upload failed:', error);
+                showNotification(`Upload failed: ${error.message}`);
             } finally {
                 hideLoader();
             }
         }
+        
+        // Helper function to add rotated image to PDF
+        async function addImageToPDF(pdf, imageUrl) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                
+                img.onload = function() {
+                    try {
+                        // Create canvas for rotation
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.height;
+                        canvas.height = img.width;
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Rotate image 90 degrees
+                        ctx.translate(canvas.width/2, canvas.height/2);
+                        ctx.rotate(90 * Math.PI/180);
+                        ctx.drawImage(img, -img.width/2, -img.height/2);
+                        
+                        // Add to PDF
+                        const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                        pdf.addImage(imgData, 'JPEG', 20, 20, pdf.internal.pageSize.width - 40, 0);
+                        resolve();
+                    } catch (error) {
+                        console.error('Error processing image:', error);
+                        resolve(); // Continue without image
+                    }
+                };
+                
+                img.onerror = () => {
+                    console.warn('Failed to load image for PDF');
+                    resolve(); // Continue without image
+                };
+                
+                img.src = imageUrl;
+            });
+        }
 
+
+
+        
         // // Initialize page
         // window.onload = function() {
         //     const data = getQueryParams();
