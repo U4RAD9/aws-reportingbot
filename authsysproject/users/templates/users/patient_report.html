@@ -331,7 +331,7 @@
           <p id="notification-text"></p>
         </div>
         <div><h2>Patient Report</h2>
-            <img id="patientImage" src="" alt="Patient Image">
+            
             <img id="baseImage" alt="ECG Report Image" />
         </div>
         
@@ -919,7 +919,15 @@
                 return;
             }
         
-            console.log("Fetching image:", reportImage);
+            // Fetch the baseImage from the DOM
+            const baseImageElement = document.getElementById("baseImage");
+            if (!baseImageElement || !baseImageElement.src) {
+                console.error("❌ Base image not found in DOM.");
+                alert("Base image is missing.");
+                return;
+            }
+            const base64Image = baseImageElement.src;
+            console.log("✅ Using baseImage:", base64Image);
         
             try {
                 const { jsPDF } = window.jspdf;
@@ -932,16 +940,6 @@
                 const pageWidth = pdf.internal.pageSize.width;
                 const pageHeight = pdf.internal.pageSize.height;
 
-                // 🔥 Convert the presigned URL to Base64
-                const base64Image = await fetchImageAsBase64(reportImage);
-        
-                if (!base64Image) {
-                    console.error("❌ Failed to convert image to Base64.");
-                    alert("Error loading the report image.");
-                    return;
-                }
-        
-                console.log("✅ Image converted to Base64!");
         
                 // Load the image
                 const img = new Image();
