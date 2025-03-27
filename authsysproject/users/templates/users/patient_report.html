@@ -526,8 +526,6 @@
             
             if (base64Image) {
                 document.getElementById('ecgImage').src = base64Image;  // Set base64 image as source
-            } else {
-                document.getElementById('ecgImage').src = data.reportImage; // Fallback to original image URL
             }
             
             // Generate initial report
