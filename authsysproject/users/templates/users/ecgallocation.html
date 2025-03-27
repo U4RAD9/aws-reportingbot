@@ -580,32 +580,29 @@
 
 
   <script>
-    function convertToBase64AndSetURL(button) {
-        let imageUrl = button.getAttribute("data-reportimage"); // Get presigned URL
+    function convertToBase64AndStore(button) {
+        let imageUrl = button.getAttribute("data-reportimage");
         let patientId = button.getAttribute("data-patient-id");
-        
+    
         fetch(imageUrl)
-            .then(response => response.blob())  // Convert image to binary
+            .then(response => response.blob())  
             .then(blob => {
                 let reader = new FileReader();
                 reader.onloadend = function () {
-                    let base64String = reader.result;  // Base64 conversion
-                    let reportURL = button.getAttribute("href");
+                    let base64String = reader.result;  
+                    sessionStorage.setItem("base64_" + patientId, base64String);  // Store in sessionStorage
     
-                    // Encode base64 image and replace in href
-                    let updatedURL = reportURL.replace("data-reportimage=", "data-reportimage=" + encodeURIComponent(base64String));
-                    
-                    // Open the updated URL
-                    window.location.href = updatedURL;
+                    // Redirect to next page
+                    window.location.href = button.getAttribute("href");
                 };
                 reader.readAsDataURL(blob);
             })
             .catch(error => console.error("Error converting image:", error));
     
-        // Prevent default behavior so JS handles navigation
-        event.preventDefault();
+        event.preventDefault(); // Prevent default navigation until Base64 is stored
     }
   </script>
+    
     
 
 

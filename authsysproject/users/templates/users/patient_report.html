@@ -435,6 +435,21 @@
 
 
     <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            let urlParams = new URLSearchParams(window.location.search);
+            let patientId = urlParams.get("data-patientid");
+        
+            if (patientId) {
+                let base64Image = sessionStorage.getItem("base64_" + patientId);
+                if (base64Image) {
+                    document.getElementById("reportImage").src = base64Image;
+                }
+            }
+        });
+        </script>
+        
+
+    <script>
         // Get URL parameters
         function getQueryParams() {
             const params = new URLSearchParams(window.location.search);
@@ -503,8 +518,17 @@
                 }
             }
             
-            // Set ECG image
-            document.getElementById('ecgImage').src = data.reportImage;
+            // // Set ECG image
+            // document.getElementById('ecgImage').src = data.reportImage;
+
+            // Get Base64 image from sessionStorage
+            const base64Image = sessionStorage.getItem("base64_" + data.patientId);
+            
+            if (base64Image) {
+                document.getElementById('ecgImage').src = base64Image;  // Set base64 image as source
+            } else {
+                document.getElementById('ecgImage').src = data.reportImage; // Fallback to original image URL
+            }
             
             // Generate initial report
             generateReport();
