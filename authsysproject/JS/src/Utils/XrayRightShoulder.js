@@ -48,10 +48,26 @@ class XrayRightShoulder extends Component {
     let pageBreak = 0;
     let totalCovidPoints = 0;
 
-    if (frmData.NameTextFR12 && frmData.IDTextFR12 && frmData.AgeTextFR12 && frmData.GenderTextFR12)
-    {
-      report += "<pre>" + "<b>" +"<header>" + "<table>" + "<tr>" + "<td>" + "Name: " + frmData.NameTextFR12 + "</td>" + "<td>" + "Patient ID: " + frmData.IDTextFR12 + "</td>" + "<td>" + "Age: " + frmData.AgeTextFR12 + "</td>" + "</tr>"  + "<tr>" + "<td>" + "Gender: " + frmData.GenderTextFR12 + "</td>" + "<td>" + "Test date: " + frmData.TestDateTextFR12 + "</td>" + "<td>" + "Report date: " + frmData.ReportDateTextFR12 + "</td>" + "</tr>" + "</table>" + "</b>" + "</pre>" + "</header>";
-    }
+ 
+    //Auto data by Aman Gutpa on 23/06/23
+    if (frmData.NameTextFR12 && frmData.IDTextFR12 && frmData.AgeTextFR12 && frmData.GenderTextFR12 && frmData.ReferralDrTextFR12 && frmData.ReporttimeTextFR12) {
+      report += "<pre>" + "<b>" + "<header>" + "<table>" +
+                "<tr>" +
+                  "<td>" + "Name: " + frmData.NameTextFR12 + "</td>" +
+                  "<td>" + "Patient ID: " + frmData.IDTextFR12 + "</td>" +
+                  "<td>" + "Age: " + frmData.AgeTextFR12 + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                  "<td>" + "Gender: " + frmData.GenderTextFR12 + "</td>" +
+                  "<td>" + "Test date: " + frmData.TestDateTextFR12 + "</td>" +
+                  "<td>" + "Report date: " + frmData.ReportDateTextFR12 + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                  "<td>" + "Referral Dr: " + frmData.ReferralDrTextFR12 + "</td>" +
+                  "<td>" + "Report time: " + frmData.ReporttimeTextFR12 + "</td>" +
+                "</tr>" +
+                "</table>" + "</b>" + "</pre>" + "</header>";
+  }
 
     if ((frmData.XrayType === 'AP' || frmData.Normal || frmData.fracture || frmData.dislocation
       || frmData.degenerative) && !(frmData.XrayType === 'AXIAL' || frmData.XrayType === 'LATERAL')) {

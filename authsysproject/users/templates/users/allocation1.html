@@ -627,6 +627,16 @@
               <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
           {% endif %}
         </span>
+        <!-- Search Page Input -->
+        <div>
+          <form action="" method="GET" onsubmit="return goToPage();">
+            <input type="number" class="form-control form-control-lg" id="pageInput" name="page" 
+                   min="1" max="{{ page_obj.paginator.num_pages }}" 
+                   placeholder="Enter page no Search" required 
+                   style="width: 200px; height: 30px; font-size: 14px;">
+            <button type="submit">Go</button>
+          </form>
+        </div>
       </div>
       <div class="card-body">
         <form method="POST" action="{% url 'assign_radiologist' %}" id="radiologistForm">
@@ -709,19 +719,21 @@
                         </div>
                     </div>
                 </th>
+                <!--28-05-2025-->
                 <th>
                   <div class="filter-dropdown-container">
-                       <div>Recived Date and Time</div>
-                       <div class="dropdown-select1" id="filter-Received-dropdown">
-                           <select id="filter-Received-select-Received" class="form-control">
-                               <option value="">All</option>
-                               {% for Received in Received_on_db %}
-                                   <option value="{{ Received }}">{{ Received }}</option>
-                               {% endfor %}
-                           </select>
-                       </div>
-                   </div>
-               </th>
+                      <div>Received Date</div>
+                      <div class="dropdown-select1" id="filter-Received-dropdown">
+                          <select id="filter-Received-select-Received" class="form-control">
+                              <option value="">All</option>
+                              {% for received in Received_on_db %}
+                                  <option value="{{ received|date:'Y-m-d' }}">{{ received|date:'Y-m-d' }}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
+                  </div>
+              </th>
+              <!--update by rohan jangid -->
                 <th>
                   <div class="filter-dropdown-container">
                        <div>Institution</div>
@@ -826,7 +838,7 @@
             <td>{{ patient.gender }}</td>
             <td>{{ patient.study_date }}</td>
             <td>{{ patient.study_time }}</td>
-            <td>{{patient.recived_on_db}}</td>
+            <td>{{ patient.recived_on_db|date:'Y-m-d' }}</td> <!--28-05-2025 update by rohan jangid-->
             <td>{{ patient.institution_name }}</td>
             <td>{{ patient.Modality }}</td>
             <td>{{ patient.study_description }}</td>
@@ -932,7 +944,23 @@
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-tools@latest/dist/cornerstoneTools.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+ 
 
+  <script>
+    function goToPage() {
+      var page = document.getElementById("pageInput").value;
+      var totalPages = {{ page_obj.paginator.num_pages }};
+      
+      if (page >= 1 && page <= totalPages) {
+        window.location.href = "?page=" + page;
+      } else {
+        alert("Please enter a valid page number between 1 and " + totalPages);
+      }
+      
+      return false; // Prevent form submission
+    }
+  </script>
+  
   <script>
     function handleCheckboxClick(checkbox) {
         var patientId = checkbox.getAttribute("data-patient-id");
@@ -1259,61 +1287,80 @@
   </script>
 <!--BELOW CODE ROHAN JANGID-->
 <script>
+  // 28-05-2025 Update by Rohan Jangid
   $(document).ready(function () {
-  $('#filter-date-select-date, #filter-studytime-select-studytime, #filter-Received-select-Received, #filter-institution_name-select-institution_name, #filter-Modality-select-Modality, #filter-Studydescription-select-Studydescription, #filter-allocate-select-allocate, #filter-coordinator-select-coordinator, #filter-status-select').change(function () {
-      filterTable();
-  });
+    $('#filter-date-select-date, #filter-studytime-select-studytime, #filter-Received-select-Received, #filter-institution_name-select-institution_name, #filter-Modality-select-Modality, #filter-Studydescription-select-Studydescription, #filter-allocate-select-allocate, #filter-coordinator-select-coordinator, #filter-status-select').change(function () {
+        filterTable();
+    });
 
-  function filterTable() {
-      var selectedDate = ($('#filter-date-select-date').val() || "").trim().toLowerCase();
-      var selectedStudytime = ($('#filter-studytime-select-studytime').val() || "").trim().toLowerCase();
-      var selectedReceived = ($('#filter-Received-select-Received').val() || "").trim().toLowerCase();
-      var selectedInstitution_name = ($('#filter-institution_name-select-institution_name').val() || "").trim().toLowerCase();
-      var selectedModality = ($('#filter-Modality-select-Modality').val() || "").trim().toLowerCase();
-      var selectedStudydescription = ($('#filter-Studydescription-select-Studydescription').val() || "").trim().toLowerCase();
-      var selectedAllocate = ($('#filter-allocate-select-allocate').val() || "").trim().toLowerCase();
-      var selectedCorporatecoordinator = ($('#filter-coordinator-select-coordinator').val() || "").trim().toLowerCase();
-      var selectedStatus = ($('#filter-status-select').val() || "").trim().toLowerCase();
+    function extractDate(dateStr) {
+        if (!dateStr) return "";
+        
+        let parsedDate = new Date(dateStr);
+        if (!isNaN(parsedDate.getTime())) {
+            return parsedDate.toISOString().split("T")[0]; // Extracts YYYY-MM-DD
+        }
 
-      var visibleRowCount = 0;
+        // Fallback: If dateStr is "March 27, 2025, 3:08 p.m.", extract date part
+        let dateParts = dateStr.split(",");
+        if (dateParts.length > 0) {
+            let rawDate = dateParts[0].trim();
+            let fallbackDate = new Date(rawDate);
+            if (!isNaN(fallbackDate.getTime())) {
+                return fallbackDate.toISOString().split("T")[0]; // Extracts YYYY-MM-DD
+            }
+        }
 
-      console.log("Filtering with values:", { selectedDate, selectedStudytime, selectedReceived, selectedInstitution_name, selectedModality, selectedStudydescription, selectedAllocate, selectedCorporatecoordinator, selectedStatus });
+        return dateStr.split(" ")[0]; // Final fallback: Takes first part assuming "YYYY-MM-DD HH:MM:SS"
+    }
 
-      $('#patientTable tbody tr').each(function () {
-          var rowDate = ($(this).find('td:nth-child(6)').text() || "").trim().toLowerCase();
-          var rowStudytime = ($(this).find('td:nth-child(7)').text() || "").trim().toLowerCase();
-          var rowReceived = ($(this).find('td:nth-child(8)').text() || "").trim().toLowerCase();
-          var rowInstitution_name = ($(this).find('td:nth-child(9)').text() || "").trim().toLowerCase();
-          var rowModality = ($(this).find('td:nth-child(10)').text() || "").trim().toLowerCase();
-          var rowStudydescription = ($(this).find('td:nth-child(11)').text() || "").trim().toLowerCase();
-          var rowCorporatecoordinator = ($(this).find('td:nth-child(12)').text() || "").trim().toLowerCase();
-          var rowAllocate = ($(this).find('td:nth-child(13)').text() || "").trim().toLowerCase();
-          var rowStatus = ($(this).find('td:nth-child(21)').text() || "").trim().toLowerCase();
+    function filterTable() {
+        var selectedDate = ($('#filter-date-select-date').val() || "").trim().toLowerCase();
+        var selectedStudytime = ($('#filter-studytime-select-studytime').val() || "").trim().toLowerCase();
+        var selectedReceived = extractDate($('#filter-Received-select-Received').val()); // Ensure only date is selected
+        var selectedInstitution_name = ($('#filter-institution_name-select-institution_name').val() || "").trim().toLowerCase();
+        var selectedModality = ($('#filter-Modality-select-Modality').val() || "").trim().toLowerCase();
+        var selectedStudydescription = ($('#filter-Studydescription-select-Studydescription').val() || "").trim().toLowerCase();
+        var selectedAllocate = ($('#filter-allocate-select-allocate').val() || "").trim().toLowerCase();
+        var selectedCorporatecoordinator = ($('#filter-coordinator-select-coordinator').val() || "").trim().toLowerCase();
+        var selectedStatus = ($('#filter-status-select').val() || "").trim().toLowerCase();
 
-          
+        var visibleRowCount = 0;
 
-          if ((selectedDate === '' || rowDate === selectedDate) 
-              && (selectedCorporatecoordinator === "" || rowCorporatecoordinator === selectedCorporatecoordinator) 
-              && (selectedStudytime === '' || rowStudytime === selectedStudytime) 
-              && (selectedReceived === '' || rowReceived === selectedReceived) 
-              && (selectedInstitution_name === '' || rowInstitution_name === selectedInstitution_name) 
-              && (selectedModality === '' || rowModality === selectedModality) 
-              && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription)
-              && (selectedAllocate === "" || rowAllocate === selectedAllocate)
-              && (selectedStatus === "" || rowStatus === selectedStatus)) { 
-              $(this).show();
-              visibleRowCount++;
-          } else {
-              $(this).hide();
-          }
-      });
+        $('#patientTable tbody tr').each(function () {
+            var rowDate = ($(this).find('td:nth-child(6)').text() || "").trim().toLowerCase();
+            var rowStudytime = ($(this).find('td:nth-child(7)').text() || "").trim().toLowerCase();
+            var rowReceivedText = ($(this).find('td:nth-child(8)').text() || "").trim(); // Get raw text
+            var rowReceivedFormatted = extractDate(rowReceivedText); // Convert to YYYY-MM-DD
+            var rowInstitution_name = ($(this).find('td:nth-child(9)').text() || "").trim().toLowerCase();
+            var rowModality = ($(this).find('td:nth-child(10)').text() || "").trim().toLowerCase();
+            var rowStudydescription = ($(this).find('td:nth-child(11)').text() || "").trim().toLowerCase();
+            var rowCorporatecoordinator = ($(this).find('td:nth-child(12)').text() || "").trim().toLowerCase();
+            var rowAllocate = ($(this).find('td:nth-child(13)').text() || "").trim().toLowerCase();
+            var rowStatus = ($(this).find('td:nth-child(21)').text() || "").trim().toLowerCase();
 
-      $('#filteredRowCount').text(visibleRowCount);
-  }
+            if ((selectedDate === '' || rowDate === selectedDate) 
+                && (selectedCorporatecoordinator === "" || rowCorporatecoordinator === selectedCorporatecoordinator) 
+                && (selectedStudytime === '' || rowStudytime === selectedStudytime) 
+                && (selectedReceived === '' || rowReceivedFormatted === selectedReceived)  // Comparing formatted date
+                && (selectedInstitution_name === '' || rowInstitution_name === selectedInstitution_name) 
+                && (selectedModality === '' || rowModality === selectedModality) 
+                && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription)
+                && (selectedAllocate === "" || rowAllocate === selectedAllocate)
+                && (selectedStatus === "" || rowStatus === selectedStatus)) { 
+                $(this).show();
+                visibleRowCount++;
+            } else {
+                $(this).hide();
+            }
+        });
 
-  filterTable();
+        $('#filteredRowCount').text(visibleRowCount);
+    }
+
+    filterTable();
 });
-
+// 28-05-2025 Update by Rohan Jangid
 </script>
 <!--THE ABOVE CODE BY ROHAN JANGID -->
 

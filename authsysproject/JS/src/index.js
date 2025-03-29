@@ -233,6 +233,8 @@ class App extends Component {
     this.openImageInViewport = this.openImageInViewport.bind(this);
     this.toggleFullScreen=this.toggleFullScreen.bind(this);
     
+   this.getHeaderFooterImages=this.getHeaderFooterImages.bind(this);
+    
   }
   allowDrop(event){
     event.preventDefault();
@@ -1181,6 +1183,8 @@ class App extends Component {
   }
 
 
+
+
   generatePatientTable() {
     let params = new URL(document.location).searchParams;
     const age = params.get("age") ? params.get("age") + "Yr" : "";
@@ -1206,6 +1210,8 @@ class App extends Component {
     tableBody += "</table>";
     return this.companyLogo(current_user);
   }
+
+
 
 
 
@@ -1594,49 +1600,59 @@ class App extends Component {
   };
 
     // This is the function to get the data from the table of ckeditor - Himanshu.
-    extractTableData = (tableData) =>{
-      // Getting the table element.
-      const table = tableData.querySelector('table');
-      // Now, getting all the rows of the table
-      const rows = table.querySelectorAll('tr');
-  
-      // Initializing an object to store the extracted data
-      const data = {
-          patientName: '',
-          patientId: '',
-          age: '',
-          gender: '',
-          testDate: '',
-          reportDate: ''
-      };
-  
-      rows.forEach(row => {
-          const cells = row.querySelectorAll('td');  // Get all cells in the row
-          cells.forEach(cell => {
-              const strongTag = cell.querySelector('strong');  // Look for <strong> inside the <td>
-  
-              if (strongTag) {
-                  const textContent = strongTag.textContent.trim();  // Get the text inside <strong>
-                  if (textContent.includes("Name:")) {
-                      data.patientName = textContent.replace("Name:", "").trim();  // Extract patient name
-                  } else if (textContent.includes("Patient ID:")) {
-                      data.patientId = textContent.replace("Patient ID:", "").trim();  // Extract patient ID
-                  } else if (textContent.includes("Age:")) {
-                      data.age = textContent.replace("Age:", "").trim();  // Extract age
-                  } else if (textContent.includes("Gender:")) {
-                      data.gender = textContent.replace("Gender:", "").trim();  // Extract gender
-                  } else if (textContent.includes("Test date:")) {
-                      data.testDate = textContent.replace("Test date:", "").trim();  // Extract test date
-                  } else if (textContent.includes("Report date:")) {
-                      data.reportDate = textContent.replace("Report date:", "").trim();  // Extract report date
-                  }
-              }
-          });
-      });
-  
-      // Returning the extracted data as an object.
-      return data;
+ 
+
+extractTableData = (tableData) => {
+  // Get the table element.
+  const table = tableData.querySelector('table');
+  // Get all rows of the table.
+  const rows = table.querySelectorAll('tr');
+
+  // Initialize object to store extracted data.
+  const data = {
+      patientName: '',
+      patientId: '',
+      age: '',
+      gender: '',
+      testDate: '',
+      reportDate: '',
+      referralDr: '',
+      reportTime: ''
   };
+
+  rows.forEach(row => {
+      const cells = row.querySelectorAll('td'); // Get all cells in the row.
+      cells.forEach(cell => {
+          const strongTag = cell.querySelector('strong'); // Look for <strong> inside <td>.
+
+          if (strongTag) {
+              const textContent = strongTag.textContent.trim(); // Get text inside <strong>.
+              if (textContent.includes("Name:")) {
+                  data.patientName = textContent.replace("Name:", "").trim(); // Extract patient name.
+              } else if (textContent.includes("Patient ID:")) {
+                  data.patientId = textContent.replace("Patient ID:", "").trim(); // Extract patient ID.
+              } else if (textContent.includes("Age:")) {
+                  data.age = textContent.replace("Age:", "").trim(); // Extract age.
+              } else if (textContent.includes("Gender:")) {
+                  data.gender = textContent.replace("Gender:", "").trim(); // Extract gender.
+              } else if (textContent.includes("Test date:")) {
+                  data.testDate = textContent.replace("Test date:", "").trim(); // Extract test date.
+              } else if (textContent.includes("Report date:")) {
+                  data.reportDate = textContent.replace("Report date:", "").trim(); // Extract report date.
+              } else if (textContent.includes("Referral Dr:")) {
+                  data.referralDr = textContent.replace("Referral Dr:", "").trim(); // Extract referral doctor.
+              } else if (textContent.includes("Report time:")) {
+                  data.reportTime = textContent.replace("Report time:", "").trim(); // Extract report time.
+              }
+          }
+      });
+  });
+
+  // Return the extracted data as an object.
+  return data;
+};
+
+
 
   // addParagraphToPdf = (pdf, element, fontSize, isHeading, currentYPosition) => {
   //   // Extract the actual data from the element
@@ -1949,244 +1965,516 @@ class App extends Component {
   };
 
   // End of all the common functions for the reporting bot.
+  
+async getHeaderFooterImages(institutionName) {
+  try {
+      console.log("Fetching header and footer images...");
+      const response = await fetch(`/get-client-header-footer/?institution_name=${institutionName}`);
+      const headerFooterData = await response.json();
+      console.log("Header/Footer Data:", headerFooterData);
+      return headerFooterData;
+  } catch (error) {
+      console.error("Error fetching header/footer images:", error);
+      throw error;
+  }
+}
 
-///////////////////////////////// Download PDF without Image /////////////////////////////
-   GetDivContentOnPDFWithoutImage() {
-    (async () => {
+// ///////////////////////////////// Download PDF without Image /////////////////////////////
+//    GetDivContentOnPDFWithoutImage() {
+//     (async () => {
+//       this.showLoader();
+//       const filename = this.createFilename();
+//       const data = document.getElementsByClassName("ck-editor__editable")[0];
+//       console.log("This is the data i got from the class :",data);
+//       const dataFromId = document.getElementById("reportEditor");
+//       console.log("This is the data i got from the id reportEditor :", dataFromId);
+      
+//       const images = data.querySelectorAll("img");
+//       const signatureElement = images[1];
+//       const signatureUrl = signatureElement ? signatureElement.src : null;
+//       const logoElement = images[0];
+//       const logoUrl = logoElement ? logoElement.src : null;
+//       console.log("This is the signature Url:", signatureUrl);
+//       console.log("This is the logo Url:", logoUrl);
+//       // This is my new logic to add each captured image on the pdf. - Himanshu.
+//       // The following code will convert the images nodelist to a array like thing (not actual array, a shallow array like object)
+//       // I have done this so that i can directly use the slice method to remove the logo and sign from the images, and pass only 
+//       // remaining required images at the end to reduce the time complexity.
+//       const remainingReportImages = Array.prototype.slice.call(images, 2);
+
+//       // Getting the table data from my function.
+//       // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
+//       const tableData = this.extractTableData(data);
+//       const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
+//       console.log("This is my extracted table data :",tableData);
+
+//       // Getting all the children elements of the data (ckeditor content).
+//       const elements = data.children;
+//       // This is the variable to handle the skipping of elemens(if needed).
+//       let skipNext = false;
+
+//       const pdf = new jsPDF("p", "pt", "a4");
+
+//       let currentYPosition = 40;
+
+//       try {
+//           currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
+
+//           const tableData = [
+//               ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+//               ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+//               ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"]
+//           ];
+
+//           currentYPosition += 20;
+
+//           pdf.autoTable({
+//               startY: currentYPosition,
+//               body: tableData,
+//               theme: 'grid',
+//               styles: {
+//                   cellPadding: 3,
+//                   fontSize: 10,
+//               },
+//           });
+//           currentYPosition = pdf.previousAutoTable.finalY + 20;
+
+//           // Looping through each element inside the CKEditor.
+//           for (let i = 0; i < elements.length; i++) {
+//             const element = elements[i];
+//             console.log("These are individual children elements of data :",element);
+//             if (element.tagName === 'P') {
+//               const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
+//               if (isHeading) {
+//                   // Add heading
+//                   currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
+//               } else {
+//                   // Check if it's a "Dr." line and needs signature
+//                   if (element.textContent.includes("Dr.")) {
+//                       // Add signature first
+//                       currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+//                   }
+
+//                   // Splitting paragraphs based on <br> tags and processing each line
+//                   // const lines = this.splitParagraphIntoLines(element);
+
+//                   // Regular paragraph
+//                   currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
+//               }
+//             }
+//           }
+//           // This is to download the file on the same browser.
+//           pdf.save(filename ? filename + ".pdf" : "download.pdf");
+
+//           const currentURL = window.location.href;
+
+//           // setTimeout(() => {
+//           //     window.location.href = document.referrer + "?nocache=" + Date.now();
+//           // }, 200);
+//           setTimeout(() => {
+//             // Preserve current URL parameters for pagination/filters
+//             const currentParams = new URLSearchParams(window.location.search);
+//             currentParams.set('nocache', Date.now());
+            
+//             // Redirect back to allocation1 with preserved parameters
+//             window.location.href = window.location.pathname + '?' + currentParams.toString();
+//           }, 200);
+
+//           // window.addEventListener("popstate", () => {
+//           //     if (window.location.href !== currentURL) {
+//           //         setTimeout(() => {
+//           //             window.location.reload(true);
+//           //         }, 200);
+//           //     }
+//           // });
+
+//           window.addEventListener("popstate", () => {
+//             // Refresh while preserving parameters
+//             window.location.reload(true);
+//           });
+
+//       } catch (error) {
+//           console.error("Error generating PDF:", error);
+//           this.showNotification("Error generating PDF. Please try again.");
+//       } finally {
+//           this.hideLoader();
+//       }
+//     })();
+//   }
+
+
+//   GetDivContentOnPDF() {
+//     (async () => {
+//       this.showLoader();
+//       const filename = this.createFilename();
+//       const data = document.getElementsByClassName("ck-editor__editable")[0];
+//       console.log("This is the data i got from the class :",data);
+//       const dataFromId = document.getElementById("reportEditor");
+//       console.log("This is the data i got from the id reportEditor :", dataFromId);
+      
+//       const images = data.querySelectorAll("img");
+//       const signatureElement = images[1];
+//       const signatureUrl = signatureElement ? signatureElement.src : null;
+//       const logoElement = images[0];
+//       const logoUrl = logoElement ? logoElement.src : null;
+//       console.log("This is the signature Url:", signatureUrl);
+//       console.log("This is the logo Url:", logoUrl);
+//       // This is my new logic to add each captured image on the pdf. - Himanshu.
+//       // The following code will convert the images nodelist to a array like thing (not actual array, a shallow array like object)
+//       // I have done this so that i can directly use the slice method to remove the logo and sign from the images, and pass only 
+//       // remaining required images at the end to reduce the time complexity.
+//       const remainingReportImages = Array.prototype.slice.call(images, 2);
+
+//       // Getting the table data from my function.
+//       // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
+//       const tableData = this.extractTableData(data);
+//       const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
+//       console.log("This is my extracted table data :",tableData);
+
+//       // Getting all the children elements of the data (ckeditor content).
+//       const elements = data.children;
+//       // This is the variable to handle the skipping of elemens(if needed).
+//       let skipNext = false;
+
+//       const pdf = new jsPDF("p", "pt", "a4");
+
+//       let currentYPosition = 40;
+
+//       try {
+//           currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
+
+//           const tableData = [
+//               ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+//               ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+//               ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"]
+//           ];
+
+//           currentYPosition += 20;
+
+//           pdf.autoTable({
+//               startY: currentYPosition,
+//               body: tableData,
+//               theme: 'grid',
+//               styles: {
+//                   cellPadding: 3,
+//                   fontSize: 10,
+//               },
+//           });
+//           currentYPosition = pdf.previousAutoTable.finalY + 20;
+
+//           // Looping through each element inside the CKEditor.
+//           for (let i = 0; i < elements.length; i++) {
+//             const element = elements[i];
+//             console.log("These are individual children elements of data :",element);
+//             if (element.tagName === 'P') {
+//               const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
+//               if (isHeading) {
+//                   // Add heading
+//                   currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
+//               } else {
+//                   // Check if it's a "Dr." line and needs signature
+//                   if (element.textContent.includes("Dr.")) {
+//                       // Add signature first
+//                       currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+//                   }
+
+//                   // Splitting paragraphs based on <br> tags and processing each line
+//                   // const lines = this.splitParagraphIntoLines(element);
+
+//                   // Regular paragraph
+//                   currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
+//               }
+//             }
+//           }
+
+//           // Passing the remaining images instead of the url fetched image directly to add all captured images.
+//           for (const image of remainingReportImages) {
+//             const imageUrl = image ? image.src : null;
+//             console.log("This is the image Url:", imageUrl);
+//             currentYPosition = await this.addReportImage(pdf, imageUrl, currentYPosition);
+//           }
+
+//           // This is to download the file on the same browser.
+//           pdf.save(filename ? filename + ".pdf" : "download.pdf");
+
+//           const currentURL = window.location.href;
+
+//           setTimeout(() => {
+//               window.location.href = document.referrer + "?nocache=" + Date.now();
+//           }, 200);
+
+//           window.addEventListener("popstate", () => {
+//               if (window.location.href !== currentURL) {
+//                   setTimeout(() => {
+//                       window.location.reload(true);
+//                   }, 200);
+//               }
+//           });
+
+//       } catch (error) {
+//           console.error("Error generating PDF:", error);
+//           this.showNotification("Error generating PDF. Please try again.");
+//       } finally {
+//           this.hideLoader();
+//       }
+//     })();
+//   }
+
+GetDivContentOnPDFWithoutImage() {
+  (async () => {
       this.showLoader();
       const filename = this.createFilename();
       const data = document.getElementsByClassName("ck-editor__editable")[0];
-      console.log("This is the data i got from the class :",data);
-      const dataFromId = document.getElementById("reportEditor");
-      console.log("This is the data i got from the id reportEditor :", dataFromId);
-      
+      const urlParams = new URLSearchParams(window.location.search);
+      const institutionName = urlParams.get('data-institution_name');
       const images = data.querySelectorAll("img");
-      const signatureElement = images[1];
-      const signatureUrl = signatureElement ? signatureElement.src : null;
-      const logoElement = images[0];
-      const logoUrl = logoElement ? logoElement.src : null;
-      console.log("This is the signature Url:", signatureUrl);
-      console.log("This is the logo Url:", logoUrl);
-      // This is my new logic to add each captured image on the pdf. - Himanshu.
-      // The following code will convert the images nodelist to a array like thing (not actual array, a shallow array like object)
-      // I have done this so that i can directly use the slice method to remove the logo and sign from the images, and pass only 
-      // remaining required images at the end to reduce the time complexity.
-      const remainingReportImages = Array.prototype.slice.call(images, 2);
-
-      // Getting the table data from my function.
-      // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
-      const tableData = this.extractTableData(data);
-      const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
-      console.log("This is my extracted table data :",tableData);
-
-      // Getting all the children elements of the data (ckeditor content).
-      const elements = data.children;
-      // This is the variable to handle the skipping of elemens(if needed).
-      let skipNext = false;
-
+            const signatureElement = images[1];
+            const signatureUrl = signatureElement ? signatureElement.src : null;
+           const logoElement = images[0];
+           const logoUrl = logoElement ? logoElement.src : null;
+            console.log("This is the signature Url:", signatureUrl);
+            console.log("This is the logo Url:", logoUrl);
       const pdf = new jsPDF("p", "pt", "a4");
-
-      let currentYPosition = 40;
+      let currentYPosition = 100;
 
       try {
-          currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
+          console.log("Starting PDF generation...");
+          console.log("Institution Name:", institutionName);
 
-          const tableData = [
-              ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
-              ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
-              ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"]
-          ];
+          // Fetch header and footer from the server
+          const headerFooterData = await this.getHeaderFooterImages(institutionName);
+          const headerImage = headerFooterData.upload_header;
+          const footerImage = headerFooterData.upload_footer;
 
-          currentYPosition += 20;
+          // Add Header
+          if (headerImage) {
+              console.log("Adding header image...");
+              const headerHeight = 60;
+              await pdf.addImage(headerImage, "JPEG", 0, 0, pdf.internal.pageSize.width, headerHeight);
+              currentYPosition = headerHeight + 20;
+          }
 
-          pdf.autoTable({
-              startY: currentYPosition,
-              body: tableData,
-              theme: 'grid',
-              styles: {
-                  cellPadding: 3,
-                  fontSize: 10,
-              },
-          });
+        // Example usage.
+const tableData = this.extractTableData(data);
+const { patientId, patientName, age, gender, testDate, reportDate, referralDr, reportTime } = tableData;
+console.log("Extracted Table Data:", tableData);
+
+const tableContent = [
+    ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+    ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+    ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"],
+    ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
+];
+
+// Add patient details to PDF.
+pdf.autoTable({
+    startY: currentYPosition,
+    body: tableContent,
+    theme: "grid",
+    styles: { cellPadding: 3, fontSize: 10 },
+});
           currentYPosition = pdf.previousAutoTable.finalY + 20;
 
-          // Looping through each element inside the CKEditor.
-          for (let i = 0; i < elements.length; i++) {
-            const element = elements[i];
-            console.log("These are individual children elements of data :",element);
-            if (element.tagName === 'P') {
-              const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
-              if (isHeading) {
-                  // Add heading
-                  currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
-              } else {
-                  // Check if it's a "Dr." line and needs signature
-                  if (element.textContent.includes("Dr.")) {
-                      // Add signature first
-                      currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
-                  }
+          // Get Images (Logo and Signature)
+          const images = data.querySelectorAll("img");
+          const signatureElement = images[1];
+          const signatureUrl = signatureElement ? signatureElement.src : null;
+          const logoElement = images[0];
+          const logoUrl = logoElement ? logoElement.src : null;
 
-                  // Splitting paragraphs based on <br> tags and processing each line
-                  // const lines = this.splitParagraphIntoLines(element);
+          console.log("Logo URL:", logoUrl);
+          console.log("Signature URL:", signatureUrl);
 
-                  // Regular paragraph
-                  currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
-              }
-            }
+          // Add Logo
+          if (logoUrl) {
+              currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
           }
-          // This is to download the file on the same browser.
+
+          // Add Report Content
+          const elements = data.children;
+          for (let i = 0; i < elements.length; i++) {
+              const element = elements[i];
+
+              if (element.tagName === "P") {
+                  const isHeading = element.querySelector("strong u");
+                  if (isHeading) {
+                      console.log("Adding heading:", element.textContent);
+                      currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
+                  } else {
+                      if (element.textContent.includes("Dr.")) {
+                          console.log("Adding signature...");
+                          currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+                      }
+                      console.log("Adding paragraph:", element.textContent);
+                      currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
+                  }
+              }
+
+              // Add footer on each page
+              if (currentYPosition > pdf.internal.pageSize.height - 100) {
+                  if (footerImage) {
+                      console.log("Adding footer to current page...");
+                      const footerHeight = 50;
+                      await pdf.addImage(
+                          footerImage,
+                          "JPEG",
+                          0,
+                          pdf.internal.pageSize.height - footerHeight,
+                          pdf.internal.pageSize.width,
+                          footerHeight
+                      );
+                  }
+                  console.log("Adding new page...");
+                  pdf.addPage();
+                  currentYPosition = 100;
+              }
+          }
+
+          // Add final footer on the last page
+          if (footerImage) {
+              console.log("Adding final footer...");
+              const footerHeight = 50;
+              await pdf.addImage(
+                  footerImage,
+                  "JPEG",
+                  0,
+                  pdf.internal.pageSize.height - footerHeight,
+                  pdf.internal.pageSize.width,
+                  footerHeight
+              );
+          }
+
+          // Save the PDF
+          console.log("Saving PDF...");
           pdf.save(filename ? filename + ".pdf" : "download.pdf");
-
-          const currentURL = window.location.href;
-
-          // setTimeout(() => {
-          //     window.location.href = document.referrer + "?nocache=" + Date.now();
-          // }, 200);
-          setTimeout(() => {
-            // Preserve current URL parameters for pagination/filters
-            const currentParams = new URLSearchParams(window.location.search);
-            currentParams.set('nocache', Date.now());
-            
-            // Redirect back to allocation1 with preserved parameters
-            window.location.href = window.location.pathname + '?' + currentParams.toString();
-          }, 200);
-
-          // window.addEventListener("popstate", () => {
-          //     if (window.location.href !== currentURL) {
-          //         setTimeout(() => {
-          //             window.location.reload(true);
-          //         }, 200);
-          //     }
-          // });
-
-          window.addEventListener("popstate", () => {
-            // Refresh while preserving parameters
-            window.location.reload(true);
-          });
+          this.hideLoader();
 
       } catch (error) {
           console.error("Error generating PDF:", error);
           this.showNotification("Error generating PDF. Please try again.");
       } finally {
+          console.log("PDF generation process completed.");
           this.hideLoader();
       }
-    })();
-  }
+  })();
+}
+
+
+
+
 
 
   GetDivContentOnPDF() {
     (async () => {
-      this.showLoader();
-      const filename = this.createFilename();
-      const data = document.getElementsByClassName("ck-editor__editable")[0];
-      console.log("This is the data i got from the class :",data);
-      const dataFromId = document.getElementById("reportEditor");
-      console.log("This is the data i got from the id reportEditor :", dataFromId);
-      
-      const images = data.querySelectorAll("img");
-      const signatureElement = images[1];
-      const signatureUrl = signatureElement ? signatureElement.src : null;
-      const logoElement = images[0];
-      const logoUrl = logoElement ? logoElement.src : null;
-      console.log("This is the signature Url:", signatureUrl);
-      console.log("This is the logo Url:", logoUrl);
-      // This is my new logic to add each captured image on the pdf. - Himanshu.
-      // The following code will convert the images nodelist to a array like thing (not actual array, a shallow array like object)
-      // I have done this so that i can directly use the slice method to remove the logo and sign from the images, and pass only 
-      // remaining required images at the end to reduce the time complexity.
-      const remainingReportImages = Array.prototype.slice.call(images, 2);
-
-      // Getting the table data from my function.
-      // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
-      const tableData = this.extractTableData(data);
-      const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
-      console.log("This is my extracted table data :",tableData);
-
-      // Getting all the children elements of the data (ckeditor content).
-      const elements = data.children;
-      // This is the variable to handle the skipping of elemens(if needed).
-      let skipNext = false;
-
-      const pdf = new jsPDF("p", "pt", "a4");
-
-      let currentYPosition = 40;
-
       try {
-          currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
+        this.showLoader();
+        const filename = this.createFilename();
+        const data = document.getElementsByClassName("ck-editor__editable")[0];
+        const urlParams = new URLSearchParams(window.location.search);
+        const institutionName = urlParams.get('data-institution_name');
 
-          const tableData = [
-              ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
-              ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
-              ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"]
-          ];
+        if (!data) throw new Error("No CKEditor content found.");
 
-          currentYPosition += 20;
+        const images = data.querySelectorAll("img");
+        const logoUrl = images[0]?.src || null;
+        const signatureUrl = images[1]?.src || null;
+        const remainingReportImages = Array.from(images).slice(2);
 
-          pdf.autoTable({
-              startY: currentYPosition,
-              body: tableData,
-              theme: 'grid',
-              styles: {
-                  cellPadding: 3,
-                  fontSize: 10,
-              },
-          });
-          currentYPosition = pdf.previousAutoTable.finalY + 20;
+        
 
-          // Looping through each element inside the CKEditor.
-          for (let i = 0; i < elements.length; i++) {
-            const element = elements[i];
-            console.log("These are individual children elements of data :",element);
-            if (element.tagName === 'P') {
-              const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
-              if (isHeading) {
-                  // Add heading
-                  currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
-              } else {
-                  // Check if it's a "Dr." line and needs signature
-                  if (element.textContent.includes("Dr.")) {
-                      // Add signature first
-                      currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
-                  }
+        const elements = data.children;
+        let currentYPosition = 40;
 
-                  // Splitting paragraphs based on <br> tags and processing each line
-                  // const lines = this.splitParagraphIntoLines(element);
+        const pdf = new jsPDF("p", "pt", "a4");
 
-                  // Regular paragraph
-                  currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
+        console.log("Starting PDF generation...");
+
+        // Fetch header and footer from server
+        const headerFooterData = await this.getHeaderFooterImages(institutionName);
+        const headerImage = headerFooterData.upload_header;
+        const footerImage = headerFooterData.upload_footer;
+
+        // Add Header
+        if (headerImage) {
+          console.log("Adding header image...");
+          const headerHeight = 60;
+          await pdf.addImage(headerImage, "JPEG", 0, 0, pdf.internal.pageSize.width, headerHeight);
+          currentYPosition += headerHeight + 20;
+        }
+
+        
+        // Example usage.
+const tableData = this.extractTableData(data);
+const { patientId, patientName, age, gender, testDate, reportDate, referralDr, reportTime } = tableData;
+console.log("Extracted Table Data:", tableData);
+
+const tableContent = [
+    ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+    ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+    ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"],
+    ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
+];
+
+// Add patient details to PDF.
+pdf.autoTable({
+    startY: currentYPosition,
+    body: tableContent,
+    theme: "grid",
+    styles: { cellPadding: 3, fontSize: 10 },
+});
+        currentYPosition = pdf.previousAutoTable.finalY + 20;
+
+        // Process CKEditor elements
+        for (let element of elements) {
+          if (element.tagName === 'P') {
+            const isHeading = element.querySelector('strong u');
+
+            if (isHeading) {
+              currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
+            } else {
+              if (element.textContent.includes("Dr.")) {
+                currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
               }
+              currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
             }
           }
+        }
 
-          // Passing the remaining images instead of the url fetched image directly to add all captured images.
-          for (const image of remainingReportImages) {
-            const imageUrl = image ? image.src : null;
-            console.log("This is the image Url:", imageUrl);
+        // Add Report Images
+        for (let image of remainingReportImages) {
+          const imageUrl = image?.src || null;
+          if (imageUrl) {
             currentYPosition = await this.addReportImage(pdf, imageUrl, currentYPosition);
           }
+        }
 
-          // This is to download the file on the same browser.
-          pdf.save(filename ? filename + ".pdf" : "download.pdf");
+        // Add Footer
+        if (footerImage) {
+          const footerHeight = 50;
+          await pdf.addImage(footerImage, "JPEG", 0, pdf.internal.pageSize.height - footerHeight, pdf.internal.pageSize.width, footerHeight);
+        }
 
-          const currentURL = window.location.href;
+        // Download PDF
+        pdf.save(filename ? filename + ".pdf" : "download.pdf");
 
-          setTimeout(() => {
-              window.location.href = document.referrer + "?nocache=" + Date.now();
-          }, 200);
+        const currentURL = window.location.href;
+        setTimeout(() => {
+          window.location.href = document.referrer + "?nocache=" + Date.now();
+        }, 200);
 
-          window.addEventListener("popstate", () => {
-              if (window.location.href !== currentURL) {
-                  setTimeout(() => {
-                      window.location.reload(true);
-                  }, 200);
-              }
-          });
+        window.addEventListener("popstate", () => {
+          if (window.location.href !== currentURL) {
+            setTimeout(() => {
+              window.location.reload(true);
+            }, 200);
+          }
+        });
 
       } catch (error) {
-          console.error("Error generating PDF:", error);
-          this.showNotification("Error generating PDF. Please try again.");
+        console.error("Error generating PDF:", error);
+        this.showNotification("Error generating PDF. Please try again.");
       } finally {
-          this.hideLoader();
+        this.hideLoader();
       }
     })();
   }
@@ -2910,8 +3198,7 @@ class App extends Component {
 
       // Getting the table data from my function.
       // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
-      const tableData = this.extractTableData(data);
-      const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
+      
       console.log("This is my extracted table data :",tableData);
 
       // Getting all the children elements of the data (ckeditor content).
@@ -2926,23 +3213,25 @@ class App extends Component {
       try {
           currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
 
-          const tableData = [
-              ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
-              ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
-              ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"]
-          ];
+                // Example usage.
+const tableData = this.extractTableData(data);
+const { patientId, patientName, age, gender, testDate, reportDate, referralDr, reportTime } = tableData;
+console.log("Extracted Table Data:", tableData);
 
-          currentYPosition += 20;
+const tableContent = [
+    ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+    ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+    ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"],
+    ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
+];
 
-          pdf.autoTable({
-              startY: currentYPosition,
-              body: tableData,
-              theme: 'grid',
-              styles: {
-                  cellPadding: 3,
-                  fontSize: 10,
-              },
-          });
+// Add patient details to PDF.
+pdf.autoTable({
+    startY: currentYPosition,
+    body: tableContent,
+    theme: "grid",
+    styles: { cellPadding: 3, fontSize: 10 },
+});
           currentYPosition = pdf.previousAutoTable.finalY + 20;
 
           // Looping through each element inside the CKEditor.
@@ -4292,135 +4581,222 @@ this.allowDrop(e)} onDrop={e => this.drop(e)}></div>
     ) : (
       ""
     )}
-    <CKEditor
-   editor={DecoupledEditor}
-data={reportFrmData}
-onInit={(editor) => {
-  editor.onclick = this.onclickDiv;
-  window.editor = editor;
-  editor.allowedContent = true;
-  editor.config.extraAllowedContent = '*(*);*{*}';
-  // This is the code for maintaining the session on the ckeditor i.e. the dynamic data which was getting 
-  // removed from the ckeditor page when clicked on the fullscreen button , will not be removed now. - Himanshu.
-  // Check if saved content exists in sessionStorage and set it
-  // const savedContent = sessionStorage.getItem('editorContent');
-  // if (savedContent) {
-  //   editor.setData(savedContent); // Restore the saved content
-  // }
+   
+<CKEditor
+  editor={DecoupledEditor}
+  data={reportFrmData}
+  onInit={(editor) => {
+    editor.onclick = this.onclickDiv;
 
-  // // Save the editor content to sessionStorage whenever the content changes
-  // editor.model.document.on('change:data', () => {
-  //   const content = editor.getData();
-  //   sessionStorage.setItem('editorContent', content); // Store the content in sessionStorage
-  // });
+    window.editor = editor;
+    editor.allowedContent = true;
+    editor.config.extraAllowedContent = '*(*);*{*}';
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentStudyId = urlParams.get('data-study-id');
 
-    // Updated code to fix the session storage ck editor issue on our new pacs - Himanshu.
-  // Step 1: Get the `data-study-id` parameter from the URL (patient identifier)
-  const urlParams = new URLSearchParams(window.location.search);
-  const currentStudyId = urlParams.get('data-study-id'); // The unique patient ID from the URL
-
-  // Step 2: Check if the `data-study-id` exists in the URL
-  if (!currentStudyId) {
+    if (!currentStudyId) {
       console.warn('No study ID found in the URL.');
-      // Optionally handle this case: You could display a message or disable certain features
-      // For now, we can exit the function early if no study ID is available
-      return;  // Exit the function, nothing further to do
-  }
-
-  // // Step 3: Retrieve previously saved study ID from sessionStorage
-  // const savedStudyId = sessionStorage.getItem('savedStudyId');
-
-  // // Step 4: Handle the case when study ID is missing or changed
-  // if (!savedStudyId) {
-  //     // No study ID saved, store the current one for future use
-  //     sessionStorage.setItem('savedStudyId', currentStudyId);
-  // } else if (savedStudyId !== currentStudyId) {
-  //     // Study ID has changed, clear the old data and store the new ID
-  //     sessionStorage.removeItem(`editorContent-${savedStudyId}`); // Remove old content
-  //     sessionStorage.removeItem('savedStudyId'); // Remove old study ID
-  //     sessionStorage.setItem('savedStudyId', currentStudyId); // Store new study ID
-  // }
-
-  // // Step 5: Retrieve saved content specific to the current study ID
-  // const savedContent = sessionStorage.getItem(`editorContent-${currentStudyId}`);
-
-  // // Step 6: If content exists for this study ID, restore it
-  // if (savedContent && savedStudyId === currentStudyId) {
-  //     editor.setData(savedContent); // Restore saved content to CKEditor
-  // }
-
-  // // Step 7: Save editor content to sessionStorage on every change
-  // editor.model.document.on('change:data', () => {
-  //     const content = editor.getData(); // Get current content from the editor
-  //     sessionStorage.setItem(`editorContent-${currentStudyId}`, content); // Save content tied to the current study ID
-  // });
-
-  // // Step 8: Function to clear session storage when reporting is done
-  // function clearSessionData() {
-  //     sessionStorage.removeItem(`editorContent-${currentStudyId}`); // Remove editor content for current patient
-  //     sessionStorage.removeItem('savedStudyId'); // Remove saved study ID
-  // }
-
-  const fetchEditorContent = async () => {
-    try {
-      const response = await fetch(`/get-editor-content/${currentStudyId}/`);
-      const data = await response.json();
-      if (data.editor_content) {
-        editor.setData(data.editor_content);
-      }
-    } catch (error) {
-      console.error('Error fetching editor content:', error);
+      return;
     }
-  };
 
-   fetchEditorContent(); // Load existing content
+    // Fetch Initial Content
+    const fetchEditorContent = async () => {
+      try {
+        const response = await fetch(`/get-editor-content/${currentStudyId}/`);
+        const data = await response.json();
+        if (data.editor_content) {
+          editor.setData(data.editor_content);
+        }
+      } catch (error) {
+        console.error('Error fetching editor content:', error);
+      }
+    };
 
-  // Save editor content to backend on every change
-  editor.model.document.on('change:data', async () => {
-    const content = editor.getData();
+    fetchEditorContent();
+
+    // Save Content on Change
+    editor.model.document.on('change:data', async () => {
+      try {
+        const content = editor.getData();
+        await fetch('/save-editor-content/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ study_id: currentStudyId, editor_content: content }),
+        });
+      } catch (error) {
+        console.error('Error saving editor content:', error);
+      }
+    });
+
+    const toolbarContainer = document.querySelector('.document-editor__toolbar');
+
+    if (!toolbarContainer.querySelector('.custom-toolbar')) {
+      // Create Custom Toolbar
+      const customToolbar = document.createElement('div');
+      customToolbar.classList.add('custom-toolbar');
+      customToolbar.style.display = "flex"; // Flex for horizontal layout
+      customToolbar.style.gap = "10px";
+      customToolbar.style.marginTop = "10px";
+
+      // Create Template Dropdown
+      const templateDropdown = document.createElement('select');
+      templateDropdown.classList.add('template-dropdown');
+      templateDropdown.innerHTML = `<option value="">Select Template</option>`;
+      customToolbar.appendChild(templateDropdown);
+
+      // Load Templates Function
+      const loadTemplates = async () => {
+        try {
+          const response = await fetch('/save-template/');
+          const data = await response.json();
+          templateDropdown.innerHTML = '<option value="">Select Template</option>'; // Reset options
+          data.templates.forEach((template) => {
+            const option = document.createElement('option');
+            option.value = template.id;
+            option.text = template.name;
+            templateDropdown.appendChild(option);
+          });
+        } catch (error) {
+          console.error('Error fetching templates:', error);
+        }
+      };
+
+      // Load templates initially
+      loadTemplates();
+
+      // // Handle Template Selection
+      // templateDropdown.onchange = async (e) => {
+      //   const templateId = e.target.value;
+      //   if (templateId) {
+      //     try {
+      //       const response = await fetch(`/get-template/${templateId}/`);
+      //       const data = await response.json();
+      //       if (data.template_content) {
+      //         editor.setData(data.template_content);
+      //       } else {
+      //         console.warn('No template content found.');
+      //       }
+      //     } catch (error) {
+      //       console.error('Error loading template:', error);
+      //     }
+      //   }
+      // };
+        // Handle Template Selection (Append to Existing Content)
+        templateDropdown.onchange = async (e) => {
+          const templateId = e.target.value;
+          if (templateId) {
+            try {
+              const response = await fetch(`/get-template/${templateId}/`);
+              const data = await response.json();
+              if (data.template_content) {
+                const viewFragment = editor.data.processor.toView(data.template_content);
+                const modelFragment = editor.data.toModel(viewFragment);
+                const selection = editor.model.document.selection;
+
+                editor.model.change((writer) => {
+                  writer.insert(modelFragment, selection.getFirstPosition());
+                });
+              } else {
+                console.warn('No template content found.');
+              }
+            } catch (error) {
+              console.error('Error loading template:', error);
+            }
+          }
+        };
+
+
+      // Create "Save as Template" Button
+      const saveTemplateButton = document.createElement('button');
+      saveTemplateButton.innerText = 'Save as Template';
+      saveTemplateButton.classList.add('save-template-button');
+      saveTemplateButton.style.padding = '5px 10px';
+      saveTemplateButton.style.cursor = 'pointer';
+      saveTemplateButton.style.backgroundColor = '#4CAF50';
+      saveTemplateButton.style.color = 'white';
+      saveTemplateButton.style.border = 'none';
+      saveTemplateButton.style.borderRadius = '5px';
+
+      // // Handle Save Template Click
+      // saveTemplateButton.onclick = async () => {
+      //   const templateName = prompt('Enter template name:');
+      //   if (templateName) {
+      //     try {
+      //       const content = editor.getData();
+      //       await fetch('/save-template/', {
+      //         method: 'POST',
+      //         headers: { 'Content-Type': 'application/json' },
+      //         body: JSON.stringify({ name: templateName, content }),
+      //       });
+      //       alert('Template saved successfully!');
+      //       loadTemplates(); // Refresh dropdown
+      //     } catch (error) {
+      //       console.error('Error saving template:', error);
+      //     }
+      //   }
+      // };
+      // Handle Save Template Click
+saveTemplateButton.onclick = async () => {
+  const templateName = prompt('Enter template name:');
+  if (templateName) {
     try {
-      await fetch('/save-editor-content/', {
+      const selection = editor.model.document.selection;
+
+      // Get the selected range
+      const range = selection.getFirstRange();
+
+      if (!range) {
+        alert('No content selected! Please highlight some text.');
+        return;
+      }
+
+      // Convert model selection to view document fragment
+      const viewFragment = editor.data.toView(editor.model.getSelectedContent(selection));
+
+      // Convert view document fragment to HTML
+      const selectedContent = editor.data.processor.toData(viewFragment);
+
+      if (!selectedContent.trim()) {
+        alert('Selected content is empty! Please highlight valid text.');
+        return;
+      }
+
+      // Send the selected content to backend
+      await fetch('/save-template/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ study_id: currentStudyId, editor_content: content }),
+        body: JSON.stringify({ name: templateName, content: selectedContent }),
       });
+
+      alert('Selected content saved successfully!');
+      loadTemplates(); // Refresh dropdown
+
     } catch (error) {
-      console.error('Error saving editor content:', error);
+      console.error('Error saving selected content:', error);
     }
-  });
-
-  
-  const toolbarContainer = document.querySelector(".document-editor__toolbar");
-  
-  
-  // Check if the toolbar already exists to avoid duplication
-  if (!toolbarContainer.querySelector(".custom-toolbar")) {
-    // Create a new div to hold the custom toolbar buttons
-    const customToolbar = document.createElement('div');
-    customToolbar.classList.add('custom-toolbar');
-    
-    // Append the toolbar to the CKEditor toolbar
-    toolbarContainer.appendChild(editor.ui.view.toolbar.element);
-    const fullScreenButton = document.createElement('button');
-    fullScreenButton.innerText = 'Fullscreen';
-    fullScreenButton.classList.add('full-screen-button');
-    fullScreenButton.onclick = this.toggleFullScreen;
-    
-    customToolbar.appendChild(fullScreenButton);
-
-    // Append the custom buttons to the toolbar only if they haven't been added before
-    window.editor.ui.view.toolbar.element.children[0].appendChild(this.copyAction());
-    window.editor.ui.view.toolbar.element.children[0].appendChild(this.choose());
-    // window.editor.ui.view.toolbar.element.children[0].appendChild(this.getPDFButton());
-    window.editor.ui.view.toolbar.element.children[0].appendChild(this.actionDropDown());
-    window.editor.ui.view.toolbar.element.children[0].appendChild(this.userDropdown());
-    
-    // Add the custom toolbar to the editor toolbar
-    window.editor.ui.view.toolbar.element.children[0].appendChild(customToolbar);
   }
-}}
+};
+
+
+      // Append Save Button to Custom Toolbar
+      customToolbar.appendChild(saveTemplateButton);
+
+      // Append CKEditor Default Toolbar
+      toolbarContainer.appendChild(editor.ui.view.toolbar.element);
+
+      // Append Custom Buttons to Default Toolbar
+      editor.ui.view.toolbar.element.children[0].appendChild(this.copyAction());
+      editor.ui.view.toolbar.element.children[0].appendChild(this.choose());
+      editor.ui.view.toolbar.element.children[0].appendChild(this.actionDropDown());
+      editor.ui.view.toolbar.element.children[0].appendChild(this.userDropdown());
+
+      // Append Custom Toolbar to the Editor Toolbar
+      editor.ui.view.toolbar.element.appendChild(customToolbar);
+    }
+  }}
 />
+
   </div>)}
         </div>
         <div className="previewTab" id="previewTab"></div>

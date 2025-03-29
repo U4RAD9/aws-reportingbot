@@ -47,11 +47,25 @@ class XrayLeftShoulder extends Component {
     let pageBreak = 0;
     let totalCovidPoints = 0;
 
-    if (frmData.NameTextFR11 && frmData.IDTextFR11 && frmData.AgeTextFR11 && frmData.GenderTextFR11)
-    {
-      report += "<pre>" + "<b>" +"<header>" + "<table>" + "<tr>" + "<td>" + "Name: " + frmData.NameTextFR11 + "</td>" + "<td>" + "Patient ID: " + frmData.IDTextFR11 + "</td>" + "<td>" + "Age: " + frmData.AgeTextFR11 + "</td>" + "</tr>"  + "<tr>" + "<td>" + "Gender: " + frmData.GenderTextFR11 + "</td>" + "<td>" + "Test date: " + frmData.TestDateTextFR11 + "</td>" + "<td>" + "Report date: " + frmData.ReportDateTextFR11 + "</td>" + "</tr>" + "</table>" + "</b>" + "</pre>" + "</header>";
+      //Auto data by Aman Gutpa on 23/06/23
+      if (frmData.NameTextFR11 && frmData.IDTextFR11 && frmData.AgeTextFR11 && frmData.GenderTextFR11 && frmData.ReferralDrTextFR11 && frmData.ReporttimeTextFR11) {
+        report += "<pre>" + "<b>" + "<header>" + "<table>" +
+                  "<tr>" +
+                    "<td>" + "Name: " + frmData.NameTextFR11 + "</td>" +
+                    "<td>" + "Patient ID: " + frmData.IDTextFR11 + "</td>" +
+                    "<td>" + "Age: " + frmData.AgeTextFR11 + "</td>" +
+                  "</tr>" +
+                  "<tr>" +
+                    "<td>" + "Gender: " + frmData.GenderTextFR11 + "</td>" +
+                    "<td>" + "Test date: " + frmData.TestDateTextFR11 + "</td>" +
+                    "<td>" + "Report date: " + frmData.ReportDateTextFR11 + "</td>" +
+                  "</tr>" +
+                  "<tr>" +
+                    "<td>" + "Referral Dr: " + frmData.ReferralDrTextFR11 + "</td>" +
+                    "<td>" + "Report time: " + frmData.ReporttimeTextFR11 + "</td>" +
+                  "</tr>" +
+                  "</table>" + "</b>" + "</pre>" + "</header>";
     }
-
     if ((frmData.XrayType === 'AP' || frmData.Normal || frmData.fracture || frmData.dislocation
       || frmData.degenerative) && !(frmData.XrayType === 'AXIAL' || frmData.XrayType === 'LATERAL')) {
       report += "<h5>" + "<strong>" + "<u>" + "X-RAY LEFT-SHOULDER AP" + "</u>" + "</strong>" + "</h5>";

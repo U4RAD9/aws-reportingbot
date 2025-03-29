@@ -423,6 +423,8 @@ export default class PopUp extends React.Component {
     const testDate = urlSearchParams.get("data-testdate");
     const reportDate = urlSearchParams.get("data-reportdate");
     const reportimage = urlSearchParams.get("data-reportimage");
+    const  ReferralDr = urlSearchParams.get("data-referringdoctor");
+    const Reporttime = urlSearchParams.get("data-reporttime");
 
     const formData = {
       ...this.state.data,  // Preserve initial state values
@@ -433,6 +435,8 @@ export default class PopUp extends React.Component {
       TestDateTextFR13: testDate,
       ReportDateTextFR13: reportDate,
       reportimage: reportimage,
+      ReferralDrTextFR13: ReferralDr,
+      ReporttimeTextFR13: Reporttime
     };
 
     return (

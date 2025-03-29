@@ -103,10 +103,24 @@ class XrayChest extends Component {
 
 
     //Auto data by Aman Gutpa on 23/06/23
-    if (frmData.NameTextFR2 && frmData.IDTextFR2 && frmData.AgeTextFR2 && frmData.GenderTextFR2)
-    {
-      report += "<pre>" + "<b>" +"<header>" + "<table>" + "<tr>" + "<td>" + "Name: " + frmData.NameTextFR2 + "</td>" + "<td>" + "Patient ID: " + frmData.IDTextFR2 + "</td>" + "<td>" + "Age: " + frmData.AgeTextFR2 + "</td>" + "</tr>"  + "<tr>" + "<td>" + "Gender: " + frmData.GenderTextFR2 + "</td>" + "<td>" + "Test date: " + frmData.TestDateTextFR2 + "</td>" + "<td>" + "Report date: " + frmData.ReportDateTextFR2 + "</td>" + "</tr>" + "</table>" + "</b>" + "</pre>" + "</header>";
-    }
+    if (frmData.NameTextFR2 && frmData.IDTextFR2 && frmData.AgeTextFR2 && frmData.GenderTextFR2 && frmData.ReferralDrTextFR2 && frmData.ReporttimeTextFR2) {
+      report += "<pre>" + "<b>" + "<header>" + "<table>" +
+                "<tr>" +
+                  "<td>" + "Name: " + frmData.NameTextFR2 + "</td>" +
+                  "<td>" + "Patient ID: " + frmData.IDTextFR2 + "</td>" +
+                  "<td>" + "Age: " + frmData.AgeTextFR2 + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                  "<td>" + "Gender: " + frmData.GenderTextFR2 + "</td>" +
+                  "<td>" + "Test date: " + frmData.TestDateTextFR2 + "</td>" +
+                  "<td>" + "Report date: " + frmData.ReportDateTextFR2 + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                  "<td>" + "Referral Dr: " + frmData.ReferralDrTextFR2 + "</td>" +
+                  "<td>" + "Report time: " + frmData.ReporttimeTextFR2 + "</td>" +
+                "</tr>" +
+                "</table>" + "</b>" + "</pre>" + "</header>";
+  }
 
     if ((frmData.XrayTypes === 'AP' || frmData.opacities || frmData.mildHaziness
       || frmData.BothNormal || frmData.rightHilarShadow

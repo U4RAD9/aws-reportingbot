@@ -246,7 +246,16 @@ export default class PopUpXrayKnee extends React.Component {
     const gender = urlSearchParams.get("data-gender");
     const testDate = urlSearchParams.get("data-testdate");
     const reportDate = urlSearchParams.get("data-reportdate");
-    const reportimage = urlSearchParams.get("data-reportimage");
+    //const reportimage = urlSearchParams.get("data-reportimage");
+    const ReferralDr =   urlSearchParams.get("data-referringdoctor");
+    const Reporttime=    urlSearchParams.get("data-reporttime");
+    // const reportimage = urlSearchParams.get("data-reportimage");
+
+    // Decode the reportimage URL
+    let reportimage = urlSearchParams.get("data-reportimage");
+    if (reportimage) {
+      reportimage = decodeURIComponent(reportimage);
+    }
 
     const formData = {
       ...this.state.data,  // Preserve initial state values
@@ -257,6 +266,8 @@ export default class PopUpXrayKnee extends React.Component {
       TestDateTextFR15: testDate,
       ReportDateTextFR15: reportDate,
       reportimage: reportimage,
+      ReferralDrTextFR15: ReferralDr,
+      ReporttimeTextFR15: Reporttime
     };
     
     return (

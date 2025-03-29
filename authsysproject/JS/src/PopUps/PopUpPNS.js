@@ -391,6 +391,9 @@ export default class PopUpPNS extends React.Component {
     const institution = urlSearchParams.get("data-institution_name");
     const testDate = urlSearchParams.get("data-testdate");
     const reportDate = urlSearchParams.get("data-reportdate");
+    const ReferralDr = urlSearchParams.get("data-referringdoctor");
+    const Reporttime = urlSearchParams.get("data-reporttime");
+    
     // const reportimage = urlSearchParams.get("data-reportimage");
 
     // Decode the reportimage URL
@@ -408,6 +411,8 @@ export default class PopUpPNS extends React.Component {
       TestDateTextFR4: testDate,
       ReportDateTextFR4: reportDate,
       reportimage: reportimage,
+      ReferralDrTextFR4:ReferralDr,
+      ReporttimeTextFR4:Reporttime
     };
     return (
       <Modal visible={true} onClickBackdrop={this.modalBackdropClicked}>

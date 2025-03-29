@@ -92,6 +92,9 @@ export default class PopUpCtHead extends React.Component {
     const institution = urlSearchParams.get("data-institution_name");
     const testDate = urlSearchParams.get("data-testdate");
     const reportDate = urlSearchParams.get("data-reportdate");
+    const ReferralDr =   urlSearchParams.get("data-referringdoctor");
+    const Reporttime=    urlSearchParams.get("data-reporttime");
+    
 
     // Decode the reportimage URL
     let reportimage = urlSearchParams.get("data-reportimage");
@@ -108,6 +111,8 @@ export default class PopUpCtHead extends React.Component {
       TestDateTextFR18: testDate,
       ReportDateTextFR18: reportDate,
       reportimage: reportimage,
+      ReferralDrTextFR18:ReferralDr,
+      ReporttimeTextFR18:Reporttime
     };
     return (
       <Modal visible={true} onClickBackdrop={this.modalBackdropClicked}>

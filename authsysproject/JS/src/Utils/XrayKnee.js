@@ -222,11 +222,26 @@ class XrayKnee extends Component {
   //     report += "<h5>" + "<strong>" + "<u>" + "OBSERVATION:" + "</u>" + "</strong>" + "</h5>";
   //   }
 
-  if (frmData.NameTextFR15 && frmData.IDTextFR15 && frmData.AgeTextFR15 && frmData.GenderTextFR15)
-    {
-      report += "<pre>" + "<b>" +"<header>" + "<table>" + "<tr>" + "<td>" + "Name: " + frmData.NameTextFR15 + "</td>" + "<td>" + "Patient ID: " + frmData.IDTextFR15 + "</td>" + "<td>" + "Age: " + frmData.AgeTextFR15 + "</td>" + "</tr>"  + "<tr>" + "<td>" + "Gender: " + frmData.GenderTextFR15 + "</td>" + "<td>" + "Test date: " + frmData.TestDateTextFR15 + "</td>" + "<td>" + "Report date: " + frmData.ReportDateTextFR15 + "</td>" + "</tr>" + "</table>" + "</b>" + "</pre>" + "</header>";
-    }
-
+  
+    //Auto data by Aman Gutpa on 23/06/23
+    if (frmData.NameTextFR15 && frmData.IDTextFR15 && frmData.AgeTextFR15 && frmData.GenderTextFR15 && frmData.ReferralDrTextFR15 && frmData.ReporttimeTextFR15) {
+      report += "<pre>" + "<b>" + "<header>" + "<table>" +
+                "<tr>" +
+                  "<td>" + "Name: " + frmData.NameTextFR15 + "</td>" +
+                  "<td>" + "Patient ID: " + frmData.IDTextFR15 + "</td>" +
+                  "<td>" + "Age: " + frmData.AgeTextFR15 + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                  "<td>" + "Gender: " + frmData.GenderTextFR15 + "</td>" +
+                  "<td>" + "Test date: " + frmData.TestDateTextFR15 + "</td>" +
+                  "<td>" + "Report date: " + frmData.ReportDateTextFR15 + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                  "<td>" + "Referral Dr: " + frmData.ReferralDrTextFR15 + "</td>" +
+                  "<td>" + "Report time: " + frmData.ReporttimeTextFR15 + "</td>" +
+                "</tr>" +
+                "</table>" + "</b>" + "</pre>" + "</header>";
+  }
     if(frmData.XrayType){
       if(frmData.KneeNormal){
         let arr = []

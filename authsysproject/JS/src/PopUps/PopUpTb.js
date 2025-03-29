@@ -110,6 +110,9 @@ if (data.suspectedTB) {
     const gender = urlSearchParams.get("data-gender");
     const testDate = urlSearchParams.get("data-testdate");
     const reportDate = urlSearchParams.get("data-reportdate");
+    const ReferralDr = urlSearchParams.get("data-referringdoctor");
+    const Reporttime = urlSearchParams.get("data-reporttime");
+    
     // const reportimage = urlSearchParams.get("data-reportimage");
 
     // Decode the reportimage URL
@@ -119,13 +122,15 @@ if (data.suspectedTB) {
     }
 
     const formData = {
-      NameTextFR2: patientName,
-      IDTextFR2: patientId,
-      AgeTextFR2: age,
-      GenderTextFR2: gender,
-      TestDateTextFR2: testDate,
-      ReportDateTextFR2: reportDate,
+      NameTextFR30: patientName,
+      IDTextFR30: patientId,
+      AgeTextFR30: age,
+      GenderTextFR30: gender,
+      TestDateTextFR30: testDate,
+      ReportDateTextFR30: reportDate,
       reportimage: reportimage,
+      ReferralDrTextFR30:ReferralDr,
+      ReporttimeTextFR30:Reporttime
     };
     
     return (

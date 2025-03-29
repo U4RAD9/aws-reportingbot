@@ -2,6 +2,8 @@ from django.conf.urls.static import static
 from django.conf import settings
 from django.urls import path
 from . import views
+from .views import save_template,get_template,get_client_header_footer
+
 
 # from django.contrib.auth import views
 
@@ -130,7 +132,12 @@ urlpatterns = [
     path('upload_dicom_files/', views.upload_dicom_files, name='upload_dicom_files'),
     path('all-data/', views.all_patient_data, name='all_patient_data'),
     path('all-tb-data/', views.all_tb_data, name='all_tb_data'),
-    path('ecgreporting/', views.patient_report, name='patient_report')
+    path('ecgreporting/', views.patient_report, name='patient_report'),
+    
+    path('get-client-header-footer/', get_client_header_footer, name='get-client-header-footer'),
+    
+    path('save-template/', save_template, name='save-template'),
+     path('get-template/<int:template_id>/',views.get_template, name='get_template'),
 
 
 ] 

@@ -86,6 +86,8 @@ export default class PopUpblan extends React.Component {
     const gender = urlSearchParams.get("data-gender");
     const testDate = urlSearchParams.get("data-testdate");
     const reportDate = urlSearchParams.get("data-reportdate");
+    const  ReferralDr =   urlSearchParams.get("data-referringdoctor");
+    const Reporttime=    urlSearchParams.get("data-reporttime");
 
     let reportimage = urlSearchParams.get("data-reportimage");
     if (reportimage) {
@@ -100,6 +102,8 @@ export default class PopUpblan extends React.Component {
       TestDateTextFR2: testDate,
       ReportDateTextFR2: reportDate,
       reportimage: reportimage,
+      ReferralDrTextFR2:ReferralDr,
+      ReporttimeTextFR2:Reporttime
     };
 
     return (

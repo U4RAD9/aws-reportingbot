@@ -33,50 +33,26 @@ class Blanks extends Component {
     const impression = [];
     let totalCovidPoints = 0;
 
-    if (
-      frmData.NameTextFR2 &&
-      frmData.IDTextFR2 &&
-      frmData.AgeTextFR2 &&
-      frmData.GenderTextFR2
-    ) {
-      report +=
-        "<pre>" +
-        "<b>" +
-        "<header>" +
-        "<table>" +
-        "<tr>" +
-        "<td>" +
-        "Name: " +
-        frmData.NameTextFR2 +
-        "</td>" +
-        "<td>" +
-        "Patient ID: " +
-        frmData.IDTextFR2 +
-        "</td>" +
-        "<td>" +
-        "Age: " +
-        frmData.AgeTextFR2 +
-        "</td>" +
-        "</tr>" +
-        "<tr>" +
-        "<td>" +
-        "Gender: " +
-        frmData.GenderTextFR2 +
-        "</td>" +
-        "<td>" +
-        "Test date: " +
-        frmData.TestDateTextFR2 +
-        "</td>" +
-        "<td>" +
-        "Report date: " +
-        frmData.ReportDateTextFR2 +
-        "</td>" +
-        "</tr>" +
-        "</table>" +
-        "</b>" +
-        "</pre>" +
-        "</header>";
-    }
+    
+    //Auto data by Aman Gutpa on 23/06/23
+    if (frmData.NameTextFR29 && frmData.IDTextFR29 && frmData.AgeTextFR29 && frmData.GenderTextFR29 && frmData.ReferralDrTextFR29 && frmData.ReporttimeTextFR29) {
+      report += "<pre>" + "<b>" + "<header>" + "<table>" +
+                "<tr>" +
+                  "<td>" + "Name: " + frmData.NameTextFR29 + "</td>" +
+                  "<td>" + "Patient ID: " + frmData.IDTextFR29 + "</td>" +
+                  "<td>" + "Age: " + frmData.AgeTextFR29 + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                  "<td>" + "Gender: " + frmData.GenderTextFR29 + "</td>" +
+                  "<td>" + "Test date: " + frmData.TestDateTextFR29 + "</td>" +
+                  "<td>" + "Report date: " + frmData.ReportDateTextFR29 + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                  "<td>" + "Referral Dr: " + frmData.ReferralDrTextFR29 + "</td>" +
+                  "<td>" + "Report time: " + frmData.ReporttimeTextFR29 + "</td>" +
+                "</tr>" +
+                "</table>" + "</b>" + "</pre>" + "</header>";
+  }
 
     const current_user = JSON.parse(
       document.getElementById("current-user").textContent || "{}"

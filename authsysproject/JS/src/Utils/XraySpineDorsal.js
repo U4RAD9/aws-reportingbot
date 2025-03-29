@@ -110,10 +110,26 @@ class XraySpineDorsal extends Component {
     let pageBreak = 0;
     let totalCovidPoints = 0;
 
-    if (frmData.NameTextFR14 && frmData.IDTextFR14 && frmData.AgeTextFR14 && frmData.GenderTextFR14)
-    {
-      report += "<pre>" + "<b>" +"<header>" + "<table>" + "<tr>" + "<td>" + "Name: " + frmData.NameTextFR14 + "</td>" + "<td>" + "Patient ID: " + frmData.IDTextFR14 + "</td>" + "<td>" + "Age: " + frmData.AgeTextFR14 + "</td>" + "</tr>"  + "<tr>" + "<td>" + "Gender: " + frmData.GenderTextFR14 + "</td>" + "<td>" + "Test date: " + frmData.TestDateTextFR14 + "</td>" + "<td>" + "Report date: " + frmData.ReportDateTextFR14 + "</td>" + "</tr>" + "</table>" + "</b>" + "</pre>" + "</header>";
-    }
+    
+    //Auto data by Aman Gutpa on 23/06/23
+    if (frmData.NameTextFR14 && frmData.IDTextFR14 && frmData.AgeTextFR14 && frmData.GenderTextFR14 && frmData.ReferralDrTextFR14 && frmData.ReporttimeTextFR14) {
+      report += "<pre>" + "<b>" + "<header>" + "<table>" +
+                "<tr>" +
+                  "<td>" + "Name: " + frmData.NameTextFR14 + "</td>" +
+                  "<td>" + "Patient ID: " + frmData.IDTextFR14 + "</td>" +
+                  "<td>" + "Age: " + frmData.AgeTextFR14 + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                  "<td>" + "Gender: " + frmData.GenderTextFR14 + "</td>" +
+                  "<td>" + "Test date: " + frmData.TestDateTextFR14 + "</td>" +
+                  "<td>" + "Report date: " + frmData.ReportDateTextFR14 + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                  "<td>" + "Referral Dr: " + frmData.ReferralDrTextFR14 + "</td>" +
+                  "<td>" + "Report time: " + frmData.ReporttimeTextFR14 + "</td>" +
+                "</tr>" +
+                "</table>" + "</b>" + "</pre>" + "</header>";
+  }
 
     if (frmData.SpineView === 'AP') {
       report += "<h5>" + "<strong>" + "<u>" + "X-RAY SPINE-DORSAL AP" + "</u>" + "</strong>" + "</h5>";

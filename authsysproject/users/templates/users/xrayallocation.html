@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 {% load tz %} {% load static %}
@@ -546,6 +547,21 @@
                     </div>
                   </div>
                 </th>
+                <!--28-05-2025 by Rohan jangid-->
+                <th>
+                  <div class="filter-dropdown-container">
+                      <div>Received Date</div>
+                      <div class="dropdown-select1" id="filter-Received-dropdown">
+                          <select id="filter-Received-select-Received" class="form-control">
+                              <option value="">All</option>
+                              {% for received in Received_on_db %}
+                                  <option value="{{ received|date:'Y-m-d' }}">{{ received|date:'Y-m-d' }}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
+                  </div>
+              </th>
+              <!--upto this -->
                 <th>
                   <div class="filter-dropdown-container">
                       <div>Study Description</div>
@@ -584,6 +600,7 @@
             <td>{{ patient.age }}</td>
             <td>{{ patient.gender }}</td>
             <td>{{ patient.study_date }}</td>
+            <!--by Rohan jangid--><td class="received-date">{{ patient.recived_on_db|date:'Y-m-d' }}</td><!--28-05-2025 by Rohan jangid-->
             <td>{{ patient.study_description }}</td>
             <td>
               <button class="openClinicalHistoryButton" data-clinical-history="{{ patient.notes }}">
@@ -615,7 +632,7 @@
               {% for patient_url in patient_urls %}
                  {% if patient_url.patient.id == patient.id %}
                     <a class="reportButton"
-                    href="reporting-bot?data-patientid={{ patient.patient_id }}&data-patientname={{ patient.patient_name }}&data-bodypart={{ patient.body_part_examined }}&data-Modality={{ patient.Modality }}&data-study-id={{ patient.study_id }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-testdate={{ patient.study_date }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ patient.dicom_file }}&data-location={{ patient.location }}&data-accession={{ patient.accession_number }}&data-institution_name={{ patient.institution_name }}"
+                    href="reporting-bot?data-patientid={{ patient.patient_id }}&data-patientname={{ patient.patient_name }}&data-bodypart={{ patient.body_part_examined }}&data-Modality={{ patient.Modality }}&data-study-id={{ patient.study_id }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-testdate={{ patient.study_date }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ patient.dicom_file }}&data-location={{ patient.location }}&data-accession={{ patient.accession_number }}&data-institution_name={{ patient.institution_name }} &data-referringdoctor={{patient.referring_doctor_name}} &data-reporttime={% now 'H:i:s' %}"
                     data-patient-id="{{ patient.patient_id }}" data-patientname="{{ patient.patient_name }}"
                     data-age="{{ patient.age }}" data-gender="{{ patient.gender }}"
                     data-testdate="{{ patient.study_date }}" data-reportdate="{% now 'Y-m-d' %}"
@@ -626,6 +643,8 @@
                     data-Modality="{{patient.Modality}}"
                     data-bodypart="{{patient.body_part_examined}}"
                     data-accession="{{ patient.accession_number }}"
+                    data-reporttime={% now 'H:i:s' %}
+                    data-referringdoctor="{{patient.referring_doctor_name}}"
                     data-institution_name="{{ patient.institution_name }}" onclick="changeButtonColor(this);">
                         {% if patient.isDone %}
                            Reported
@@ -893,38 +912,39 @@
       return dateParts[2] + "-" + dateParts[1] + "-" + dateParts[0];
     }
 
+    //  28-05-2025 by Rohan jangid
     $(document).ready(function () {
-
-       // Event handler for the change event of the test date dropdown
-       $('#filter-date-select-date').change(function () {
-            filterTable();
-        });
-
-        // Event handler for the change event of the Studydescription dropdown
-        $('#filter-Studydescription-select-Studydescription').change(function () {
-            filterTable();
-        });
-
-        function filterTable() {
-            var selectedDate = $('#filter-date-select-date').val();
-            var selectedStudydescription = $('#filter-Studydescription-select-Studydescription').val();
-
-            // Loop through each row in the table
-            $('#patientTable tbody tr').each(function () {
-                var rowDate = $(this).find('td:nth-child(5)').text(); // Get the test date from the table cell
-                var rowStudydescription = $(this).find('td:nth-child(6)').text();
-
-                
-                if ((selectedDate === '' || rowDate === selectedDate) && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription))
-                {
-                    
-                    $(this).show();
-                } else {
-                    $(this).hide();
-                }
-            });
-        }
+    // Attach event handlers for dropdown changes
+    $('#filter-Received-select-Received, #filter-Studydescription-select-Studydescription').change(function () {
+        filterTable();
     });
+
+    function filterTable() {
+        var selectedDate = $('#filter-Received-select-Received').val().trim(); // Get selected date
+        var selectedStudydescription = $('#filter-Studydescription-select-Studydescription').val().toLowerCase().trim(); // Normalize study description
+        
+        // Loop through each row in the table
+        $('#patientTable tbody tr').each(function () {
+            var rowDate = $(this).find('td.received-date').text().trim(); // Extract only YYYY-MM-DD part
+            var rowStudydescription = $(this).find('td.study-description').text().toLowerCase().trim(); // Normalize study description
+
+            console.log("Selected Date:", selectedDate);
+            console.log("Row Date:", rowDate);
+
+            // Ensure date format consistency
+            if (rowDate.includes(" ")) {
+                rowDate = rowDate.split(" ")[0]; // Handle cases where a timestamp is included
+            }
+
+            // Apply filtering logic
+            var showRow = (selectedDate === '' || rowDate === selectedDate) &&
+                          (selectedStudydescription === '' || rowStudydescription.includes(selectedStudydescription));
+
+            $(this).toggle(showRow);
+        });
+    }
+});
+// upto this
   </script>
 
   <div class="footer">

@@ -183,6 +183,8 @@ export default class PopUpXrayLeftShoulder extends React.Component {
     const testDate = urlSearchParams.get("data-testdate");
     const reportDate = urlSearchParams.get("data-reportdate");
     const reportimage = urlSearchParams.get("data-reportimage");
+    const ReferralDr = urlSearchParams.get("data-referringdoctor");
+    const Reporttime = urlSearchParams.get("data-reporttime");
 
     const formData = {
       ...this.state.data,  // Preserve initial state values
@@ -193,6 +195,8 @@ export default class PopUpXrayLeftShoulder extends React.Component {
       TestDateTextFR11: testDate,
       ReportDateTextFR11: reportDate,
       reportimage: reportimage,
+      ReferralDrTextFR11:ReferralDr,
+      ReporttimeTextFR11:Reporttime
     };
 
     return (

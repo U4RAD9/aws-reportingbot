@@ -466,6 +466,16 @@
                <a href="?page={{ paginator.num_pages }}">last &raquo;</a>
              {% endif %}
            </span>
+          <!-- Search Page Input -->
+          <div>
+            <form action="" method="GET" onsubmit="return goToPage();">
+              <input type="number" class="form-control form-control-lg" id="pageInput" name="page" 
+                     min="1" max="{{ page_obj.paginator.num_pages }}" 
+                     placeholder="Enter page no Search" required 
+                     style="width: 200px; height: 30px; font-size: 14px;">
+              <button type="submit">Go</button>
+            </form>
+          </div>
          </div>
 
           <div class="card-body">
@@ -590,6 +600,23 @@
   <script
     src="https://cdn.jsdelivr.net/npm/cornerstone-wado-image-loader@latest/dist/cornerstoneWADOImageLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-tools@latest/dist/cornerstoneTools.js"></script>
+
+
+  <script>
+    function goToPage() {
+      var page = document.getElementById("pageInput").value;
+      var totalPages = {{ page_obj.paginator.num_pages }};
+      
+      if (page >= 1 && page <= totalPages) {
+        window.location.href = "?page=" + page;
+      } else {
+        alert("Please enter a valid page number between 1 and " + totalPages);
+      }
+      
+      return false; // Prevent form submission
+    }
+  </script>
+
 
   <script>
     // Function to update the counts of rows with 'Report' and 'Reported' button states

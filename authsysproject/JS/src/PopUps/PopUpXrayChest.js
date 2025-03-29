@@ -376,6 +376,8 @@ export default class PopUpXrayChest extends React.Component {
     const institution = urlSearchParams.get("data-institution_name");
     const testDate = urlSearchParams.get("data-testdate");
     const reportDate = urlSearchParams.get("data-reportdate");
+    const ReferralDr =   urlSearchParams.get("data-referringdoctor");
+    const Reporttime=    urlSearchParams.get("data-reporttime");
     // const reportimage = urlSearchParams.get("data-reportimage");
 
     // Decode the reportimage URL
@@ -393,6 +395,8 @@ export default class PopUpXrayChest extends React.Component {
       TestDateTextFR2: testDate,
       ReportDateTextFR2: reportDate,
       reportimage: reportimage,
+      ReferralDrTextFR2:ReferralDr,
+      ReporttimeTextFR2:Reporttime
     };
     
     return (

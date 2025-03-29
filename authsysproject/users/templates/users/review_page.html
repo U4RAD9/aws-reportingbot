@@ -559,7 +559,7 @@
                                       {{ radiologist.user.first_name }}
                                       {% if not forloop.last %}, {% endif %}
                                   {% endfor %}
-                                  <button class="isDone-button btn btn-sm" 
+                                  <button class="isDone-button btn btn-sm"></button> 
                                           data-patient-id="{{ data.dicom_data.patient_id }}" 
                                           style="background-color: {% if data.dicom_data.isDone %}red{% else %}green{% endif %}; color: white;">
                                       {% if data.dicom_data.isDone %}Reassign{% else %}Not Reported Yet{% endif %}

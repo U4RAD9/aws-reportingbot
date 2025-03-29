@@ -48,50 +48,24 @@ class TbChest extends Component {
 
 
 
-    // Auto data by Aman Gupta on 23/06/23
-if (
-    frmData.NameTextFR2 &&
-    frmData.IDTextFR2 &&
-    frmData.AgeTextFR2 &&
-    frmData.GenderTextFR2
-  ) {
-    report +=
-      "<pre>" +
-      "<b>" +
-      "<header>" +
-      "<table>" +
-      "<tr>" +
-      "<td>" +
-      "Name: " +
-      frmData.NameTextFR2 +
-      "</td>" +
-      "<td>" +
-      "Patient ID: " +
-      frmData.IDTextFR2 +
-      "</td>" +
-      "<td>" +
-      "Age: " +
-      frmData.AgeTextFR2 +
-      "</td>" +
-      "</tr>" +
-      "<tr>" +
-      "<td>" +
-      "Gender: " +
-      frmData.GenderTextFR2 +
-      "</td>" +
-      "<td>" +
-      "Test date: " +
-      frmData.TestDateTextFR2 +
-      "</td>" +
-      "<td>" +
-      "Report date: " +
-      frmData.ReportDateTextFR2 +
-      "</td>" +
-      "</tr>" +
-      "</table>" +
-      "</b>" +
-      "</pre>" +
-      "</header>";
+    //Auto data by Aman Gutpa on 23/06/23
+    if (frmData.NameTextFR30 && frmData.IDTextFR30 && frmData.AgeTextFR30 && frmData.GenderTextFR30 && frmData.ReferralDrTextFR30 && frmData.ReporttimeTextFR30) {
+      report += "<pre>" + "<b>" + "<header>" + "<table>" +
+                "<tr>" +
+                  "<td>" + "Name: " + frmData.NameTextFR30 + "</td>" +
+                  "<td>" + "Patient ID: " + frmData.IDTextFR30 + "</td>" +
+                  "<td>" + "Age: " + frmData.AgeTextFR30 + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                  "<td>" + "Gender: " + frmData.GenderTextFR30 + "</td>" +
+                  "<td>" + "Test date: " + frmData.TestDateTextFR30 + "</td>" +
+                  "<td>" + "Report date: " + frmData.ReportDateTextFR30 + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                  "<td>" + "Referral Dr: " + frmData.ReferralDrTextFR30 + "</td>" +
+                  "<td>" + "Report time: " + frmData.ReporttimeTextFR30 + "</td>" +
+                "</tr>" +
+                "</table>" + "</b>" + "</pre>" + "</header>";
   }
   
   if (

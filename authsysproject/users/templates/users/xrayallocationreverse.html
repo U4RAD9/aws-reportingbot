@@ -482,6 +482,16 @@
                 <a href="?page={{ page_obj.paginator.num_pages }}">Last</a>
             {% endif %}
           </div>
+            <!-- Search Page Input -->
+            <div>
+              <form action="" method="GET" onsubmit="return goToPage();">
+                <input type="number" class="form-control form-control-lg" id="pageInput" name="page" 
+                       min="1" max="{{ page_obj.paginator.num_pages }}" 
+                       placeholder="Enter page no Search" required 
+                       style="width: 200px; height: 30px; font-size: 14px;">
+                <button type="submit">Go</button>
+              </form>
+            </div>
           <div class="card-body">
             <h1 class="header">
               <div class="row-container">
@@ -544,6 +554,20 @@
                     </div>
                   </div>
                 </th>
+                <!-- by rohan jangid -->
+                <th>
+                  <div class="filter-dropdown-container">
+                      <div>Received Date</div>
+                      <div class="dropdown-select1" id="filter-Received-dropdown">
+                          <select id="filter-Received-select-Received" class="form-control">
+                              <option value="">All</option>
+                              {% for received in Received_on_db %}
+                                  <option value="{{ received|date:'Y-m-d' }}">{{ received|date:'Y-m-d' }}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
+                  </div>
+              </th><!--28-05-2025-->
 
                 <th>Clinical History</th>
                 <th>History Files</th>
@@ -570,6 +594,7 @@
             <td>{{ patient.age }}</td>
             <td>{{ patient.gender }}</td>
             <td>{{ patient.study_date }}</td>
+            <td class="received-date">{{ patient.recived_on_db|date:'Y-m-d' }}</td>
             <td>
               <button class="openClinicalHistoryButton" data-clinical-history="{{ patient.notes }}">
                 View
@@ -645,6 +670,20 @@
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-tools@latest/dist/cornerstoneTools.js"></script>
 
 
+  <script>
+    function goToPage() {
+      var page = document.getElementById("pageInput").value;
+      var totalPages = {{ page_obj.paginator.num_pages }};
+      
+      if (page >= 1 && page <= totalPages) {
+        window.location.href = "?page=" + page;
+      } else {
+        alert("Please enter a valid page number between 1 and " + totalPages);
+      }
+      
+      return false; // Prevent form submission
+    }
+  </script>
 
 
 
@@ -912,6 +951,29 @@
       filterTableByLocation($("#filter-city-select-city").val());
     });
   </script>
+  <!-- by rohan jangid 28-05-2025 -->
+  <script>
+    $(document).ready(function () {
+     // Attach event handler for dropdown change
+     $('#filter-Received-select-Received').change(function () {
+         filterTable();
+     });
+ 
+     function filterTable() {
+         var selectedDate = $('#filter-Received-select-Received').val(); // Get selected date
+ 
+         // Loop through each row in the table
+         $('#patientTable tbody tr').each(function () {
+             var rowDate = $(this).find('td.received-date').text().trim(); // Extract received date from the row
+ 
+             // Show row if the selected date is empty (show all) or matches the row's received date
+             var showRow = (selectedDate === '' || rowDate === selectedDate);
+ 
+             $(this).toggle(showRow);
+         });
+     }
+ });
+   </script>
 
   <div class="footer">
     <p>&copy; 2019-2024 XRAi Digital. All rights reserved.</p>

@@ -269,10 +269,26 @@ class CtHead extends Component {
     let pageBreak = 0;
     let totalCovidPoints = 0;
 
-    if (frmData.NameTextFR3 && frmData.IDTextFR3 && frmData.AgeTextFR3 && frmData.GenderTextFR3)
-    {
-      report += "<pre>" + "<b>" +"<header>" + "<table>" + "<tr>" + "<td>" + "Name: " + frmData.NameTextFR3 + "</td>" + "<td>" + "Patient ID: " + frmData.IDTextFR3 + "</td>" + "<td>" + "Age: " + frmData.AgeTextFR3 + "</td>" + "</tr>"  + "<tr>" + "<td>" + "Gender: " + frmData.GenderTextFR3 + "</td>" + "<td>" + "Test date: " + frmData.TestDateTextFR3 + "</td>" + "<td>" + "Report date: " + frmData.ReportDateTextFR3 + "</td>" + "</tr>" + "</table>" + "</b>" + "</pre>" + "</header>";
-    }
+  
+    //Auto data by Aman Gutpa on 23/06/23
+    if (frmData.NameTextFR2 && frmData.IDTextFR2 && frmData.AgeTextFR2 && frmData.GenderTextFR2 && frmData.ReferralDrTextFR2 && frmData.ReporttimeTextFR2) {
+      report += "<pre>" + "<b>" + "<header>" + "<table>" +
+                "<tr>" +
+                  "<td>" + "Name: " + frmData.NameTextFR2 + "</td>" +
+                  "<td>" + "Patient ID: " + frmData.IDTextFR2 + "</td>" +
+                  "<td>" + "Age: " + frmData.AgeTextFR2 + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                  "<td>" + "Gender: " + frmData.GenderTextFR2 + "</td>" +
+                  "<td>" + "Test date: " + frmData.TestDateTextFR2 + "</td>" +
+                  "<td>" + "Report date: " + frmData.ReportDateTextFR2 + "</td>" +
+                "</tr>" +
+                "<tr>" +
+                  "<td>" + "Referral Dr: " + frmData.ReferralDrTextFR2 + "</td>" +
+                  "<td>" + "Report time: " + frmData.ReporttimeTextFR2 + "</td>" +
+                "</tr>" +
+                "</table>" + "</b>" + "</pre>" + "</header>";
+  }
   
     if (
       frmData.cerebralParenchyma ||
