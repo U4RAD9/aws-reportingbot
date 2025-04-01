@@ -42,21 +42,21 @@ class CtAbdomen extends Component {
         
 		
     //Auto data by Aman Gutpa on 23/06/23
-    if (frmData.NameTextFR2 && frmData.IDTextFR2 && frmData.AgeTextFR2 && frmData.GenderTextFR2 && frmData.ReferralDrTextFR2 && frmData.ReporttimeTextFR2) {
+    if (frmData.NameTextFR18 && frmData.IDTextFR18 && frmData.AgeTextFR18 && frmData.GenderTextFR18 && frmData.ReferralDrTextFR18 && frmData.ReporttimeTextFR18) {
 		report += "<pre>" + "<b>" + "<header>" + "<table>" +
 				  "<tr>" +
-					"<td>" + "Name: " + frmData.NameTextFR2 + "</td>" +
-					"<td>" + "Patient ID: " + frmData.IDTextFR2 + "</td>" +
-					"<td>" + "Age: " + frmData.AgeTextFR2 + "</td>" +
+					"<td>" + "Name: " + frmData.NameTextFR18 + "</td>" +
+					"<td>" + "Patient ID: " + frmData.IDTextFR18 + "</td>" +
+					"<td>" + "Age: " + frmData.AgeTextFR18 + "</td>" +
 				  "</tr>" +
 				  "<tr>" +
-					"<td>" + "Gender: " + frmData.GenderTextFR2 + "</td>" +
-					"<td>" + "Test date: " + frmData.TestDateTextFR2 + "</td>" +
-					"<td>" + "Report date: " + frmData.ReportDateTextFR2 + "</td>" +
+					"<td>" + "Gender: " + frmData.GenderTextFR18 + "</td>" +
+					"<td>" + "Test date: " + frmData.TestDateTextFR18 + "</td>" +
+					"<td>" + "Report date: " + frmData.ReportDateTextFR18 + "</td>" +
 				  "</tr>" +
 				  "<tr>" +
-					"<td>" + "Referral Dr: " + frmData.ReferralDrTextFR2 + "</td>" +
-					"<td>" + "Report time: " + frmData.ReporttimeTextFR2 + "</td>" +
+					"<td>" + "Referral Dr: " + frmData.ReferralDrTextFR18 + "</td>" +
+					"<td>" + "Report time: " + frmData.ReporttimeTextFR18 + "</td>" +
 				  "</tr>" +
 				  "</table>" + "</b>" + "</pre>" + "</header>";
 	}

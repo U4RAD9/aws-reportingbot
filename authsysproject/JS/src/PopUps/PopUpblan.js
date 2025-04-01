@@ -95,15 +95,15 @@ export default class PopUpblan extends React.Component {
     }
 
     const formData = {
-      NameTextFR2: patientName,
-      IDTextFR2: patientId,
-      AgeTextFR2: age,
-      GenderTextFR2: gender,
-      TestDateTextFR2: testDate,
-      ReportDateTextFR2: reportDate,
+      NameTextFR29: patientName,
+      IDTextFR29: patientId,
+      AgeTextFR29: age,
+      GenderTextFR29: gender,
+      TestDateTextFR29: testDate,
+      ReportDateTextFR29: reportDate,
       reportimage: reportimage,
-      ReferralDrTextFR2:ReferralDr,
-      ReporttimeTextFR2:Reporttime
+      ReferralDrTextFR29: ReferralDr,
+      ReporttimeTextFR29: Reporttime
     };
 
     return (
