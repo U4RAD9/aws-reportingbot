@@ -3389,7 +3389,7 @@ pdf.autoTable({
       // Getting the table data from my function.
       // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
       const tableData = this.extractTableData(data);
-      const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
+      const { patientId, patientName, age, gender, testDate, reportDate, referralDr, reportTime } = tableData;
       //console.log("This is my extracted table data :",tableData);
 
       // Getting all the children elements of the data (ckeditor content).
@@ -3410,23 +3410,22 @@ pdf.autoTable({
       try {
           currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
 
-          const tableData = [
-              ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
-              ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
-              ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"]
-          ];
+          const tableContent = [
+            ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+            ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+            ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"],
+            ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
+        ];
+        
 
           currentYPosition += 20;
 
           pdf.autoTable({
-              startY: currentYPosition,
-              body: tableData,
-              theme: 'grid',
-              styles: {
-                  cellPadding: 3,
-                  fontSize: 10,
-              },
-          });
+            startY: currentYPosition,
+            body: tableContent,
+            theme: "grid",
+            styles: { cellPadding: 3, fontSize: 10 },
+        });
           currentYPosition = pdf.previousAutoTable.finalY + 20;
 
           // Looping through each element inside the CKEditor.
