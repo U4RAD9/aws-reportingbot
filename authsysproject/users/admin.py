@@ -13,7 +13,7 @@ from .models.dentalpatientdetails import DentalPatientInfo
 from .models.doctorpatientdetails import DoctorPatientInfo
 from .models.patientdetails import PatientDetails
 from .models.City import City
-from .models.Client import Client
+from .models.Client import Client, Institution
 from .models.Date import Date
 from .models.Location import Location
 from .models.workexp import WorkExp
@@ -56,6 +56,7 @@ admin.site.register(optopatientDetails)
 admin.site.register(vitalPatientDetails)
 admin.site.register(City)
 admin.site.register(Client)
+admin.site.register(Institution)
 admin.site.register(Date)
 admin.site.register(Location)
 admin.site.register(ServicesList)
