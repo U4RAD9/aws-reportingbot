@@ -706,7 +706,7 @@
             `;
             // Add findings with bold formatting
             if (formData.normalECG) {
-                reportHTML += `<li><strong>Normal Sinus Rhythm.</strong></li><br><li><strong>No significant ST-T changes seen.</strong></li>`;
+                reportHTML += `<li><strong>Normal Sinus Rhythm.</strong></li><li><strong>No significant ST-T changes seen.</strong></li>`;
             } else {
                 if (formData.sinusRhythmRBBB) {
                     reportHTML += `<li><strong>Sinus rhythm with incomplete RBBB.</strong></li>`;
@@ -977,7 +977,7 @@
                 
                         // Set font to monospaced (prevents structure distortion)
                         pdf.setFont("courier", "normal"); // Use 'courier' for fixed-width font
-                        pdf.setFontSize(18);
+                        pdf.setFontSize(24);
                 
                         const margin = 5;
                         const maxWidth = pageWidth - 1 * margin;
@@ -1324,7 +1324,7 @@
         
                     // Set font to monospaced (prevents structure distortion)
                     pdf.setFont("courier", "normal"); // Use 'courier' for fixed-width font
-                    pdf.setFontSize(18);
+                    pdf.setFontSize(24);
         
                     const margin = 5;
                     const maxWidth = pageWidth - 1 * margin;
