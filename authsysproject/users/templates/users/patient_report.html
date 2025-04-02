@@ -144,6 +144,9 @@
         .observation {
             margin-top: 20px;
         }
+        .observation ul{
+            font-size: 24;
+        }
         
         /* Doctor Signature Section */
         .doctor-signature {
@@ -699,29 +702,29 @@
                             </tr>
                         </table>
                         <div class="observation">
-                            <h3><strong>ECG</strong></h3>
-                            <h4><strong>Observation:</strong></h4>
+                            <h1><strong>ECG</strong></h3>
+                            <h2><strong>Observation:</strong></h4>
                             <ul>
-                                <li><strong>Heart rate is ${heartRate} BPM.</strong></li>
+                                <li><strong>Heart rate is ${heartRate} BPM.</strong></li><br>
             `;
             // Add findings with bold formatting
             if (formData.normalECG) {
-                reportHTML += `<li><strong>Normal Sinus Rhythm.</strong></li><li><strong>No significant ST-T changes seen.</strong></li>`;
+                reportHTML += `<li><strong>Normal Sinus Rhythm.</strong></li><br><li><strong>No significant ST-T changes seen.</strong></li>`;
             } else {
                 if (formData.sinusRhythmRBBB) {
-                    reportHTML += `<li><strong>Sinus rhythm with incomplete RBBB.</strong></li>`;
+                    reportHTML += `<li><strong>Sinus rhythm with incomplete RBBB.</strong></li><br>`;
                 }
                 if (formData.sinusTachycardiaRBBB) {
-                    reportHTML += `<li><strong>Sinus Tachycardia with incomplete RBBB.</strong></li>`;
+                    reportHTML += `<li><strong>Sinus Tachycardia with incomplete RBBB.</strong></li><br>`;
                 }
                 if (formData.sinusBradycardiaRBBB) {
-                    reportHTML += `<li><strong>Sinus Bradycardia with incomplete RBBB.</strong></li>`;
+                    reportHTML += `<li><strong>Sinus Bradycardia with incomplete RBBB.</strong></li><br>`;
                 }
                 if (formData.sinusBradycardia) {
-                    reportHTML += `<li><strong>Sinus Bradycardia.</strong></li>`;
+                    reportHTML += `<li><strong>Sinus Bradycardia.</strong></li><br>`;
                 }
                 if (formData.sinusTachycardia) {
-                    reportHTML += `<li><strong>Sinus Tachycardia.</strong></li>`;
+                    reportHTML += `<li><strong>Sinus Tachycardia.</strong></li><br>`;
                 }
             }
             
@@ -738,7 +741,7 @@
                 !formData.sinusBradycardia &&
                 !formData.sinusTachycardia &&
                 !formData.additionalFindings) {
-                reportHTML += `<li><strong>Normal Sinus Rhythm.</strong></li>`;
+                reportHTML += `<li><strong>Normal Sinus Rhythm.</strong></li><br>`;
                 reportHTML += `<li><strong>No significant ST-T changes seen.</strong></li>`;
             }
             
@@ -977,7 +980,7 @@
                 
                         // Set font to monospaced (prevents structure distortion)
                         pdf.setFont("courier", "normal"); // Use 'courier' for fixed-width font
-                        pdf.setFontSize(24);
+                        pdf.setFontSize(12);
                 
                         const margin = 5;
                         const maxWidth = pageWidth - 1 * margin;
@@ -1324,7 +1327,7 @@
         
                     // Set font to monospaced (prevents structure distortion)
                     pdf.setFont("courier", "normal"); // Use 'courier' for fixed-width font
-                    pdf.setFontSize(24);
+                    pdf.setFontSize(12);
         
                     const margin = 5;
                     const maxWidth = pageWidth - 1 * margin;
