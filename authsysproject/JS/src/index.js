@@ -172,9 +172,8 @@ const Tools = {"Length": cornerstoneTools.LengthTool, "Angle": cornerstoneTools.
   "FreehandROI": cornerstoneTools.PlanarFreehandROITool, "Bidirectional": cornerstoneTools.BidirectionalTool, "Zoom": cornerstoneTools.ZoomTool, 
   "Pan": cornerstoneTools.PanTool, "Contrast": cornerstoneTools.WindowLevelTool, "Probe": cornerstoneTools.ProbeTool,"Eraser": cornerstoneTools.EraserTool, 
   "PlanarRotate": cornerstoneTools.PlanarRotateTool, "Height": cornerstoneTools.HeightTool, "SplineROI": cornerstoneTools.SplineROITool, 
-  "StackScroll": cornerstoneTools.StackScrollMouseWheelTool, "ArrowAnnotate": cornerstoneTools.ArrowAnnotateTool, "Crosshairs":cornerstoneTools.CrosshairsTool,"Magnify":cornerstoneTools.MagnifyTool,
+  "StackScroll": cornerstoneTools.StackScrollMouseWheelTool, "ArrowAnnotate": cornerstoneTools.ArrowAnnotateTool, "Crosshairs":cornerstoneTools.CrosshairsTool,"Magnify":cornerstoneTools.MagnifyTool,"Wheel":cornerstoneTools.StackScrollTool
 }
-
 var current_user = JSON.parse(
   document.getElementById("current-user").textContent
 );
@@ -234,6 +233,7 @@ class App extends Component {
     this.toggleFullScreen=this.toggleFullScreen.bind(this);
     
    this.getHeaderFooterImages=this.getHeaderFooterImages.bind(this);
+   this.slab=this.slab.bind(this);
     
   }
   allowDrop(event){
@@ -861,13 +861,34 @@ class App extends Component {
   
     event.target.value = '';
   }
-  //volume slab thickness settings for volume viewports
-  slabThickness(val, id){
+
+  slabThickness(val, id) {
     const viewport = renderingEngine.getViewport(id);
+    if (!viewport) {
+        console.error("MIP: Viewport not found!");
+        return;
+    }
+    
+    console.log("Setting MIP with slab thickness:", val);
     viewport.setBlendMode(cornerstone.Enums.BlendModes.MAXIMUM_INTENSITY_BLEND);
-    viewport.setProperties({ slabThickness: Number(val)});
+    viewport.setProperties({ slabThickness: Number(val) });
     viewport.render();
-  }
+    console.log("MIP render complete.");
+}
+
+slab(val, id) {
+    const viewport = renderingEngine.getViewport(id);
+    if (!viewport) {
+        console.error("MinIP: Viewport not found!");
+        return;
+    }
+
+    console.log("Setting MinIP with slab thickness:", val);
+    viewport.setBlendMode(cornerstone.Enums.BlendModes.MINIMUM_INTENSITY_BLEND);
+    viewport.setProperties({ slabThickness: Number(val) });
+    viewport.render();
+    console.log("MinIP render complete.");
+}
 
   //function for image alignment in viewport, uses viewport display area
   alignmentSettings(call, id){
@@ -1071,6 +1092,13 @@ class App extends Component {
         toolGroup.addTool(value.toolName);
       }
         // Enable tools
+        toolGroup.setToolConfiguration(cornerstoneTools.StackScrollTool.toolName, {
+          bindings: [
+            {
+              mouseButton: cornerstoneTools.Enums.MouseBindings.Primary,
+            },
+          ],
+        });
 
 
       //set scroll active
@@ -4280,9 +4308,15 @@ pdf.autoTable({
 <div className="button-container"><button className='tool-button' value='Zoom'
 onClick={e => this.toggleTool(e.target.value)}> <AiOutlineZoomIn size={25} /> {/* Adjust size as 
 needed */}Zoom</button></div>
+
 <div className="button-container"><button className='tool-button' value='Crosshairs'
 onClick={e => this.toggleTool(e.target.value)}> <AiOutlineZoomIn size={25} /> {/* Adjust size as 
-needed */}Crosshairs</button></div>
+needed */}3*1 oblique mpr</button></div>
+
+<div className="button-container"><button className='tool-button' value='Wheel'
+onClick={e => this.toggleTool(e.target.value)}> <AiOutlineZoomIn size={25} /> {/* Adjust size as 
+needed */}StackScroll</button></div>   
+
 {/* {button for the magnify tool} */}
 <div className="button-container"><button className='tool-button' value='Magnify'
 onClick={e => this.toggleTool(e.target.value)}> <AiOutlineZoomIn size={25} /> {/* Adjust size as 
@@ -4316,7 +4350,7 @@ this.orientationSettings(e, selected_viewport)}>
 {/*Button for enabling Probe Tool */}
 <div className="button-container"><button className='tool-button' value='Probe'
 onClick={e => this.toggleTool(e.target.value)}> <FaSearch /> {/* Probe/ magnifying glass icon 
-*/}Probe</button></div>
+*/}Pixel value</button></div>
 {/*Button for enabling Contrast tool, Drop down for changing windowing settings*/}
 <div className="button-container">
 <button className='tool-button' value='Contrast' onClick={e =>
@@ -4372,11 +4406,35 @@ selected_viewport)}>
 </div>
 {/*Slider for changing selected viewports slab thickness */}
 <div className='button-container'>
-<button className='name-button' disabled> <FaBars /> {/* Bars icon */}Slab 
-Thickness</button>
-<input type='range' min='0' max='50' defaultValue='0' class='slider' id='slider'
-onChange={e => this.slabThickness(e.target.value, selected_viewport)}></input>
+  <button className='name-button' disabled>
+    <FaBars /> {/* Bars icon */} Max MIP
+  </button>
+  <input 
+    type='range' 
+    min='0' 
+    max='50' 
+    defaultValue='0' 
+    className='slider' 
+    id='slider-mip'
+    onChange={e => this.slabThickness(e.target.value, selected_viewport)}
+  />
 </div>
+
+<div className='button-container'>
+  <button className='name-button' disabled>
+    <FaBars /> {/* Bars icon */} Min MinIP
+  </button>
+  <input 
+    type='range' 
+    min='0' 
+    max='50' 
+    defaultValue='0' 
+    className='slider' 
+    id='slider-minip'
+    onChange={e => this.slab(e.target.value, selected_viewport)} // ✅ FIXED: Calls slab() correctly
+  />
+</div>
+
 {/*Drop down for changing the layout of the viewports */}
 <div className="button-container">
 <button className='name-button' disabled> <FaThLarge /> {/* Grid layout icon 
