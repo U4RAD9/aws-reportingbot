@@ -726,14 +726,11 @@ def client_dashboard(request):
         grouped_pdfs = groupby(pdfs, key=attrgetter('patient_id'))
 
         for patient_id, group in grouped_pdfs:
-            # group = list(group)  # Convert the group iterator to a list
-            group_pdfs = list(group)  # Get all PDFs for this patient
-            #most_recent_pdf = group[0]  # The first entry due to ordering by '-id'
+            group = list(group)  # Convert the group iterator to a list
+            most_recent_pdf = group[0]  # The first entry due to ordering by '-id'
 
             # Replace underscores with spaces in the name for matching
-            #normalized_name = most_recent_pdf.name.replace("_", " ") if most_recent_pdf.name else None
-            for pdf in group_pdfs:  # Process each PDF in the group
-                normalized_name = pdf.name.replace("_", " ") if pdf.name else None
+            normalized_name = most_recent_pdf.name.replace("_", " ") if most_recent_pdf.name else None
 
             # Fetch DICOMData for the patient
             dicom_data = DICOMData.objects.filter(
