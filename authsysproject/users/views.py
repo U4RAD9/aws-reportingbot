@@ -6604,9 +6604,7 @@ def all_patient_data(request):
 
         if institutions:
              filters &= Q(institutions_namein=institutions)        
-             clients = Client.objects.exclude(institutionsname_isnull=True) \
-                        .exclude(institutions__name="None") \
-                        .values_list("institutions__name", flat=True).distinct()
+             
 
         if status:
             filters &= Q(isDone=(status.lower() == "reported"))
@@ -6620,7 +6618,10 @@ def all_patient_data(request):
 
     # Rest of the view remains unchanged
     radiologists = User.objects.filter(personalinfo__isnull=False).distinct()
-    clients = Client.objects.exclude(institution_name__isnull=True).exclude(institution_name="None").values_list("institution_name", flat=True).distinct()
+    # clients = Client.objects.exclude(institution_name__isnull=True).exclude(institution_name="None").values_list("institution_name", flat=True).distinct()
+    clients = Client.objects.exclude(institutionsname_isnull=True) \
+                        .exclude(institutions__name="None") \
+                        .values_list("institutions__name", flat=True).distinct()
 
     if "export" in request.GET:
         return export_patient_data(patients)
@@ -6639,6 +6640,8 @@ def all_patient_data(request):
 
 
     ##################################################### TB dashboard #####################################################
+
+
 # def all_tb_data(request):
 #     patients = DICOMData.objects.none()
 
