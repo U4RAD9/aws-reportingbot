@@ -6603,7 +6603,7 @@ def all_patient_data(request):
         #     filters &= Q(institution_name__in=institutions)
 
         if institutions:
-             filters &= Q(institutions_namein=institutions)        
+             filters &= Q(institutions_name_in=institutions)       
              
 
         if status:
