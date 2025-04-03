@@ -59,8 +59,8 @@ body {
     margin-top: 30px;
 }
 .document-editor__editable-container {
-  display: flex;
-  flex-direction: row; /* Arrange content vertically */
+  /*display: flex;  Arrange content vertically */
+  flex-direction: column;
   padding: calc(2 * var(--ck-spacing-large));
   background: var(--ck-color-base-foreground);
   padding-top: 15px;

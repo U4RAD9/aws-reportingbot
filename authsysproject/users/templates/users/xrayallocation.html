@@ -124,7 +124,9 @@
 
     .table-container {
       height: 100%;
-      overflow-y: auto;
+      /* overflow-y: auto; */
+      width: 100%;
+      max-width: 100%;
     }
 
     .dropdown-select {
@@ -310,10 +312,12 @@
       /* Adjust the values for the desired 3D effect */
     }
 
-     #patientTable {
-      width: 100vw;
+    #patientTable {
+      width: 100%;
+      max-width: 100%;
       background-color: white;
       color: black;
+      
     }
 
     #myInput {
@@ -544,7 +548,6 @@
                             {% endfor %}
                           </select>
                       </div>
-                    </div>
                   </div>
                 </th>
                 <!--28-05-2025 by Rohan jangid-->
@@ -560,8 +563,8 @@
                           </select>
                       </div>
                   </div>
-              </th>
-              <!--upto this -->
+                </th>
+                <!--upto this -->
                 <th>
                   <div class="filter-dropdown-container">
                       <div>Study Description</div>
@@ -581,93 +584,93 @@
                 <th>Actions</th>
               <!-- Add a column for the "Report" button -->
               </tr>
-        </thead>
-        <tbody>
-          {% for patient in patients %}
-          <tr class="patientRow {% if patient.urgent or patient.Mlc or patient.vip %}urgent{% endif %}" id="{{ patient.PatientId }}">
-            <td>{{ patient.patient_id }}
-                {% if patient.urgent %}
-                    <span class="urgent-label">Urgent</span>
-                {% endif %}
-                {% if patient.Mlc %}
-                    <span class="mlc-label">MLC</span>
-                {% endif %}
-                {% if patient.vip %}
-                    <span class="vip-label">VIP</span>
-                {% endif %}
-            </td>
-            <td>{{ patient.patient_name }}</td>
-            <td>{{ patient.age }}</td>
-            <td>{{ patient.gender }}</td>
-            <td>{{ patient.study_date }}</td>
-            <!--by Rohan jangid--><td class="received-date">{{ patient.recived_on_db|date:'Y-m-d' }}</td><!--28-05-2025 by Rohan jangid-->
-            <td>{{ patient.study_description }}</td>
-            <td>
-              <button class="openClinicalHistoryButton" data-clinical-history="{{ patient.notes }}">
-                View
-              </button>
-            </td>
-
-            <td>
-              {% for file_url in patient.history_file_urls %}
-                <a class="imageButton" target="_blank" href="{{ file_url }}">
-                  History Files {{ forloop.counter }}
-                </a>
-              {% endfor %}
-            </td>
-
-            <td>
-              {% for patient_url in patient_urls %}
-                 {% if patient_url.patient.id == patient.id %}
-                    {% for url in patient_url.pdf_urls %}
-                       <a class="imageButton" href="{{ url }}" target="_blank">
-                         Report {{ forloop.counter }}
-                       </a>
-                    {% endfor %}
-                 {% endif %}
-              {% endfor %}
-            </td>
-
-            <td>
-              {% for patient_url in patient_urls %}
-                 {% if patient_url.patient.id == patient.id %}
-                    <a class="reportButton"
-                    href="reporting-bot?data-patientid={{ patient.patient_id }}&data-patientname={{ patient.patient_name }}&data-bodypart={{ patient.body_part_examined }}&data-Modality={{ patient.Modality }}&data-study-id={{ patient.study_id }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-testdate={{ patient.study_date }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ patient.dicom_file }}&data-location={{ patient.location }}&data-accession={{ patient.accession_number }}&data-institution_name={{ patient.institution_name }} &data-referringdoctor={{patient.referring_doctor_name}} &data-reporttime={% now 'H:i:s' %}"
-                    data-patient-id="{{ patient.patient_id }}" data-patientname="{{ patient.patient_name }}"
-                    data-age="{{ patient.age }}" data-gender="{{ patient.gender }}"
-                    data-testdate="{{ patient.study_date }}" data-reportdate="{% now 'Y-m-d' %}"
-                    data-reportimage="{{ patient_url.urls.0|urlencode }}"
-                    data-dicom-file="{% get_media_prefix %}{{ patient.dicom_file }}"
-                    data-location="{{ patient.location }}"
-                    data-study-id="{{patient.study_id}}"
-                    data-Modality="{{patient.Modality}}"
-                    data-bodypart="{{patient.body_part_examined}}"
-                    data-accession="{{ patient.accession_number }}"
-                    data-reporttime={% now 'H:i:s' %}
-                    data-referringdoctor="{{patient.referring_doctor_name}}"
-                    data-institution_name="{{ patient.institution_name }}" onclick="changeButtonColor(this);">
-                        {% if patient.isDone %}
-                           Reported
-                        {% else %}
-                           Report
-                        {% endif %}
+            </thead>
+            <tbody>
+            {% for patient in patients %}
+              <tr class="patientRow {% if patient.urgent or patient.Mlc or patient.vip %}urgent{% endif %}" id="{{ patient.PatientId }}">
+                <td>{{ patient.patient_id }}
+                    {% if patient.urgent %}
+                        <span class="urgent-label">Urgent</span>
+                    {% endif %}
+                    {% if patient.Mlc %}
+                        <span class="mlc-label">MLC</span>
+                    {% endif %}
+                    {% if patient.vip %}
+                        <span class="vip-label">VIP</span>
+                    {% endif %}
+                </td>
+                <td>{{ patient.patient_name }}</td>
+                <td>{{ patient.age }}</td>
+                <td>{{ patient.gender }}</td>
+                <td>{{ patient.study_date }}</td>
+                <!--by Rohan jangid--><td class="received-date">{{ patient.recived_on_db|date:'Y-m-d' }}</td><!--28-05-2025 by Rohan jangid-->
+                <td>{{ patient.study_description }}</td>
+                <td>
+                  <button class="openClinicalHistoryButton" data-clinical-history="{{ patient.notes }}">
+                    View
+                  </button>
+                </td>
+    
+                <td>
+                  {% for file_url in patient.history_file_urls %}
+                    <a class="imageButton" target="_blank" href="{{ file_url }}">
+                      History Files {{ forloop.counter }}
                     </a>
-                 {% endif %}
-              {% endfor %}
-            </td>
+                  {% endfor %}
+                </td>
+    
+                <td>
+                  {% for patient_url in patient_urls %}
+                     {% if patient_url.patient.id == patient.id %}
+                        {% for url in patient_url.pdf_urls %}
+                           <a class="imageButton" href="{{ url }}" target="_blank">
+                             Report {{ forloop.counter }}
+                           </a>
+                        {% endfor %}
+                     {% endif %}
+                  {% endfor %}
+                </td>
+    
+                <td>
+                  {% for patient_url in patient_urls %}
+                     {% if patient_url.patient.id == patient.id %}
+                        <a class="reportButton"
+                        href="reporting-bot?data-patientid={{ patient.patient_id }}&data-patientname={{ patient.patient_name }}&data-bodypart={{ patient.body_part_examined }}&data-Modality={{ patient.Modality }}&data-study-id={{ patient.study_id }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-testdate={{ patient.study_date }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ patient.dicom_file }}&data-location={{ patient.location }}&data-accession={{ patient.accession_number }}&data-institution_name={{ patient.institution_name }} &data-referringdoctor={{patient.referring_doctor_name}} &data-reporttime={% now 'H:i:s' %}"
+                        data-patient-id="{{ patient.patient_id }}" data-patientname="{{ patient.patient_name }}"
+                        data-age="{{ patient.age }}" data-gender="{{ patient.gender }}"
+                        data-testdate="{{ patient.study_date }}" data-reportdate="{% now 'Y-m-d' %}"
+                        data-reportimage="{{ patient_url.urls.0|urlencode }}"
+                        data-dicom-file="{% get_media_prefix %}{{ patient.dicom_file }}"
+                        data-location="{{ patient.location }}"
+                        data-study-id="{{patient.study_id}}"
+                        data-Modality="{{patient.Modality}}"
+                        data-bodypart="{{patient.body_part_examined}}"
+                        data-accession="{{ patient.accession_number }}"
+                        data-reporttime={% now 'H:i:s' %}
+                        data-referringdoctor="{{patient.referring_doctor_name}}"
+                        data-institution_name="{{ patient.institution_name }}" onclick="changeButtonColor(this);">
+                            {% if patient.isDone %}
+                               Reported
+                            {% else %}
+                               Report
+                            {% endif %}
+                        </a>
+                     {% endif %}
+                  {% endfor %}
+                </td>
+    
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div> 
+        <div id="reportingBotContainer"></div>
+        <div id="dicomViewer"></div>
 
-          </tr>
-          {% endfor %}
-        </tbody>
-        </table>
-      </div> 
-      <div id="reportingBotContainer"></div>
-      <div id="dicomViewer"></div>
-
-      <div class="scroll-to-top">
-        <a href="#top"><i class="fa fa-arrow-up"></i></a>
+        <div class="scroll-to-top">
+          <a href="#top"><i class="fa fa-arrow-up"></i></a>
+        </div>
       </div>
-    </div>
   </div>
   </div>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
