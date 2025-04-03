@@ -6599,11 +6599,11 @@ def all_patient_data(request):
         # Other filters remain unchanged
         if radiologist_ids:
             filters &= Q(radiologist__user__id__in=radiologist_ids)
-        # if institutions:
-        #     filters &= Q(institution_name__in=institutions)
-
         if institutions:
-             filters &= Q(institutions_name_in=institutions)       
+            filters &= Q(institution_name__in=institutions)
+
+        # if institutions:
+        #      filters &= Q(institutions_name_in=institutions)       
              
 
         if status:
@@ -6619,9 +6619,10 @@ def all_patient_data(request):
     # Rest of the view remains unchanged
     radiologists = User.objects.filter(personalinfo__isnull=False).distinct()
     # clients = Client.objects.exclude(institution_name__isnull=True).exclude(institution_name="None").values_list("institution_name", flat=True).distinct()
-    clients = Client.objects.exclude(institutionsname_isnull=True) \
-                        .exclude(institutions__name="None") \
-                        .values_list("institutions__name", flat=True).distinct()
+    # Correct query for retrieving unique institutions linked to clients
+    clients = Client.objects.exclude(institutions__isnull=True) \
+              .exclude(institutions__name="None") \
+              .values_list("institutions__name", flat=True).distinct()
 
     if "export" in request.GET:
         return export_patient_data(patients)
