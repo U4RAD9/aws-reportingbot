@@ -737,7 +737,7 @@ def client_dashboard(request):
         pdfs = XrayReport.objects.filter(
             Q(patient_id__in=dicom_patient_ids) |
             Q(name__in=dicom_patient_names)
-        ).order_by('patient_id', '-id')
+        ).order_by('-id')
 
         # 🔹 Group by patient_id to get the latest report per patient
         grouped_pdfs = groupby(pdfs, key=attrgetter('patient_id'))
@@ -6599,8 +6599,15 @@ def all_patient_data(request):
         # Other filters remain unchanged
         if radiologist_ids:
             filters &= Q(radiologist__user__id__in=radiologist_ids)
+        # if institutions:
+        #     filters &= Q(institution_name__in=institutions)
+
         if institutions:
-            filters &= Q(institution_name__in=institutions)
+             filters &= Q(institutions_namein=institutions)        
+             clients = Client.objects.exclude(institutionsname_isnull=True) \
+                        .exclude(institutions__name="None") \
+                        .values_list("institutions__name", flat=True).distinct()
+
         if status:
             filters &= Q(isDone=(status.lower() == "reported"))
         if selected_modalities:
