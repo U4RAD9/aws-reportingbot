@@ -196,7 +196,7 @@
             </td>
             <td>
               <a class="reportButton"
-                 href="reporting-bot?data-patientid={{ entry.patient_id }}&data-patientname={{ entry.patient_name }}&data-study-id={{ entry.study_id }}&data-age={{ entry.age }}&data-gender={{ entry.gender }}&data-institution_name={{ entry.institution_name }}&data-testdate={{ entry.study_date }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ entry.dicom_file }}&data-location={{ entry.location }}&data-accession={{ entry.accession_number }}"
+                 href="/reporting-bot?data-patientid={{ entry.patient_id }}&data-patientname={{ entry.patient_name }}&data-study-id={{ entry.study_id }}&data-age={{ entry.age }}&data-gender={{ entry.gender }}&data-institution_name={{ entry.institution_name }}&data-testdate={{ entry.study_date }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ entry.dicom_file }}&data-location={{ entry.location }}&data-accession={{ entry.accession_number }}"
                  data-patient-id="{{ entry.patient_id }}" data-patientname="{{ entry.patient_name }}"
                  data-age="{{ entry.age }}" data-gender="{{ entry.gender }}"
                  data-institution_name="{{ entry.institution_name }}"
