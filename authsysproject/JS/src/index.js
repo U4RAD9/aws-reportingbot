@@ -167,13 +167,30 @@ var nonCT_ImageIds = [];
 var curr_tool = null;
 var prev_layout = 'one';
 //Dict of all cornerstone tools 
-const Tools = {"Length": cornerstoneTools.LengthTool, "Angle": cornerstoneTools.AngleTool, "CobbAngle": cornerstoneTools.CobbAngleTool, 
-  "RectangleROI": cornerstoneTools.RectangleROITool, "CircleROI": cornerstoneTools.CircleROITool, "EllipticalROI": cornerstoneTools.EllipticalROITool,
-  "FreehandROI": cornerstoneTools.PlanarFreehandROITool, "Bidirectional": cornerstoneTools.BidirectionalTool, "Zoom": cornerstoneTools.ZoomTool, 
-  "Pan": cornerstoneTools.PanTool, "Contrast": cornerstoneTools.WindowLevelTool, "Probe": cornerstoneTools.ProbeTool,"Eraser": cornerstoneTools.EraserTool, 
-  "PlanarRotate": cornerstoneTools.PlanarRotateTool, "Height": cornerstoneTools.HeightTool, "SplineROI": cornerstoneTools.SplineROITool, 
-  "StackScroll": cornerstoneTools.StackScrollMouseWheelTool, "ArrowAnnotate": cornerstoneTools.ArrowAnnotateTool, "Crosshairs":cornerstoneTools.CrosshairsTool,"Magnify":cornerstoneTools.MagnifyTool,"Wheel":cornerstoneTools.StackScrollTool
-}
+const Tools = {
+  "Length": cornerstoneTools.LengthTool,
+  "Angle": cornerstoneTools.AngleTool,
+  "CobbAngle": cornerstoneTools.CobbAngleTool,
+  "RectangleROI": cornerstoneTools.RectangleROITool,
+  "CircleROI": cornerstoneTools.CircleROITool,
+  "EllipticalROI": cornerstoneTools.EllipticalROITool,
+  "FreehandROI": cornerstoneTools.PlanarFreehandROITool,
+  "Bidirectional": cornerstoneTools.BidirectionalTool,
+  "Zoom": cornerstoneTools.ZoomTool,
+  "Pan": cornerstoneTools.PanTool,
+  "Contrast": cornerstoneTools.WindowLevelTool,
+  "Probe": cornerstoneTools.ProbeTool,
+  "Eraser": cornerstoneTools.EraserTool,
+  "PlanarRotate": cornerstoneTools.PlanarRotateTool,
+  "Height": cornerstoneTools.HeightTool,
+  "SplineROI": cornerstoneTools.SplineROITool,
+  "StackScroll": cornerstoneTools.StackScrollMouseWheelTool,
+  "ArrowAnnotate": cornerstoneTools.ArrowAnnotateTool,
+  "Crosshairs": cornerstoneTools.CrosshairsTool,
+  "Magnify": cornerstoneTools.MagnifyTool,
+  "Wheel": cornerstoneTools.StackScrollTool,
+  "ReferenceLines": cornerstoneTools.ReferenceLinesTool, // ✅ Added
+};
 var current_user = JSON.parse(
   document.getElementById("current-user").textContent
 );
@@ -1179,12 +1196,33 @@ slab(val, id) {
         i += 1;
         
 
-        //event listener for selecting a viewport
-        item.addEventListener('click', function(){
-          selected_viewport = viewportIds[elements.indexOf(item)];
-          prev_selected_element.style.borderColor = 'white';
-          item.style.borderColor = 'red';
-          prev_selected_element = item;
+      
+        item.addEventListener('click', function () {
+          // Get clicked viewport ID
+          const clickedViewportId = viewportIds[elements.indexOf(item)];
+        
+          if (selected_viewport !== clickedViewportId) {
+            // Update selected viewport
+            selected_viewport = clickedViewportId;
+        
+            // Reset border style
+            if (prev_selected_element) {
+              prev_selected_element.style.borderColor = 'white';
+            }
+            item.style.borderColor = 'red';
+            prev_selected_element = item;
+        
+            // Dynamically update reference lines config
+            const targetViewports = viewportIds.filter(id => id !== selected_viewport);
+        
+            toolGroup.setToolConfiguration(cornerstoneTools.ReferenceLinesTool.toolName, {
+              sourceViewportId: selected_viewport,
+              targetViewportIds: targetViewports,
+            });
+        
+            // Force render update
+            renderingEngine.render();
+          }
         });
 
       });
@@ -4311,6 +4349,11 @@ needed */}Zoom</button></div>
 <div className="button-container"><button className='tool-button' value='Crosshairs'
 onClick={e => this.toggleTool(e.target.value)}> <AiOutlineZoomIn size={25} /> {/* Adjust size as 
 needed */}3*1 oblique mpr</button></div>
+<div className="button-container">
+  <button className='tool-button' value='ReferenceLines' onClick={e => this.toggleTool(e.target.value)}>
+    📐 Reference Lines
+  </button>
+</div>
 
 <div className="button-container"><button className='tool-button' value='Wheel'
 onClick={e => this.toggleTool(e.target.value)}> <AiOutlineZoomIn size={25} /> {/* Adjust size as 
@@ -4367,6 +4410,11 @@ this.windowingSettings(e, selected_viewport)}>
 <option value="Mediastinal">Mediastinal</option>
 </select>
 </div>
+<div className="button-container">
+  <button className='tool-button' value='Length' onClick={e => this.toggleTool(e.target.value)}>
+    📐 Measure
+  </button>
+</div>
 {/*Drop down for enabling measurement tools */}
 <div className="button-container">
 <button className='name-button' disabled> <FaRuler /> {/* Measurement icon 
@@ -4374,8 +4422,6 @@ this.windowingSettings(e, selected_viewport)}>
 <select id="measurement" className="dropdown" onChange={e =>
 this.toggleTool(e.target.value)}>
 <option value='' selected disabled hidden></option>
-<option value='Length'>Length</option>
-<option value='Height'>Height</option>
 <option value='Angle'>Angle</option>
 <option value='CobbAngle'>Cobb Angle</option>
 <option value='RectangleROI'>Rectangle ROI</option>
