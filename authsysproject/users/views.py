@@ -7,6 +7,9 @@ from django.db.models.functions import Substr, Concat, Cast  # Database function
 from django.db.models.functions import Cast  # Add this import
 from urllib.parse import urlparse, parse_qs
 from tkinter import Tk, filedialog
+from PyPDF2 import PdfReader, PdfWriter
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
 from venv import logger
 from datetime import  time as dt_time  # Rename to dt_time
 from django.forms import CharField, DateField
@@ -3426,49 +3429,58 @@ def xray_pdf_report(request):
 
 
 
-def add_logo_to_pdf(request, pdf_id):
+def add_logo_to_pdf(request, report_id):
     try:
-        report = XrayReport.objects.get(id=pdf_id)
+        report = XrayReport.objects.get(id=report_id)
+
+        # Get presigned URL
+        presigned_pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
+
+        # Download the PDF from S3
+        response = requests.get(presigned_pdf_url)
+        if response.status_code != 200:
+            return HttpResponse("Failed to download PDF from S3.", status=404)
+
+        # Save original PDF temporarily
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as original_pdf:
+            original_pdf.write(response.content)
+            original_pdf_path = original_pdf.name
+
+        # Read original PDF
+        reader = PdfReader(original_pdf_path)
+        writer = PdfWriter()
+
+        # Create a temporary overlay PDF with logo
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
+            c = canvas.Canvas(overlay_temp.name, pagesize=letter)
+
+            # Add your logo here (update logo path)
+            logo_path = 'static/logo.png'  # should be accessible locally or from static folder
+            c.drawImage(logo_path, x=450, y=750, width=100, height=50, mask='auto')  # position logo
+
+            c.save()
+            overlay_pdf_path = overlay_temp.name
+
+        overlay = PdfReader(overlay_pdf_path)
+
+        # Add logo overlay to first page (or all pages if needed)
+        for i, page in enumerate(reader.pages):
+            if i == 0:
+                page.merge_page(overlay.pages[0])  # only on first page
+            writer.add_page(page)
+
+        # Save final modified PDF
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as final_output:
+            writer.write(final_output)
+            final_output_path = final_output.name
+
+        filename = report.pdf_file.name.split("/")[-1].replace(".pdf", "_with_logo.pdf")
+        return FileResponse(open(final_output_path, "rb"), as_attachment=True, filename=filename)
+
     except XrayReport.DoesNotExist:
-        raise Http404("Report not found.")
-
-    if not report.pdf_file:
-        raise Http404("No PDF file available.")
-
-    # Generate presigned URL
-    from .utils import presigned_url
-    bucket_name = 'u4rad-s3-reporting-bot'
-    url = presigned_url(bucket_name, report.pdf_file.name)
-    
-    # Download the PDF from presigned URL
-    pdf_response = requests.get(url)
-    if pdf_response.status_code != 200:
-        raise Http404("Unable to download the original PDF from S3.")
-    
-    original_pdf_bytes = pdf_response.content
-    pdf_doc = fitz.open(stream=original_pdf_bytes, filetype='pdf')
-
-    # Get logo path
-    current_dir = os.path.dirname(__file__)
-    logo_path = os.path.join(current_dir, 'static', 'company_logos', 'logo.png')
-    if not os.path.exists(logo_path):
-        raise Http404("Logo file not found.")
-
-    # Insert logo
-    logo_image = fitz.open(logo_path)
-    first_page = pdf_doc[0]
-    rect = fitz.Rect(40, 30, 200, 100)  # Adjust coordinates
-    first_page.insert_image(rect, stream=logo_image.convert_to_pdf(), keep_proportion=True)
-
-    # Save modified PDF to temporary file and return
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
-        pdf_doc.save(temp_file.name)
-        pdf_doc.close()
-        temp_file.seek(0)
-        response = FileResponse(open(temp_file.name, 'rb'), content_type='application/pdf')
-        filename = f"{report.patient_id}_with_logo.pdf".replace(" ", "_")
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        return response    
+        return HttpResponse("Report not found.", status=404)
+    except Exception as e:
+        return HttpResponse(f"Error: {str(e)}", status=500)
 
 
 @login_required
