@@ -131,7 +131,7 @@ india_tz = time("Asia/Kolkata")
 from django.views.decorators.http import require_http_methods #by Rohan Jangid 28-05-2025
 from pdf2docx import Converter
 import tempfile
-from django.http import FileResponse
+from django.http import FileResponse, Http404
 
 
 def login(request):
@@ -3423,6 +3423,44 @@ def xray_pdf_report(request):
     }
 
     return render(request, 'users/xray_pdf_report.html', context)
+
+
+
+def add_logo_to_pdf(request, pdf_id):
+    try:
+        report = XrayReport.objects.get(id=pdf_id)
+    except XrayReport.DoesNotExist:
+        raise Http404("Report not found.")
+
+    if not report.pdf_file:
+        raise Http404("No PDF file available.")
+
+    with default_storage.open(report.pdf_file.name, 'rb') as f:
+        original_pdf_bytes = f.read()
+
+    pdf_doc = fitz.open(stream=original_pdf_bytes, filetype='pdf')
+
+    # Use relative path from this views.py file
+    current_dir = os.path.dirname(__file__)
+    logo_path = os.path.join(current_dir, 'static', 'company_logos', 'logo.png')
+
+    if not os.path.exists(logo_path):
+        raise Http404("Logo file not found.")
+
+    logo_image = fitz.open(logo_path)
+    first_page = pdf_doc[0]
+
+    # Insert the logo at the top of the first page
+    rect = fitz.Rect(40, 30, 200, 100)  # adjust coordinates and size as needed
+    first_page.insert_image(rect, stream=logo_image.convert_to_pdf(), keep_proportion=True)
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+        pdf_doc.save(temp_file.name)
+        pdf_doc.close()
+        temp_file.seek(0)
+        response = FileResponse(open(temp_file.name, 'rb'), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{report.patient_id}_with_logo.pdf"'
+        return response    
 
 
 @login_required

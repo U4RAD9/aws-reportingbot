@@ -76,6 +76,7 @@ urlpatterns = [
     path('audiometry_pdf_report/', views.audiometry_pdf_report, name='audiometry_pdf_report'),
     path('get_excel/', views.get_excel, name='get_excel'),
     path('clientdata/client/', views.client_dashboard, name='client'),
+    path('xray-report/<int:pdf_id>/download-with-logo/', views.add_logo_to_pdf, name='download_pdf_with_logo'),
     path('update_history/', views.update_clinical_history, name='clinical_history'),
     path('optometrylist', views.optometrylist, name='optometrylist'),
     path('vitalslist', views.vitalslist, name='vitalslist'),
