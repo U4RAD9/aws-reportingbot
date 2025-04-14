@@ -3435,31 +3435,39 @@ def add_logo_to_pdf(request, pdf_id):
     if not report.pdf_file:
         raise Http404("No PDF file available.")
 
-    with default_storage.open(report.pdf_file.name, 'rb') as f:
-        original_pdf_bytes = f.read()
-
+    # Generate presigned URL
+    from .utils import presigned_url
+    bucket_name = 'u4rad-s3-reporting-bot'
+    url = presigned_url(bucket_name, report.pdf_file.name)
+    
+    # Download the PDF from presigned URL
+    pdf_response = requests.get(url)
+    if pdf_response.status_code != 200:
+        raise Http404("Unable to download the original PDF from S3.")
+    
+    original_pdf_bytes = pdf_response.content
     pdf_doc = fitz.open(stream=original_pdf_bytes, filetype='pdf')
 
-    # Use relative path from this views.py file
+    # Get logo path
     current_dir = os.path.dirname(__file__)
     logo_path = os.path.join(current_dir, 'static', 'company_logos', 'logo.png')
-
     if not os.path.exists(logo_path):
         raise Http404("Logo file not found.")
 
+    # Insert logo
     logo_image = fitz.open(logo_path)
     first_page = pdf_doc[0]
-
-    # Insert the logo at the top of the first page
-    rect = fitz.Rect(40, 30, 200, 100)  # adjust coordinates and size as needed
+    rect = fitz.Rect(40, 30, 200, 100)  # Adjust coordinates
     first_page.insert_image(rect, stream=logo_image.convert_to_pdf(), keep_proportion=True)
 
+    # Save modified PDF to temporary file and return
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
         pdf_doc.save(temp_file.name)
         pdf_doc.close()
         temp_file.seek(0)
         response = FileResponse(open(temp_file.name, 'rb'), content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="{report.patient_id}_with_logo.pdf"'
+        filename = f"{report.patient_id}_with_logo.pdf".replace(" ", "_")
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response    
 
 
