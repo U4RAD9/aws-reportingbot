@@ -36,6 +36,7 @@ from .models.DailyCount import SetCount
 from .models.DailyCountECG import ECGSetCount
 
 from .models .StudyReport import StudyReport
+from .models .CKEditorTemplate import CKEditorTemplate
 
 
 
@@ -75,6 +76,7 @@ admin.site.register(ECGSetCount)
 admin.site.register(StudyReport)
 admin.site.register(DentalPatientInfo)
 admin.site.register(DoctorPatientInfo)
+admin.site.register(CKEditorTemplate)
 
 # Register your models here.
 class DICOMFileInline(admin.TabularInline):
