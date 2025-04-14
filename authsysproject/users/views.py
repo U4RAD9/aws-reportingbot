@@ -767,7 +767,7 @@ def client_dashboard(request):
         # 🔹 Generate presigned URLs for PDFs
         bucket_name = 'u4rad-s3-reporting-bot'
         for pdf in page_obj:
-            pdf.signed_url = presigned_url(bucket_name, pdf.pdf_file.name) if pdf.pdf_file else None
+            pdf.signed_url = presigned_url(bucket_name, pdf.pdf_file.name, inline=True) if pdf.pdf_file else None
 
         # 🔹 Get unique sorted test dates for the current page
         sorted_test_dates = sorted({pdf.test_date for pdf in page_obj.object_list})
