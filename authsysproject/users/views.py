@@ -3429,9 +3429,9 @@ def xray_pdf_report(request):
 
 
 
-def add_logo_to_pdf(request, report_id):
+def add_logo_to_pdf(request, pdf_id):
     try:
-        report = XrayReport.objects.get(id=report_id)
+        report = XrayReport.objects.get(id=pdf_id)
 
         # Get presigned URL
         presigned_pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
