@@ -509,6 +509,10 @@
                 <td>{{ pdf.whatsapp_number }}</td>
                 <td>
                   <a class="reportButton" href="{{ pdf.signed_url }}" download>DOWNLOAD</a>
+                  <a href="{% url 'convert_pdf_to_word' report_id=pdf.id %}" class="btn btn-primary">
+                    Download as Word
+                  </a>
+                  <a class="btn btn-info" href="{{ pdf.signed_url }}" target="_blank">View PDF</a>
                   <!-- Add the Send WhatsApp Button -->
                   <button class="btn btn-sm btn-success sendWhatsAppButton" data-patient-id="{{ pdf.patient_id }}"
                     data-whatsapp="{{ pdf.whatsapp_number }}" data-name="{{ pdf.name }}"

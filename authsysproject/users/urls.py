@@ -3,6 +3,7 @@ from django.conf import settings
 from django.urls import path
 from . import views
 from .views import save_template,get_template,get_client_header_footer
+from .views import convert_pdf_to_word # by rohan jangid 14-04-2025
 
 
 # from django.contrib.auth import views
@@ -68,6 +69,7 @@ urlpatterns = [
     path('get-csrf-token/', views.get_csrf_token, name='get_csrf_token'),
     path('xray_pdf_report/', views.xray_pdf_report, name='xray_pdf_report'),
     path('client_dashboard/', views.client_dashboard, name='client_dashboard'),
+    path('convert_pdf_to_word/<int:report_id>/', convert_pdf_to_word, name='convert_pdf_to_word'),#by rohan jangid 14-04-2025
     path('ecg_pdf_report/', views.ecg_pdf_report, name='ecg_pdf_report'),
     path('vitals_pdf_report/', views.vitals_pdf_report, name='vitals_pdf_report'),
     path('optometry_pdf_report/', views.optometry_pdf_report, name='optometry_pdf_report'),

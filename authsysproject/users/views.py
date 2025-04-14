@@ -128,6 +128,9 @@ from pytz import timezone as time
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate #by Rohan Jangid 28-05-2025
 india_tz = time("Asia/Kolkata")
+from django.views.decorators.http import require_http_methods #by Rohan Jangid 28-05-2025
+from pdf2docx import Converter
+from django.http import FileResponse
 
 
 def login(request):
@@ -5110,6 +5113,35 @@ def clientdata(request):
         'Date': sorted_unique_dates,
     })
 
+
+def convert_pdf_to_word(request, report_id):
+    try:
+        # Get the XrayReport entry
+        report = XrayReport.objects.get(id=report_id)
+        pdf_path = os.path.join(settings.MEDIA_ROOT, report.pdf_file.name)
+
+        if not os.path.exists(pdf_path):
+            return HttpResponse("PDF file not found.", status=404)
+
+        # Define output Word file path
+        word_filename = report.pdf_file.name.replace(".pdf", ".docx")
+        word_path = os.path.join(settings.MEDIA_ROOT, "word", word_filename)
+
+        # Ensure output directory exists
+        os.makedirs(os.path.dirname(word_path), exist_ok=True)
+
+        # Convert PDF to Word
+        cv = Converter(pdf_path)
+        cv.convert(word_path, start=0, end=None)
+        cv.close()
+
+        # Return Word file as response
+        return FileResponse(open(word_path, 'rb'), as_attachment=True, filename=word_filename)
+
+    except XrayReport.DoesNotExist:
+        return HttpResponse("Report not found.", status=404)
+    except Exception as e:
+        return HttpResponse(f"Error: {str(e)}", status=500)
 
     
 
