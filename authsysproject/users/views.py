@@ -3455,7 +3455,8 @@ def add_logo_to_pdf(request, pdf_id):
             c = canvas.Canvas(overlay_temp.name, pagesize=letter)
 
             # Add your logo here (update logo path)
-            logo_path = 'static/logo.png'  # should be accessible locally or from static folder
+            # logo_path = 'static/logo.png'  # should be accessible locally or from static folder
+            logo_path = os.path.join(settings.BASE_DIR, 'static', 'company_logos', 'logo.png')
             c.drawImage(logo_path, x=450, y=750, width=100, height=50, mask='auto')  # position logo
 
             c.save()
