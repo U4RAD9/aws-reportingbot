@@ -4769,69 +4769,31 @@ this.allowDrop(e)} onDrop={e => this.drop(e)}></div>
       loadTemplates();
 
     
-        // templateDropdown.onchange = async (e) => {
-        //   const templateId = e.target.value;
-        //   if (templateId) {
-        //     try {
-        //       const response = await fetch(`/get-template/${templateId}/`);
-        //       const data = await response.json();
-        //       if (data.template_content) {
-        //         editor.model.change((writer) => {
-        //           const viewFragment = editor.data.processor.toView(data.template_content);
-        //           const modelFragment = editor.data.toModel(viewFragment);
-        
-        //           // Use insertContent instead of manual writer.insert
-        //           editor.model.insertContent(modelFragment, editor.model.document.selection);
-        //         });
-        //       } else {
-        //         console.warn('No template content found.');
-        //       }
-        //     } catch (error) {
-        //       console.error('Error loading template:', error);
-        //     }
-        //   }
-        // };
+     
 
-        templateDropdown.onchange = async (e) => {
-          const templateId = e.target.value;
-          if (templateId) {
-            try {
-              const response = await fetch(`/get-template/${templateId}/`);
-              const data = await response.json();
-        
-              if (data.template_content) {
-                // Listen for change event BEFORE inserting
-                const waitForChange = new Promise((resolve) => {
-                  const listener = editor.model.document.on('change:data', () => {
-                    listener.off(); // Remove listener after it fires once
-                    resolve();
-                  });
-                });
-        
-                editor.model.change((writer) => {
-                  const viewFragment = editor.data.processor.toView(data.template_content);
-                  const modelFragment = editor.data.toModel(viewFragment);
-                  editor.model.insertContent(modelFragment, editor.model.document.selection);
-                });
-        
-                // Wait for editor to process changes
-                await waitForChange;
-        
-                // ✅ Now safe to trigger export or any formatting-sensitive actions
-                console.log('Template loaded and processed!');
-                // Example: you can safely call export/download here
-                // const content = editor.getData();
-                // downloadContent(content);
-        
-              } else {
-                console.warn('No template content found.');
-              }
-            } catch (error) {
-              console.error('Error loading template:', error);
+      templateDropdown.onchange = async (e) => {
+        const templateId = e.target.value;
+        if (templateId) {
+          try {
+            const response = await fetch(`/get-template/${templateId}/`);
+            const data = await response.json();
+            if (data.template_content) {
+              editor.model.change((writer) => {
+                const viewFragment = editor.data.processor.toView(data.template_content);
+                const modelFragment = editor.data.toModel(viewFragment);
+      
+                // Use insertContent instead of manual writer.insert
+                editor.model.insertContent(modelFragment, editor.model.document.selection);
+              });
+            } else {
+              console.warn('No template content found.');
             }
+          } catch (error) {
+            console.error('Error loading template:', error);
           }
-        };
-        
+        }
+      };
+      
         
 
       // Create "Save as Template" Button
@@ -4923,6 +4885,7 @@ saveTemplateButton.onclick = async () => {
     }
   }}
 />
+
 
   </div>)}
         </div>
