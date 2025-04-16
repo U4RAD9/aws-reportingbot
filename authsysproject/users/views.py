@@ -3458,7 +3458,16 @@ def add_logo_to_pdf(request, pdf_id):
             # logo_path = 'static/logo.png'  # should be accessible locally or from static folder
             logo_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'logo.png')
             #c.drawImage(logo_path, x=450, y=750, width=100, height=50, mask='auto')  # position logo
-            c.drawImage(logo_path, x=40, y=750, width=200, height=100, preserveAspectRatio=True, mask='auto')
+            # c.drawImage(logo_path, x=40, y=750, width=120, height=60, preserveAspectRatio=True, mask='auto')
+            # Set a larger width and maintain aspect ratio accordingly
+            logo_width = 250  # Increase this for a bigger logo
+            logo_height = 100  # Adjust proportionally
+            
+            # Adjust x and y to place it appropriately on the page
+            x_pos = 40
+            y_pos = 720  # Lower y if you increase the height to avoid clipping
+            
+            c.drawImage(logo_path, x=x_pos, y=y_pos, width=logo_width, height=logo_height, mask='auto')
             c.save()
             overlay_pdf_path = overlay_temp.name
 
