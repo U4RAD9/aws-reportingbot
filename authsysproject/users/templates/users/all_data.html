@@ -137,7 +137,7 @@
                     <th>Location</th>
                     <th>Institution Name</th>
                     <th>Radiologists</th>
-                    <th>Corporate Coordinators</th>
+                    <th>Studydescription</th>
                 </tr>
             </thead>
             <tbody>
@@ -156,7 +156,8 @@
                     <td>{{ patient.location }}</td>
                     <td>{{ patient.institution_name }}</td>
                     <td>{{ patient.radiologist.all|join:", " }}</td>
-                    <td>{{ patient.corporatecoordinator.all|join:", " }}</td>
+                    <!-- <td>{{ patient.corporatecoordinator.all|join:", " }}</td> -->
+                    <td>{{ patient.study_description }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
