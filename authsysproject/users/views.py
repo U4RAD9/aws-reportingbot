@@ -3465,7 +3465,7 @@ def add_logo_to_pdf(request, pdf_id):
             
             # Adjust x and y to place it appropriately on the page
             x_pos = 40
-            y_pos = 780  # Lower y if you increase the height to avoid clipping
+            y_pos = 730  # Lower y if you increase the height to avoid clipping
             
             c.drawImage(logo_path, x=x_pos, y=y_pos, width=logo_width, height=logo_height, mask='auto')
             c.save()
