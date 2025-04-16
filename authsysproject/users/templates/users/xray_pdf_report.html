@@ -581,7 +581,6 @@
                 </td>
                 <td>
                   {% if pdf.signed_url %}
-                      <a class="reportButton" href="{{ pdf.signed_url }}" download>DOWNLOAD</a><br>
                       <a class="reportButton" href="{% url 'download_pdf_with_logo' pdf.id %}">DOWNLOAD WITH LOGO</a>
                   {% else %}
                       No PDF available
