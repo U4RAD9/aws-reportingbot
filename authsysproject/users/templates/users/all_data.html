@@ -138,6 +138,7 @@
                     <th>Institution Name</th>
                     <th>Radiologists</th>
                     <th>Studydescription</th>
+                    <th>Notes</th>
                 </tr>
             </thead>
             <tbody>
@@ -158,6 +159,8 @@
                     <td>{{ patient.radiologist.all|join:", " }}</td>
                     <!-- <td>{{ patient.corporatecoordinator.all|join:", " }}</td> -->
                     <td>{{ patient.study_description }}</td>
+                    <td>{{ patient.notes }}</td>
+                    
                 </tr>
                 {% endfor %}
             </tbody>
