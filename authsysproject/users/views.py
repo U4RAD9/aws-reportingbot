@@ -3465,7 +3465,7 @@ def add_logo_to_pdf(request, pdf_id):
             
             # Adjust x and y to place it appropriately on the page
             x_pos = 40
-            y_pos = 730  # Lower y if you increase the height to avoid clipping
+            y_pos = 740  # Lower y if you increase the height to avoid clipping
             
             c.drawImage(logo_path, x=x_pos, y=y_pos, width=logo_width, height=logo_height, mask='auto')
             c.save()
@@ -3484,7 +3484,7 @@ def add_logo_to_pdf(request, pdf_id):
             writer.write(final_output)
             final_output_path = final_output.name
 
-        filename = report.pdf_file.name.split("/")[-1].replace(".pdf", "_with_logo.pdf")
+        filename = report.pdf_file.name.split("/")[-1]
         return FileResponse(open(final_output_path, "rb"), as_attachment=True, filename=filename)
 
     except XrayReport.DoesNotExist:
