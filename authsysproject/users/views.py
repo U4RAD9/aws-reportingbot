@@ -3460,8 +3460,8 @@ def add_logo_to_pdf(request, pdf_id):
             #c.drawImage(logo_path, x=450, y=750, width=100, height=50, mask='auto')  # position logo
             # c.drawImage(logo_path, x=40, y=750, width=120, height=60, preserveAspectRatio=True, mask='auto')
             # Set a larger width and maintain aspect ratio accordingly
-            logo_width = 300  # Increase this for a bigger logo
-            logo_height = 90  # Adjust proportionally
+            logo_width = 320  # Increase this for a bigger logo
+            logo_height = 80  # Adjust proportionally
             
             # Adjust x and y to place it appropriately on the page
             x_pos = 40
