@@ -1731,6 +1731,18 @@ def ecgallocation(request):
     formatted_dates = [date.strftime('%Y-%m-%d') for date in sorted_unique_dates]
     unique_location = Location.objects.all()
 
+
+    allocated = PatientDetails.objects.filter(radiologist=current_user_personal_info)
+
+    # Count total assigned cases
+    total_assigned_cases = allocated.count()
+
+    # Count total reported cases (isDone = True)
+    total_reported_cases = allocated.filter(isDone=True).count()
+
+    # Count total pending cases (total assigned cases - total reported cases)
+    total_pending_cases = total_assigned_cases - total_reported_cases
+
     return render(request, 'users/ecgallocation.html',
                   {
                       'profile_picture': profile_picture,
@@ -1739,7 +1751,10 @@ def ecgallocation(request):
                       'Date': formatted_dates,
                       'Location': unique_location,
                       'page_obj': page_obj,
-                      'patient_urls': patient_urls
+                      'patient_urls': patient_urls,
+                      'total_assigned_cases': total_assigned_cases, 
+                      'total_reported_cases': total_reported_cases, 
+                      'total_pending_cases': total_pending_cases
                   })
 
 def presigned_url(bucket_name, object_name, operation='get_object', inline=False):

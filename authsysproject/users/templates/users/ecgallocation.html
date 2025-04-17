@@ -422,10 +422,9 @@
             <h1 class="header">
                 <div class="row-container">
                   <div class="count-container">
-                    <span id="count1"><strong>Total Reported:</strong> <span>{{reported}}</span></span>
-                    <span id="count1"><strong>Current Allocated:</strong> <span id="totalRowCount">0</span></span>
-                    <span id="count2"><strong>Current Reported:</strong> <span id="reportedRowCount">0</span></span>
-
+                    <span id="count1"><strong>Total Assigned Cases:</strong> <span>{{total_assigned_cases }}</span></span>
+                    <span id="count1"><strong>Total Reported Cases:</strong> <span>{{ total_reported_cases }}</span></span>
+                    <span id="count2"><strong>Total Pending Cases:</strong> <span>{{ total_pending_cases }}</span></span>
                   </div>
                   <div class='search-google'>
                     <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names/IDs/Test Date"
