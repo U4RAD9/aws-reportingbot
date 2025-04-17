@@ -459,7 +459,7 @@
     <div class="row">
       <div class="col-lg-12">
         <div class="card">
-          <div class="card-body">
+          
             <div class="pagination">
                <span class="step-links">
                  {% if page_obj.has_previous %}
@@ -476,33 +476,44 @@
                    <a href="?page={{ paginator.num_pages }}">last &raquo;</a>
                  {% endif %}
                </span>
+               <!-- Search Page Input -->
+               <div>
+                 <form action="" method="GET" onsubmit="return goToPage();">
+                   <input type="number" class="form-control form-control-lg" id="pageInput" name="page" 
+                          min="1" max="{{ page_obj.paginator.num_pages }}" 
+                          placeholder="Enter page no Search" required 
+                          style="width: 200px; height: 30px; font-size: 14px;">
+                   <button type="submit">Go</button>
+                 </form>
+               </div>
             </div>
-            <h1 class="header">
-              <div class="row-container">
-                <div class="count-container">
-                  <span id="count1"><strong>Total ECG Reports:</strong><span id="totalRowCount">0</span></span>
-                </div>
-                <div class="row-container1">
-                  <div class="col">
-                    <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names/IDs/Test Date"
-                      title="Type in a name" />
+            <div class="card-body">
+              <h1 class="header">
+                <div class="row-container">
+                  <div class="count-container">
+                    <span id="count1"><strong>Total ECG Reports:</strong><span id="totalRowCount">0</span></span>
                   </div>
-                  <div class="col">
-                    <button class="downloadButton" onclick="downloadSelectedPDFs()"><i class="fa fa-download"></i>
-                      Download</button>
+                  <div class="row-container1">
+                    <div class="col">
+                      <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names/IDs/Test Date"
+                        title="Type in a name" />
+                    </div>
+                    <div class="col">
+                      <button class="downloadButton" onclick="downloadSelectedPDFs()"><i class="fa fa-download"></i>
+                        Download</button>
+                    </div>
+                  </div>
+                  <div class="greeting" id="greeting">
+                    {% if user %}
+                    <h6>
+                      <strong>{{ user.first_name }}</strong>,
+                      <span id="greeting-text"></span>
+                    </h6>
+                    {% endif %}
                   </div>
                 </div>
-                <div class="greeting" id="greeting">
-                  {% if user %}
-                  <h6>
-                    <strong>{{ user.first_name }}</strong>,
-                    <span id="greeting-text"></span>
-                  </h6>
-                  {% endif %}
-                </div>
-              </div>
-            </h1>
-          </div>
+              </h1>
+            </div>  
         </div>
       </div>
     </div>
@@ -687,43 +698,40 @@
     }
   </script>
 
-  <!-- Add the following script after the existing scripts -->
   <script>
-      $(document).ready(function () {
-        // Event listener for the date filter dropdown
-        $("#filter-date-select-date").change(function () {
-            var selectedDate = $(this).val();
-            filterTable(selectedDate, "");
+    $(document).ready(function () {
+        // Event handler for the change event of the test date dropdown
+        $('#filter-date-select-date').change(function () {
+            filterTable();
         });
-
-        // Event listener for the location filter dropdown
-        $("#filter-location-select-location").change(function () {
-            var selectedLocation = $(this).val();
-            filterTable("", selectedLocation);
+  
+        // Event handler for the change event of the location dropdown
+        $('#filter-location-select-location').change(function () {
+            filterTable();
         });
+  
+        function filterTable() {
+            var selectedDate = $('#filter-date-select-date').val();
+            var selectedLocation = $('#filter-location-select-location').val();
+  
+            // Loop through each row in the table
+            $('#patientTable tbody tr').each(function () {
+                var rowDate = $(this).find('td:nth-child(3)').text(); // Get the test date from the table cell
+                var rowLocation = $(this).find('td:nth-child(5)').text(); // Get the location from the table cell
+  
+                // Check if the row matches the selected date and location
+                if ((selectedDate === '' || rowDate === selectedDate) &&
+                    (selectedLocation === '' || rowLocation === selectedLocation)) {
+                    // Show the row if it matches the selected date and location
+                    $(this).show();
+                } else {
+                    // Hide the row if it does not match the selected date and location
+                    $(this).hide();
+                }
+            });
+        }
     });
-
-    function filterTable(selectedDate, selectedLocation) {
-        // Loop through each table row
-        $("#patientTable tbody tr").each(function () {
-            var row = $(this);
-            var rowDate = row.find("td:nth-child(3)").text(); // Get the test date from the third column
-            var rowLocation = row.find("td:nth-child(5)").text(); // Get the location from the fifth column
-
-            // Check if the row matches the selected date and location
-            var dateMatch = selectedDate === "" || rowDate === selectedDate;
-            var locationMatch = selectedLocation === "" || rowLocation === selectedLocation;
-
-            // Update row visibility based on filter criteria
-            if (dateMatch && locationMatch) {
-                row.show(); // Show the row if it matches the filter criteria
-            } else {
-                row.hide(); // Hide the row if it doesn't match the filter criteria
-            }
-        });
-    }
   </script>
-
   <script>
     // Function to handle checkbox state changes
     function handleCheckboxChanges() {
