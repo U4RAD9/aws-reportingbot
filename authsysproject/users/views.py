@@ -1000,93 +1000,77 @@ def logout(request):
 
 @user_type_required('ecgcoordinator')
 def allocation(request):
-    selected_patient_ids = []  # Initialize selected_patient_ids to avoid UnboundLocalError
-
-    if request.method == 'POST':
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':  # Check if it's an AJAX request
-            try:
-                data = json.loads(request.body)
-                patient_id = data.get("patient_id")  # Ensure key matches JS request
-
-                # Fetch the patient record
-                patient = get_object_or_404(PatientDetails, id=patient_id)
-                patient.save()
-
-                return JsonResponse({"success": True, "message": "Patient record updated successfully."})
-
-            except json.JSONDecodeError:
-                return JsonResponse({"success": False, "error": "Invalid JSON data"}, status=400)
-            except Exception as e:
-                return JsonResponse({"success": False, "error": str(e)}, status=500)
-                
-        # Existing allocation logic
-        try:
-            selected_patient_ids = json.loads(request.POST.get('selected_patients', '[]'))
-        except json.JSONDecodeError:
-            return HttpResponseBadRequest("Invalid selected patients data")
-
-        cardiologist_email = request.POST.get('cardiologist')
-        action = request.POST.get('action')
-
-        # Retrieve the cardiologist user
-        try:
-            cardiologist_group = Group.objects.get(name='cardiologist')
-            cardiologist_user = cardiologist_group.user_set.get(email=cardiologist_email)
-            cardiologist = PersonalInfoModel.objects.get(user=cardiologist_user)
-        except (Group.DoesNotExist, User.DoesNotExist, PersonalInfoModel.DoesNotExist):
-            messages.error(request, "Invalid cardiologist selection.")
-            return redirect('ecgcoordinator')
-
-        # Assign or replace cardiologist
-        patients = PatientDetails.objects.filter(id__in=selected_patient_ids)
-        if not patients.exists():
-            messages.error(request, "No valid patients selected.")
-            return redirect('ecgcoordinator')
-
-        for patient in patients:
-            if action in ['assign', 'replace']:
-                patient.cardiologist = cardiologist
-                patient.save()
-
-        messages.success(request, f"Cardiologist {cardiologist} has been assigned successfully.")
-        return redirect('ecgcoordinator')
-
     # Fetch and order patients
     patients = PatientDetails.objects.all().order_by('-id')
+    
+    # Total counts for statistics
+    total_current_uploaded = PatientDetails.objects.all().count()
+    total_uploaded_ecg = Total_Cases.objects.values_list('total_uploaded_ecg', flat=True).first()
+    total_reported_ecg = Total_Cases.objects.values_list('total_reported_ecg', flat=True).first()
 
-    total_current_uploaded = patients.count()
+    total_reported_patients = PatientDetails.objects.filter(cardiologist__isnull=False, isDone=True).count()
+    total_rejected_patients = PatientDetails.objects.filter(cardiologist__isnull=False, status=True).count()
+    total_unreported_and_unallocated_patients = PatientDetails.objects.filter(cardiologist=None, isDone=False).count()
+    total_unreported_and_allocated_patients = PatientDetails.objects.filter(cardiologist__isnull=False, isDone=False).count()
+    total_unreported_patients = total_unreported_and_unallocated_patients + total_unreported_and_allocated_patients
 
     total_cases = {
-        'current_reported_cases': PatientDetails.objects.filter(cardiologist__isnull=False, isDone=True).count(),
-        'total_unreported': PatientDetails.objects.filter(cardiologist=None, isDone=False).count() + \
-                            PatientDetails.objects.filter(cardiologist__isnull=False, isDone=False).count(),
-        'unallocated': PatientDetails.objects.filter(cardiologist=None, isDone=False).count(),
+        'current_reported_cases': total_reported_patients,
+        'total_unreported': total_unreported_patients,
+        'unallocated': total_unreported_and_unallocated_patients
     }
 
+    # Get cardiologists
     cardiologist_group = Group.objects.get(name='cardiologist')
     cardiologists_objects = cardiologist_group.user_set.all()
 
-    paginator = Paginator(patients, 400)
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
+    # Set up pagination
+    paginator = Paginator(patients, 400)  # 200 patients per page
+    page_number = request.GET.get('page', 1)  # Get the page number from the request
+    try:
+        page_obj = paginator.get_page(page_number)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page
+        page_obj = paginator.get_page(1)
+    except EmptyPage:
+        # If page is out of range, deliver last page of results
+        page_obj = paginator.get_page(paginator.num_pages)
 
-    unique_dates = sorted({patient.date.date_field for patient in page_obj.object_list}, reverse=False)
-    formatted_dates = [date.strftime('%Y-%m-%d') for date in unique_dates]
+    # Get unique dates from the patients on the current page
+    unique_dates = set(patient.date.date_field for patient in page_obj.object_list)
+    sorted_unique_dates = sorted(unique_dates, reverse=False)
+    formatted_dates = [date.strftime('%Y-%m-%d') for date in sorted_unique_dates]
+
+    # Get unique cities and locations
+    unique_cities = [f"{x.name}" for x in City.objects.all()]
+    unique_locations = [f"{y.name}" for y in Location.objects.all()]
+    
+    # Everything related to the uploading of the ecg file to the database from the modal.
+    form = ECGUploadForm()
+    locations = Location.objects.all()
+    success_message = ''
+    success_details = []            
+    rejected_message = ''
+    rejected_details = [] 
 
     return render(request, 'users/allocation.html', {
         'total_cases': total_cases,
         'total': total_current_uploaded,
+        'count': total_uploaded_ecg,
+        'total_reported': total_reported_ecg,
         'patients': page_obj,
         'cardiologists': cardiologists_objects,
         'Date': formatted_dates,
-        'Location': [x.name for x in Location.objects.all()],
-        'Cities': [y.name for y in City.objects.all()],
-        'form': ECGUploadForm(),
+        'Location': unique_locations,
+        'Cities': unique_cities,
+        'rejected': total_rejected_patients,
         'page_obj': page_obj,
-        'success_message': '',
-        'success_details': [],
-        'rejected_message': '',
-        'rejected_details': [],
+        'form': form,
+        'location': locations,
+        'success_message': success_message,
+        'success_details': success_details,
+        'rejected_message': rejected_message,
+        'rejected_details': rejected_details,
     })
 
 # update by rohan jangid 
