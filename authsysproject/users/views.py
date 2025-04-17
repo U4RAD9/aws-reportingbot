@@ -3239,7 +3239,7 @@ def add_logo_to_ecg_pdf(request, pdf_id):
             return HttpResponse("Failed to download PDF from S3.", status=404)
 
         # Save original PDF temporarily
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as original_pdf:
+        with tempfile.NamedTemporaryFile(delete=False) as original_pdf:
             original_pdf.write(response.content)
             original_pdf_path = original_pdf.name
 
@@ -3248,7 +3248,7 @@ def add_logo_to_ecg_pdf(request, pdf_id):
         writer = PdfWriter()
 
         # Create a temporary overlay PDF with logo
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
+        with tempfile.NamedTemporaryFile(delete=False) as overlay_temp:
             c = canvas.Canvas(overlay_temp.name, pagesize=letter)
 
             # Add your logo here (update logo path)
