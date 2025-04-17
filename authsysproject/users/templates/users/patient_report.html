@@ -409,6 +409,7 @@
             <label><input type="checkbox" id="sinusBradycardiaRBBB" name="ecgFindings"> Sinus Bradycardia with incomplete RBBB</label>
             <label><input type="checkbox" id="sinusBradycardia" name="ecgFindings"> Sinus Bradycardia</label>
             <label><input type="checkbox" id="sinusTachycardia" name="ecgFindings"> Sinus Tachycardia</label>
+            <label><input type="checkbox" id="tInversion" name="ecgFindings"> Normal sinus rhythm with t inversion in lead III</label>
         </fieldset>
          {% endcomment %}
          <fieldset id="ecgFindings">
@@ -419,6 +420,7 @@
             <label><input type="radio" id="sinusBradycardiaRBBB" name="ecgFindings" value="sinusBradycardiaRBBB"> Sinus Bradycardia with incomplete RBBB</label>
             <label><input type="radio" id="sinusBradycardia" name="ecgFindings" value="sinusBradycardia"> Sinus Bradycardia</label>
             <label><input type="radio" id="sinusTachycardia" name="ecgFindings" value="sinusTachycardia"> Sinus Tachycardia</label>
+            <label><input type="radio" id="tInversion" name="ecgFindings"> Normal sinus rhythm with t inversion in lead III</label>
         </fieldset>
         
         
@@ -493,6 +495,7 @@
             sinusBradycardiaRBBB: false,
             sinusBradycardia: false,
             sinusTachycardia: false,
+            tInversion: false,
             additionalFindings: ''
         };
         
@@ -578,119 +581,14 @@
             formData.sinusBradycardiaRBBB = document.getElementById('sinusBradycardiaRBBB').checked;
             formData.sinusBradycardia = document.getElementById('sinusBradycardia').checked;
             formData.sinusTachycardia = document.getElementById('sinusTachycardia').checked;
+            formData.tInversion = document.getElementById('tInversion').checked;
             formData.additionalFindings = document.getElementById('finding').value;
             
             // Format dates for display
             const displayTestDate = formatDateForDisplay(testDate);
             const displayReportDate = formatDateForDisplay(reportDate);
             
-            // Generate HTML for report
-            /*
-            let reportHTML = `
-                <div id="editable-report" class="a4-size" contenteditable="true">
-                   <div id="show">
-                    <table id="table" class="table">
-                        <tr>
-                            <td><strong>Name:</strong> ${name} </td>
-                            <td><strong>Patient ID:</strong> ${patientId}</td>
-                            <td><strong>Age:</strong> ${age}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Gender:</strong> ${gender}</td>
-                            <td><strong>Test Date:</strong> ${displayTestDate}</td>
-                            <td><strong>Report Date:</strong> ${displayReportDate}</td>
-                        </tr>
-                    </table>
-                    <div class="observation">
-                        <h3>ECG</h3>
-                        <h4>Observation:</h4>
-                        <ul>
-                            <li>Heart rate is ${heartRate} BPM.</li>
-            `;
-            
-            // Add findings based on checkboxes
-            /*
-            if (formData.normalECG) {
-                reportHTML += `<li>Normal ECG.</li>`;
-            }
-            if (formData.sinusRhythmRBBB) {
-                reportHTML += `<li>Sinus rhythm with incomplete RBBB.</li>`;
-            }
-            if (formData.sinusTachycardiaRBBB) {
-                reportHTML += `<li>Sinus Tachycardia with incomplete RBBB.</li>`;
-            }
-            if (formData.sinusBradycardiaRBBB) {
-                reportHTML += `<li>Sinus Bradycardia with incomplete RBBB.</li>`;
-            }
-            if (formData.sinusBradycardia) {
-                reportHTML += `<li>Sinus Bradycardia.</li>`;
-            }
-            if (formData.sinusTachycardia) {
-                reportHTML += `<li>Sinus Tachycardia.</li>`;
-            }
-             
-            if (formData.normalECG) {
-                reportHTML += `<li>Normal ECG.</li>`;
-            }else{
-                if (formData.sinusRhythmRBBB) {
-                    reportHTML += `<li>Sinus rhythm with incomplete RBBB.</li>`;
-                }else{
-                    if (formData.sinusTachycardiaRBBB) {
-                        reportHTML += `<li>Sinus Tachycardia with incomplete RBBB.</li>`;
-                    }else{
-                        if (formData.sinusBradycardiaRBBB) {
-                            reportHTML += `<li>Sinus Bradycardia with incomplete RBBB.</li>`;
-                        }else{
-                            if (formData.sinusBradycardia) {
-                                reportHTML += `<li>Sinus Bradycardia.</li>`;
-                            }else{
-                                if (formData.sinusTachycardia) {
-                                    reportHTML += `<li>Sinus Tachycardia.</li>`;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // Add additional findings if provided
-            if (formData.additionalFindings) {
-                reportHTML += `<li>${formData.additionalFindings}</li>`;
-            }
-            
-            // Add default finding if nothing is selected
-            if (!formData.normalECG && 
-                !formData.sinusRhythmRBBB && 
-                !formData.sinusTachycardiaRBBB && 
-                !formData.sinusBradycardiaRBBB && 
-                !formData.sinusBradycardia && 
-                !formData.sinusTachycardia && 
-                !formData.additionalFindings) {
-                reportHTML += `<li>Normal Sinus Rhythm.</li>`;
-                reportHTML += `<li>No significant ST-T changes seen.</li>`;
-            }
-            
-            reportHTML += `
-                        </ul>
-                    </div>
-                    <div class="doctor-signature">
-                        <div class="doctor">
-                            <img src="{% static 'image/Signature1.png' %}" alt="Signature 1">
-                            <p><strong>Dr. Arvind Dass</strong></p>
-                            <p>Principal Director</p>
-                            <p>DM Cardiology</p>
-                        </div>
-                        <div></div>
-                        <div class="doctor">
-                            <img src="{% static 'image/Signature2.png' %}" alt="Signature 2">
-                            <p><strong>Dr. Nalin Singhal</strong></p>
-                            <p>Consultant</p>
-                            <p>Non Invasive Cardiology</p>
-                        </div>  
-                    </div>
-                  </div>  
-            `;
-            */
+
             let reportHTML = `
                 <div id="editable-report" class="a4-size" contenteditable="true">
                     <div id="show">
@@ -731,6 +629,9 @@
                 if (formData.sinusTachycardia) {
                     reportHTML += `<li><strong>Sinus Tachycardia.</strong></li><br><li><strong>No significant ST-T changes seen.</strong></li>`;
                 }
+                if(formData.tInversion) {
+                    reportHTML += `<li><strong>Normal sinus rhythm with t inversion in lead III</strong></li>`;
+                }
             }
             
             // Add additional findings in bold
@@ -745,7 +646,8 @@
                 !formData.sinusBradycardiaRBBB &&
                 !formData.sinusBradycardia &&
                 !formData.sinusTachycardia &&
-                !formData.additionalFindings) {
+                !formData.additionalFindings &&
+                !formData.tInversion) {
                 reportHTML += `<li><strong>Normal Sinus Rhythm.</strong></li><br>`;
                 reportHTML += `<li><strong>No significant ST-T changes seen.</strong></li>`;
             }
