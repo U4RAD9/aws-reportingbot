@@ -3226,6 +3226,70 @@ def ecg_pdf_report(request):
     return render(request, 'users/ecg_pdf_report.html', context)
 
 
+def add_logo_to_ecg_pdf(request, pdf_id):
+    try:
+        report = EcgReport.objects.get(id=pdf_id)
+
+        # Get presigned URL
+        presigned_pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
+
+        # Download the PDF from S3
+        response = requests.get(presigned_pdf_url)
+        if response.status_code != 200:
+            return HttpResponse("Failed to download PDF from S3.", status=404)
+
+        # Save original PDF temporarily
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as original_pdf:
+            original_pdf.write(response.content)
+            original_pdf_path = original_pdf.name
+
+        # Read original PDF
+        reader = PdfReader(original_pdf_path)
+        writer = PdfWriter()
+
+        # Create a temporary overlay PDF with logo
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
+            c = canvas.Canvas(overlay_temp.name, pagesize=letter)
+
+            # Add your logo here (update logo path)
+            # logo_path = 'static/logo.png'  # should be accessible locally or from static folder
+            logo_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'logo.png')
+            #c.drawImage(logo_path, x=450, y=750, width=100, height=50, mask='auto')  # position logo
+            # c.drawImage(logo_path, x=40, y=750, width=120, height=60, preserveAspectRatio=True, mask='auto')
+            # Set a larger width and maintain aspect ratio accordingly
+            logo_width = 320  # Increase this for a bigger logo
+            logo_height = 60  # Adjust proportionally
+            
+            # Adjust x and y to place it appropriately on the page
+            x_pos = 40
+            y_pos = 735  # Lower y if you increase the height to avoid clipping
+            
+            c.drawImage(logo_path, x=x_pos, y=y_pos, width=logo_width, height=logo_height, mask='auto')
+            c.save()
+            overlay_pdf_path = overlay_temp.name
+
+        overlay = PdfReader(overlay_pdf_path)
+
+        # Add logo overlay to first page (or all pages if needed)
+        for i, page in enumerate(reader.pages):
+            if i == 1:
+                page.merge_page(overlay.pages[0])  # only on first page
+            writer.add_page(page)
+
+        # Save final modified PDF
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as final_output:
+            writer.write(final_output)
+            final_output_path = final_output.name
+
+        filename = report.pdf_file.name.split("/")[-1]
+        return FileResponse(open(final_output_path, "rb"), as_attachment=True, filename=filename)
+
+    except XrayReport.DoesNotExist:
+        return HttpResponse("Report not found.", status=404)
+    except Exception as e:
+        return HttpResponse(f"Error: {str(e)}", status=500)    
+
+
 ############################################################# End of ECG PDF upload ###################################################################33
 
 ################################################################### XRAY PDF upload to portal #########################################################################
