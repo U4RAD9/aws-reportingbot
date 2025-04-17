@@ -1000,6 +1000,56 @@ def logout(request):
 
 @user_type_required('ecgcoordinator')
 def allocation(request):
+    selected_patient_ids = []  # Initialize selected_patient_ids to avoid UnboundLocalError
+
+    if request.method == 'POST':
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':  # Check if it's an AJAX request
+            try:
+                data = json.loads(request.body)
+                patient_id = data.get("patient_id")  # Ensure key matches JS request
+
+                # Fetch the patient record
+                patient = get_object_or_404(PatientDetails, id=patient_id)
+                patient.save()
+
+                return JsonResponse({"success": True, "message": "Patient record updated successfully."})
+
+            except json.JSONDecodeError:
+                return JsonResponse({"success": False, "error": "Invalid JSON data"}, status=400)
+            except Exception as e:
+                return JsonResponse({"success": False, "error": str(e)}, status=500)
+                
+        # Existing allocation logic
+        try:
+            selected_patient_ids = json.loads(request.POST.get('selected_patients', '[]'))
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid selected patients data")
+
+        cardiologist_email = request.POST.get('cardiologist')
+        action = request.POST.get('action')
+
+        # Retrieve the cardiologist user
+        try:
+            cardiologist_group = Group.objects.get(name='cardiologist')
+            cardiologist_user = cardiologist_group.user_set.get(email=cardiologist_email)
+            cardiologist = PersonalInfoModel.objects.get(user=cardiologist_user)
+        except (Group.DoesNotExist, User.DoesNotExist, PersonalInfoModel.DoesNotExist):
+            messages.error(request, "Invalid cardiologist selection.")
+            return redirect('ecgcoordinator')
+
+        # Assign or replace cardiologist
+        patients = PatientDetails.objects.filter(id__in=selected_patient_ids)
+        if not patients.exists():
+            messages.error(request, "No valid patients selected.")
+            return redirect('ecgcoordinator')
+
+        for patient in patients:
+            if action in ['assign', 'replace']:
+                patient.cardiologist = cardiologist
+                patient.save()
+
+        messages.success(request, f"Cardiologist {cardiologist} has been assigned successfully.")
+        return redirect('ecgcoordinator')
     # Fetch and order patients
     patients = PatientDetails.objects.all().order_by('-id')
     
@@ -1082,6 +1132,7 @@ def assign_cardiologist(request):
     if request.method == 'POST':
         action = request.POST.get('action')
         cardiologist_email = request.POST.get('cardiologist')
+        print(cardiologist_email)
         
         # Get selected patient IDs from the request
         try:
