@@ -3277,14 +3277,14 @@ def add_logo_to_ecg_pdf(request, pdf_id):
             writer.add_page(page)
 
         # Save final modified PDF
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as final_output:
+        with tempfile.NamedTemporaryFile(delete=False) as final_output:
             writer.write(final_output)
             final_output_path = final_output.name
 
         filename = report.pdf_file.name.split("/")[-1]
         return FileResponse(open(final_output_path, "rb"), as_attachment=True, filename=filename)
 
-    except XrayReport.DoesNotExist:
+    except EcgReport.DoesNotExist:
         return HttpResponse("Report not found.", status=404)
     except Exception as e:
         return HttpResponse(f"Error: {str(e)}", status=500)    
