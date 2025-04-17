@@ -402,8 +402,8 @@
               <label for="location">Select Location:</label>
               <select class="form-control" name='location' required>
                 <option value="">Select Location</option>
-                {% for location in location %}
-                <option value="{{ location.id }}">{{ location.name }}</option>
+                {% for location in Location %}
+                <option value="{{ location }}">{{ location }}</option>
                 {% endfor %}
               </select>
             </div>
