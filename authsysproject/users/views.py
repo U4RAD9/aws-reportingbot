@@ -1732,7 +1732,7 @@ def ecgallocation(request):
     unique_location = Location.objects.all()
 
 
-    allocated = PatientDetails.objects.filter(radiologist=current_user_personal_info)
+    allocated = PatientDetails.objects.filter(cardiologist=current_user_personal_info)
 
     # Count total assigned cases
     total_assigned_cases = allocated.count()
