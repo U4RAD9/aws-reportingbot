@@ -4,6 +4,7 @@ from django.urls import path
 from . import views
 from .views import save_template,get_template,get_client_header_footer
 from .views import convert_pdf_to_word # by rohan jangid 14-04-2025
+from .views import update_non_reportable_status
 
 
 # from django.contrib.auth import views
@@ -42,6 +43,11 @@ urlpatterns = [
     path('xrayallocationreverse', views.xrayallocationreverse, name='xrayallocationreverse'),
     path('audiometry', views.audiometry, name='audiometry'),
     path('allocation', views.allocation, name='ecgcoordinator'),
+    #by rohan jangid
+    path('assign-cardiologist/', views.assign_cardiologist, name='assign_cardiologist'),
+    path('update_urgent_status/<int:patient_id>/', views.update_urgent_status, name='update_urgent_status'),
+    path('update-non-reportable/<int:patient_id>/', update_non_reportable_status, name='update-non-reportable'),
+    #upto this by rohan jangid
     path('allocation1', views.allocation1, name='xraycoordinator'),
     path('assign-radiologist/', views.assign_radiologist, name='assign_radiologist'),
     path('assign-radiologist1/', views.assign_radiologist1, name='assign_radiologist1'),

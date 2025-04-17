@@ -502,7 +502,7 @@
                                 <div class='search-google' style="display: flex; align-items: center;">
                                     <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names/IDs/Test Date" title="Type in a name">
 
-                                    <div class="dropdown-select2" style="margin-left: 5px;">
+                                    <!-- <div class="dropdown-select2" style="margin-left: 5px;">
                                         <select id="filter-location-select-location" class="form-control">
                                             <option value="">Locations</option>
                                             {% for location in Location %}
@@ -522,7 +522,7 @@
 
                                     <button type="button" class="refresh" onclick="refreshPage()" style="margin-left: 5px;">
                                         <i style="font-size: 19px" class="fa">&#xf021;</i>
-                                    </button>
+                                    </button> -->
                                 </div>
 
 
@@ -558,20 +558,49 @@
                 {% endif %}
               </span>
             </div>
-            <div class = 'card-body'>
-                    <div class="table-container">
-                        <table id="patientTable">
-                            <thead>
-                                <tr>
-                                    <th>Patient ID</th>
-                                    <th>Patient Name</th>
-                                    <th>Age</th>
-                                    <th>Gender</th>
-                                    <th>Heart Rate</th>
-                                    <th>
-                                        <div class="filter-dropdown-container">
-                                            <div>Date</div>
-                                            <div class="dropdown-select1" id="filter-date-dropdown-date">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" action="{% url 'assign_cardiologist' %}" id="cardiologistForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="selected_patients" id="selectedPatients">
+                        
+                        <div class="form-container row">
+                            <div class="form-group col">
+                                <div class="select-group">
+                                    <label for="cardiologist-select">Assign Cardiologist:</label>
+                                    <select id="cardiologist-select" name="cardiologist" class="form-control">
+                                        <option value="">--Select Cardiologist--</option>
+                                        {% for cardiologist in cardiologists %}
+                                            <option value="{{ cardiologist.email }}">{{ cardiologist.email }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+            
+                                <div class="button-group mt-3">
+                                    <button type="submit" name="action" value="assign" class="btn btn-primary">
+                                        Assign Cardiologist
+                                    </button>
+                                    <button type="submit" name="action" value="replace" class="btn btn-warning">
+                                        Replace Cardiologist
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+            
+                        <!-- Table inside the form -->
+                        <div class="table-container mt-4">
+                            <table id="patientTable" class="table table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th><input type="checkbox" id="masterCheckbox" /></th>
+                                        <th>Patient ID</th>
+                                        <th>Patient Name</th>
+                                        <th>Age</th>
+                                        <th>Gender</th>
+                                        <th>Heart Rate</th>
+                                        <th>
+                                            <div class="filter-dropdown-container">
+                                                <div>Date</div>
                                                 <select id="filter-date-select-date" class="form-control">
                                                     <option value="">All</option>
                                                     {% for date in Date %}
@@ -579,96 +608,107 @@
                                                     {% endfor %}
                                                 </select>
                                             </div>
-                                        </div>
-                                    </th>
-                                    <th>
-                                        <div class="filter-dropdown-container">
-                                            <div>Allocated</div>
-                                            <div class="dropdown-select1" id="filter-allocate-dropdown-allocate">
+                                        </th>
+                                        <th>
+                                            <div class="filter-dropdown-container">
+                                                <div>Allocated</div>
                                                 <select id="filter-allocate-select-allocate" class="form-control">
                                                     <option value="">All</option>
                                                     {% for cardiologist in cardiologists %}
-                                                        <option value="{{ cardiologist }}">{{ cardiologist.email }}</option>
+                                                        <option value="{{ cardiologist.email }}">{{ cardiologist.email }}</option>
                                                     {% endfor %}
                                                 </select>
                                             </div>
-                                        </div>
-                                    </th>
-                                    <th>
-                                        <div class="filter-dropdown-container">
-                                            <div>City</div>
-                                            <div class="dropdown-select1" id="filter-city-dropdown">
+                                        </th>
+                                        <th>
+                                            <div class="filter-dropdown-container">
+                                                <div>City</div>
                                                 <select id="filter-city-select-city" class="form-control">
                                                     <option value="">All</option>
                                                     {% for city in Cities %}
-                                                    <option value="{{ city }}">{{ city }}</option>
+                                                        <option value="{{ city }}">{{ city }}</option>
                                                     {% endfor %}
                                                 </select>
                                             </div>
-                                        </div>
-                                    </th>
-                                    <th>
-                                        <div class="filter-dropdown-container">
-                                            <div>Location</div>
-                                            <div class="dropdown-select1" id="filter-location-dropdown">
+                                        </th>
+                                        <th>
+                                            <div class="filter-dropdown-container">
+                                                <div>Location</div>
                                                 <select id="filter-location-select-location" class="form-control">
                                                     <option value="">All</option>
                                                     {% for location in Location %}
-                                                    <option value="{{ location }}" data-city="{{ location.city.name }}">{{ location }}</option>
+                                                        <option value="{{ location }}" data-city="{{ location.city.name }}">{{ location }}</option>
                                                     {% endfor %}
                                                 </select>
                                             </div>
-                                        </div>
-                                    </th>
-                                    <th>
-                                        <div class="filter-dropdown-container">
-                                            <div class="status">Status</div>
-                                                <div class="dropdown-select1" id="filter-status-dropdown">
-                                                    <select id="filter-status-select" class="form-control">
-                                                        <option value="">All</option>
-                                                        <option value="reported">Reported</option>
-                                                        <option value="unreported">Unreported</option>
-                                                        <option value="rejected">Rejected</option>
-                                                    </select>
-                                                </div>
+                                        </th>
+                                        <th>Mark As Urgent</th>
+                                        <th>Mark for NonReported</th>
+                                        <th>
+                                            <div class="filter-dropdown-container">
+                                                <div>Status</div>
+                                                <select id="filter-status-select" class="form-control">
+                                                    <option value="">All</option>
+                                                    <option value="reported">Reported</option>
+                                                    <option value="unreported">Unreported</option>
+                                                    <option value="rejected">Rejected</option>
+                                                    <option value="non-reportable">Non-Reportable</option> <!-- Added this option -->
+                                                </select>
                                             </div>
-                                        </div>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for patient in patients %}
-                                    <tr data-date="{{ patient.date.date_field }}" data-cardiologist-first="{{ patient.cardiologist.first_name }}"
-                                        data-cardiologist-last="{{ patient.cardiologist.last_name }}">
-                                        <td>{{ patient.PatientId }}</td>
-                                        <td>{{ patient.PatientName }}</td>
-                                        <td>{{ patient.age }}</td>
-                                        <td>{{ patient.gender }}</td>
-                                        <td>{{ patient.HeartRate }}</td>
-                                        <td>{{ patient.TestDate }}</td>
-                                        <td data-radiologist="{{ patient.cardiologist }}">
-                                            {% if patient.cardiologist %}
-                                                {{ patient.cardiologist.user.email }}
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ patient.date.location.city.name }}</td>
-                                        <td>{{ patient.date.location }}</td>
-                                        <td>
-                                            {% if patient.isDone == False %}
-                                              {% if patient.status == True %}
-                                                Rejected
-                                              {% else %}
-                                                Unreported
-                                              {% endif %}
-                                            {% else %}
-                                              Reported
-                                            {% endif %}
-                                        </td>
+                                        </th>
                                     </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {% for patient in patients %}
+                                        <tr data-date="{{ patient.date.date_field }}" 
+                                            data-cardiologist-first="{{ patient.cardiologist.first_name }}"
+                                            data-cardiologist-last="{{ patient.cardiologist.last_name }}">
+                                            
+                                            <td>
+                                                <input type="checkbox" class="patientCheckbox" value="{{ patient.id }}" />
+                                            </td>
+                                            <td>{{ patient.PatientId }}</td>
+                                            <td>{{ patient.PatientName }}</td>
+                                            <td>{{ patient.age }}</td>
+                                            <td>{{ patient.gender }}</td>
+                                            <td>{{ patient.HeartRate }}</td>
+                                            <td>{{ patient.TestDate }}</td>
+                                            <td data-radiologist="{% if patient.cardiologist %}{{ patient.cardiologist.user.email }}{% endif %}">
+                                                {% if patient.cardiologist %}
+                                                    {{ patient.cardiologist.user.email }}
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ patient.date.location.city.name }}</td>
+                                            <td>{{ patient.date.location }}</td>
+                                            <td>
+                                                <input type="checkbox" class="urgent-checkbox" data-patient-id="{{ patient.id }}" 
+                                                    {% if patient.urgent %}checked{% endif %}>
+                                            </td>
+                                            <td>
+                                                <input type="checkbox" class="NonReportable-checkbox" data-patient-id="{{ patient.id }}" 
+                                                {% if patient.NonReportable %}checked{% endif %}>
+                                            </td>
+                                            <td>
+                                                {% if patient.NonReportable %}
+                                                    Non-Reportable
+                                                {% else %}
+                                                    {% if patient.isDone == False %}
+                                                        {% if patient.status == True %}
+                                                            Rejected
+                                                        {% else %}
+                                                            Unreported
+                                                        {% endif %}
+                                                    {% else %}
+                                                        Reported
+                                                    {% endif %}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </form>
                 <div class="scroll-to-top">
                     <a href="#top"><i class="fa fa-arrow-up"></i></a>
                 </div>
@@ -798,99 +838,118 @@
         });
     </script>
 
-
-    <script>
+<script>
     $(document).ready(function () {
-        // Event handler for the change event of the test date dropdown
-        $('#filter-date-select-date').change(function () {
-            filterTable();
-        });
-
-         // Event handler for the change event of the city dropdown
-        $('#filter-city-select-city').change(function () {
-            filterTable();
-        });
-
-        // Event handler for the change event of the location dropdown
-        $('#filter-location-select-location').change(function () {
+        // Attach change event to all filters including status
+        $('#filter-date-select-date, #filter-city-select-city, #filter-location-select-location, #filter-allocate-select-allocate, #filter-status-select').on('change', function () {
             filterTable();
         });
 
         function filterTable() {
-            var selectedDate = $('#filter-date-select-date').val();
-            var selectedCity = $('#filter-city-select-city').val();
-            var selectedLocation = $('#filter-location-select-location').val();
+            // Get selected filter values
+            const selectedDate = $('#filter-date-select-date').val().toLowerCase();
+            const selectedCity = $('#filter-city-select-city').val().toLowerCase();
+            const selectedLocation = $('#filter-location-select-location').val().toLowerCase();
+            const selectedAllocate = $('#filter-allocate-select-allocate').val().toLowerCase();
+            const selectedStatus = $('#filter-status-select').val().toLowerCase();
 
-            // Loop through each row in the table
+            // Loop through each row
             $('#patientTable tbody tr').each(function () {
-                var rowDate = $(this).find('td:nth-child(6)').text(); // Get the test date from the table cell
-                var rowCity = $(this).find('td:nth-child(8)').text(); // Get the test date from the table cell
-                var rowLocation = $(this).find('td:nth-child(9)').text(); // Get the location from the table cell
+                const row = $(this);
 
-                // Check if the row matches the selected date and location
-                if ((selectedDate === '' || rowDate === selectedDate) &&
-                    (selectedCity === '' || rowCity === selectedCity) &&
-                    (selectedLocation === '' || rowLocation === selectedLocation)) {
-                    // Show the row if it matches the selected date and location
-                    $(this).show();
+                const rowDate = row.find('td:nth-child(7)').text().trim().toLowerCase();
+                const rowAllocate = row.find('td:nth-child(8)').text().trim().toLowerCase();
+                const rowCity = row.find('td:nth-child(9)').text().trim().toLowerCase();
+                const rowLocation = row.find('td:nth-child(10)').text().trim().toLowerCase();
+                const rowStatus = row.find('td:nth-child(13)').text().trim().toLowerCase(); // ✅ New
+
+                // Match logic
+                const matchDate = !selectedDate || rowDate === selectedDate;
+                const matchAllocate = !selectedAllocate || rowAllocate === selectedAllocate;
+                const matchCity = !selectedCity || rowCity === selectedCity;
+                const matchLocation = !selectedLocation || rowLocation === selectedLocation;
+                const matchStatus = !selectedStatus || rowStatus === selectedStatus;
+
+                // Final filter condition
+                if (matchDate && matchAllocate && matchCity && matchLocation && matchStatus) {
+                    row.show();
                 } else {
-                    // Hide the row if it does not match the selected date and location
-                    $(this).hide();
+                    row.hide();
                 }
             });
         }
     });
-  </script>
+</script>
 
     <script>
-        // Function to filter the table by cardiologist
+        // Function to filter the table by cardiologist by rohan jangid 31-03-2025 for the allocate filter
         function filterTableByCardiologist(cardiologist) {
-            // Show all rows initially
-            $("tbody tr").show();
-
+        $("tbody tr").each(function () {
+            const $row = $(this);
+            // Get the cardiologist email from data attribute
+            const rowCardiologist = $row.find("td[data-radiologist]").data('radiologist') || '';
+            
+            // Show/hide logic
             if (cardiologist) {
-                // Filter rows based on the selected cardiologist
-                $("tbody tr").each(function () {
-                     $(this).find("td[data-radiologist]").each(function() {
-                        var rowRadiologist = $(this).text().trim();
-                        if (rowRadiologist === cardiologist) {
-                            found = true;
-                        }
-                    });
-                });
+                // Hide rows that don't match the selected cardiologist
+                rowCardiologist === cardiologist ? $row.show() : $row.hide();
+            } else {
+                // Show all rows if no filter is selected
+                $row.show();
             }
-        }
+        });
+    } // by rohan jangid 31-03-`2025 for the allocate filter
 
         // Function to filter the table by status
         function filterTableByStatus(status) {
-            // Show all rows initially
-            $("tbody tr").show();
+    // Show all rows initially
+    $("tbody tr").show();
 
-            if (status) {
-                // Filter rows based on the selected status
-                $("tbody tr").filter(function() {
-                    var rowStatus = $(this).find("td").eq(9).text().trim(); // Assuming status is in the 10th column (adjust if needed)
-                    return rowStatus.toLowerCase() !== status.toLowerCase(); // Perform case-insensitive comparison
-                }).hide();
-            }
-            console.log("Filtered Rows:", $("tbody tr:visible").length);
+    // If "All" is selected (empty status), show everything
+    if (!status) {
+        return;
+    }
+
+    // Convert selected status to lowercase for case-insensitive comparison
+    var selectedStatus = status.toLowerCase();
+
+    // Filter rows based on the selected status
+    $("tbody tr").each(function () {
+        var rowStatus = $(this).find("td").eq(12).text().trim().toLowerCase(); // Adjust column index if needed
+
+        // Show row only if it matches the selected status
+        if (
+            (selectedStatus === "reported" && rowStatus === "reported") ||
+            (selectedStatus === "unreported" && rowStatus === "unreported") ||
+            (selectedStatus === "rejected" && rowStatus === "rejected") ||
+            (selectedStatus === "non-reportable" && rowStatus === "non-reportable")
+        ) {
+            $(this).show();
+        } else {
+            $(this).hide();
         }
+    });
 
-        // Event handler for the "Allocate" dropdown filter
-        $(document).on("change", "#filter-allocate-select-allocate", function() {
-            var selectedCardiologist = $(this).val();
-            filterTableByCardiologist(selectedCardiologist);
-        });
+    console.log("Filtered Rows:", $("tbody tr:visible").length);
+}
 
-         // Event handler for the "Status" dropdown filter
-        $(document).on("change", "#filter-status-select", function () {
-            var selectedStatus = $(this).val();
-            filterTableByStatus(selectedStatus);
-        });
+// Event handler for the "Allocate" dropdown filter
+$(document).on("change", "#filter-allocate-select-allocate", function () {
+    var selectedCardiologist = $(this).val();
+    filterTableByCardiologist(selectedCardiologist);
+});
 
-        // Call the filter functions on page load to initialize the table
-        filterTableByCardiologist($("#filter-allocate-select-allocate").val());
-        filterTableByStatus($("#filter-status-select").val());
+// Event handler for the "Status" dropdown filter
+$(document).on("change", "#filter-status-select", function () {
+    var selectedStatus = $(this).val();
+    filterTableByStatus(selectedStatus);
+});
+
+// Ensure table loads correctly on page refresh
+$(document).ready(function () {
+    filterTableByCardiologist($("#filter-allocate-select-allocate").val());
+    filterTableByStatus($("#filter-status-select").val());
+});
     </script>
 
     <script>
@@ -905,6 +964,185 @@
                 // I will assign a flag which will reject the again post on reload.
             }
         });
+    </script>
+    <!-- by rohan jangid for he mastercheckbox  -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const masterCheckbox = document.getElementById("masterCheckbox");
+            const tableBody = document.querySelector("#patientTable tbody");
+            const selectedPatientsInput = document.getElementById("selectedPatients");
+            let selectedPatients = JSON.parse(selectedPatientsInput.value || '[]');
+    
+            // Function to get all visible checkboxes
+            const getVisibleCheckboxes = () => {
+                return Array.from(tableBody.querySelectorAll(".patientCheckbox")).filter(checkbox => {
+                    const row = checkbox.closest("tr");
+                    return row && row.style.display !== "none";
+                });
+            };
+    
+            // Function to update hidden input with selected patients
+            const updateSelectedPatients = () => {
+                selectedPatientsInput.value = JSON.stringify(selectedPatients);
+            };
+    
+            // Toggle all visible checkboxes when master checkbox is clicked
+            masterCheckbox.addEventListener("change", () => {
+                const visibleCheckboxes = getVisibleCheckboxes();
+                visibleCheckboxes.forEach(checkbox => {
+                    checkbox.checked = masterCheckbox.checked;
+                    const patientId = checkbox.value;
+                    if (checkbox.checked && !selectedPatients.includes(patientId)) {
+                        selectedPatients.push(patientId);
+                    } else if (!checkbox.checked) {
+                        selectedPatients = selectedPatients.filter(id => id !== patientId);
+                    }
+                });
+                updateSelectedPatients();
+            });
+    
+            // Update master checkbox status and selected patients when an individual checkbox is clicked
+            tableBody.addEventListener("change", (event) => {
+                if (event.target.classList.contains("patientCheckbox")) {
+                    const patientId = event.target.value;
+                    if (event.target.checked) {
+                        if (!selectedPatients.includes(patientId)) {
+                            selectedPatients.push(patientId);
+                        }
+                    } else {
+                        selectedPatients = selectedPatients.filter(id => id !== patientId);
+                    }
+    
+                    // Update master checkbox status
+                    const visibleCheckboxes = getVisibleCheckboxes();
+                    masterCheckbox.checked = visibleCheckboxes.every(checkbox => checkbox.checked);
+    
+                    updateSelectedPatients();
+                }
+            });
+    
+            // Initialize checkboxes based on stored selections
+            document.querySelectorAll(".patientCheckbox").forEach(checkbox => {
+                if (selectedPatients.includes(checkbox.value)) {
+                    checkbox.checked = true;
+                }
+            });
+    
+            // Ensure hidden input is updated before form submission
+            document.getElementById("allocationForm").addEventListener("submit", function () {
+                updateSelectedPatients();
+            });
+        });
+    </script>
+      <!-- upto this  -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        const csrfToken = '{{ csrf_token }}'; // CSRF token for Django
+
+        // Function to handle urgent checkbox change
+        function handleUrgentCheckboxChange() {
+            document.querySelectorAll('.urgent-checkbox').forEach(function (checkbox) {
+                checkbox.addEventListener('change', function () {
+                    const patientId = this.getAttribute('data-patient-id');
+                    const isChecked = this.checked;
+
+                    console.log(`Checkbox for Patient ID ${patientId} (urgent) is now ${isChecked ? 'checked' : 'unchecked'}.`);
+
+                    // Send AJAX request to update urgent status in the database
+                    fetch(`/update_urgent_status/${patientId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'  // Ensure this header is included
+                    },
+                    body: JSON.stringify({ status: isChecked })
+        })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            console.log(`Successfully updated urgent status for Patient ID ${patientId} to ${isChecked}.`);
+                        } else {
+                            console.error(`Failed to update urgent status for Patient ID ${patientId}: ${data.error}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error during update:', error);
+                        // Revert checkbox state if there was an error
+                        this.checked = !isChecked;
+                        console.log(`Reverted checkbox for Patient ID ${patientId} (urgent) due to an error.`);
+                    });
+                });
+            });
+        }
+
+        // Initialize urgent checkbox event listener
+        handleUrgentCheckboxChange();
+        });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+    const csrfToken = '{{ csrf_token }}'; // CSRF token for Django
+
+    // Function to handle Non-Reportable checkbox change
+    function handleNonReportableCheckboxChange() {
+        document.querySelectorAll(".NonReportable-checkbox").forEach(function (checkbox) {
+            checkbox.addEventListener("click", function () {
+                const patientId = this.getAttribute("data-patient-id");
+
+                // Check if patientId is valid
+                if (!patientId) {
+                    alert("Error: Patient ID is missing.");
+                    this.checked = !this.checked; // Revert checkbox state
+                    return;
+                }
+
+                const isChecked = this.checked;
+
+                // Show confirmation alert
+                let confirmation = confirm(`Are you sure you want to mark this patient as ${isChecked ? "Non-Reportable" : "Reportable"}?`);
+
+                if (!confirmation) {
+                    // If user cancels, revert checkbox state
+                    this.checked = !isChecked;
+                    return;
+                }
+
+                // Send AJAX request
+                fetch(`/update-non-reportable/${patientId}/`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken,  // Use CSRF token
+                        "X-Requested-With": "XMLHttpRequest" // Ensure AJAX request is recognized
+                    },
+                    body: JSON.stringify({ status: isChecked })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                    } else {
+                        alert("Error: " + data.error);
+                        this.checked = !isChecked; // Revert checkbox on failure
+                    }
+                })
+                .catch(error => {
+                    alert("An error occurred: " + error);
+                    this.checked = !isChecked; // Revert checkbox on failure
+                });
+            });
+        });
+    }
+
+    // Initialize checkbox event listener
+    handleNonReportableCheckboxChange();
+});
     </script>
 
      <div class="footer">
