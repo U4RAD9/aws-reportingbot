@@ -401,7 +401,7 @@
             <div class="form-group mb-3">
               <label for="location">Select Location:</label>
               <select class="form-control" name='location' required>
-                <option value="">Select Location</option>
+                <option value="{{ location }}">Select Location</option>
                 {% for location in Location %}
                 <option value="{{ location }}">{{ location }}</option>
                 {% endfor %}
