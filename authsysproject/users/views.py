@@ -2095,7 +2095,7 @@ def xrayallocation(request):
 
     return render(request, 'users/xrayallocation.html',
                   {'profile_picture': profile_picture, 'Study_description': sorted_unique_study_description, 'Institution': sorted_unique_institution_name, 'reported': total_reported, 'patients': page_obj, 'Received_on_db': sorted_unique_received_dates, 'Date': sorted_unique_dates,
-                   'locations': location, 'total_assigned_cases': total_assigned_cases, 'total_reported_cases': total_reported_cases, 'total_pending_cases': total_pending_cases, 'page_obj': page_obj, 'patient_urls': patient_urls})
+                   'locations': location, 'total_assigned_cases': total_assigned_cases, 'total_reported_cases': total_reported_cases, 'total_pending_cases': total_pending_cases, 'page_obj': page_obj, 'patient_urls': patient_urls, 'search_query': search_query})
 
 
 @user_type_required('radiologist')
@@ -2126,12 +2126,31 @@ def xrayallocationreverse(request):
     # Count total pending cases (total assigned cases - total reported cases)
     total_pending_cases = total_assigned_cases - total_reported_cases
 
+    # Get search query
+    search_query = request.GET.get('q', '')
+
     allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=True).order_by('-vip', '-urgent', '-Mlc', '-id')
 
     # Set up pagination
     paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
     page_number = request.GET.get('page', 1)  # Get the page number from the request
     page_obj = paginator.get_page(page_number)
+
+    # Apply search filter
+    if search_query:
+        allocated_to_current_user = allocated_to_current_user.filter(
+            Q(patient_name__icontains=search_query) |
+            Q(patient_id__icontains=search_query) |
+            Q(age__icontains=search_query) |
+            Q(gender__icontains=search_query) |
+            Q(study_date__icontains=search_query) |
+            Q(study_time__icontains=search_query) |
+            Q(study_description__icontains=search_query) |
+            Q(Modality__icontains=search_query) |
+            Q(body_part_examined__icontains=search_query) |
+            Q(referring_doctor_name__icontains=search_query) |
+            Q(institution_name__icontains=search_query)
+        )
     
    
     # Generate presigned URLs for JPEG files in S3
@@ -2176,7 +2195,7 @@ def xrayallocationreverse(request):
     sorted_unique_dates = sorted(unique_dates, reverse=False)
     return render(request, 'users/xrayallocationreverse.html',
                   {'profile_picture': profile_picture, 'reported': total_reported, 'patients': page_obj, 'Received_on_db': sorted_unique_received_dates, 'Date': sorted_unique_dates,
-                   'locations': location, 'page_obj': page_obj, 'total_assigned_cases': total_assigned_cases, 'total_reported_cases': total_reported_cases, 'total_pending_cases': total_pending_cases, 'patient_urls': patient_urls})
+                   'locations': location, 'page_obj': page_obj, 'total_assigned_cases': total_assigned_cases, 'total_reported_cases': total_reported_cases, 'total_pending_cases': total_pending_cases, 'patient_urls': patient_urls, 'search_query': search_query})
 
 user_type_required('audiometrist')
 def audiometry(request):
