@@ -2016,7 +2016,26 @@ def xrayallocation(request):
     # Filter cases that are not yet reported (isDone = False)
     pending_cases = allocated.filter(isDone=False).order_by('-vip', '-urgent', '-Mlc', '-id')
 
+    # Get search query
+    search_query = request.GET.get('q', '')
+
     allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=False).order_by('-vip', '-urgent', '-Mlc', '-id')
+
+    # Apply search filter
+    if search_query:
+        allocated_to_current_user = allocated_to_current_user.filter(
+            Q(patient_name__icontains=search_query) |
+            Q(patient_id__icontains=search_query) |
+            Q(age__icontains=search_query) |
+            Q(gender__icontains=search_query) |
+            Q(study_date__icontains=search_query) |
+            Q(study_time__icontains=search_query) |
+            Q(study_description__icontains=search_query) |
+            Q(Modality__icontains=search_query) |
+            Q(body_part_examined__icontains=search_query) |
+            Q(referring_doctor_name__icontains=search_query) |
+            Q(institution_name__icontains=search_query)
+        )
 
     
 
