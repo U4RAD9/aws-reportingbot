@@ -428,8 +428,14 @@
                 </div>
                 <div class="row-container1">
                   <div class="col">
-                    <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names/IDs/Test Date"
-                      title="Type in a name" />
+                    <form method="GET" class="d-flex">
+                      <input type="text" 
+                             name="q" 
+                             class="form-control me-2" 
+                             placeholder="Search all records..." 
+                             value="{{ request.GET.q }}">
+                      <button class="btn btn-primary" type="submit">Search</button>
+                    </form>
                   </div>
                   <div class="col">
                     <button class="downloadButton" onclick="downloadSelectedPDFs()">
