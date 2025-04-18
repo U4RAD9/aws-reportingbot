@@ -743,13 +743,11 @@ def client_dashboard(request):
         print("DICOM Patient IDs:", dicom_patient_ids)
         print("DICOM Patient Names:", dicom_patient_names)
 
-        # 🔹 Filter XrayReport using normalized patient_id and name
-        pdfs = XrayReport.objects.filter(
-            Q(patient_id__in=dicom_patient_ids) |
-            Q(name__in=dicom_patient_names)
-        ).order_by('-id')
 
-        # Apply search filter
+        # Start with all XrayReports
+        pdfs = XrayReport.objects.all().order_by('-id')
+
+        # Apply search filter first
         if search_query:
             pdfs = pdfs.filter(
                 Q(name__icontains=search_query) |
@@ -760,6 +758,14 @@ def client_dashboard(request):
                 Q(report_date__icontains=search_query) |
                 Q(location__icontains=search_query)
             )
+
+        # 🔹 Filter XrayReport using normalized patient_id and name
+        pdfs = XrayReport.objects.filter(
+            Q(patient_id__in=dicom_patient_ids) |
+            Q(name__in=dicom_patient_names)
+        ).order_by('-id')
+
+        
 
         # 🔹 Group by patient_id to get the latest report per patient
         grouped_pdfs = groupby(pdfs, key=attrgetter('patient_id'))
