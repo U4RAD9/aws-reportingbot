@@ -751,7 +751,7 @@ def client_dashboard(request):
 
         # Apply search filter
         if search_query:
-            dicom_data = dicom_data.filter(
+            pdfs = pdfs.filter(
                 Q(patient_name__icontains=search_query) |
                 Q(patient_id__icontains=search_query) |
                 Q(age__icontains=search_query) |
@@ -802,7 +802,8 @@ def client_dashboard(request):
             'Report_Dates': sorted_report_dates,
             'Location': ", ".join(institution_names),  # Show multiple institutions
             'paginator': paginator,
-            'page_obj': page_obj
+            'page_obj': page_obj,
+            'search_query': search_query,
         }
 
         return render(request, 'users/client.html', context)
