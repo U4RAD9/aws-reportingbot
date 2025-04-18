@@ -589,11 +589,42 @@
                       
                       </div>
                   </div>
+                  <div class="pagination">
+                    <span class="step-links">
+                      {% if page_obj.has_previous %}
+                          <a href="?page=1">&laquo; first</a>
+                          <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+                      {% endif %}
+                    
+                      <span class="current">
+                          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+                      </span>
+                    
+                      {% if page_obj.has_next %}
+                          <a href="?page={{ page_obj.next_page_number }}">next</a>
+                          <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+                      {% endif %}
+                    </span>
+                    <!-- Search Page Input -->
+                    <div>
+                      <form action="" method="GET" onsubmit="return goToPage();">
+                        <input type="number" class="form-control form-control-lg" id="pageInput" name="page" 
+                               min="1" max="{{ page_obj.paginator.num_pages }}" 
+                               placeholder="Enter page no Search" required 
+                               style="width: 200px; height: 30px; font-size: 14px;">
+                        <button type="submit">Go</button>
+                      </form>
+                    </div>
+                  </div>
                   <div class='search-google'>
-                      <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names/IDs/Test Date" title="Type in a name">
-                      <!-- <button type="button" class="refresh" onclick="refreshPage()">
-                          <i style="font-size: 19px" class="fa">&#xf021;</i>
-                        </button> -->
+                    <form method="GET" class="d-flex">
+                      <input type="text" 
+                             name="q" 
+                             class="form-control me-2" 
+                             placeholder="Search all records..." 
+                             value="{{ request.GET.q }}">
+                      <button class="btn btn-primary" type="submit">Search</button>
+                    </form>
                   </div>
                   <div class="greeting" id="greeting">
                     {% if user %}
@@ -611,33 +642,6 @@
       </div>
     </div>
     <div class="card">
-      <div class="pagination">
-        <span class="step-links">
-          {% if page_obj.has_previous %}
-              <a href="?page=1">&laquo; first</a>
-              <a href="?page={{ page_obj.previous_page_number }}">previous</a>
-          {% endif %}
-        
-          <span class="current">
-              Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
-          </span>
-        
-          {% if page_obj.has_next %}
-              <a href="?page={{ page_obj.next_page_number }}">next</a>
-              <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
-          {% endif %}
-        </span>
-        <!-- Search Page Input -->
-        <div>
-          <form action="" method="GET" onsubmit="return goToPage();">
-            <input type="number" class="form-control form-control-lg" id="pageInput" name="page" 
-                   min="1" max="{{ page_obj.paginator.num_pages }}" 
-                   placeholder="Enter page no Search" required 
-                   style="width: 200px; height: 30px; font-size: 14px;">
-            <button type="submit">Go</button>
-          </form>
-        </div>
-      </div>
       <div class="card-body">
         <form method="POST" action="{% url 'assign_radiologist' %}" id="radiologistForm">
           {% csrf_token %}

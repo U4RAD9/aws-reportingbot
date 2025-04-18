@@ -1258,7 +1258,24 @@ def update_non_reportable_status(request, patient_id):
 @user_type_required('xraycoordinator')
 def allocation1(request):
     # Fetch and order patients
+    # Get search query
+    search_query = request.GET.get('q', '')
     patients = DICOMData.objects.all().order_by('-vip', '-urgent', '-Mlc', '-id')
+    # Apply search filter
+    if search_query:
+        patients = patients.filter(
+            Q(patient_name__icontains=search_query) |
+            Q(patient_id__icontains=search_query) |
+            Q(age__icontains=search_query) |
+            Q(gender__icontains=search_query) |
+            Q(study_date__icontains=search_query) |
+            Q(study_time__icontains=search_query) |
+            Q(study_description__icontains=search_query) |
+            Q(Modality__icontains=search_query) |
+            Q(body_part_examined__icontains=search_query) |
+            Q(referring_doctor_name__icontains=search_query) |
+            Q(institution_name__icontains=search_query)
+        )
 
     # Filter based on Radiologist
     radiologist_filter = request.GET.get('radiologist', None)
@@ -1379,7 +1396,8 @@ def allocation1(request):
         'corporatecoordinators': corporatecoordinator_objects,
         'status_options': status_options,  # Pass the status options dynamically
         'page_obj': page_obj,
-        'status_filter': status_filter #my code --Rohan Jangid
+        'status_filter': status_filter,
+        'search_query': search_query
     })#by rohan 28-03-2025
 
 def assign_radiologist(request):
