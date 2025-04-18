@@ -753,7 +753,9 @@ def client_dashboard(request):
         if search_query:
             pdfs = pdfs.filter(
                 Q(name__icontains=search_query) |
+                Q(name__iexact=search_query) |
                 Q(patient_id__icontains=search_query) |
+                Q(patient_id__iexact=search_query) |
                 Q(test_date__icontains=search_query) |
                 Q(report_date__icontains=search_query) |
                 Q(location__icontains=search_query)
