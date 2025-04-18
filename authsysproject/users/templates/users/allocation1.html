@@ -569,72 +569,86 @@
     </div>
 
     <div class="row">
-      <div class="col-lg-12">
+      <div class="col">
         <div class="card">
           <div class="card-body">
-              <div class="row-container">
-                  <div class="row-container1">
-                      <div class="count-container1">
-                        <span id="count1">Current Uploaded: <strong><span id="totalRowCount">{{ total.total_uploaded }}</span></strong></span>
-                        <span id="count1">Current Reported: <strong><span id="totalRowCount">{{ total.current_reported }}</span></strong></span>
-                        <span id="count1">Unreported Cases: <strong><span id="totalRowCount">{{ total.unreported_cases }}</span></strong></span>
-                        <span id="count1">Unallocated Cases: <strong><span id="totalRowCount">{{ total.unallocated_cases }}</span></strong></span>
-                        <span id="count1">Nonreported Cases: <strong><span id="totalRowCount">{{ total.nonreported_cases }}</span></strong></span>
-                      </div>
-                      <div class="count-container">
-                        <div class="filtered-count-container">
-                            <span id="count1">Filtered Row Count: <strong><span id="filteredRowCount">0</span></strong></span>
-                        </div>
-                      
-                      </div>
+            <div class="row-container1">
+                <div class="count-container1">
+                  <span id="count1">Current Uploaded: <strong><span id="totalRowCount">{{ total.total_uploaded }}</span></strong></span>
+                  <span id="count1">Current Reported: <strong><span id="totalRowCount">{{ total.current_reported }}</span></strong></span>
+                  <span id="count1">Unreported Cases: <strong><span id="totalRowCount">{{ total.unreported_cases }}</span></strong></span>
+                  <span id="count1">Unallocated Cases: <strong><span id="totalRowCount">{{ total.unallocated_cases }}</span></strong></span>
+                  <span id="count1">Nonreported Cases: <strong><span id="totalRowCount">{{ total.nonreported_cases }}</span></strong></span>
+                </div>
+                <div class="count-container">
+                  <div class="filtered-count-container">
+                      <span id="count1">Filtered Row Count: <strong><span id="filteredRowCount">0</span></strong></span>
                   </div>
-                  <div class="pagination">
-                    <span class="step-links">
-                      {% if page_obj.has_previous %}
-                          <a href="?page=1">&laquo; first</a>
-                          <a href="?page={{ page_obj.previous_page_number }}">previous</a>
-                      {% endif %}
-                    
-                      <span class="current">
-                          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
-                      </span>
-                    
-                      {% if page_obj.has_next %}
-                          <a href="?page={{ page_obj.next_page_number }}">next</a>
-                          <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
-                      {% endif %}
-                    </span>
-                    <!-- Search Page Input -->
-                    <div>
-                      <form action="" method="GET" onsubmit="return goToPage();">
-                        <input type="number" class="form-control form-control-lg" id="pageInput" name="page" 
-                               min="1" max="{{ page_obj.paginator.num_pages }}" 
-                               placeholder="Enter page no Search" required 
-                               style="width: 200px; height: 30px; font-size: 14px;">
-                        <button type="submit">Go</button>
-                      </form>
-                    </div>
-                  </div>
-                  <div class='search-google'>
-                    <form method="GET" class="d-flex">
-                      <input type="text" 
-                             name="q" 
-                             class="form-control me-2" 
-                             placeholder="Search all records..." 
-                             value="{{ request.GET.q }}">
-                      <button class="btn btn-primary" type="submit">Search</button>
-                    </form>
-                  </div>
-                  <div class="greeting" id="greeting">
-                    {% if user %}
-                    <h6>
-                      <strong>{{ user.first_name }}</strong>,
-                      <span id="greeting-text"></span>
-                    </h6>
-                    {% endif %}
-                  </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-body">      
+            <div class="pagination">
+              <span class="step-links">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1">&laquo; first</a>
+                    <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+                {% endif %}
+              
+                <span class="current">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+                </span>
+              
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}">next</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+                {% endif %}
+              </span>
+              <!-- Search Page Input -->
+              <div>
+                <form action="" method="GET" onsubmit="return goToPage();">
+                  <input type="number" class="form-control form-control-lg" id="pageInput" name="page" 
+                         min="1" max="{{ page_obj.paginator.num_pages }}" 
+                         placeholder="Enter page no Search" required 
+                         style="width: 200px; height: 30px; font-size: 14px;">
+                  <button class="btn btn-primary" type="submit">Go</button>
+                </form>
               </div>
-
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-body">      
+            <div class='search-google'>
+              <form method="GET" class="d-flex">
+                <input type="text" 
+                       name="q" 
+                       class="form-control me-2" 
+                       placeholder="Search all records..." 
+                       value="{{ request.GET.q }}">
+                <button class="btn btn-primary" type="submit">Search</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-body">      
+            <div class="greeting" id="greeting">
+              {% if user %}
+              <h6>
+                <strong>{{ user.first_name }}</strong>,
+                <span id="greeting-text"></span>
+              </h6>
+              {% endif %}
+            </div>
           </div>
         </div>
       </div>
