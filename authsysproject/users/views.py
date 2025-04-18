@@ -5366,11 +5366,28 @@ def clientdata(request):
     
     # Get all institution names associated with the client
     institution_names = client.institutions.values_list("name", flat=True)  # Extract names as a list
+
+    # Get search query
+    search_query = request.GET.get('q', '')
     
     # Filter DICOMData for all institutions linked to the client
-    dicom_data = DICOMData.objects.filter(institution_name__in=institution_names).order_by(
-        '-vip', '-urgent', '-Mlc', '-id'
-    )
+    dicom_data = DICOMData.objects.filter(institution_name__in=institution_names).order_by('-vip', '-urgent', '-Mlc', '-id')
+
+    # Apply search filter
+    if search_query:
+        dicom_data = dicom_data.filter(
+            Q(patient_name__icontains=search_query) |
+            Q(patient_id__icontains=search_query) |
+            Q(age__icontains=search_query) |
+            Q(gender__icontains=search_query) |
+            Q(study_date__icontains=search_query) |
+            Q(study_description__icontains=search_query) |
+            Q(notes__icontains=search_query) |
+            Q(body_part_examined__icontains=search_query) |
+            Q(referring_doctor_name__icontains=search_query) |
+            Q(whatsapp_number__icontains=search_query)
+        )
+    
 
     # Total filtered count
     total_filtered_count = dicom_data.count()
@@ -5414,6 +5431,7 @@ def clientdata(request):
         'referring_doctor_name': client.can_edit_referring_doctor_name,
         'whatsapp_number': client.can_edit_whatsapp_number,
         'upload_history': True,  # Assuming all clients can upload history files
+        'search_query': search_query,
     }
 
     return render(request, 'users/upload_dicom.html', {
