@@ -2131,11 +2131,6 @@ def xrayallocationreverse(request):
 
     allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=True).order_by('-vip', '-urgent', '-Mlc', '-id')
 
-    # Set up pagination
-    paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
-    page_number = request.GET.get('page', 1)  # Get the page number from the request
-    page_obj = paginator.get_page(page_number)
-
     # Apply search filter
     if search_query:
         allocated_to_current_user = allocated_to_current_user.filter(
@@ -2151,6 +2146,11 @@ def xrayallocationreverse(request):
             Q(referring_doctor_name__icontains=search_query) |
             Q(institution_name__icontains=search_query)
         )
+
+    # Set up pagination
+    paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
+    page_number = request.GET.get('page', 1)  # Get the page number from the request
+    page_obj = paginator.get_page(page_number)
     
    
     # Generate presigned URLs for JPEG files in S3
