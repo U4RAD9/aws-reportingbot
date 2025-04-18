@@ -489,6 +489,16 @@
                 <a href="?page={{ page_obj.paginator.num_pages }}">Last</a>
             {% endif %}
           </div>
+          <!-- Search Page Input -->
+          <div>
+            <form action="" method="GET" onsubmit="return goToPage();">
+              <input type="number" class="form-control form-control-lg" id="pageInput" name="page" 
+                     min="1" max="{{ page_obj.paginator.num_pages }}" 
+                     placeholder="Enter page no Search" required 
+                     style="width: 200px; height: 30px; font-size: 14px;">
+              <button type="submit">Go</button>
+            </form>
+          </div>
           <div class="card-body">
             <h1 class="header">
               <div class="row-container">
