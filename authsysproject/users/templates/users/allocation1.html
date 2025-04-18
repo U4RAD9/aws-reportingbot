@@ -536,7 +536,7 @@
             <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
                 <ul class="navbar-nav">
                     <li>     
-                      <div class="greeting" id="greeting">
+                      <div class="greeting text-white" id="greeting">
                         {% if user %}
                         <h6>
                           <strong>{{ user.first_name }}</strong>,
@@ -619,9 +619,9 @@
                 {% endif %}
               </span>
               <!-- Search Page Input -->
-              <div>
-                <form action="" class="d-flex" method="GET" onsubmit="return goToPage();">
-                  <input type="number" class="form-control form-control-lg" id="pageInput" name="page" 
+              <div class="d-flex">
+                <form action="" method="GET" onsubmit="return goToPage();">
+                  <input type="number" class="form-control me-2" id="pageInput" name="page" 
                          min="1" max="{{ page_obj.paginator.num_pages }}" 
                          placeholder="Enter page no Search">
                   <button class="btn btn-primary" type="submit">Go</button>
