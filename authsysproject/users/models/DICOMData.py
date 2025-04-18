@@ -46,6 +46,17 @@ class DICOMData(models.Model):
 
     def __str__(self):
         return str(self.patient_name)
+    
+
+    @staticmethod
+    def get_notes_by_study_id(study_id):
+        try:
+            dicom_data = DICOMData.objects.filter(study_id=study_id).first()
+            if dicom_data:
+                return dicom_data.notes
+            return "No notes available for this study."
+        except Exception as e:
+            raise Exception(f"Error fetching notes: {str(e)}")
 
 
 

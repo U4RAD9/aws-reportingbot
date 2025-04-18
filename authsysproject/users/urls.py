@@ -4,7 +4,7 @@ from django.urls import path
 from . import views
 from .views import save_template,get_template,get_client_header_footer
 from .views import convert_pdf_to_word # by rohan jangid 14-04-2025
-from .views import update_non_reportable_status
+from .views import update_non_reportable_status,get_dicom_notes
 
 
 # from django.contrib.auth import views
@@ -148,6 +148,7 @@ urlpatterns = [
     
     path('save-template/', save_template, name='save-template'),
      path('get-template/<int:template_id>/',views.get_template, name='get_template'),
+     path('get-dicom-notes/', get_dicom_notes, name='get_dicom_notes'),
 
 
 ] 

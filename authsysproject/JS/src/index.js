@@ -251,6 +251,7 @@ class App extends Component {
     
    this.getHeaderFooterImages=this.getHeaderFooterImages.bind(this);
    this.slab=this.slab.bind(this);
+   this.downloadAsJPEG=this.downloadAsJPEG.bind(this);
     
   }
   allowDrop(event){
@@ -302,6 +303,20 @@ class App extends Component {
       }
     });
   }
+    // Function to download selected viewport as JPEG
+downloadAsJPEG(element) {
+  html2canvas(element, { allowTaint: true }).then(function (canvas) {
+    // Convert canvas to JPEG data URL
+    const jpegImageUrl = canvas.toDataURL('image/jpeg');
+
+    // Create a link element and trigger download
+    const link = document.createElement('a');
+    link.href = jpegImageUrl;
+    link.download = 'captured-screenshot.jpeg';
+    link.click();
+  });
+}
+
   
   //function to toggle full screen settings for viewer, changes css settings for div with ID page-content and for CKEditor
   fullScreen(call){
@@ -407,13 +422,24 @@ class App extends Component {
     const modality = obj[1];
     const description = obj[2];
   
-    // Determine orientation based on description (sag, cor, axial)
-    let orientation = cornerstone.Enums.OrientationAxis.AXIAL; // Default to axial
-    if (description.toLowerCase().includes('sag')) {
-      orientation = cornerstone.Enums.OrientationAxis.SAGITTAL;
-    } else if (description.toLowerCase().includes('cor')) {
-      orientation = cornerstone.Enums.OrientationAxis.CORONAL;
-    }
+     // Convert to lowercase for consistent matching
+const descLower = description.toLowerCase();
+
+
+let orientation = cornerstone.Enums.OrientationAxis.AXIAL; // Default to axial
+
+// Split the description by spaces to extract key terms
+const firstWords = descLower.split(' ');
+
+// Check if any known orientation keyword is present
+if (firstWords.includes('sag')) {
+  orientation = cornerstone.Enums.OrientationAxis.SAGITTAL;
+} else if (firstWords.includes('cor') || firstWords.includes('cr')) {
+  orientation = cornerstone.Enums.OrientationAxis.CORONAL;
+} else if (firstWords.includes('ax')) {
+  orientation = cornerstone.Enums.OrientationAxis.AXIAL;
+}
+
   
     // Get related elements
     const parentElement = event.target.parentElement;
@@ -541,6 +567,20 @@ class App extends Component {
         const id = data.id;
         const study_date = data.date;
         const study_time = data.time;
+        
+ // Fetch notes from dicom_data.py
+ const notesResponse = await fetch('/get-dicom-notes/', {
+  method: 'POST',
+  headers: {
+      'Content-Type': 'application/json',
+      "X-CSRFToken": token
+  },
+  body: JSON.stringify({ study_id: studyid })
+});
+const notesData = await notesResponse.json();
+const notes = notesData.notes || 'No notes available';
+
+
   
         let k = 0;
         let imageIdIndex = 0;
@@ -573,7 +613,16 @@ class App extends Component {
         }
         const formattedDate = formatDate(study_date);
   
-        viewport.innerHTML += `<p style="margin-bottom:0">Name: ${name}<br>ID: ${id}<br>Study Date: ${formattedDate}<br>Study Time: ${formattedTime}<br></p>`;
+      // Update patient details section
+      viewport.innerHTML += `
+      <p style="margin-bottom:0">
+          Name: ${name}<br>
+          ID: ${id}<br>
+          Study Date: ${formattedDate}<br>
+          Study Time: ${formattedTime}<br>
+          Patient history: ${notes}<br>
+      </p>
+  `;
   
         // Handle each series asynchronously in parallel using Promise.all + series.map()
         const imagePromises = series.map(async (item, index) => {
@@ -4498,6 +4547,9 @@ Undo/Reset icon */}Reset</button></div>
 {/*Button for capturing selected viewport */}
 <div className="button-container"><button className='tool-button' onClick={e =>
 this.capture(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Capture</button></div>
+
+<div className="button-container"><button className='tool-button' onClick={e =>
+this.downloadAsJPEG(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Save as jpeg</button></div>
 {/*Button for hiding editor and putting the viewer in full screen mode */}
 <div className="button-container">
 <button  className='tool-button' onClick={this.toggleDivs}>

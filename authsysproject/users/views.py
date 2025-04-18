@@ -7315,3 +7315,28 @@ def get_template(request, template_id):
         return JsonResponse({'template_content': template.content}, status=200)
     except CKEditorTemplate.DoesNotExist:
         return JsonResponse({'error': 'Template not found or unauthorized'}, status=404)
+    
+
+
+
+
+
+# New view to fetch DICOM notes
+def get_dicom_notes(request):
+    if request.method == 'POST':
+        try:
+            # Parse the incoming JSON data
+            data = json.loads(request.body)
+            study_id = data.get('study_id')
+
+            if not study_id:
+                return JsonResponse({'error': 'Study ID is required'}, status=400)
+
+            # Fetch notes using the DICOMData model
+            notes = DICOMData.get_notes_by_study_id(study_id)
+
+            return JsonResponse({'notes': notes}, status=200)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
