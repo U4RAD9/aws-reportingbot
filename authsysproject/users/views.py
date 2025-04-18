@@ -752,16 +752,11 @@ def client_dashboard(request):
         # Apply search filter
         if search_query:
             pdfs = pdfs.filter(
-                Q(patient_name__icontains=search_query) |
+                Q(name__icontains=search_query) |
                 Q(patient_id__icontains=search_query) |
-                Q(age__icontains=search_query) |
-                Q(gender__icontains=search_query) |
-                Q(study_date__icontains=search_query) |
-                Q(study_description__icontains=search_query) |
-                Q(notes__icontains=search_query) |
-                Q(body_part_examined__icontains=search_query) |
-                Q(referring_doctor_name__icontains=search_query) |
-                Q(whatsapp_number__icontains=search_query)
+                Q(test_date__icontains=search_query) |
+                Q(report_date__icontains=search_query) |
+                Q(location__icontains=search_query)
             )
 
         # 🔹 Group by patient_id to get the latest report per patient
