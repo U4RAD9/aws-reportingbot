@@ -473,38 +473,37 @@
       <div class="col">
         <div class="card">
           <div class="card-body">
-            
-              <div class="row-container">
-                <div class="count-container">
-                  <span id="count1"><strong>Total Assigned Cases:</strong> <span>{{total_assigned_cases }}</span></span>
-                  <span id="count1"><strong>Total Reported Cases:</strong> <span>{{ total_reported_cases }}</span></span>
-                  <span id="count2"><strong>Total Pending Cases:</strong> <span>{{ total_pending_cases }}</span></span>
-                </div>
-                <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-              </div>
-
+            <div class="count-container">
+              <span id="count1"><strong>Total Assigned Cases:</strong> <span>{{total_assigned_cases }}</span></span>
+              <span id="count1"><strong>Total Reported Cases:</strong> <span>{{ total_reported_cases }}</span></span>
+              <span id="count2"><strong>Total Pending Cases:</strong> <span>{{ total_pending_cases }}</span></span>
+            </div>
+            <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
           </div>
         </div>
       </div>
       <div class="col">
-        {% if page_obj.has_previous %}
-            <a href="?page=1">First</a>
-            <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
-        {% endif %}
-
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}">Next</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}">Last</a>
-        {% endif %}
+        <div class="card">
+          <div class="card-body">
+            {% if page_obj.has_previous %}
+                <a href="?page=1">First</a>
+                <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            {% endif %}
+    
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">Next</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+            {% endif %}
+          </div>
+        </div>
       </div>
       <!-- Search Page Input -->
       <div class="col">
-        <form action="" method="GET" onsubmit="return goToPage();">
-          <input type="number" class="form-control form-control-lg" id="pageInput" name="page" 
+        <form action="" method="GET" class="d-flex" onsubmit="return goToPage();">
+          <input type="number" class="form-control me-2" id="pageInput" name="page" 
                  min="1" max="{{ page_obj.paginator.num_pages }}" 
-                 placeholder="Enter page no Search" required 
-                 style="width: 200px; height: 30px; font-size: 14px;">
-          <button type="submit">Go</button>
+                 placeholder="Enter page no to Search" required>
+          <button class="btn btn-primary" type="submit">Go</button>
         </form>
       </div>
       <div class="col">
