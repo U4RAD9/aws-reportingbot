@@ -448,36 +448,8 @@
     </div>
 
     <div class="row">
-      <div class="col-lg-12">
+      <div class="col">
         <div class="card">
-         <div class="pagination">
-           <span class="step-links">
-             {% if page_obj.has_previous %}
-               <a href="?page=1">&laquo; first</a>
-               <a href="?page={{ page_obj.previous_page_number }}">previous</a>
-             {% endif %}
-
-             <span class="current">
-               Page {{ page_obj.number }} of {{ paginator.num_pages }}.
-             </span>
-
-             {% if page_obj.has_next %}
-               <a href="?page={{ page_obj.next_page_number }}">next</a>
-               <a href="?page={{ paginator.num_pages }}">last &raquo;</a>
-             {% endif %}
-           </span>
-          <!-- Search Page Input -->
-          <div>
-            <form action="" method="GET" onsubmit="return goToPage();">
-              <input type="number" class="form-control form-control-lg" id="pageInput" name="page" 
-                     min="1" max="{{ page_obj.paginator.num_pages }}" 
-                     placeholder="Enter page no Search" required 
-                     style="width: 200px; height: 30px; font-size: 14px;">
-              <button type="submit">Go</button>
-            </form>
-          </div>
-         </div>
-
           <div class="card-body">
             <h1 class="header">
               <div class="row-container">
@@ -486,8 +458,52 @@
                 </div>
                 <div class="row-container1">
                   <div class="col">
-                    <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names/IDs/Test Date"
-                      title="Type in a name" />
+                    <div class="card">
+                      <div class="card-body">      
+                        <div class="pagination row">
+                          <span class="step-links col">
+                            {% if page_obj.has_previous %}
+                                <a href="?page=1">&laquo; first</a>
+                                <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+                            {% endif %}
+                          
+                            <span class="current">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+                            </span>
+                          
+                            {% if page_obj.has_next %}
+                                <a href="?page={{ page_obj.next_page_number }}">next</a>
+                                <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+                            {% endif %}
+                          </span>
+                          <!-- Search Page Input -->
+                          <div class="col">
+                            <form action="" method="GET" class="d-flex" onsubmit="return goToPage();">
+                              <input type="number" class="form-control me-2" id="pageInput" name="page" 
+                                     min="1" max="{{ page_obj.paginator.num_pages }}" 
+                                     placeholder="Enter page no Search" required>
+                              <button class="btn btn-primary" type="submit">Go</button>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col">
+                    <div class="card">
+                      <div class="card-body">      
+                        <div class='search-google'>
+                          <form method="GET" class="d-flex">
+                            <input type="text" 
+                                   name="q" 
+                                   class="form-control me-2" 
+                                   placeholder="Search all records..." 
+                                   value="{{ request.GET.q }}">
+                            <button class="btn btn-primary" type="submit">Search</button>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <div class="col">
                     <button class="downloadButton" onclick="downloadSelectedPDFs()"><i class="fa fa-download"></i>
