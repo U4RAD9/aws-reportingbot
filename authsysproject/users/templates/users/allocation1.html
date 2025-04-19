@@ -620,10 +620,10 @@
               </span>
               <!-- Search Page Input -->
               <div class="col">
-                <form action="" method="GET" onsubmit="return goToPage();">
+                <form action="" method="GET" class="d-flex" onsubmit="return goToPage();">
                   <input type="number" class="form-control me-2" id="pageInput" name="page" 
                          min="1" max="{{ page_obj.paginator.num_pages }}" 
-                         placeholder="Enter page no Search">
+                         placeholder="Enter page no Search" required>
                   <button class="btn btn-primary" type="submit">Go</button>
                 </form>
               </div>
