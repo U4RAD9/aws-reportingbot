@@ -3705,6 +3705,21 @@ def generate_presigned_url (key):
 def xray_pdf_report(request):
     institution_filter = request.GET.get('institution_name', '')  # Get filter value from request
     pdfs = XrayReport.objects.all().order_by('-id')
+    # Get search query
+    search_query = request.GET.get('q', '')
+
+    # Apply search filter first
+    if search_query:
+        pdfs = pdfs.filter(
+            Q(name__icontains=search_query) |
+            Q(name__iexact=search_query) |
+            Q(patient_id__icontains=search_query) |
+            Q(patient_id__iexact=search_query) |
+            Q(test_date__icontains=search_query) |
+            Q(report_date__icontains=search_query) |
+            Q(location__icontains=search_query)
+        )
+
     if institution_filter:
         pdfs = pdfs.filter(institution_name=institution_filter)
     #pdfs = XrayReport.objects.all()
