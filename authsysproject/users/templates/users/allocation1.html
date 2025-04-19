@@ -602,8 +602,8 @@
       <div class="col">
         <div class="card">
           <div class="card-body">      
-            <div class="pagination">
-              <span class="step-links">
+            <div class="pagination row">
+              <span class="step-links col">
                 {% if page_obj.has_previous %}
                     <a href="?page=1">&laquo; first</a>
                     <a href="?page={{ page_obj.previous_page_number }}">previous</a>
@@ -619,7 +619,7 @@
                 {% endif %}
               </span>
               <!-- Search Page Input -->
-              <div class="d-flex">
+              <div class="col">
                 <form action="" method="GET" onsubmit="return goToPage();">
                   <input type="number" class="form-control me-2" id="pageInput" name="page" 
                          min="1" max="{{ page_obj.paginator.num_pages }}" 
