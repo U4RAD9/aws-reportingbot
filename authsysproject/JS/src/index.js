@@ -3153,16 +3153,28 @@ UploadDivContentOnPDFWithoutImage() {
 
       const { location, accession, institution_name } = this.extractDataFromURL();
       
-      const pdf = new jsPDF("p", "pt", "a4");
+      // Get all images including captured ones
+      const images = editorContent.querySelectorAll("img");
+      const signatureElement = images[1];
+      const signatureUrl = signatureElement ? signatureElement.src : null;
+      const logoElement = images[0];
+      const logoUrl = logoElement ? logoElement.src : null;
+      
+      // Extract remaining images (captured ones)
+      const remainingReportImages = Array.prototype.slice.call(images, 2);
+
+      const pdf = new jsPDF({
+        orientation: "p",
+        unit: "pt",
+        format: "a4",
+        compress: true, // Enable compression
+      });
+
       let currentYPosition = 40;
 
-      // Add logo and header
-      const images = editorContent.querySelectorAll("img");
-      if (images.length > 0) {
-        const logoUrl = images[0]?.src;
-        if (logoUrl) {
-          currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
-        }
+      // Add logo if exists
+      if (logoUrl) {
+        currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
       }
 
       // Add table data
@@ -3176,6 +3188,8 @@ UploadDivContentOnPDFWithoutImage() {
           ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
         ];
 
+        currentYPosition += 20;
+
         pdf.autoTable({
           startY: currentYPosition,
           body: tableContent,
@@ -3185,7 +3199,7 @@ UploadDivContentOnPDFWithoutImage() {
         currentYPosition = pdf.previousAutoTable.finalY + 20;
       }
 
-      // Process main content using extractContent
+      // Process main content
       const content = this.extractContent(editorContent);
       if (content) {
         const lines = content.split('\n');
@@ -3210,8 +3224,8 @@ UploadDivContentOnPDFWithoutImage() {
             }
 
             // Add signature if it's a doctor's line
-            if (text.includes("Dr.") && images.length > 1) {
-              currentYPosition = await this.addSignature(pdf, images[1].src, currentYPosition);
+            if (text.includes("Dr.") && signatureUrl) {
+              currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
             }
 
             // Set font based on formatting
@@ -3238,8 +3252,16 @@ UploadDivContentOnPDFWithoutImage() {
         }
       }
 
-      // Convert PDF to blob and upload
-      const pdfBlob = pdf.output("blob");
+      // Add captured images
+      for (const image of remainingReportImages) {
+        const imageUrl = image ? image.src : null;
+        if (imageUrl) {
+          currentYPosition = await this.addReportImage(pdf, imageUrl, currentYPosition);
+        }
+      }
+
+      // Convert and upload PDF
+      const pdfBlob = pdf.output("blob", { compress: true });
       const csrfToken = await this.getCSRFToken();
       const formData = new FormData();
       formData.append("pdf", pdfBlob, filename ? filename + ".pdf" : "download.pdf");
