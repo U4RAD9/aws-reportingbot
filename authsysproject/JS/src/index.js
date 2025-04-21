@@ -1335,96 +1335,6 @@ slab(val, id) {
   }
 
 
-  // choose() {
-  //   // Retrieve query parameters from the URL
-  //   const urlSearchParams = new URLSearchParams(window.location.search);
-  //   let modality = urlSearchParams.get("data-Modality"); // Default to null if not present
-  //   // let Bodypart = urlSearchParams.get("data-bodypart");
-  //   // Create a dropdown element
-  //   let list = document.createElement("select");
-  //   list.id = "choose_scan";
-  
-  //   // Map modality to modality1 (if conditions are met)
-  //   let modality1 = modality; // Default to modality itself
-  //   if (modality === "DX" || modality === "CR" || modality ==="DR") {
-  //     modality1 = "Xray";
-  //   } else if (modality === "CT") {
-  //     modality1 = "CT";
-  //   }
-  //   else
-  //   {
-  //     modality1="MR"
-  //   }
-  //   console.log(modality1);
-  
-  //   // Default "Generate report" option
-  //   let optionSelect = document.createElement("option");
-  //   optionSelect.value = 0;
-  //   optionSelect.text = "Generate report";
-  //   list.appendChild(optionSelect);
-  
-  //   // Loose comparison logic
-  //   options
-  //     .filter(({ label }) => {
-  //       const lowerLabel = label.toLowerCase();
-  //       if (modality1 === "Xray") {
-  //         // Match loosely if label contains "xray" or related terms
-  //         // if (Bodypart.toLowerCase() === "shoulder")
-          
-  //           return lowerLabel.includes("xray") || lowerLabel.includes("left-shoulder") ||  lowerLabel.includes("right-shoulder") || lowerLabel.includes("blanks") || lowerLabel.includes("knee") || lowerLabel.includes("spine") || lowerLabel.includes("chest") || lowerLabel.includes("TbChest");
-          
-  //         // else if(Bodypart.toLowerCase() === "knee")
-  //         // {
-  //         //   return lowerLabel.includes("knee") || lowerLabel.includes("blanks");
-  //         // }
-  //         // else if(Bodypart.toLowerCase() === "spine")
-  //         // {
-  //         //   return lowerLabel.includes("spine") || lowerLabel.includes("blanks");
-  //         // }
-  //         // else if (Bodypart.toLowerCase() === "chest")
-  //         // {
-  //         //   return lowerLabel.includes("chest") || lowerLabel.includes("blanks");
-  //         // }
-  //         // else
-  //         // {
-  //         //   return lowerLabel.includes("blanks");
-  //         // }
-          
-  //       } else if (modality1 === "CT") {
-          
-  //         // Match loosely if label contains "ct" or related terms
-  //         // if(Bodypart.toLowerCase() === "head") 
-  //         // {
-  //           return lowerLabel.includes("head") || lowerLabel.includes("blanks") || lowerLabel.includes("abdomen") ||  lowerLabel.includes("pns");
-  //         // }
-  //         // else if(Bodypart.toLowerCase() === "abdomen") 
-  //         // {
-  //         //   return lowerLabel.includes("abdomen") || lowerLabel.includes("blanks");
-  //         // }
-  //         // else if(Bodypart.toLowerCase() === "pns")
-  //         // {
-  //         //   return lowerLabel.includes("pns") || lowerLabel.includes("blanks");
-  //         // }
-  //         // else
-  //         // {
-  //         //   return lowerLabel.includes("blanks");
-  //         // }
-  //       }  else {
-  //         return lowerLabel.includes("blanks");
-  //       }
-  //       return false; // No matches for other modalities
-  //     })
-  //     .forEach(({ label, id }) => {
-  //       let option = document.createElement("option");
-  //       option.value = id;
-  //       option.text = label;
-  //       list.appendChild(option);
-  //     });
-  
-  //   // Assign a handler for onchange
-  //   list.onchange = this.handleSeletion; // You should define handleSelection method
-  //   return list;
-  // }  
 
 
 
@@ -1546,20 +1456,20 @@ slab(val, id) {
       });
   }
 
-  extractContent(s) {
-    var span = document.createElement("span");
-    span.innerHTML = s.innerHTML;
-    var filterHtml = [...span.getElementsByTagName("table")];
-    filterHtml.forEach((child) => {
-      child.remove();
-    });
-    var img = [...span.getElementsByTagName("img")];
-    img.forEach((child) => {
-      child.remove();
-    });
+  // extractContent(s) {
+  //   var span = document.createElement("span");
+  //   span.innerHTML = s.innerHTML;
+  //   var filterHtml = [...span.getElementsByTagName("table")];
+  //   filterHtml.forEach((child) => {
+  //     child.remove();
+  //   });
+  //   var img = [...span.getElementsByTagName("img")];
+  //   img.forEach((child) => {
+  //     child.remove();
+  //   });
 
-    return span;
-  }
+  //   return span;
+  // }
 
   userDropdown() {
     var userDiv = document.createElement("div");
@@ -1769,104 +1679,7 @@ extractTableData = (tableData) => {
 
 
 
-  // addParagraphToPdf = (pdf, element, fontSize, isHeading, currentYPosition) => {
-  //   // Extract the actual data from the element
-  //   // let textContent = element.textContent || "";
-
-  //   // Decode HTML entities to normal characters (such as &nbsp; -> " ")
-  //   // textContent = this.decodeHtmlEntities(textContent);
-  
-  //   // Remove extra spaces from the beginning and end of the content
-  //   // textContent = textContent.trim();
-  
-  //   // Check if the text contains <br> tags (i.e., multiple lines)
-  //   // Corrected to pass the element as it contains child nodes with <br> and again filtering any empty lines.
-  //   const lines = this.splitParagraphIntoLines(element).filter(line => line.trim().length > 0);
-  
-  //   // Define the font size for the text
-  //   pdf.setFontSize(fontSize);
-  
-  //   // Loop through each line if there are multiple lines due to <br> tags
-  //   for (let line of lines) {
-  //     // Check if the element has both <strong> and <u> tags (Heading case)
-  //     const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
-      
-  //     if (isHeading) {
-  //       // Set the font to bold and underline, and set the X and Y positions
-  //       pdf.setFont("helvetica", "bold");  // Set the font style to bold
-  //       const xCoordinate = 40;  // X-coordinate for headings
-  //       // This increase in y i've done to make the impression come with space.
-  //       currentYPosition += 5;
-  //       pdf.text(line, xCoordinate, currentYPosition);
-        
-  //       // Update Y position after adding heading
-  //       currentYPosition += 20;  // Update Y by 20 for headings
-  //     } else {
-  //       // Check if only <strong> is present (bold, but no underline)
-  //     //   const isBold = element.querySelector('strong'); // Check if it's bold (strong)
-        
-  //     //   if (isBold) {
-  //     //     // Set the font to bold and normal style (without underline)
-  //     //     pdf.setFont("helvetica", "bold");  // Set the font style to bold
-  //     //     const xCoordinate = 60;  // X-coordinate for bold paragraphs
-  //     //     pdf.text(line, xCoordinate, currentYPosition);
-          
-  //     //     // Update Y position after adding bold text
-  //     //     currentYPosition += 15;  // Update Y by 15 for normal paragraphs
-  //     //   } else {
-  //     //     // For normal text (neither bold nor underlined)
-  //     //     pdf.setFont("helvetica", "normal");  // Set the font style to normal
-  //     //     const xCoordinate = 60;  // X-coordinate for normal text
-  //     //     pdf.text(line, xCoordinate, currentYPosition);
-          
-  //     //     // Update Y position after adding normal text
-  //     //     currentYPosition += 15;  // Update Y by 15 for normal paragraphs
-  //     //   }
-
-  //       // For normal text (neither bold nor underlined)
-  //           pdf.setFont("helvetica", "normal");  // Set the font style to normal
-  //           const xCoordinate = 60;  // X-coordinate for normal text
-  //           pdf.text(line, xCoordinate, currentYPosition);
-            
-  //           // Update Y position after adding normal text
-  //           currentYPosition += 15;  // Update Y by 15 for normal paragraphs
-  //      }
-  //   }
-  
-  //   return currentYPosition;
-  // };
-
-
-  // addParagraphToPdf = (pdf, element, fontSize, isHeading, currentYPosition) => {
-  //   const lines = this.splitParagraphIntoLines(element).filter(line => line.trim().length > 0);
-  
-  //   // Define base X-coordinate for text placement
-  //   const baseX = 40;
-
-  //   // Define the font size for the text
-  //   pdf.setFontSize(fontSize);
-  
-  //   // Loop through each line if there are multiple lines due to <br> tags
-  //   for (let line of lines) {
-  //     let fontStyle = "normal";
-  //     let xCoordinate = baseX + 20; // Indentation for normal text
-  //     let extraSpacing = 15;
-      
-  //     if (element.querySelector('strong u')) {
-  //         fontStyle = "bold";
-  //         xCoordinate = baseX; // No indentation for headings
-  //         extraSpacing = 20; // More space after headings
-  //     }
-      
-  //     pdf.setFont("helvetica", fontStyle);
-  //     pdf.text(line, xCoordinate, currentYPosition);
-      
-  //     // Update Y position after each line
-  //     currentYPosition += extraSpacing;
-  //   }
-  
-  //   return currentYPosition;
-  // };
+ 
 
 
   addParagraphToPdf = (pdf, element, fontSize, isHeading, currentYPosition) => {
@@ -2093,247 +1906,126 @@ async getHeaderFooterImages(institutionName) {
       throw error;
   }
 }
+extractContent(editor) {
+  if (!editor) {
+    return null;
+  }
 
-// ///////////////////////////////// Download PDF without Image /////////////////////////////
-//    GetDivContentOnPDFWithoutImage() {
-//     (async () => {
-//       this.showLoader();
-//       const filename = this.createFilename();
-//       const data = document.getElementsByClassName("ck-editor__editable")[0];
-//       console.log("This is the data i got from the class :",data);
-//       const dataFromId = document.getElementById("reportEditor");
-//       console.log("This is the data i got from the id reportEditor :", dataFromId);
+  try {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = editor.innerHTML;
+
+    const processNode = (node) => {
+      // Handle text nodes
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent;
+      }
+
+      // Handle element nodes 
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        let text = '';
+        const tag = node.tagName.toLowerCase();
+        
+        switch (tag) {
+          case 'p':
+            // Skip the first table that contains patient info
+            const firstTable = node.closest('figure.table');
+            if (firstTable && firstTable === tempDiv.querySelector('figure.table')) {
+              return '';
+            }
+
+            // Check if paragraph contains a list
+            if (node.querySelector('ul, ol')) {
+              return Array.from(node.childNodes)
+                .map(child => processNode(child))
+                .join('');
+            }
+            text = Array.from(node.childNodes)
+              .map(child => processNode(child))
+              .join('');
+            return text + '\n';
+          
+          case 'strong':
+          case 'b':
+            // Mark bold text with [BOLD] tags
+            return `[BOLD]${node.textContent}[/BOLD]`;
+          
+          case 'ul':
+          case 'ol':
+            // Process lists
+            return Array.from(node.children)
+              .map(li => `• ${processNode(li)}`)
+              .join('\n') + '\n';
+          
+          case 'li':
+            return Array.from(node.childNodes)
+              .map(child => processNode(child))
+              .join('');
+          
+          case 'table':
+            // Skip the first table that contains patient info
+            if (node === tempDiv.querySelector('table')) {
+              return '';
+            }
+            return processTable(node);
+          
+          case 'br':
+            return '\n';
+          
+          default:
+            return Array.from(node.childNodes)
+              .map(child => processNode(child))
+              .join('');
+        }
+      }
+      return '';
+    };
+
+    const processTable = (table) => {
+      // Skip the first table that contains patient info
+      if (table === tempDiv.querySelector('table')) {
+        return '';
+      }
+
+      let tableContent = '';
+      const rows = table.rows;
       
-//       const images = data.querySelectorAll("img");
-//       const signatureElement = images[1];
-//       const signatureUrl = signatureElement ? signatureElement.src : null;
-//       const logoElement = images[0];
-//       const logoUrl = logoElement ? logoElement.src : null;
-//       console.log("This is the signature Url:", signatureUrl);
-//       console.log("This is the logo Url:", logoUrl);
-//       // This is my new logic to add each captured image on the pdf. - Himanshu.
-//       // The following code will convert the images nodelist to a array like thing (not actual array, a shallow array like object)
-//       // I have done this so that i can directly use the slice method to remove the logo and sign from the images, and pass only 
-//       // remaining required images at the end to reduce the time complexity.
-//       const remainingReportImages = Array.prototype.slice.call(images, 2);
-
-//       // Getting the table data from my function.
-//       // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
-//       const tableData = this.extractTableData(data);
-//       const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
-//       console.log("This is my extracted table data :",tableData);
-
-//       // Getting all the children elements of the data (ckeditor content).
-//       const elements = data.children;
-//       // This is the variable to handle the skipping of elemens(if needed).
-//       let skipNext = false;
-
-//       const pdf = new jsPDF("p", "pt", "a4");
-
-//       let currentYPosition = 40;
-
-//       try {
-//           currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
-
-//           const tableData = [
-//               ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
-//               ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
-//               ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"]
-//           ];
-
-//           currentYPosition += 20;
-
-//           pdf.autoTable({
-//               startY: currentYPosition,
-//               body: tableData,
-//               theme: 'grid',
-//               styles: {
-//                   cellPadding: 3,
-//                   fontSize: 10,
-//               },
-//           });
-//           currentYPosition = pdf.previousAutoTable.finalY + 20;
-
-//           // Looping through each element inside the CKEditor.
-//           for (let i = 0; i < elements.length; i++) {
-//             const element = elements[i];
-//             console.log("These are individual children elements of data :",element);
-//             if (element.tagName === 'P') {
-//               const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
-//               if (isHeading) {
-//                   // Add heading
-//                   currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
-//               } else {
-//                   // Check if it's a "Dr." line and needs signature
-//                   if (element.textContent.includes("Dr.")) {
-//                       // Add signature first
-//                       currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
-//                   }
-
-//                   // Splitting paragraphs based on <br> tags and processing each line
-//                   // const lines = this.splitParagraphIntoLines(element);
-
-//                   // Regular paragraph
-//                   currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
-//               }
-//             }
-//           }
-//           // This is to download the file on the same browser.
-//           pdf.save(filename ? filename + ".pdf" : "download.pdf");
-
-//           const currentURL = window.location.href;
-
-//           // setTimeout(() => {
-//           //     window.location.href = document.referrer + "?nocache=" + Date.now();
-//           // }, 200);
-//           setTimeout(() => {
-//             // Preserve current URL parameters for pagination/filters
-//             const currentParams = new URLSearchParams(window.location.search);
-//             currentParams.set('nocache', Date.now());
-            
-//             // Redirect back to allocation1 with preserved parameters
-//             window.location.href = window.location.pathname + '?' + currentParams.toString();
-//           }, 200);
-
-//           // window.addEventListener("popstate", () => {
-//           //     if (window.location.href !== currentURL) {
-//           //         setTimeout(() => {
-//           //             window.location.reload(true);
-//           //         }, 200);
-//           //     }
-//           // });
-
-//           window.addEventListener("popstate", () => {
-//             // Refresh while preserving parameters
-//             window.location.reload(true);
-//           });
-
-//       } catch (error) {
-//           console.error("Error generating PDF:", error);
-//           this.showNotification("Error generating PDF. Please try again.");
-//       } finally {
-//           this.hideLoader();
-//       }
-//     })();
-//   }
-
-
-//   GetDivContentOnPDF() {
-//     (async () => {
-//       this.showLoader();
-//       const filename = this.createFilename();
-//       const data = document.getElementsByClassName("ck-editor__editable")[0];
-//       console.log("This is the data i got from the class :",data);
-//       const dataFromId = document.getElementById("reportEditor");
-//       console.log("This is the data i got from the id reportEditor :", dataFromId);
+      for (let i = 0; i < rows.length; i++) {
+        const cells = rows[i].cells;
+        let rowContent = [];
+        
+        for (let j = 0; j < cells.length; j++) {
+          const cellNode = cells[j];
+          const cellText = Array.from(cellNode.childNodes)
+            .map(child => processNode(child))
+            .join('')
+            .trim();
+          rowContent.push(cellText);
+        }
+        
+        if (rowContent.length === 1) {
+          tableContent += rowContent[0] + '\n';
+        } else {
+          tableContent += rowContent.join('\t') + '\n';
+        }
+      }
       
-//       const images = data.querySelectorAll("img");
-//       const signatureElement = images[1];
-//       const signatureUrl = signatureElement ? signatureElement.src : null;
-//       const logoElement = images[0];
-//       const logoUrl = logoElement ? logoElement.src : null;
-//       console.log("This is the signature Url:", signatureUrl);
-//       console.log("This is the logo Url:", logoUrl);
-//       // This is my new logic to add each captured image on the pdf. - Himanshu.
-//       // The following code will convert the images nodelist to a array like thing (not actual array, a shallow array like object)
-//       // I have done this so that i can directly use the slice method to remove the logo and sign from the images, and pass only 
-//       // remaining required images at the end to reduce the time complexity.
-//       const remainingReportImages = Array.prototype.slice.call(images, 2);
+      return tableContent + '\n';
+    };
 
-//       // Getting the table data from my function.
-//       // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
-//       const tableData = this.extractTableData(data);
-//       const { patientId, patientName, age, gender, testDate, reportDate } = tableData;
-//       console.log("This is my extracted table data :",tableData);
+    const content = Array.from(tempDiv.childNodes)
+      .map(node => processNode(node))
+      .join('')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
 
-//       // Getting all the children elements of the data (ckeditor content).
-//       const elements = data.children;
-//       // This is the variable to handle the skipping of elemens(if needed).
-//       let skipNext = false;
+    return content;
+  } catch (error) {
+    console.error('Error extracting content:', error);
+    return null;
+  }
+}
 
-//       const pdf = new jsPDF("p", "pt", "a4");
-
-//       let currentYPosition = 40;
-
-//       try {
-//           currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
-
-//           const tableData = [
-//               ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
-//               ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
-//               ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"]
-//           ];
-
-//           currentYPosition += 20;
-
-//           pdf.autoTable({
-//               startY: currentYPosition,
-//               body: tableData,
-//               theme: 'grid',
-//               styles: {
-//                   cellPadding: 3,
-//                   fontSize: 10,
-//               },
-//           });
-//           currentYPosition = pdf.previousAutoTable.finalY + 20;
-
-//           // Looping through each element inside the CKEditor.
-//           for (let i = 0; i < elements.length; i++) {
-//             const element = elements[i];
-//             console.log("These are individual children elements of data :",element);
-//             if (element.tagName === 'P') {
-//               const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
-//               if (isHeading) {
-//                   // Add heading
-//                   currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
-//               } else {
-//                   // Check if it's a "Dr." line and needs signature
-//                   if (element.textContent.includes("Dr.")) {
-//                       // Add signature first
-//                       currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
-//                   }
-
-//                   // Splitting paragraphs based on <br> tags and processing each line
-//                   // const lines = this.splitParagraphIntoLines(element);
-
-//                   // Regular paragraph
-//                   currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
-//               }
-//             }
-//           }
-
-//           // Passing the remaining images instead of the url fetched image directly to add all captured images.
-//           for (const image of remainingReportImages) {
-//             const imageUrl = image ? image.src : null;
-//             console.log("This is the image Url:", imageUrl);
-//             currentYPosition = await this.addReportImage(pdf, imageUrl, currentYPosition);
-//           }
-
-//           // This is to download the file on the same browser.
-//           pdf.save(filename ? filename + ".pdf" : "download.pdf");
-
-//           const currentURL = window.location.href;
-
-//           setTimeout(() => {
-//               window.location.href = document.referrer + "?nocache=" + Date.now();
-//           }, 200);
-
-//           window.addEventListener("popstate", () => {
-//               if (window.location.href !== currentURL) {
-//                   setTimeout(() => {
-//                       window.location.reload(true);
-//                   }, 200);
-//               }
-//           });
-
-//       } catch (error) {
-//           console.error("Error generating PDF:", error);
-//           this.showNotification("Error generating PDF. Please try again.");
-//       } finally {
-//           this.hideLoader();
-//       }
-//     })();
-//   }
 
 GetDivContentOnPDFWithoutImage() {
   (async () => {
@@ -3287,167 +2979,333 @@ pdf.autoTable({
   //***************************************///////////////////// upload split XRAY pdf to database (END) ///////////////**********************************************/
 
 ////////////////////////////////// Upload XRAY PDF without IMAGE (START) ////////////////////////
-  UploadDivContentOnPDFWithoutImage() {
-    (async () => {
+//   UploadDivContentOnPDFWithoutImage() {
+//     (async () => {
+//       this.showLoader();
+//       const filename = this.createFilename();
+//       const data = document.getElementsByClassName("ck-editor__editable")[0];
+//       console.log("This is the data i got from the class :",data);
+//       const dataFromId = document.getElementById("reportEditor");
+//       console.log("This is the data i got from the id reportEditor :", dataFromId);
+
+//       const { location, accession, institution_name } = this.extractDataFromURL();
+      
+//       const images = data.querySelectorAll("img");
+//       const signatureElement = images[1];
+//       const signatureUrl = signatureElement ? signatureElement.src : null;
+//       const logoElement = images[0];
+//       const logoUrl = logoElement ? logoElement.src : null;
+//       console.log("This is the signature Url:", signatureUrl);
+//       console.log("This is the logo Url:", logoUrl);
+//       // This is my new logic to add each captured image on the pdf. - Himanshu.
+//       // The following code will convert the images nodelist to a array like thing (not actual array, a shallow array like object)
+//       // I have done this so that i can directly use the slice method to remove the logo and sign from the images, and pass only 
+//       // remaining required images at the end to reduce the time complexity.
+//       const remainingReportImages = Array.prototype.slice.call(images, 2);
+
+//       // Getting the table data from my function.
+//       // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
+      
+//       console.log("This is my extracted table data :",tableData);
+
+//       // Getting all the children elements of the data (ckeditor content).
+//       const elements = data.children;
+//       // This is the variable to handle the skipping of elemens(if needed).
+//       let skipNext = false;
+
+//       const pdf = new jsPDF("p", "pt", "a4");
+
+//       let currentYPosition = 40;
+
+//       try {
+//           currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
+
+//                 // Example usage.
+// const tableData = this.extractTableData(data);
+// const { patientId, patientName, age, gender, testDate, reportDate, referralDr, reportTime } = tableData;
+// console.log("Extracted Table Data:", tableData);
+
+// const tableContent = [
+//     ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+//     ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+//     ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"],
+//     ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
+// ];
+
+// // Add patient details to PDF.
+// pdf.autoTable({
+//     startY: currentYPosition,
+//     body: tableContent,
+//     theme: "grid",
+//     styles: { cellPadding: 3, fontSize: 10 },
+// });
+//           currentYPosition = pdf.previousAutoTable.finalY + 20;
+
+//           // Looping through each element inside the CKEditor.
+//           for (let i = 0; i < elements.length; i++) {
+//             const element = elements[i];
+//             console.log("These are individual children elements of data :",element);
+//             if (element.tagName === 'P') {
+//               const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
+//               if (isHeading) {
+//                   // Add heading
+//                   currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
+//               } else {
+//                   // Check if it's a "Dr." line and needs signature
+//                   if (element.textContent.includes("Dr.")) {
+//                       // Add signature first
+//                       currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+//                   }
+
+//                   // Splitting paragraphs based on <br> tags and processing each line
+//                   // const lines = this.splitParagraphIntoLines(element);
+
+//                   // Regular paragraph
+//                   currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
+//               }
+//             }
+//           }
+          
+//           // Adding the data to blob to send it to backend.
+//           const pdfBlob = pdf.output("blob");
+
+//           try {
+//             const csrfToken = await this.getCSRFToken();
+//             const formData = new FormData();
+//             formData.append("pdf", pdfBlob, filename ? filename + ".pdf" : "download.pdf");
+//             formData.append("patientId", patientId);
+//             formData.append("patientName", patientName);
+//             formData.append("age", age);
+//             formData.append("gender", gender);
+//             formData.append("testDate", testDate);
+//             formData.append("reportDate", reportDate);
+//             formData.append("location", location);
+//             formData.append("accession", accession);
+//             formData.append("institution_name", institution_name);
+
+//             await axios.post("/upload_xray_pdf/", formData, {
+//                 headers: {
+//                     "Content-Type": "multipart/form-data",
+//                     "X-CSRFToken": csrfToken,
+//                 },
+//             });
+
+//             // AFTER SUCCESSFUL PDF UPLOAD - TRIGGER ISDONE UPDATE
+//             const urlSearchParams = new URLSearchParams(window.location.search);
+//             const studyId = urlSearchParams.get("data-study-id");
+
+//             const updateResponse = await fetch(`/api/update_patient_done_status_xray/${studyId}/`, {
+//               method: 'POST',
+//               headers: {
+//                 'Content-Type': 'application/json',
+//                 'X-CSRFToken': csrfToken,
+//               },
+//               body: JSON.stringify({ isDone: true }),
+//             });
+
+//             if (updateResponse.ok) {
+//               this.setState({ isDone: true }, () => {
+//                 this.handleClick();
+//               });
+//             } else {
+//               console.error('Failed to update isDone status');
+//             }
+
+//             console.log("PDF successfully sent to Django backend.");
+//               this.showNotification("PDF successfully uploaded!");
+//           } catch (error) {
+//               console.error("Error sending PDF to Django backend.", error);
+//               this.showNotification("Error uploading PDF. Please try again.");
+//           }
+
+//           const currentURL = window.location.href;
+
+//           setTimeout(() => {
+//               window.location.href = document.referrer + "?nocache=" + Date.now();
+//           }, 200);
+
+//           window.addEventListener("popstate", () => {
+//               if (window.location.href !== currentURL) {
+//                   setTimeout(() => {
+//                       window.location.reload(true);
+//                   }, 200);
+//               }
+//           });
+
+//       } catch (error) {
+//           console.error("Error generating PDF:", error);
+//           // this.showNotification("Error generating PDF. Please try again.");
+//       } finally {
+//           this.hideLoader();
+//       }
+//     })();
+//   }
+UploadDivContentOnPDFWithoutImage() {
+  (async () => {
+    try {
       this.showLoader();
       const filename = this.createFilename();
-      const data = document.getElementsByClassName("ck-editor__editable")[0];
-      console.log("This is the data i got from the class :",data);
-      const dataFromId = document.getElementById("reportEditor");
-      console.log("This is the data i got from the id reportEditor :", dataFromId);
+      const editorContent = document.getElementsByClassName("ck-editor__editable")[0];
+      
+      if (!editorContent) {
+        throw new Error('CKEditor content not found');
+      }
 
       const { location, accession, institution_name } = this.extractDataFromURL();
       
-      const images = data.querySelectorAll("img");
-      const signatureElement = images[1];
-      const signatureUrl = signatureElement ? signatureElement.src : null;
-      const logoElement = images[0];
-      const logoUrl = logoElement ? logoElement.src : null;
-      console.log("This is the signature Url:", signatureUrl);
-      console.log("This is the logo Url:", logoUrl);
-      // This is my new logic to add each captured image on the pdf. - Himanshu.
-      // The following code will convert the images nodelist to a array like thing (not actual array, a shallow array like object)
-      // I have done this so that i can directly use the slice method to remove the logo and sign from the images, and pass only 
-      // remaining required images at the end to reduce the time complexity.
-      const remainingReportImages = Array.prototype.slice.call(images, 2);
-
-      // Getting the table data from my function.
-      // Destructuring the object data , that's why first assigned it to tableData, instead of directly using it.
-      
-      console.log("This is my extracted table data :",tableData);
-
-      // Getting all the children elements of the data (ckeditor content).
-      const elements = data.children;
-      // This is the variable to handle the skipping of elemens(if needed).
-      let skipNext = false;
-
       const pdf = new jsPDF("p", "pt", "a4");
-
       let currentYPosition = 40;
 
-      try {
+      // Add logo and header
+      const images = editorContent.querySelectorAll("img");
+      if (images.length > 0) {
+        const logoUrl = images[0]?.src;
+        if (logoUrl) {
           currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
-
-                // Example usage.
-const tableData = this.extractTableData(data);
-const { patientId, patientName, age, gender, testDate, reportDate, referralDr, reportTime } = tableData;
-console.log("Extracted Table Data:", tableData);
-
-const tableContent = [
-    ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
-    ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
-    ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"],
-    ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
-];
-
-// Add patient details to PDF.
-pdf.autoTable({
-    startY: currentYPosition,
-    body: tableContent,
-    theme: "grid",
-    styles: { cellPadding: 3, fontSize: 10 },
-});
-          currentYPosition = pdf.previousAutoTable.finalY + 20;
-
-          // Looping through each element inside the CKEditor.
-          for (let i = 0; i < elements.length; i++) {
-            const element = elements[i];
-            console.log("These are individual children elements of data :",element);
-            if (element.tagName === 'P') {
-              const isHeading = element.querySelector('strong u'); // Check if heading (bold + underline)
-              if (isHeading) {
-                  // Add heading
-                  currentYPosition = this.addParagraphToPdf(pdf, element, 13, true, currentYPosition);
-              } else {
-                  // Check if it's a "Dr." line and needs signature
-                  if (element.textContent.includes("Dr.")) {
-                      // Add signature first
-                      currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
-                  }
-
-                  // Splitting paragraphs based on <br> tags and processing each line
-                  // const lines = this.splitParagraphIntoLines(element);
-
-                  // Regular paragraph
-                  currentYPosition = this.addParagraphToPdf(pdf, element, 12, false, currentYPosition);
-              }
-            }
-          }
-          
-          // Adding the data to blob to send it to backend.
-          const pdfBlob = pdf.output("blob");
-
-          try {
-            const csrfToken = await this.getCSRFToken();
-            const formData = new FormData();
-            formData.append("pdf", pdfBlob, filename ? filename + ".pdf" : "download.pdf");
-            formData.append("patientId", patientId);
-            formData.append("patientName", patientName);
-            formData.append("age", age);
-            formData.append("gender", gender);
-            formData.append("testDate", testDate);
-            formData.append("reportDate", reportDate);
-            formData.append("location", location);
-            formData.append("accession", accession);
-            formData.append("institution_name", institution_name);
-
-            await axios.post("/upload_xray_pdf/", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                    "X-CSRFToken": csrfToken,
-                },
-            });
-
-            // AFTER SUCCESSFUL PDF UPLOAD - TRIGGER ISDONE UPDATE
-            const urlSearchParams = new URLSearchParams(window.location.search);
-            const studyId = urlSearchParams.get("data-study-id");
-
-            const updateResponse = await fetch(`/api/update_patient_done_status_xray/${studyId}/`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
-              },
-              body: JSON.stringify({ isDone: true }),
-            });
-
-            if (updateResponse.ok) {
-              this.setState({ isDone: true }, () => {
-                this.handleClick();
-              });
-            } else {
-              console.error('Failed to update isDone status');
-            }
-
-            console.log("PDF successfully sent to Django backend.");
-              this.showNotification("PDF successfully uploaded!");
-          } catch (error) {
-              console.error("Error sending PDF to Django backend.", error);
-              this.showNotification("Error uploading PDF. Please try again.");
-          }
-
-          const currentURL = window.location.href;
-
-          setTimeout(() => {
-              window.location.href = document.referrer + "?nocache=" + Date.now();
-          }, 200);
-
-          window.addEventListener("popstate", () => {
-              if (window.location.href !== currentURL) {
-                  setTimeout(() => {
-                      window.location.reload(true);
-                  }, 200);
-              }
-          });
-
-      } catch (error) {
-          console.error("Error generating PDF:", error);
-          // this.showNotification("Error generating PDF. Please try again.");
-      } finally {
-          this.hideLoader();
+        }
       }
-    })();
-  }
+
+      // Add table data
+      const tableData = this.extractTableData(editorContent);
+      if (Object.keys(tableData).length > 0) {
+        const { patientId, patientName, age, gender, testDate, reportDate, referralDr, reportTime } = tableData;
+        const tableContent = [
+          ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+          ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+          ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"],
+          ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
+        ];
+
+        pdf.autoTable({
+          startY: currentYPosition,
+          body: tableContent,
+          theme: "grid",
+          styles: { cellPadding: 3, fontSize: 10 },
+        });
+        currentYPosition = pdf.previousAutoTable.finalY + 20;
+      }
+
+      // Process main content using extractContent
+      const content = this.extractContent(editorContent);
+      if (content) {
+        const lines = content.split('\n');
+        
+        for (const line of lines) {
+          if (line.trim()) {
+            let text = line;
+            let isBold = false;
+
+            // Extract bold sections
+            const boldMatches = text.match(/\[BOLD\](.*?)\[\/BOLD\]/g);
+            if (boldMatches) {
+              isBold = true;
+              text = text.replace(/\[BOLD\](.*?)\[\/BOLD\]/g, '$1');
+            }
+
+            // Check for bullet points
+            const isBullet = text.startsWith('•');
+            if (isBullet) {
+              text = text.substring(1).trim();
+              currentYPosition += 5;
+            }
+
+            // Add signature if it's a doctor's line
+            if (text.includes("Dr.") && images.length > 1) {
+              currentYPosition = await this.addSignature(pdf, images[1].src, currentYPosition);
+            }
+
+            // Set font based on formatting
+            pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+            pdf.setFontSize(12);
+            
+            const splitText = pdf.splitTextToSize(text, pdf.internal.pageSize.width - (isBullet ? 100 : 80));
+            
+            if (currentYPosition + (splitText.length * 15) > pdf.internal.pageSize.height - 40) {
+              pdf.addPage();
+              currentYPosition = 40;
+            }
+
+            // Add bullet point if needed
+            if (isBullet) {
+              pdf.text('•', 60, currentYPosition);
+              pdf.text(splitText, 80, currentYPosition);
+            } else {
+              pdf.text(splitText, 40, currentYPosition);
+            }
+            
+            currentYPosition += splitText.length * 15;
+          }
+        }
+      }
+
+      // Convert PDF to blob and upload
+      const pdfBlob = pdf.output("blob");
+      const csrfToken = await this.getCSRFToken();
+      const formData = new FormData();
+      formData.append("pdf", pdfBlob, filename ? filename + ".pdf" : "download.pdf");
+      formData.append("patientId", tableData.patientId);
+      formData.append("patientName", tableData.patientName);
+      formData.append("age", tableData.age);
+      formData.append("gender", tableData.gender);
+      formData.append("testDate", tableData.testDate);
+      formData.append("reportDate", tableData.reportDate);
+      formData.append("location", location);
+      formData.append("accession", accession);
+      formData.append("institution_name", institution_name);
+
+      await axios.post("/upload_xray_pdf/", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          "X-CSRFToken": csrfToken,
+        },
+      });
+
+      // Update isDone status
+      const urlSearchParams = new URLSearchParams(window.location.search);
+      const studyId = urlSearchParams.get("data-study-id");
+
+      const updateResponse = await fetch(`/api/update_patient_done_status_xray/${studyId}/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify({ isDone: true }),
+      });
+
+      if (updateResponse.ok) {
+        this.setState({ isDone: true }, () => {
+          this.handleClick();
+        });
+      } else {
+        console.error('Failed to update isDone status');
+      }
+
+      this.showNotification("PDF successfully uploaded!");
+
+      // Handle navigation
+      const currentURL = window.location.href;
+      setTimeout(() => {
+        window.location.href = document.referrer + "?nocache=" + Date.now();
+      }, 200);
+
+      window.addEventListener("popstate", () => {
+        if (window.location.href !== currentURL) {
+          setTimeout(() => {
+            window.location.reload(true);
+          }, 200);
+        }
+      });
+
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      this.showNotification("Error uploading PDF. Please try again.");
+    } finally {
+      this.hideLoader();
+    }
+  })();
+}
+
 
   UploadDivContentOnPDF() {
     (async () => {
