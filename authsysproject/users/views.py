@@ -764,20 +764,34 @@ def client_dashboard(request):
             )
 
         # 🔹 Group by patient_id to get the latest report per patient
-        grouped_pdfs = groupby(pdfs, key=attrgetter('patient_id'))
+        # grouped_pdfs = groupby(pdfs, key=attrgetter('patient_id'))
 
-        for patient_id, group in grouped_pdfs:
-            group = list(group)  # Convert iterator to list
-            most_recent_pdf = group[0]  # First entry is the latest
+        # for patient_id, group in grouped_pdfs:
+        #     group = list(group)  # Convert iterator to list
+        #     most_recent_pdf = group[0]  # First entry is the latest
 
-            # 🔹 Get corresponding DICOMData entry
-            dicom_data = dicom_entries.filter(patient_id=patient_id.replace("_", " ")).first()
+        #     # 🔹 Get corresponding DICOMData entry
+        #     dicom_data = dicom_entries.filter(patient_id=patient_id.replace("_", " ")).first()
 
+        #     if dicom_data:
+        #         most_recent_pdf.whatsapp_number = dicom_data.whatsapp_number
+        #         filtered_pdfs.append(most_recent_pdf)
+        #         test_dates_set.add(most_recent_pdf.test_date)
+        #         report_dates_set.add(most_recent_pdf.report_date)
+
+
+        for pdf in pdfs:
+            # Replace underscores in patient_id to match with DICOMData
+            dicom_data = dicom_entries.filter(patient_id=pdf.patient_id.replace("_", " ")).first()
+        
             if dicom_data:
-                most_recent_pdf.whatsapp_number = dicom_data.whatsapp_number
-                filtered_pdfs.append(most_recent_pdf)
-                test_dates_set.add(most_recent_pdf.test_date)
-                report_dates_set.add(most_recent_pdf.report_date)
+                pdf.whatsapp_number = dicom_data.whatsapp_number
+            else:
+                pdf.whatsapp_number = None
+        
+            filtered_pdfs.append(pdf)
+            test_dates_set.add(pdf.test_date)
+            report_dates_set.add(pdf.report_date)
 
         # 🔹 Pagination (50 PDFs per page)
         paginator = Paginator(filtered_pdfs, 50)
