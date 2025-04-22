@@ -17,7 +17,7 @@ class XrayReport(models.Model):
     def save(self, *args, **kwargs):
         if not self.pdf_on_db:  # Set the timestamp only if it isn't already set
             india_tz = pytz.timezone("Asia/Kolkata")
-            self.recived_on_db = now().astimezone(india_tz)
+            self.pdf_on_db = now().astimezone(india_tz)
         super(XrayReport, self).save(*args, **kwargs)
 
     def get_pdf_url(self):
