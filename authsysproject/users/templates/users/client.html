@@ -505,6 +505,19 @@
                     </div>
                   </div>
                 </th>
+                <th>
+                  <div class="filter-dropdown-container">
+                       <div>Reported Time</div>
+                       <div class="dropdown-select1" id="filter-pdfondb-dropdown">
+                           <select id="filter-pdfondb-select-pdfondb" class="form-control">
+                               <option value="">All</option>
+                               {% for pdfondb in PDF_On_Db %}
+                                   <option value="{{ pdfondb }}">{{ pdfondb }}</option>
+                               {% endfor %}
+                           </select>
+                       </div>
+                   </div>
+               </th>
                 <th>Report Date</th>
                 <th>Location</th>
                 <th>WhatsApp Number</th>
@@ -520,6 +533,7 @@
                 <td>{{ pdf.patient_id }}</td>
                 <td>{{ pdf.name }}</td>
                 <td>{{ pdf.test_date }}</td>
+                <td>{{ pdf.pdf_on_db }}</td>
                 <td>{{ pdf.report_date }}</td>
                 <td>{{ pdf.location }}</td>
                 <td>{{ pdf.whatsapp_number }}</td>
@@ -679,7 +693,7 @@
           name: row.find("td:nth-child(1)").text(),
           patient_id: row.find("td:nth-child(2)").text(),
           test_date: row.find("td:nth-child(3)").text(),
-          location: row.find("td:nth-child(4)").text(),
+          pdfondb: row.find("td:nth-child(4)").text(),
           // Add other fields as needed
         };
         selectedRows.push(rowData);
@@ -767,17 +781,23 @@
         $('#filter-date-select-date').change(function () {
             filterTable();
         });
+
+        $('#filter-pdfondb-select-pdfondb').change(function () {
+            filterTable();
+        });
   
         function filterTable() {
             var selectedDate = $('#filter-date-select-date').val();
+            var selectedpdfondb = $('#filter-pdfondb-select-pdfondb').val();
             var visibleRowCount = 0;
   
             // Loop through each row in the table
             $('#patientTable tbody tr').each(function () {
                 var rowDate = $(this).find('td:nth-child(3)').text();
+                var rowpdfondb = $(this).find('td:nth-child(4)').text();
                 
                 
-                if ((selectedDate === '' || rowDate === selectedDate)) {
+                if ((selectedDate === '' || rowDate === selectedDate) && (selectedpdfondb === '' || rowpdfondb === selectedpdfondb)) {
                     
                     $(this).show();
                     visibleRowCount++; // Increment visible row count
