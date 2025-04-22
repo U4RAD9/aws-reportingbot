@@ -409,73 +409,83 @@ downloadAsJPEG(element) {
       }
     }
   }
+
+
   drop(event) {
     event.preventDefault();
   
     let newViewport;
   
-    // Get dropped item info
+    // Get volume ID/image IDs and modality
     const obj = JSON.parse(event.dataTransfer.getData('text'));
     const ID = obj[0];
     const modality = obj[1];
     const description = obj[2];
   
-    // Detect orientation from description
-    const descLower = description.toLowerCase();
-    const firstWords = descLower.split(' ');
+     // Convert to lowercase for consistent matching
+const descLower = description.toLowerCase();
+
+
+let orientation = cornerstone.Enums.OrientationAxis.AXIAL; // Default to axial
+
+// Split the description by spaces to extract key terms
+const firstWords = descLower.split(' ');
+
+// Check if any known orientation keyword is present
+if (firstWords.includes('sag')) {
+  orientation = cornerstone.Enums.OrientationAxis.SAGITTAL;
+} else if (firstWords.includes('cor') || firstWords.includes('cr')) {
+  orientation = cornerstone.Enums.OrientationAxis.CORONAL;
+} else if (firstWords.includes('ax')) {
+  orientation = cornerstone.Enums.OrientationAxis.AXIAL;
+}
+
   
-    let orientation = cornerstone.Enums.OrientationAxis.AXIAL;
-    if (firstWords.includes('sag')) {
-      orientation = cornerstone.Enums.OrientationAxis.SAGITTAL;
-    } else if (firstWords.includes('cor') || firstWords.includes('cr')) {
-      orientation = cornerstone.Enums.OrientationAxis.CORONAL;
-    } else if (firstWords.includes('ax')) {
-      orientation = cornerstone.Enums.OrientationAxis.AXIAL;
-    }
-  
-    // Get current viewport
+    // Get related elements
     const parentElement = event.target.parentElement;
     const viewport_ID = parentElement.getAttribute('data-value');
-    let viewport = renderingEngine.getViewport(viewport_ID);
+    var viewport = renderingEngine.getViewport(viewport_ID);
   
-    // Clear old data
+    // Clear any previous data
     if (viewport.type === cornerstone.Enums.ViewportType.STACK) {
-      viewport.setStack([]);
+      viewport.setStack([]); // Clear stack
       viewport.render();
     } else if (viewport.type === cornerstone.Enums.ViewportType.VOLUME) {
-      viewport.setVolumes([]);
+      viewport.setVolumes([]); // Clear volume
       viewport.render();
     }
   
-    // Main logic for CT / MR
-    if (modality === 'CT' || modality === 'MR') {
+    // Handle single-image condition
+      if (modality === 'CT' || modality === 'MR') {
       (async () => {
         const volume = cornerstone.cache.getVolume(ID);
+  
+        // Check if the volume contains multiple slices
         const hasMultipleSlices = volume && volume.imageIds.length > 1;
   
         if (hasMultipleSlices) {
+          // Handle volume rendering for multiple slices
           newViewport = await cornerstone.utilities.convertStackToVolumeViewport({
             options: { volumeId: ID, viewportId: viewport_ID, orientation: orientation },
             viewport: viewport,
           });
-  
-          safeSetOrientation(newViewport, orientation);
-  
           newViewport.setProperties({ rotation: 0 });
           toolGroup.addViewport(newViewport.id, renderingEngineId);
           newViewport.render();
   
+          // Attach volume event listener
           newViewport.element.addEventListener(cornerstone.EVENTS.VOLUME_NEW_IMAGE, () => {
             const index = newViewport.getSliceIndex() + 1;
             document.getElementById(indexMap[newViewport.id]).innerHTML = 'Image: ' + index;
           });
         } else {
+          // Handle stack rendering for single slices
           viewport.setStack(volume.imageIds);
           viewport.render();
         }
       })();
     } else {
-      // Logic for non-CT
+      // Handle non-CT modalities
       if (viewport.type === cornerstone.Enums.ViewportType.STACK) {
         viewport.setStack(nonCT_ImageIds[Number(ID)]);
         viewport.render();
@@ -493,6 +503,7 @@ downloadAsJPEG(element) {
           viewport.setStack(nonCT_ImageIds[Number(ID)]);
           viewport.render();
   
+          // Attach stack event listener
           viewport.element.addEventListener(cornerstone.EVENTS.STACK_NEW_IMAGE, () => {
             const index = viewport.getCurrentImageIdIndex() + 1;
             document.getElementById(indexMap[viewport.id]).innerHTML = index;
@@ -500,39 +511,7 @@ downloadAsJPEG(element) {
         })();
       }
     }
-  
-    // ✅ Smart Acquisition Setter with Retry and UI Sync
-    function safeSetOrientation(viewport, fallbackOrientation) {
-      try {
-        const acq = viewport._getAcquisitionPlaneOrientation?.();
-        if (acq?.viewPlaneNormal && acq?.viewUp) {
-          viewport.setOrientation(cornerstone.Enums.OrientationAxis.ACQUISITION);
-        } else {
-          viewport.setOrientation(fallbackOrientation);
-  
-          // Try again after delay if acquisition becomes available
-          setTimeout(() => {
-            const retryAcq = viewport._getAcquisitionPlaneOrientation?.();
-            if (retryAcq?.viewPlaneNormal && retryAcq?.viewUp) {
-              viewport.setOrientation(cornerstone.Enums.OrientationAxis.ACQUISITION);
-  
-              // Update the MPR dropdown UI if it exists
-              const mprDropdown = document.getElementById('mpr');
-              if (mprDropdown) {
-                mprDropdown.value = 'acquisition';
-                mprDropdown.dispatchEvent(new Event('change', { bubbles: true }));
-              }
-            }
-          }, 1000); // Adjust delay if needed
-        }
-      } catch (err) {
-        console.warn("Could not set acquisition orientation:", err);
-        viewport.setOrientation(fallbackOrientation);
-      }
-    }
-  }           
-
-
+  }
   async  cornerstone(PARAM) {
     try {
         const previewTab = document.getElementById('previewTab');
@@ -998,27 +977,25 @@ slab(val, id) {
     viewport.render();
   }
 
-  volumeOrientation(event, id) {
+  //volume orientation settings - coronal, sagittal, axial 
+  volumeOrientation(event, id){
     const call = event.target.value
     const viewport = renderingEngine.getViewport(id);
-    switch(call) {
-      case 'acquisition':
-        viewport.setOrientation(cornerstone.Enums.OrientationAxis.ACQUISITION);
-        break;
+    switch(call){
       case 'axial':
         viewport.setOrientation(cornerstone.Enums.OrientationAxis.AXIAL);
         break;
+      
       case 'sagittal':
         viewport.setOrientation(cornerstone.Enums.OrientationAxis.SAGITTAL)
         break;
+      
       case 'coronal':
         viewport.setOrientation(cornerstone.Enums.OrientationAxis.CORONAL)
         break;
     }
-    viewport.render();
-    event.target.value = '';
+    event.target.value = ''
   }
-
 
   //function for orientation settings - right rotate, left rotate, horizontal flip, vertical flip
   orientationSettings(event, id){
@@ -4393,12 +4370,12 @@ onClick={e => this.toggleTool(e.target.value)}> <FaEraser /> {/* Eraser icon
 <div className="button-container">
 <button className='name-button' disabled> <FaCube /> {/* 3D Cube icon 
 */}MPR</button>
-<select id='mpr' className="dropdown" onChange={e => this.volumeOrientation(e, selected_viewport)}>
-  <option value='' selected disabled hidden></option>
-  <option value='axial'>Axial</option>
-  <option value='sagittal'>Sagittal</option>
-  <option value='coronal'>Coronal</option>
-  <option value='acquisition'>Acquisition</option>
+<select id='mpr' className="dropdown" onChange={e => this.volumeOrientation(e, 
+selected_viewport)}>
+<option value='' selected disabled hidden></option>
+<option value='axial'>Axial</option>
+<option value='sagittal'>Sagittal</option>
+<option value='coronal'>Coronal</option>
 </select>
 </div>
 {/*Slider for changing selected viewports slab thickness */}
