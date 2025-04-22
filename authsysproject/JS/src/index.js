@@ -4394,20 +4394,6 @@ selected_viewport)}>
   />
 </div>
 
-<div className='button-container'>
-  <button className='name-button' disabled>
-    <FaBars /> {/* Bars icon */} Max MIP
-  </button>
-  <input 
-    type='range' 
-    min='0' 
-    max='50' 
-    defaultValue='0' 
-    className='slider' 
-    id='slider-mip'
-    onChange={e => this.slabThickness(e.target.value, selected_viewport)}
-  />
-</div>
 
 <div className='button-container'>
   <button className='name-button' disabled>
