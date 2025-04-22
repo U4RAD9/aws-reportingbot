@@ -941,36 +941,43 @@
 
     //  28-05-2025 by Rohan jangid
     $(document).ready(function () {
-    // Attach event handlers for dropdown changes
-    $('#filter-Received-select-Received, #filter-Studydescription-select-Studydescription').change(function () {
-        filterTable();
-    });
 
-    function filterTable() {
-        var selectedDate = $('#filter-Received-select-Received').val().trim(); // Get selected date
-        var selectedStudydescription = $('#filter-Studydescription-select-Studydescription').val().toLowerCase().trim(); // Normalize study description
-        
-        // Loop through each row in the table
-        $('#patientTable tbody tr').each(function () {
-            var rowDate = $(this).find('td.received-date').text().trim(); // Extract only YYYY-MM-DD part
-            var rowStudydescription = $(this).find('td.study-description').text().toLowerCase().trim(); // Normalize study description
-
-            console.log("Selected Date:", selectedDate);
-            console.log("Row Date:", rowDate);
-
-            // Ensure date format consistency
-            if (rowDate.includes(" ")) {
-                rowDate = rowDate.split(" ")[0]; // Handle cases where a timestamp is included
-            }
-
-            // Apply filtering logic
-            var showRow = (selectedDate === '' || rowDate === selectedDate) &&
-                          (selectedStudydescription === '' || rowStudydescription.includes(selectedStudydescription));
-
-            $(this).toggle(showRow);
+        // Event handler for the change event of the test date dropdown
+        $('#filter-date-select-date').change(function () {
+             filterTable();
         });
-    }
-});
+
+        $('#filter-Received-select-Received').change(function () {
+             filterTable();
+        });
+      
+        // Event handler for the change event of the Studydescription dropdown
+        $('#filter-Studydescription-select-Studydescription').change(function () {
+            filterTable();
+        });
+      
+        function filterTable() {
+           var selectedDate = $('#filter-date-select-date').val();
+           var selectRecivedDate = $('#filter-Received-select-Received')
+           var selectedStudydescription = $('#filter-Studydescription-select-Studydescription').val();
+      
+           // Loop through each row in the table
+           $('#patientTable tbody tr').each(function () {
+               var rowDate = $(this).find('td:nth-child(5)').text(); // Get the test date from the table cell
+               var rowRecivedDate = $(this).find('td:nth-child(6)').text();
+               var rowStudydescription = $(this).find('td:nth-child(7)').text();
+      
+               
+               if ((selectedDate === '' || rowDate === selectedDate) && (selectRecivedDate === '' || rowRecivedDate === selectRecivedDate) && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription))
+               {
+                   
+                   $(this).show();
+               } else {
+                   $(this).hide();
+               }
+           });
+        }
+    });
 // upto this
   </script>
 
