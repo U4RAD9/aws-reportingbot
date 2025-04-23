@@ -810,12 +810,15 @@ def client_dashboard(request):
         sorted_test_dates = sorted({pdf.test_date for pdf in page_obj.object_list})
         sorted_report_dates = sorted(report_dates_set)
         #sorted_pdf_on_db = sorted({pdf.pdf_on_db for pdf in page_obj.object_list})
+        sorted_pdf_on_db = sorted(
+            [pdf.pdf_on_db for pdf in page_obj.object_list if pdf.pdf_on_db is not None]
+        )
 
         # 🔹 Prepare context
         context = {
             'pdfs': page_obj,
             'Test_Dates': sorted_test_dates,
-            #'PDF_On_Db' : sorted_pdf_on_db,
+            'PDF_On_Db' : sorted_pdf_on_db,
             'Report_Dates': sorted_report_dates,
             'Location': ", ".join(institution_names),  # Show multiple institutions
             'paginator': paginator,
