@@ -339,16 +339,13 @@ downloadAsJPEG(element) {
     //important, resizes the image inside the viewport when the viewport size changes
     renderingEngine.resize(true, false);
   }  
-  async  openImageInViewport(ID, modality, description, viewport_ID) {
+  async  openImageInViewport(ID, modality,viewport_ID) {
     let newViewport;
   
     // Determine orientation based on description
-    let orientation = cornerstone.Enums.OrientationAxis.AXIAL;
-    if (description.toLowerCase().includes('sag')) {
-      orientation = cornerstone.Enums.OrientationAxis.SAGITTAL;
-    } else if (description.toLowerCase().includes('cor')) {
-      orientation = cornerstone.Enums.OrientationAxis.CORONAL;
-    }
+    
+    let orientation = cornerstone.Enums.OrientationAxis.ACQUISITION;
+    
   
     const viewport = renderingEngine.getViewport(viewport_ID);
   
@@ -408,7 +405,8 @@ downloadAsJPEG(element) {
         });
       }
     }
-  }
+  }      
+
 
 
   drop(event) {
@@ -416,76 +414,59 @@ downloadAsJPEG(element) {
   
     let newViewport;
   
-    // Get volume ID/image IDs and modality
+    // Get dropped item info
     const obj = JSON.parse(event.dataTransfer.getData('text'));
     const ID = obj[0];
     const modality = obj[1];
     const description = obj[2];
   
-     // Convert to lowercase for consistent matching
-const descLower = description.toLowerCase();
-
-
-let orientation = cornerstone.Enums.OrientationAxis.AXIAL; // Default to axial
-
-// Split the description by spaces to extract key terms
-const firstWords = descLower.split(' ');
-
-// Check if any known orientation keyword is present
-if (firstWords.includes('sag')) {
-  orientation = cornerstone.Enums.OrientationAxis.SAGITTAL;
-} else if (firstWords.includes('cor') || firstWords.includes('cr')) {
-  orientation = cornerstone.Enums.OrientationAxis.CORONAL;
-} else if (firstWords.includes('ax')) {
-  orientation = cornerstone.Enums.OrientationAxis.AXIAL;
-}
+    // Detect orientation from description
 
   
-    // Get related elements
+    let orientation = cornerstone.Enums.OrientationAxis.ACQUISITION;
+    
+  
+    // Get current viewport
     const parentElement = event.target.parentElement;
     const viewport_ID = parentElement.getAttribute('data-value');
-    var viewport = renderingEngine.getViewport(viewport_ID);
+    let viewport = renderingEngine.getViewport(viewport_ID);
   
-    // Clear any previous data
+    // Clear old data
     if (viewport.type === cornerstone.Enums.ViewportType.STACK) {
-      viewport.setStack([]); // Clear stack
+      viewport.setStack([]);
       viewport.render();
     } else if (viewport.type === cornerstone.Enums.ViewportType.VOLUME) {
-      viewport.setVolumes([]); // Clear volume
+      viewport.setVolumes([]);
       viewport.render();
     }
   
-    // Handle single-image condition
-      if (modality === 'CT' || modality === 'MR') {
+    // Main logic for CT / MR
+    if (modality === 'CT' || modality === 'MR') {
       (async () => {
         const volume = cornerstone.cache.getVolume(ID);
-  
-        // Check if the volume contains multiple slices
         const hasMultipleSlices = volume && volume.imageIds.length > 1;
   
         if (hasMultipleSlices) {
-          // Handle volume rendering for multiple slices
           newViewport = await cornerstone.utilities.convertStackToVolumeViewport({
             options: { volumeId: ID, viewportId: viewport_ID, orientation: orientation },
             viewport: viewport,
           });
+  
           newViewport.setProperties({ rotation: 0 });
           toolGroup.addViewport(newViewport.id, renderingEngineId);
           newViewport.render();
   
-          // Attach volume event listener
           newViewport.element.addEventListener(cornerstone.EVENTS.VOLUME_NEW_IMAGE, () => {
             const index = newViewport.getSliceIndex() + 1;
             document.getElementById(indexMap[newViewport.id]).innerHTML = 'Image: ' + index;
           });
         } else {
-          // Handle stack rendering for single slices
           viewport.setStack(volume.imageIds);
           viewport.render();
         }
       })();
     } else {
-      // Handle non-CT modalities
+      // Logic for non-CT (other modalities like Ultrasound, X-ray)
       if (viewport.type === cornerstone.Enums.ViewportType.STACK) {
         viewport.setStack(nonCT_ImageIds[Number(ID)]);
         viewport.render();
@@ -503,7 +484,6 @@ if (firstWords.includes('sag')) {
           viewport.setStack(nonCT_ImageIds[Number(ID)]);
           viewport.render();
   
-          // Attach stack event listener
           viewport.element.addEventListener(cornerstone.EVENTS.STACK_NEW_IMAGE, () => {
             const index = viewport.getCurrentImageIdIndex() + 1;
             document.getElementById(indexMap[viewport.id]).innerHTML = index;
@@ -512,6 +492,7 @@ if (firstWords.includes('sag')) {
       }
     }
   }
+  
   async  cornerstone(PARAM) {
     try {
         const previewTab = document.getElementById('previewTab');
@@ -721,10 +702,9 @@ const notes = notesData.notes || 'No notes available';
             image.addEventListener('click', (event) => {
               const ID = event.target.dataset.value;
               const modality = event.target.dataset.modality;
-              const description = event.target.dataset.description;
               const targetViewportId = viewportIds[0]; // Or implement viewport selection logic
             
-             this. openImageInViewport(ID, modality, description, targetViewportId);
+             this. openImageInViewport(ID, modality,targetViewportId);
             });
             
   
@@ -747,9 +727,9 @@ const notes = notesData.notes || 'No notes available';
                 if (firstImage) {
                     const ID = firstImage.dataset.value;
                     const modality = firstImage.dataset.modality;
-                    const description = firstImage.dataset.description;
+
                     const targetViewportId = viewportIds[0];
-                    this.openImageInViewport(ID, modality, description, targetViewportId);}
+                    this.openImageInViewport(ID, modality,targetViewportId);}
                     })
             .catch(error => {
                 // In case of error in loading images
