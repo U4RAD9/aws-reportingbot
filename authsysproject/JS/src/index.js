@@ -382,7 +382,7 @@ downloadAsJPEG(element) {
     let newViewport;
   
     // Determine orientation based on description
-    let orientation = cornerstone.Enums.orientationAxis.ACQUISITION;
+    let orientation = cornerstone.Enums.OrientationAxis.AXIAL;
     
   
     const viewport = renderingEngine.getViewport(viewport_ID);
