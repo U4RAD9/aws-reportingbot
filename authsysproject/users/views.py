@@ -2112,7 +2112,7 @@ def xrayallocation(request):
 
     # Extract only the *date* from recived_on_db
     # unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None}
-    unique_recived_on_db = {patient.received_date for patient in page_obj.object_list if patient.received_date is not None} #28-05-2025 by Rohan jangid
+    unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.received_date is not None} #28-05-2025 by Rohan jangid
     sorted_unique_recived_on_db = sorted(unique_recived_on_db, reverse=False)
 
     # Get unique dates from the patients on the current page
@@ -2235,7 +2235,7 @@ def xrayallocationreverse(request):
 
     # Extract only the *date* from recived_on_db
     # unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None}
-    unique_recived_on_db = {patient.received_date for patient in page_obj.object_list if patient.received_date is not None} #28-05-2025 by Rohan jangid
+    unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.received_date is not None} #28-05-2025 by Rohan jangid
     sorted_unique_recived_on_db = sorted(unique_recived_on_db, reverse=False)
 
     # Get unique dates from the patients on the current page
