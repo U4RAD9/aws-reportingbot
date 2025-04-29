@@ -975,17 +975,17 @@
         });
       
         function filterTable() {
-           var selectedDate = $('#filter-date-select-date').val();
-           var selectRecivedDate = $('#filter-Received-select-Received').val();
-           var selectModality = $('#filter-Modality-select-Modality').val();
-           var selectedStudydescription = $('#filter-Studydescription-select-Studydescription').val();
+           var selectedDate = ($('#filter-date-select-date').val() || "").trim().toLowerCase();
+           var selectRecivedDate = ($('#filter-Received-select-Received').val() || "").trim().toLowerCase();
+           var selectModality = ($('#filter-Modality-select-Modality').val() || "").trim().toLowerCase();
+           var selectedStudydescription = ($('#filter-Studydescription-select-Studydescription').val() || "").trim().toLowerCase();
       
            // Loop through each row in the table
            $('#patientTable tbody tr').each(function () {
-               var rowDate = $(this).find('td:nth-child(5)').text(); // Get the test date from the table cell
-               var rowRecivedDate = $(this).find('td:nth-child(6)').text();
-               var rowModality = $(this).find('td:nth-child(7)').text();
-               var rowStudydescription = $(this).find('td:nth-child(8)').text();
+               var rowDate = ($(this).find('td:nth-child(5)').text() || "").trim().toLowerCase(); // Get the test date from the table cell
+               var rowRecivedDate = ($(this).find('td:nth-child(6)').text() || "").trim().toLowerCase();
+               var rowModality = ($(this).find('td:nth-child(7)').text() || "").trim().toLowerCase();
+               var rowStudydescription = ($(this).find('td:nth-child(8)').text() || "").trim().toLowerCase();
       
                
                if ((selectedDate === '' || rowDate === selectedDate) && (selectRecivedDate === '' || rowRecivedDate === selectRecivedDate) && (selectModality === '' || rowModality === selectModality) && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription))

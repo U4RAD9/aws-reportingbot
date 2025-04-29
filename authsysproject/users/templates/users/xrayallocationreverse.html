@@ -577,7 +577,7 @@
                           <select id="filter-Received-select-Received" class="form-control">
                               <option value="">All</option>
                               {% for received in Received_on_db %}
-                                  <option value="{{ received }}">{{ received }}</option>
+                                  <option value="{{ received|date:'Y-m-d' }}">{{ received|date:'Y-m-d' }}</option>
                               {% endfor %}
                           </select>
                       </div>
@@ -936,65 +936,66 @@
       return dateParts[2] + "-" + dateParts[1] + "-" + dateParts[0];
     }
 
-    $(document).ready(function () {
-      function filterTableByDate(date) {
-        // Show all rows initially
-        $("tbody tr").show();
+    // $(document).ready(function () {
+    //   function filterTableByDate(date) {
+    //     // Show all rows initially
+    //     $("tbody tr").show();
 
-        if (date) {
-          // Convert the selected date to the format "dd-mm-yyyy"
-          var selectedDateFormatted = formatDate(date);
+    //     if (date) {
+    //       // Convert the selected date to the format "dd-mm-yyyy"
+    //       var selectedDateFormatted = formatDate(date);
 
-          // Hide rows that do not match the selected date
-          $("tbody tr").each(function () {
-            var rowDate = $(this).find("td:nth-child(5)").text();
-            if (formatDate(rowDate) !== selectedDateFormatted) {
-              $(this).hide();
-            }
-          });
-        }
-      }
+    //       // Hide rows that do not match the selected date
+    //       $("tbody tr").each(function () {
+    //         var rowDate = $(this).find("td:nth-child(5)").text();
+    //         if (formatDate(rowDate) !== selectedDateFormatted) {
+    //           $(this).hide();
+    //         }
+    //       });
+    //     }
+    //   }
 
       
 
-      // Event handler for the "Date" dropdown filter
-      $("#filter-date-select-date").change(function () {
-        var selectedDate = $(this).val();
-        filterTableByDate(selectedDate);
-      });
+    //   // Event handler for the "Date" dropdown filter
+    //   $("#filter-date-select-date").change(function () {
+    //     var selectedDate = $(this).val();
+    //     filterTableByDate(selectedDate);
+    //   });
 
-      $(document).on("change", "#filter-location-select-location", function () {
-          var selectedLocation = $(this).val();
-          filterTableByLocation(selectedLocation);
-          updateLocationOptions(selectedLocation);
-        }
-      );
+    //   $(document).on("change", "#filter-location-select-location", function () {
+    //       var selectedLocation = $(this).val();
+    //       filterTableByLocation(selectedLocation);
+    //       updateLocationOptions(selectedLocation);
+    //     }
+    //   );
 
-      // Event handler for the "Allocate" dropdown filter
-      $(document).on("change", "#filter-allocate-select-allocate", function () {
-          var selectedCardiologist = $(this).val();
-          filterTableByCardiologist(selectedCardiologist);
-        }
-      );
+    //   // Event handler for the "Allocate" dropdown filter
+    //   $(document).on("change", "#filter-allocate-select-allocate", function () {
+    //       var selectedCardiologist = $(this).val();
+    //       filterTableByCardiologist(selectedCardiologist);
+    //     }
+    //   );
 
-      // Event handler for the "City/Location" dropdown filter
-      $(document).on("change", "#filter-city-select-city", function () {
-        var selectedCity = $(this).val();
-        filterTableByLocation(selectedCity);
-      });
+    //   // Event handler for the "City/Location" dropdown filter
+    //   $(document).on("change", "#filter-city-select-city", function () {
+    //     var selectedCity = $(this).val();
+    //     filterTableByLocation(selectedCity);
+    //   });
 
-      $(document).on("change", "#filter-location-select-location", function () {
-          var selectedLocation = $(this).val();
-          filterTableByLocation(selectedLocation);
-          updateLocationOptions(selectedLocation);
-        }
-      );
+    //   $(document).on("change", "#filter-location-select-location", function () {
+    //       var selectedLocation = $(this).val();
+    //       filterTableByLocation(selectedLocation);
+    //       updateLocationOptions(selectedLocation);
+    //     }
+    //   );
 
-      // Call the filter functions on page load to initialize the table
-      filterTableByDate($("#filter-date-select-date").val());
-      filterTableByCardiologist($("#filter-allocate-select-allocate").val());
-      filterTableByLocation($("#filter-city-select-city").val());
-    });
+    //   // Call the filter functions on page load to initialize the table
+    //   filterTableByDate($("#filter-date-select-date").val());
+    //   filterTableByCardiologist($("#filter-allocate-select-allocate").val());
+    //   filterTableByLocation($("#filter-city-select-city").val());
+    // });
+
   </script>
   <!-- by rohan jangid 28-05-2025 -->
   <script>
