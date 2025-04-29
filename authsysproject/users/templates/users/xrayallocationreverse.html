@@ -557,7 +557,7 @@
                 <th>Gender</th>
                 <th>
                   <div class="filter-dropdown-container">
-                    <div>Test Date</div>
+                    <div>Study Date</div>
                       <div class="dropdown-select1" id="filter-date-dropdown-date">
                           <select id="filter-date-select-date" class="form-control">
                             <option value="">All</option>
@@ -566,7 +566,6 @@
                             {% endfor %}
                           </select>
                       </div>
-                    </div>
                   </div>
                 </th>
                 <!-- by rohan jangid -->
@@ -936,69 +935,9 @@
       return dateParts[2] + "-" + dateParts[1] + "-" + dateParts[0];
     }
 
-    // $(document).ready(function () {
-    //   function filterTableByDate(date) {
-    //     // Show all rows initially
-    //     $("tbody tr").show();
-
-    //     if (date) {
-    //       // Convert the selected date to the format "dd-mm-yyyy"
-    //       var selectedDateFormatted = formatDate(date);
-
-    //       // Hide rows that do not match the selected date
-    //       $("tbody tr").each(function () {
-    //         var rowDate = $(this).find("td:nth-child(5)").text();
-    //         if (formatDate(rowDate) !== selectedDateFormatted) {
-    //           $(this).hide();
-    //         }
-    //       });
-    //     }
-    //   }
-
-      
-
-    //   // Event handler for the "Date" dropdown filter
-    //   $("#filter-date-select-date").change(function () {
-    //     var selectedDate = $(this).val();
-    //     filterTableByDate(selectedDate);
-    //   });
-
-    //   $(document).on("change", "#filter-location-select-location", function () {
-    //       var selectedLocation = $(this).val();
-    //       filterTableByLocation(selectedLocation);
-    //       updateLocationOptions(selectedLocation);
-    //     }
-    //   );
-
-    //   // Event handler for the "Allocate" dropdown filter
-    //   $(document).on("change", "#filter-allocate-select-allocate", function () {
-    //       var selectedCardiologist = $(this).val();
-    //       filterTableByCardiologist(selectedCardiologist);
-    //     }
-    //   );
-
-    //   // Event handler for the "City/Location" dropdown filter
-    //   $(document).on("change", "#filter-city-select-city", function () {
-    //     var selectedCity = $(this).val();
-    //     filterTableByLocation(selectedCity);
-    //   });
-
-    //   $(document).on("change", "#filter-location-select-location", function () {
-    //       var selectedLocation = $(this).val();
-    //       filterTableByLocation(selectedLocation);
-    //       updateLocationOptions(selectedLocation);
-    //     }
-    //   );
-
-    //   // Call the filter functions on page load to initialize the table
-    //   filterTableByDate($("#filter-date-select-date").val());
-    //   filterTableByCardiologist($("#filter-allocate-select-allocate").val());
-    //   filterTableByLocation($("#filter-city-select-city").val());
-    // });
-
   </script>
   <!-- by rohan jangid 28-05-2025 -->
-  <script>
+  <!-- <script>
     $(document).ready(function () {
      // Attach event handler for dropdown change
      $('#filter-Received-select-Received').change(function () {
@@ -1036,8 +975,69 @@
                }
          });
      }
- });
-   </script>
+    });
+   </script> -->
+  
+
+  <script>
+      // 28-05-2025 Update by Rohan Jangid
+      $(document).ready(function () {
+        $('#filter-date-select-date, #filter-studytime-select-studytime, #filter-Received-select-Received, #filter-institution_name-select-institution_name, #filter-Modality-select-Modality, #filter-Studydescription-select-Studydescription, #filter-allocate-select-allocate, #filter-coordinator-select-coordinator, #filter-status-select').change(function () {
+            filterTable();
+        });
+    
+        function extractDate(dateStr) {
+            if (!dateStr) return "";
+            
+            let parsedDate = new Date(dateStr);
+            if (!isNaN(parsedDate.getTime())) {
+                return parsedDate.toISOString().split("T")[0]; // Extracts YYYY-MM-DD
+            }
+    
+            // Fallback: If dateStr is "March 27, 2025, 3:08 p.m.", extract date part
+            let dateParts = dateStr.split(",");
+            if (dateParts.length > 0) {
+                let rawDate = dateParts[0].trim();
+                let fallbackDate = new Date(rawDate);
+                if (!isNaN(fallbackDate.getTime())) {
+                    return fallbackDate.toISOString().split("T")[0]; // Extracts YYYY-MM-DD
+                }
+            }
+    
+            return dateStr.split(" ")[0]; // Final fallback: Takes first part assuming "YYYY-MM-DD HH:MM:SS"
+        }
+    
+        function filterTable() {
+            var selectedDate = ($('#filter-date-select-date').val() || "").trim().toLowerCase();
+            var selectedReceived = extractDate($('#filter-Received-select-Received').val());
+            var selectedModality = ($('#filter-Modality-select-Modality').val() || "").trim().toLowerCase();
+            var selectedStudydescription = ($('#filter-Studydescription-select-Studydescription').val() || "").trim().toLowerCase();
+    
+            var visibleRowCount = 0;
+    
+            $('#patientTable tbody tr').each(function () {
+                var rowDate = ($(this).find('td:nth-child(5)').text() || "").trim().toLowerCase();
+                var rowReceived = ($(this).find('td:nth-child(6)').text() || "").trim().toLowerCase();
+                var rowModality = ($(this).find('td:nth-child(7)').text() || "").trim().toLowerCase();
+                var rowStudydescription = ($(this).find('td:nth-child(8)').text() || "").trim().toLowerCase();
+    
+                if ((selectedDate === '' || rowDate === selectedDate) 
+                    && (selectedReceived === '' || rowReceivedFormatted === selectedReceived)
+                    && (selectedModality === '' || rowModality === selectedModality) 
+                    && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription)) { 
+                    $(this).show();
+                    visibleRowCount++;
+                } else {
+                    $(this).hide();
+                }
+            });
+    
+            $('#filteredRowCount').text(visibleRowCount);
+        }
+    
+        filterTable();
+    });
+  </script>
 
   <div class="footer">
     <p>&copy; 2019-2024 XRAi Digital. All rights reserved.</p>
