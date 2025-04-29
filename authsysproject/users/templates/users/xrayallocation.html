@@ -952,57 +952,70 @@
       var dateParts = dateString.split("-");
       return dateParts[2] + "-" + dateParts[1] + "-" + dateParts[0];
     }
+  </script>
 
-    //  28-05-2025 by Rohan jangid
+  <script>
+    // 28-05-2025 Update by Rohan Jangid
     $(document).ready(function () {
-
-        // Event handler for the change event of the test date dropdown
-        $('#filter-date-select-date').change(function () {
-             filterTable();
-        });
-
-        $('#filter-Received-select-Received').change(function () {
-             filterTable();
-        });
-
-        $('#filter-Modality-select-Modality').change(function () {
-             filterTable();
-        });
-      
-        // Event handler for the change event of the Studydescription dropdown
-        $('#filter-Studydescription-select-Studydescription').change(function () {
-            filterTable();
-        });
-      
-        function filterTable() {
-           var selectedDate = ($('#filter-date-select-date').val() || "").trim().toLowerCase();
-           var selectRecivedDate = ($('#filter-Received-select-Received').val() || "").trim().toLowerCase();
-           var selectModality = ($('#filter-Modality-select-Modality').val() || "").trim().toLowerCase();
-           var selectedStudydescription = ($('#filter-Studydescription-select-Studydescription').val() || "").trim().toLowerCase();
-      
-           // Loop through each row in the table
-           $('#patientTable tbody tr').each(function () {
-               var rowDate = ($(this).find('td:nth-child(5)').text() || "").trim().toLowerCase(); // Get the test date from the table cell
-               var rowRecivedDate = ($(this).find('td:nth-child(6)').text() || "").trim().toLowerCase();
-               var rowModality = ($(this).find('td:nth-child(7)').text() || "").trim().toLowerCase();
-               var rowStudydescription = ($(this).find('td:nth-child(8)').text() || "").trim().toLowerCase();
-      
-               
-               if ((selectedDate === '' || rowDate === selectedDate) && (selectRecivedDate === '' || rowRecivedDate === selectRecivedDate) && (selectModality === '' || rowModality === selectModality) && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription))
-               {
-                   
-                   $(this).show();
-               } else {
-                   $(this).hide();
-               }
-           });
-        }
+      $('#filter-date-select-date, #filter-studytime-select-studytime, #filter-Received-select-Received, #filter-institution_name-select-institution_name, #filter-Modality-select-Modality, #filter-Studydescription-select-Studydescription, #filter-allocate-select-allocate, #filter-coordinator-select-coordinator, #filter-status-select').change(function () {
+          filterTable();
+      });
+  
+      function extractDate(dateStr) {
+          if (!dateStr) return "";
+          
+          let parsedDate = new Date(dateStr);
+          if (!isNaN(parsedDate.getTime())) {
+              return parsedDate.toISOString().split("T")[0]; // Extracts YYYY-MM-DD
+          }
+  
+          // Fallback: If dateStr is "March 27, 2025, 3:08 p.m.", extract date part
+          let dateParts = dateStr.split(",");
+          if (dateParts.length > 0) {
+              let rawDate = dateParts[0].trim();
+              let fallbackDate = new Date(rawDate);
+              if (!isNaN(fallbackDate.getTime())) {
+                  return fallbackDate.toISOString().split("T")[0]; // Extracts YYYY-MM-DD
+              }
+          }
+  
+          return dateStr.split(" ")[0]; // Final fallback: Takes first part assuming "YYYY-MM-DD HH:MM:SS"
+      }
+  
+      function filterTable() {
+          var selectedDate = ($('#filter-date-select-date').val() || "").trim().toLowerCase();
+          var selectedReceived = extractDate($('#filter-Received-select-Received').val());
+          var selectedModality = ($('#filter-Modality-select-Modality').val() || "").trim().toLowerCase();
+          var selectedStudydescription = ($('#filter-Studydescription-select-Studydescription').val() || "").trim().toLowerCase();
+  
+          var visibleRowCount = 0;
+  
+          $('#patientTable tbody tr').each(function () {
+              var rowDate = ($(this).find('td:nth-child(5)').text() || "").trim().toLowerCase();
+              var rowReceived = ($(this).find('td:nth-child(6)').text() || "").trim().toLowerCase();
+              var rowModality = ($(this).find('td:nth-child(7)').text() || "").trim().toLowerCase();
+              var rowStudydescription = ($(this).find('td:nth-child(8)').text() || "").trim().toLowerCase();
+  
+              if ((selectedDate === '' || rowDate === selectedDate) 
+                  && (selectedReceived === '' || rowReceived === selectedReceived)
+                  && (selectedModality === '' || rowModality === selectedModality) 
+                  && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription)) { 
+                  $(this).show();
+                  visibleRowCount++;
+              } else {
+                  $(this).hide();
+              }
+          });
+  
+          $('#filteredRowCount').text(visibleRowCount);
+      }
+  
+      filterTable();
     });
-// upto this
   </script>
 
   <div class="footer">
-    <p>&copy; 2019-2024 XRAi Digital. All rights reserved.</p>
+    <p>&copy; 2019-2025 XRAi Digital. All rights reserved.</p>
   </div>
 </body>
 

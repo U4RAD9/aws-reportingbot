@@ -2233,18 +2233,18 @@ def xrayallocationreverse(request):
 
     location = XLocation.objects.all()
 
-     # Extract only the *date* from recived_on_db
-    unique_received_dates = set()
-    for patient in allocated_to_current_user:
-        if patient.recived_on_db:
-            unique_received_dates.add(patient.recived_on_db.date())  # Extract only date
+    # Extract only the *date* from recived_on_db
+    # unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None}
+    unique_recived_on_db = {patient.received_date for patient in page_obj.object_list if patient.received_date is not None} #28-05-2025 by Rohan jangid
+    sorted_unique_recived_on_db = sorted(unique_recived_on_db, reverse=False)
 
-    sorted_unique_received_dates = sorted(unique_received_dates, reverse=False)
-
-    unique_dates = set()
-    for patient in allocated_to_current_user:
-        unique_dates.add(patient.study_date)
+    # Get unique dates from the patients on the current page
+    unique_dates = set(patient.study_date for patient in page_obj.object_list)
     sorted_unique_dates = sorted(unique_dates, reverse=False)
+
+    # unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
+    unique_institution_name = {patient.institution_name for patient in page_obj.object_list if patient.institution_name is not None}
+    sorted_unique_institution_name = sorted(unique_institution_name, reverse=False)
 
     #Study Description of patent from dicom data
     unique_study_description = {patient.study_description for patient in page_obj.object_list if patient.study_description is not None}
@@ -2258,7 +2258,7 @@ def xrayallocationreverse(request):
         'profile_picture': profile_picture,
         'reported': total_reported,
         'patients': page_obj,
-        'Received_on_db': sorted_unique_received_dates,
+        'Received_on_db': sorted_unique_recived_on_db,
         'Modalities': sorted_unique_modality,
         'Study_description': sorted_unique_study_description,
         'Date': sorted_unique_dates,
