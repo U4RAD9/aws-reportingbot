@@ -577,7 +577,7 @@
                           <select id="filter-Received-select-Received" class="form-control">
                               <option value="">All</option>
                               {% for received in Received_on_db %}
-                                  <option value="{{ received|date:'Y-m-d' }}">{{ received|date:'Y-m-d' }}</option>
+                                  <option value="{{ received }}">{{ received }}</option>
                               {% endfor %}
                           </select>
                       </div>
