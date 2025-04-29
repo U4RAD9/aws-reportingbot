@@ -591,6 +591,19 @@
                 <!--upto this -->
                 <th>
                   <div class="filter-dropdown-container">
+                     <div>Modality</div>
+                     <div class="dropdown-select1" id="filter-Modality-dropdown">
+                         <select id="filter-Modality-select-Modality" class="form-control">
+                             <option value="">All</option>
+                             {% for Modality in Modalities %}
+                                 <option value="{{ Modality }}">{{ Modality }}</option>
+                             {% endfor %}
+                         </select>
+                     </div>
+                  </div>
+                </th>
+                <th>
+                  <div class="filter-dropdown-container">
                       <div>Study Description</div>
                       <div class="dropdown-select1" id="filter-Studydescription-dropdown-Studydescription">
                           <select id="filter-Studydescription-select-Studydescription" class="form-control">
@@ -627,7 +640,8 @@
                 <td>{{ patient.age }}</td>
                 <td>{{ patient.gender }}</td>
                 <td>{{ patient.study_date }}</td>
-                <!--by Rohan jangid--><td class="received-date">{{ patient.recived_on_db|date:'Y-m-d' }}</td><!--28-05-2025 by Rohan jangid-->
+                <td class="received-date">{{ patient.recived_on_db|date:'Y-m-d' }}</td><!--28-05-2025 by Rohan jangid-->
+                <td>{{ patient.Modality }}</td>
                 <td>{{ patient.study_description }}</td>
                 <td>
                   <button class="openClinicalHistoryButton" data-clinical-history="{{ patient.notes }}">
@@ -950,6 +964,10 @@
         $('#filter-Received-select-Received').change(function () {
              filterTable();
         });
+
+        $('#filter-Modality-select-Modality').change(function () {
+             filterTable();
+        });
       
         // Event handler for the change event of the Studydescription dropdown
         $('#filter-Studydescription-select-Studydescription').change(function () {
@@ -959,16 +977,18 @@
         function filterTable() {
            var selectedDate = $('#filter-date-select-date').val();
            var selectRecivedDate = $('#filter-Received-select-Received').val();
+           var selectModality = $('#filter-Modality-select-Modality').val();
            var selectedStudydescription = $('#filter-Studydescription-select-Studydescription').val();
       
            // Loop through each row in the table
            $('#patientTable tbody tr').each(function () {
                var rowDate = $(this).find('td:nth-child(5)').text(); // Get the test date from the table cell
                var rowRecivedDate = $(this).find('td:nth-child(6)').text();
-               var rowStudydescription = $(this).find('td:nth-child(7)').text();
+               var rowModality = $(this).find('td:nth-child(7)').text();
+               var rowStudydescription = $(this).find('td:nth-child(8)').text();
       
                
-               if ((selectedDate === '' || rowDate === selectedDate) && (selectRecivedDate === '' || rowRecivedDate === selectRecivedDate) && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription))
+               if ((selectedDate === '' || rowDate === selectedDate) && (selectRecivedDate === '' || rowRecivedDate === selectRecivedDate) && (selectModality === '' || rowModality === selectModality) && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription))
                {
                    
                    $(this).show();

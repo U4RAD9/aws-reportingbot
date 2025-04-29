@@ -582,7 +582,33 @@
                           </select>
                       </div>
                   </div>
-              </th><!--28-05-2025-->
+                </th><!--28-05-2025-->
+                <th>
+                  <div class="filter-dropdown-container">
+                     <div>Modality</div>
+                     <div class="dropdown-select1" id="filter-Modality-dropdown">
+                         <select id="filter-Modality-select-Modality" class="form-control">
+                             <option value="">All</option>
+                             {% for Modality in Modalities %}
+                                 <option value="{{ Modality }}">{{ Modality }}</option>
+                             {% endfor %}
+                         </select>
+                     </div>
+                  </div>
+                </th>
+                <th>
+                  <div class="filter-dropdown-container">
+                      <div>Study Description</div>
+                      <div class="dropdown-select1" id="filter-Studydescription-dropdown-Studydescription">
+                          <select id="filter-Studydescription-select-Studydescription" class="form-control">
+                              <option value="">All</option>
+                              {% for Studydescription in Study_description %}
+                                  <option value="{{ Studydescription }}">{{ Studydescription }}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
+                  </div>
+                </th>
 
                 <th>Clinical History</th>
                 <th>History Files</th>
@@ -610,6 +636,8 @@
             <td>{{ patient.gender }}</td>
             <td>{{ patient.study_date }}</td>
             <td class="received-date">{{ patient.recived_on_db|date:'Y-m-d' }}</td>
+            <td>{{ patient.Modality }}</td>
+                <td>{{ patient.study_description }}</td>
             <td>
               <button class="openClinicalHistoryButton" data-clinical-history="{{ patient.notes }}">
                 View
@@ -975,18 +1003,36 @@
      $('#filter-Received-select-Received').change(function () {
          filterTable();
      });
+
+     $('#filter-Modality-select-Modality').change(function () {
+          filterTable();
+     });
+   
+     // Event handler for the change event of the Studydescription dropdown
+     $('#filter-Studydescription-select-Studydescription').change(function () {
+         filterTable();
+     });
  
      function filterTable() {
+         var selectedDate = $('#filter-date-select-date').val();
          var selectedDate = $('#filter-Received-select-Received').val(); // Get selected date
+         var selectModality = $('#filter-Modality-select-Modality').val();
+         var selectedStudydescription = $('#filter-Studydescription-select-Studydescription').val();
  
          // Loop through each row in the table
          $('#patientTable tbody tr').each(function () {
-             var rowDate = $(this).find('td.received-date').text().trim(); // Extract received date from the row
+              var rowDate = $(this).find('td:nth-child(5)').text();
+              var rowRecivedDate = $(this).find('td:nth-child(6)').text();
+              var rowModality = $(this).find('td:nth-child(7)').text();
+              var rowStudydescription = $(this).find('td:nth-child(8)').text();
  
-             // Show row if the selected date is empty (show all) or matches the row's received date
-             var showRow = (selectedDate === '' || rowDate === selectedDate);
- 
-             $(this).toggle(showRow);
+              if ((selectedDate === '' || rowDate === selectedDate) && (selectRecivedDate === '' || rowRecivedDate === selectRecivedDate) && (selectModality === '' || rowModality === selectModality) && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription))
+               {
+                   
+                   $(this).show();
+               } else {
+                   $(this).hide();
+               }
          });
      }
  });

@@ -2128,13 +2128,30 @@ def xrayallocation(request):
     sorted_unique_institution_name = sorted(unique_institution_name, reverse=False)
 
     #Study Description of patent from dicom data
-    # Recived date time on db
     unique_study_description = {patient.study_description for patient in page_obj.object_list if patient.study_description is not None}
     sorted_unique_study_description = sorted(unique_study_description, reverse=False)
 
-    return render(request, 'users/xrayallocation.html',
-                  {'profile_picture': profile_picture, 'Study_description': sorted_unique_study_description, 'Institution': sorted_unique_institution_name, 'reported': total_reported, 'patients': page_obj, 'Received_on_db': sorted_unique_received_dates, 'Date': sorted_unique_dates,
-                   'locations': location, 'total_assigned_cases': total_assigned_cases, 'total_reported_cases': total_reported_cases, 'total_pending_cases': total_pending_cases, 'page_obj': page_obj, 'patient_urls': patient_urls, 'search_query': search_query})
+    # Modality
+    unique_modality = {patient.Modality for patient in page_obj.object_list if patient.Modality is not None}
+    sorted_unique_modality = sorted(unique_modality, reverse=False)
+
+    return render(request, 'users/xrayallocation.html', {
+        'profile_picture': profile_picture,
+        'Modalities': sorted_unique_modality,
+        'Study_description': sorted_unique_study_description,
+        'Institution': sorted_unique_institution_name,
+        'reported': total_reported,
+        'patients': page_obj,
+        'Received_on_db': sorted_unique_received_dates,
+        'Date': sorted_unique_dates,
+        'locations': location,
+        'total_assigned_cases': total_assigned_cases,
+        'total_reported_cases': total_reported_cases,
+        'total_pending_cases': total_pending_cases,
+        'page_obj': page_obj,
+        'patient_urls': patient_urls,
+        'search_query': search_query
+    })
 
 
 @user_type_required('radiologist')
@@ -2168,7 +2185,7 @@ def xrayallocationreverse(request):
     # Get search query
     search_query = request.GET.get('q', '')
 
-    allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=True).order_by('-vip', '-urgent', '-Mlc', '-id')
+    allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=True).order_by('-id')
 
     # Apply search filter
     if search_query:
@@ -2232,9 +2249,30 @@ def xrayallocationreverse(request):
     for patient in allocated_to_current_user:
         unique_dates.add(patient.study_date)
     sorted_unique_dates = sorted(unique_dates, reverse=False)
-    return render(request, 'users/xrayallocationreverse.html',
-                  {'profile_picture': profile_picture, 'reported': total_reported, 'patients': page_obj, 'Received_on_db': sorted_unique_received_dates, 'Date': sorted_unique_dates,
-                   'locations': location, 'page_obj': page_obj, 'total_assigned_cases': total_assigned_cases, 'total_reported_cases': total_reported_cases, 'total_pending_cases': total_pending_cases, 'patient_urls': patient_urls, 'search_query': search_query})
+
+    #Study Description of patent from dicom data
+    unique_study_description = {patient.study_description for patient in page_obj.object_list if patient.study_description is not None}
+    sorted_unique_study_description = sorted(unique_study_description, reverse=False)
+
+    # Modality
+    unique_modality = {patient.Modality for patient in page_obj.object_list if patient.Modality is not None}
+    sorted_unique_modality = sorted(unique_modality, reverse=False)
+
+    return render(request, 'users/xrayallocationreverse.html', {
+        'profile_picture': profile_picture,
+        'reported': total_reported,
+        'patients': page_obj,
+        'Received_on_db': sorted_unique_received_dates,
+        'Modalities': sorted_unique_modality,
+        'Study_description': sorted_unique_study_description,
+        'Date': sorted_unique_dates,
+        'locations': location,
+        'page_obj': page_obj,
+        'total_assigned_cases': total_assigned_cases,
+        'total_reported_cases': total_reported_cases,
+        'total_pending_cases': total_pending_cases,
+        'patient_urls': patient_urls,
+        'search_query': search_query})
 
 user_type_required('audiometrist')
 def audiometry(request):
