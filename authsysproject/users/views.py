@@ -6464,92 +6464,123 @@ def coordinatorallocate1(request):
 #     return render(request, 'users/review_page.html', context)
 
 def review_page(request):
-    # Fetch all DICOMData objects with twostepcheck=True
+    # Fetch and filter base data
     dicom_data_objects = DICOMData.objects.filter(twostepcheck=True, isDone=True).order_by('-id')
-    study_date_set = set()
-
-    # Apply radiologist filter if present
-    radiologist_filter = request.GET.get('radiologist')
-    if radiologist_filter:
+    
+    # Apply radiologist filter
+    if radiologist_filter := request.GET.get('radiologist'):
         dicom_data_objects = dicom_data_objects.filter(radiologist__id=radiologist_filter)
 
-    # Get radiologists from the group
+    # Get radiologists
     radiologist_group = Group.objects.get(name='radiologist')
     radiologist_objects = radiologist_group.user_set.filter(personalinfo__isnull=False)
 
     filtered_data = []
     bucket_name = 'u4rad-s3-reporting-bot'
+    date_format_errors = []
 
-    for dicom_data in dicom_data_objects:
+    for index, dicom_data in enumerate(dicom_data_objects):
+        # ========== DATA NORMALIZATION ==========
+        # Clean and normalize identifiers
+        clean_patient_name = dicom_data.patient_name.replace("  ", " ").strip().upper()
+        clean_patient_id = dicom_data.patient_id.replace("  ", " ").strip().upper()
+        
+        # Convert to storage format (single underscores only)
+        storage_patient_name = "_".join(clean_patient_name.split())
+        storage_patient_id = "_".join(clean_patient_id.split())
+
+        # ========== DATE HANDLING ==========
         try:
-            # Convert study_date to date object
-            test_date_obj = datetime.strptime(dicom_data.study_date, "%d-%m-%Y").date()
-        except (ValueError, TypeError) as e:
-            print(f"Error parsing date for {dicom_data.id}: {e}")
+            study_date_str = dicom_data.study_date.replace("/", "-").replace("\\", "-")
+            test_date_obj = datetime.strptime(study_date_str, "%d-%m-%Y").date()
+        except Exception as e:
+            date_format_errors.append({
+                'id': dicom_data.id,
+                'study_date': dicom_data.study_date,
+                'error': str(e)
+            })
             test_date_obj = None
 
-        # Prepare normalized identifiers
-        patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_").strip().upper()
-        patient_id_with_underscores = dicom_data.patient_id.replace(" ", "_").strip().upper()
+        # ========== DEBUG OUTPUT ==========
+        print(f"\n{'='*40}\nProcessing Record #{index+1}")
+        print(f"DICOM ID: {dicom_data.id}")
+        print(f"Original Name: '{dicom_data.patient_name}'")
+        print(f"Cleaned Name: '{clean_patient_name}'")
+        print(f"Storage Name: '{storage_patient_name}'")
+        print(f"Original ID: '{dicom_data.patient_id}'")
+        print(f"Cleaned ID: '{clean_patient_id}'")
+        print(f"Storage ID: '{storage_patient_id}'")
+        print(f"Study Date: {dicom_data.study_date} → {test_date_obj}")
 
-        # Debug print original values
-        print(f"\nProcessing DICOM Data ID: {dicom_data.id}")
-        print(f"Original Patient Name: {dicom_data.patient_name}")
-        print(f"Original Patient ID: {dicom_data.patient_id}")
-        print(f"Study Date: {dicom_data.study_date}")
-        print(f"Converted Date: {test_date_obj}")
-
-        # Query PDF reports with case-insensitive matching
-        pdf_reports = XrayReport.objects.none()
-        if test_date_obj:
-            pdf_reports = XrayReport.objects.filter(
-                test_date=test_date_obj,
-                name__iexact=patient_name_with_underscores,
-                patient_id__iexact=patient_id_with_underscores
-            )
-
-        # Debug print query results
-        print(f"Found {pdf_reports.count()} matching PDF reports")
-
-        # Generate URLs
-        jpeg_files = dicom_data.jpeg_files.all()
-        jpeg_urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
+        # ========== PDF QUERY ==========
+        query_params = {
+            'name': storage_patient_name,
+            'patient_id': storage_patient_id,
+            'test_date': test_date_obj
+        }
         
-        pdf_urls = []
-        if pdf_reports.exists():
-            pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) 
-                      for pdf_report in pdf_reports]
-            # Debug print PDF details
-            for pdf in pdf_reports:
-                print(f"Matching PDF: {pdf.name} | {pdf.patient_id} | {pdf.test_date}")
+        pdf_reports = XrayReport.objects.none()
+        if all(query_params.values()):
+            try:
+                pdf_reports = XrayReport.objects.filter(**query_params)
+                print(f"Query Parameters: {query_params}")
+                print(f"Found {pdf_reports.count()} matching reports")
+                
+                # Cross-verify first match
+                if pdf_reports.exists():
+                    match = pdf_reports.first()
+                    print("First Match Details:")
+                    print(f"Report Name: '{match.name}'")
+                    print(f"Report PID: '{match.patient_id}'")
+                    print(f"Report Date: {match.test_date}")
+            except Exception as e:
+                print(f"Query Error: {str(e)}")
 
-        history_files = dicom_data.history_files.all()
-        history_file_urls = [
-            presigned_url(bucket_name, history_file.history_file.name, inline=True) 
-            for history_file in history_files
+        # ========== URL GENERATION ==========
+        jpeg_urls = [
+            presigned_url(bucket_name, jpeg.jpeg_file.name)
+            for jpeg in dicom_data.jpeg_files.all()
         ]
 
+        pdf_urls = []
+        if pdf_reports.exists():
+            pdf_urls = [
+                presigned_url(bucket_name, pdf.pdf_file.name, inline=True)
+                for pdf in pdf_reports
+                if pdf.pdf_file.name.endswith('.pdf')
+            ]
+
+        history_urls = [
+            presigned_url(bucket_name, hist.history_file.name, inline=True)
+            for hist in dicom_data.history_files.all()
+        ]
+
+        # ========== DATA COLLECTION ==========
         filtered_data.append({
             'dicom_data': dicom_data,
             'jpeg_urls': jpeg_urls,
             'pdf_urls': pdf_urls,
-            'history_file_urls': history_file_urls,
-            'report_date': pdf_reports.first().report_date if pdf_reports.exists() else None,
-            'test_date': pdf_reports.first().test_date if pdf_reports.exists() else None,
+            'history_file_urls': history_urls,
+            'report_date': pdf_reports.first().report_date if pdf_reports else None,
+            'test_date': pdf_reports.first().test_date if pdf_reports else None,
+            'match_status': 'MATCH' if pdf_reports.exists() else 'MISSING',
         })
 
-        if dicom_data.study_date:
-            study_date_set.add(dicom_data.study_date)
+    # ========== ERROR REPORTING ==========
+    if date_format_errors:
+        print("\nDATE FORMAT ERRORS:")
+        for error in date_format_errors:
+            print(f"ID {error['id']}: {error['study_date']} → {error['error']}")
 
-    # Pagination
+    # ========== PAGINATION & CONTEXT ==========
     paginator = Paginator(filtered_data, 50)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginator.get_page(request.GET.get('page'))
 
     context = {
         'filtered_data': page_obj,
-        'Test_Dates': sorted(study_date_set),
+        'Test_Dates': sorted({d.study_date for d in dicom_data_objects if d.study_date}),
         'radiologists': radiologist_objects,
+        'date_errors': date_format_errors,
     }
 
     return render(request, 'users/review_page.html', context)
