@@ -3131,7 +3131,7 @@ UploadDivContentOnPDFWithoutImage() {
         throw new Error('CKEditor content not found');
       }
 
-      const { location, accession, institution_name } = this.extractDataFromURL();
+      const { location, accession, institutionName } = this.extractDataFromURL();
       
       // Get all images including captured ones
       const images = editorContent.querySelectorAll("img");
@@ -3253,7 +3253,7 @@ UploadDivContentOnPDFWithoutImage() {
       formData.append("reportDate", tableData.reportDate);
       formData.append("location", location);
       formData.append("accession", accession);
-      formData.append("institution_name", institution_name);
+      formData.append("institution_name", institutionName);
 
       await axios.post("/upload_xray_pdf/", formData, {
         headers: {
