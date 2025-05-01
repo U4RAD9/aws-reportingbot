@@ -6501,16 +6501,6 @@ def review_page(request):
             })
             test_date_obj = None
 
-        # ========== DEBUG OUTPUT ==========
-        print(f"\n{'='*40}\nProcessing Record #{index+1}")
-        print(f"DICOM ID: {dicom_data.id}")
-        print(f"Original Name: '{dicom_data.patient_name}'")
-        print(f"Cleaned Name: '{clean_patient_name}'")
-        print(f"Storage Name: '{storage_patient_name}'")
-        print(f"Original ID: '{dicom_data.patient_id}'")
-        print(f"Cleaned ID: '{clean_patient_id}'")
-        print(f"Storage ID: '{storage_patient_id}'")
-        print(f"Study Date: {dicom_data.study_date} → {test_date_obj}")
 
         # ========== PDF QUERY ==========
         query_params = {
@@ -6523,16 +6513,10 @@ def review_page(request):
         if all(query_params.values()):
             try:
                 pdf_reports = XrayReport.objects.filter(**query_params)
-                print(f"Query Parameters: {query_params}")
-                print(f"Found {pdf_reports.count()} matching reports")
                 
                 # Cross-verify first match
                 if pdf_reports.exists():
                     match = pdf_reports.first()
-                    print("First Match Details:")
-                    print(f"Report Name: '{match.name}'")
-                    print(f"Report PID: '{match.patient_id}'")
-                    print(f"Report Date: {match.test_date}")
             except Exception as e:
                 print(f"Query Error: {str(e)}")
 
