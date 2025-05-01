@@ -6392,9 +6392,13 @@ def review_page(request):
 
     # If a radiologist filter is applied, filter the patients
     radiologist_filter = request.GET.get('radiologist', None)
+    # if radiologist_filter:
+    #     #patients = patients.filter(radiologist__user__first_name__icontains=radiologist_filter)
+    #     patients = patients.filter(radiologist__id__in=[radiologist_filter])
+
+    # ***************************update on 01-05-25*************************************
     if radiologist_filter:
-        #patients = patients.filter(radiologist__user__first_name__icontains=radiologist_filter)
-        patients = patients.filter(radiologist__id__in=[radiologist_filter])
+       dicom_data_objects = dicom_data_objects.filter(radiologist__id=radiologist_filter)
 
     # Get radiologists from the group
     radiologist_group = Group.objects.get(name='radiologist')
@@ -6412,8 +6416,10 @@ def review_page(request):
 
         # Fetch related PDF reports
         patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_")
+        patient_id_with_underscores = dicom_data.patient_id.replace(" ", "_")
+
         pdf_reports = XrayReport.objects.filter(
-            name=patient_name_with_underscores, patient_id=dicom_data.patient_id
+            name=patient_name_with_underscores, patient_id=patient_id_with_underscores
         )
         pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
 
