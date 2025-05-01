@@ -6385,148 +6385,79 @@ def coordinatorallocate1(request):
 
 
 @user_type_required('reviewer')
-# def review_page(request):
-#     # Fetch all DICOMData objects with twostepcheck=True
-#     dicom_data_objects = DICOMData.objects.filter(twostepcheck=True).order_by('-id')
-#     study_date_set = set()
-
-#     # If a radiologist filter is applied, filter the patients
-#     radiologist_filter = request.GET.get('radiologist', None)
-#     # if radiologist_filter:
-#     #     #patients = patients.filter(radiologist__user__first_name__icontains=radiologist_filter)
-#     #     patients = patients.filter(radiologist__id__in=[radiologist_filter])
-
-#     # ***************************update on 01-05-25*************************************
-#     if radiologist_filter:
-#        dicom_data_objects = dicom_data_objects.filter(radiologist__id=radiologist_filter)
-    
-
-#     # Get radiologists from the group
-#     radiologist_group = Group.objects.get(name='radiologist')
-#     # radiologist_objects = radiologist_group.user_set.all()
-#     radiologist_objects = radiologist_group.user_set.filter(personalinfo__isnull=False)
-
-#     # Prepare filtered data
-#     filtered_data = []
-#     bucket_name = 'u4rad-s3-reporting-bot'
-
-#     for dicom_data in dicom_data_objects:
-#         # Fetch related JPEG files
-#         jpeg_files = dicom_data.jpeg_files.all()
-#         jpeg_urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
-
-#         # Fetch related PDF reports
-#         patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_")
-#         patient_id_with_underscores = dicom_data.patient_id.replace(" ", "_")
-
-#         pdf_reports = XrayReport.objects.filter(
-#             name=patient_name_with_underscores, patient_id=patient_id_with_underscores
-#         )
-#         pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
-
-#         # Fetch related history files
-#         history_files = dicom_data.history_files.all()
-#         history_file_urls = [
-#             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
-#         ]
-
-#         # Collect data for rendering
-#         filtered_data.append({
-#             'dicom_data': dicom_data,
-#             'jpeg_urls': jpeg_urls,
-#             'pdf_urls': pdf_urls,
-#             'history_file_urls': history_file_urls,
-#             'report_date': pdf_reports.first().report_date if pdf_reports.exists() else None,
-#             'test_date': pdf_reports.first().test_date if pdf_reports.exists() else None,
-#         })
-
-#         print(filtered_data)
-
-#         # Collect unique study dates
-#         if dicom_data.study_date:
-#             study_date_set.add(dicom_data.study_date)
-
-#     # Sort study dates (no formatting applied)
-#     sorted_study_dates = sorted(study_date_set)
-
-#     # Pagination
-#     paginator = Paginator(filtered_data, 50)  # Show 50 entries per page
-#     page_number = request.GET.get('page')
-#     page_obj = paginator.get_page(page_number)
-
-#     context = {
-#         'filtered_data': page_obj,
-#         'Test_Dates': sorted_study_dates,  # Pass the sorted study dates directly
-#         'radiologists': radiologist_objects,
-#     }
-
-#     return render(request, 'users/review_page.html', context)
-
-
 def review_page(request):
-    dicom_data_objects = DICOMData.objects.filter(twostepcheck=True).order_by('-id')
+    # Fetch all DICOMData objects with twostepcheck=True
+    dicom_data_objects = DICOMData.objects.filter(twostepcheck=True, isDone=True).order_by('-id')
     study_date_set = set()
 
-    radiologist_filter = request.GET.get('radiologist')
-    if radiologist_filter:
-        dicom_data_objects = dicom_data_objects.filter(radiologist__id=radiologist_filter)
+    # If a radiologist filter is applied, filter the patients
+    radiologist_filter = request.GET.get('radiologist', None)
+    # if radiologist_filter:
+    #     #patients = patients.filter(radiologist__user__first_name__icontains=radiologist_filter)
+    #     patients = patients.filter(radiologist__id__in=[radiologist_filter])
 
+    # ***************************update on 01-05-25*************************************
+    if radiologist_filter:
+       dicom_data_objects = dicom_data_objects.filter(radiologist__id=radiologist_filter)
+    
+
+    # Get radiologists from the group
     radiologist_group = Group.objects.get(name='radiologist')
+    # radiologist_objects = radiologist_group.user_set.all()
     radiologist_objects = radiologist_group.user_set.filter(personalinfo__isnull=False)
 
+    # Prepare filtered data
     filtered_data = []
     bucket_name = 'u4rad-s3-reporting-bot'
 
     for dicom_data in dicom_data_objects:
-        # JPEG URLs
+        # Fetch related JPEG files
         jpeg_files = dicom_data.jpeg_files.all()
-        jpeg_urls = [presigned_url(bucket_name, jpeg.jpeg_file.name) for jpeg in jpeg_files]
+        jpeg_urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
 
-        # History file URLs
-        history_files = dicom_data.history_files.all()
-        history_urls = [presigned_url(bucket_name, h.history_file.name, inline=True) for h in history_files]
+        # Fetch related PDF reports
+        patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_")
+        patient_id_with_underscores = dicom_data.patient_id.replace(" ", "_")
+        test_date_obj = datetime.strptime(dicom_data.study_date, "%d-%m-%Y").date()
 
-        # Convert study_date (dd-mm-yyyy) to date object
-        try:
-            study_date_obj = datetime.strptime(dicom_data.study_date, "%d-%m-%Y").date()
-        except (ValueError, TypeError):
-            study_date_obj = None
-
-        # Normalize patient name/id for matching
-        patient_name_clean = dicom_data.patient_name.replace(" ", "_")
-        patient_id_clean = dicom_data.patient_id.replace(" ", "_")
-
-        # Fetch related PDFs using patient info and test_date
-        pdf_qs = XrayReport.objects.filter(
-            name=patient_name_clean,
-            patient_id=patient_id_clean
+        pdf_reports = XrayReport.objects.filter(
+            test_date=test_date_obj, name=patient_name_with_underscores, patient_id=patient_id_with_underscores
         )
-        if study_date_obj:
-            pdf_qs = pdf_qs.filter(test_date=study_date_obj)
+        pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
 
-        pdf_urls = [presigned_url(bucket_name, pdf.pdf_file.name, inline=True) for pdf in pdf_qs]
+        # Fetch related history files
+        history_files = dicom_data.history_files.all()
+        history_file_urls = [
+            presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+        ]
 
+        # Collect data for rendering
         filtered_data.append({
             'dicom_data': dicom_data,
             'jpeg_urls': jpeg_urls,
             'pdf_urls': pdf_urls,
-            'history_file_urls': history_urls,
-            'report_date': pdf_qs.first().report_date if pdf_qs.exists() else None,
-            'test_date': pdf_qs.first().test_date if pdf_qs.exists() else None,
+            'history_file_urls': history_file_urls,
+            'report_date': pdf_reports.first().report_date if pdf_reports.exists() else None,
+            'test_date': pdf_reports.first().test_date if pdf_reports.exists() else None,
         })
 
-        # Track unique study dates
+        print(filtered_data)
+
+        # Collect unique study dates
         if dicom_data.study_date:
             study_date_set.add(dicom_data.study_date)
 
-    # Sort dates and paginate
+    # Sort study dates (no formatting applied)
     sorted_study_dates = sorted(study_date_set)
-    paginator = Paginator(filtered_data, 50)
-    page_obj = paginator.get_page(request.GET.get('page'))
+
+    # Pagination
+    paginator = Paginator(filtered_data, 50)  # Show 50 entries per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     context = {
         'filtered_data': page_obj,
-        'Test_Dates': sorted_study_dates,
+        'Test_Dates': sorted_study_dates,  # Pass the sorted study dates directly
         'radiologists': radiologist_objects,
     }
 
