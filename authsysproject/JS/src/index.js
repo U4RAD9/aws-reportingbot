@@ -4223,7 +4223,7 @@ UploadDivContentOnPDFWithoutImage() {
   
     button.onclick = () => {
       console.log("Single page pdf without image uploaded");
-      this.GetDivContentOnPDFWithoutImage();
+      this.UploadDivContentOnPDFWithoutImage();
     };
   
     return button;
