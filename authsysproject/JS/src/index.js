@@ -252,6 +252,8 @@ class App extends Component {
    this.getHeaderFooterImages=this.getHeaderFooterImages.bind(this);
    this.slab=this.slab.bind(this);
    this.downloadAsJPEG=this.downloadAsJPEG.bind(this);
+   
+ this.createUploadPDFButton=this.createUploadPDFButton.bind(this);
     
   }
   allowDrop(event){
@@ -304,18 +306,40 @@ class App extends Component {
     });
   }
     // Function to download selected viewport as JPEG
+// downloadAsJPEG(element) {
+//   html2canvas(element, { allowTaint: true }).then(function (canvas) {
+//     // Convert canvas to JPEG data URL
+//     const jpegImageUrl = canvas.toDataURL('image/jpeg');
+
+//     // Create a link element and trigger download
+//     const link = document.createElement('a');
+//     link.href = jpegImageUrl;
+//     link.download = 'captured-screenshot.jpeg';
+//     link.click();
+//   });
+// }
 downloadAsJPEG(element) {
   html2canvas(element, { allowTaint: true }).then(function (canvas) {
     // Convert canvas to JPEG data URL
     const jpegImageUrl = canvas.toDataURL('image/jpeg');
+    const urlParams = new URLSearchParams(window.location.search);
+  
+    const patientName = urlParams.get("data-patientname");
+    const patientid = urlParams.get("data-patientid");
+    
+    // Sanitize file name to remove invalid characters
+const sanitizedPatientName = patientName.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+const sanitizedPatientId = patientid.replace(/[^a-z0-9]/gi, "_").toLowerCase();
 
-    // Create a link element and trigger download
-    const link = document.createElement('a');
-    link.href = jpegImageUrl;
-    link.download = 'captured-screenshot.jpeg';
-    link.click();
+// Create a link element and trigger download
+const link = document.createElement('a');
+link.href = jpegImageUrl;
+link.download = `${sanitizedPatientId}_
+${sanitizedPatientName}.jpeg`;
+link.click();
   });
 }
+
 
   
   //function to toggle full screen settings for viewer, changes css settings for div with ID page-content and for CKEditor
@@ -4163,6 +4187,48 @@ UploadDivContentOnPDFWithoutImage() {
     document.body.removeChild(link);
   }
 
+  createUploadPDFButton() {
+    const button = document.createElement("button");
+    button.innerText = "Finalize Report";
+    button.style.background = "linear-gradient(135deg, #4f46e5, #3b82f6)";
+    button.style.color = "white";
+    button.style.fontWeight = "600";
+    button.style.border = "none";
+    button.style.borderRadius = "12px";
+    button.style.padding = "12px 24px";
+    button.style.fontSize = "16px";
+    button.style.cursor = "pointer";
+    button.style.transition = "all 0.3s ease";
+    button.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+  
+    button.onmouseenter = () => {
+      button.style.background = "linear-gradient(135deg, #4338ca, #2563eb)";
+      button.style.transform = "translateY(-2px)";
+      button.style.boxShadow = "0 6px 16px rgba(0, 0, 0, 0.2)";
+    };
+  
+    button.onmouseleave = () => {
+      button.style.background = "linear-gradient(135deg, #4f46e5, #3b82f6)";
+      button.style.transform = "translateY(0)";
+      button.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+    };
+  
+    button.onmousedown = () => {
+      button.style.transform = "scale(0.97)";
+    };
+  
+    button.onmouseup = () => {
+      button.style.transform = "translateY(-2px)";
+    };
+  
+    button.onclick = () => {
+      console.log("Single page pdf without image uploaded");
+      this.GetDivContentOnPDFWithoutImage();
+    };
+  
+    return button;
+  }
+
   ActionEvents(evt) {
     let nindex = evt.target.selectedIndex;
     let label = evt.target[nindex].text;
@@ -4598,7 +4664,7 @@ this.allowDrop(e)} onDrop={e => this.drop(e)}></div>
       ""
     )}
    
-   <CKEditor
+   {/* <CKEditor
   editor={DecoupledEditor}
   data={reportFrmData}
   onInit={(editor) => {
@@ -4797,7 +4863,831 @@ saveTemplateButton.onclick = async () => {
       editor.ui.view.toolbar.element.appendChild(customToolbar);
     }
   }}
-/>
+/> */}
+
+<CKEditor
+  editor={DecoupledEditor}
+  data={reportFrmData}
+  onInit={(editor) => {
+    editor.onclick = this.onclickDiv;
+    window.editor = editor;
+    editor.allowedContent = true;
+    editor.config.extraAllowedContent = '*(*);*{*}';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentStudyId = urlParams.get('data-study-id');
+    const currentUser = current_user.username;
+
+    if (!currentStudyId) {
+      console.warn('No study ID found in the URL.');
+      return;
+    }
+ // Session storage setup
+ const storageKey = `editor_content_${currentStudyId}`;
+
+ // Function to save content to session storage
+ const saveToSessionStorage = (content) => {
+   sessionStorage.setItem(storageKey, content);
+ };
+
+ // Function to load content from session storage
+ const loadFromSessionStorage = () => {
+   return sessionStorage.getItem(storageKey);
+ };
+
+ // Add change handler to save content to session storage when it changes
+ editor.model.document.on('change:data', () => {
+   const content = editor.getData();
+   saveToSessionStorage(content);
+ });
+
+ // Clear session storage on page unload
+ window.addEventListener('beforeunload', () => {
+   sessionStorage.removeItem(storageKey);
+ });
+
+
+
+    // fetchEditorContent();
+    const fetchEditorContent = async () => {
+      try {
+        // First check session storage
+        const sessionContent = loadFromSessionStorage();
+        if (sessionContent) {
+          editor.setData(sessionContent);
+          return;
+        }
+
+        // If not in session storage, fetch from server
+        const response = await fetch(`/get-editor-content/${currentStudyId}/`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        if (data.error) {
+          console.warn('Server returned error:', data.error);
+          editor.setData('');
+          return;
+        }
+    
+        if (data.editor_content) {
+          editor.setData(data.editor_content);
+          // Save to session storage
+          saveToSessionStorage(data.editor_content);
+        } else {
+          editor.setData('');
+        }
+      } catch (error) {
+        console.error('Error fetching editor content:', error);
+        editor.setData('');
+      }
+    };
+
+    fetchEditorContent();
+
+
+    const toolbarContainer = document.querySelector('.document-editor__toolbar');
+
+    if (!toolbarContainer.querySelector('.custom-toolbar')) {
+      const customToolbar = document.createElement('div');
+      customToolbar.classList.add('custom-toolbar');
+      customToolbar.style.cssText = `
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        align-items: center;
+      `;
+
+      const buttonsContainer = document.createElement('div');
+      buttonsContainer.style.cssText = `
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      `;
+
+      // Save Report Button
+      const saveReportButton = document.createElement('button');
+      saveReportButton.innerHTML = `<i class="fas fa-save"></i> Draft Report`;
+      saveReportButton.className = 'toolbar-button';
+      saveReportButton.style.cssText = `
+        padding: 6px 12px;
+        background: #2196F3;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 13px;
+        margin-right: 10px;
+      `;
+
+    // Add CSRF token to save report button click handler
+// saveReportButton.onclick = async () => {
+//   try {
+//     // Get CSRF token
+//     const csrfResponse = await fetch("/get-csrf-token/");
+//     const csrfData = await csrfResponse.json();
+//     const csrfToken = csrfData.csrf_token;
+
+//     const content = editor.getData();
+//     const response = await fetch('/save-editor-content/', {
+//       method: 'POST',
+//       headers: { 
+//         'Content-Type': 'application/json',
+//         'X-CSRFToken': csrfToken // Add CSRF token header
+//       },
+//       body: JSON.stringify({
+//         study_id: currentStudyId,
+//         editor_content: content,
+//         username: currentUser,
+//         create_new_version: true
+//       }),
+//     });
+
+//     if (response.ok) {
+//       alert('Report saved successfully');
+//     } else {
+//       throw new Error('Failed to save report');
+//     }
+//   } catch (error) {
+//     console.error('Error saving report:', error);
+//     alert('Error saving report');
+//   }
+// };
+  // Update save report button to clear session storage after save
+  saveReportButton.onclick = async () => {
+    try {
+      const csrfResponse = await fetch("/get-csrf-token/");
+      const csrfData = await csrfResponse.json();
+      const csrfToken = csrfData.csrf_token;
+
+      const content = editor.getData();
+      const response = await fetch('/save-editor-content/', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken 
+        },
+        body: JSON.stringify({
+          study_id: currentStudyId,
+          editor_content: content,
+          username: currentUser,
+          create_new_version: true
+        }),
+      });
+
+      if (response.ok) {
+        alert('Report saved successfully');
+        // Clear session storage after successful save
+        sessionStorage.removeItem(storageKey);
+      } else {
+        throw new Error('Failed to save report');
+      }
+    } catch (error) {
+      console.error('Error saving report:', error);
+      alert('Error saving report');
+    }
+  };
+      // Versions Button
+      const versionButton = document.createElement('button');
+      versionButton.innerHTML = `<i class="fas fa-history"></i> Versions`;
+      versionButton.className = 'toolbar-button';
+      versionButton.style.cssText = `
+        padding: 6px 12px;
+        background: #2196F3;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 13px;
+      `;
+
+      // Versions Modal
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+        min-width: 600px;
+        max-height: 80vh;
+        overflow-y: auto;
+      `;
+
+      versionButton.onclick = async () => {
+        try {
+          const studyId = new URLSearchParams(window.location.search).get('data-study-id');
+          if (!studyId) throw new Error('No study ID found');
+
+          modal.innerHTML = '<div style="text-align: center;">Loading versions...</div>';
+          modal.style.display = 'block';
+
+          const response = await fetch(`/get-version-list/${studyId}/`);
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          
+          const data = await response.json();
+          if (!data.versions?.length) {
+            modal.innerHTML = `
+              <div style="text-align: center; padding: 20px;">
+                <p>No versions found for this study.</p>
+                <button onclick="this.parentElement.parentElement.style.display='none'"
+                  style="padding: 5px 10px; margin-top: 10px;">Close</button>
+              </div>`;
+            return;
+          }
+
+          modal.innerHTML = `
+            <div class="versions-modal">
+              <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0">Report Versions</h3>
+                <button onclick="this.parentElement.parentElement.parentElement.style.display='none'"
+                  style="border:none; background:none; font-size:20px; cursor:pointer;">×</button>
+              </div>
+              <table style="width:100%; border-collapse:collapse;">
+                <thead>
+                  <tr>
+                    <th style="padding:10px; text-align:left; border-bottom:2px solid #eee;">Version</th>
+                    <th style="padding:10px; text-align:left; border-bottom:2px solid #eee;">Created By</th>
+                    <th style="padding:10px; text-align:left; border-bottom:2px solid #eee;">Date & Time</th>
+                    <th style="padding:10px; text-align:center; border-bottom:2px solid #eee;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${data.versions.map(v => `
+                    <tr>
+                      <td style="padding:10px; border-bottom:1px solid #eee;">Version ${v.version}</td>
+                      <td style="padding:10px; border-bottom:1px solid #eee;">${v.username}</td>
+                      <td style="padding:10px; border-bottom:1px solid #eee;">${new Date(v.created_at).toLocaleString()}</td>
+                      <td style="padding:10px; border-bottom:1px solid #eee; text-align:center;">
+                        <button onclick="loadVersion('${studyId}', ${v.version})"
+                          style="padding:5px 10px; background:#4CAF50; color:white; border:none; border-radius:4px; cursor:pointer;">
+                          Load Version
+                        </button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>`;
+
+        } catch (error) {
+          console.error('Error loading versions:', error);
+          modal.innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+              <p style="color: red;">Error loading versions: ${error.message}</p>
+              <button onclick="this.parentElement.parentElement.style.display='none'"
+                style="padding: 5px 10px; margin-top: 10px;">Close</button>
+            </div>`;
+        }
+      };
+
+      // // Load Version Function
+      // window.loadVersion = async (studyId, version) => {
+      //   try {
+      //     const response = await fetch(`/get-editor-content/${studyId}/?version=${version}`);
+      //     const data = await response.json();
+      //     editor.setData(data.editor_content);
+      //     modal.style.display = 'none';
+      //   } catch (error) {
+      //     console.error('Error loading version:', error);
+      //   }
+      // };
+      window.loadVersion = async (studyId, version) => {
+        try {
+          const response = await fetch(`/get-editor-content/${studyId}/?version=${version}`);
+          const data = await response.json();
+          editor.setData(data.editor_content);
+          // Save loaded version to session storage
+          saveToSessionStorage(data.editor_content);
+          modal.style.display = 'none';
+        } catch (error) {
+          console.error('Error loading version:', error);
+        }
+      };
+
+      document.body.appendChild(modal);
+
+      // Template Dropdown
+     
+      
+      // Styled "Manage Templates" Button
+const templateButton = document.createElement('button');
+templateButton.innerHTML = `<i class="fas fa-file-alt"></i> personal templates`;
+templateButton.className = 'toolbar-button';
+templateButton.style.cssText = `
+  padding: 6px 12px;
+  background: #673AB7;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+`;
+
+// Modal for Templates
+const templateModal = document.createElement('div');
+templateModal.style.cssText = `
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  z-index: 1000;
+  min-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+`;
+document.body.appendChild(templateModal);
+
+// // Open Modal and Load Templates
+// templateButton.onclick = async () => {
+//   try {
+//     templateModal.innerHTML = '<div style="text-align:center;">Loading templates...</div>';
+//     templateModal.style.display = 'block';
+
+//     const response = await fetch('/save-template/');
+//     const data = await response.json();
+
+//     if (!data.templates?.length) {
+//       templateModal.innerHTML = `
+//         <div style="text-align: center; background: white; padding: 20px;">
+//           <p>No templates found.</p>
+//           <button onclick="this.parentElement.parentElement.style.display='none'"
+//             style="padding: 5px 10px; margin-top: 10px;">Close</button>
+//         </div>`;
+//       return;
+//     }
+
+//     templateModal.innerHTML = `
+//       <div class="template-modal">
+//         <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+//           <h3 style="margin:0">Templates</h3>
+//           <button onclick="this.parentElement.parentElement.parentElement.style.display='none'"
+//             style="border:none; background:none; font-size:20px; cursor:pointer;">×</button>
+//         </div>
+//         <table style="width:100%; border-collapse:collapse;">
+//           <thead>
+//             <tr>
+//               <th style="padding:10px; text-align:left; border-bottom:2px solid #eee;">Template Name</th>
+//               <th style="padding:10px; text-align:center; border-bottom:2px solid #eee;">Actions</th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             ${data.templates.map(t => `
+//               <tr>
+//                 <td style="padding:10px; border-bottom:1px solid #eee;">${t.name}</td>
+//                 <td style="padding:10px; border-bottom:1px solid #eee; text-align:center;">
+//                   <button onclick="loadTemplate('${t.id}')"
+//                     style="padding:5px 10px; background:#4CAF50; color:white; border:none; border-radius:4px; cursor:pointer;">
+//                     Insert
+//                   </button>
+//                 </td>
+//               </tr>
+//             `).join('')}
+//           </tbody>
+//         </table>
+//       </div>`;
+//   } catch (error) {
+//     console.error('Error loading templates:', error);
+//     templateModal.innerHTML = `
+//       <div style="text-align: center; padding: 20px;">
+//         <p style="color: red;">Error loading templates: ${error.message}</p>
+//         <button onclick="this.parentElement.parentElement.style.display='none'"
+//           style="padding: 5px 10px; margin-top: 10px;">Close</button>
+//       </div>`;
+//   }
+// };
+templateButton.onclick = async () => {
+  try {
+    templateModal.innerHTML = '<div style="text-align:center;">Loading templates...</div>';
+    templateModal.style.display = 'block';
+
+    const response = await fetch('/save-template/');
+    const data = await response.json();
+
+    if (!data.templates?.length) {
+      templateModal.innerHTML = `
+        <div style="text-align: center; background: white; padding: 20px; border-radius: 8px;">
+          <p style="color: red; font-weight: bold;">No templates found.</p>
+          <button onclick="this.parentElement.parentElement.style.display='none'"
+            style="padding: 6px 12px; margin-top: 10px; border-radius: 4px; border: none; background: #ccc; cursor: pointer;">
+            Close
+          </button>
+        </div>`;
+      return;
+    }
+
+    // Store templates for search
+    let allTemplates = data.templates;
+
+    // const renderTemplates = (templates) => {
+    //   const rows = templates.map(t => `
+    //    <tr>
+    //   <td style="padding:10px; font-size:20px; color:red; ">${t.name}</td>
+    //   <td style="padding:10px; text-align:center;">
+
+    //     <button onclick="loadTemplate('${t.id}')"
+    //       style="padding:5px 10px; background:#4CAF50; color:white; border:none; border-radius:4px; cursor:pointer;">
+    //       Insert
+    //     </button>
+    //   </td>
+    // </tr>
+    //   `).join('');
+
+
+    //   return rows || `<tr><td colspan="2" style="text-align:center; padding:20px; color:red;">No templates match your search.</td></tr>`;
+    // };
+    // const renderTemplates = (templates) => {
+    //   const rows = templates.map(t => `
+    //     <tr style="background-color: white;">
+    //       <td style="padding:10px; font-size:20px; color:blue; background-color: white;">${t.name}</td>
+    //       <td style="padding:10px; text-align:center; background-color: white;">
+    //         <button onclick="loadTemplate('${t.id}')"
+    //           style="padding:5px 10px; background:#4CAF50; color:white; border:none; border-radius:4px; cursor:pointer;">
+    //           Insert
+    //         </button>
+    //       </td>
+    //     </tr>
+    //   `).join('');
+    
+    //   return rows || `<tr style="background-color: white;"><td colspan="2" style="text-align:center; padding:20px; color:red;">No templates match your search.</td></tr>`;
+    // };
+    // const renderTemplates = (templates) => {
+    //   const rows = templates.map(t => `
+    //     <tr style="background-color: white;">
+    //       <td style="
+    //         padding: 15px;
+    //         font-size: 20px;
+    //         color: #2c3e50;
+    //         background-color: white;
+    //         border: 2px solid #e0e0e0;
+    //         border-radius: 8px;
+    //         margin: 5px;
+    //         position: relative;
+    //         overflow: hidden;
+    //         transition: all 0.3s ease;
+    //         cursor: pointer;
+    //       "
+    //       onmouseover="this.style.transform='translateX(10px)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.1)'"
+    //       onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='none'"
+    //       class="template-cell">
+    //         ${t.name}
+    //         <div style="
+    //           position: absolute;
+    //           top: 0;
+    //           left: -100%;
+    //           width: 100%;
+    //           height: 100%;
+    //           background: linear-gradient(
+    //             to right,
+    //             rgba(255,223,186,0),
+    //             rgba(255,223,186,0.3),
+    //             rgba(255,223,186,0)
+    //           );
+    //           animation: shine 2s infinite;
+    //         "></div>
+    //       </td>
+    //       <td style="
+    //         padding: 10px;
+    //         text-align: center;
+    //         background-color: white;
+    //         vertical-align: middle;
+    //       ">
+    //         <button onclick="loadTemplate('${t.id}')"
+    //           style="
+    //             padding: 8px 16px;
+    //             background: #4CAF50;
+    //             color: white;
+    //             border: none;
+    //             border-radius: 4px;
+    //             cursor: pointer;
+    //             transition: all 0.3s ease;
+    //             font-weight: bold;
+    //           "
+    //           onmouseover="this.style.transform='scale(1.05)'"
+    //           onmouseout="this.style.transform='scale(1)'">
+    //           Insert
+    //         </button>
+    //       </td>
+    //     </tr>
+    //   `).join('');
+    
+    //   // Add CSS animation for the gradient effect
+    //   const style = `
+    //     <style>
+    //       @keyframes shine {
+    //         0% {
+    //           left: -100%;
+    //         }
+    //         20% {
+    //           left: 100%;
+    //         }
+    //         100% {
+    //           left: 100%;
+    //         }
+    //       }
+    //       .template-cell:hover {
+    //         background: linear-gradient(to right, #ffffff, #fff9e6) !important;
+    //       }
+    //     </style>
+    //   `;
+    
+    //   return style + (rows || `
+    //     <tr style="background-color: white;">
+    //       <td colspan="2" style="
+    //         text-align: center;
+    //         padding: 20px;
+    //         color: red;
+    //         border: 2px solid #ffcdd2;
+    //         border-radius: 8px;
+    //         background-color: #ffebee;
+    //       ">
+    //         No templates match your search.
+    //       </td>
+    //     </tr>
+    //   `);
+    // };
+
+
+    const renderTemplates = (templates) => {
+      const rows = templates.map(t => `
+        <tr style="background-color: white;">
+          <td colspan="2" style="
+            padding: 15px;
+            font-size: 20px;
+            color: #2c3e50;
+            background-color: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin: 5px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+          "
+          class="template-cell">
+            <span style="flex-grow: 1;">${t.name}</span>
+            <button onclick="loadTemplate('${t.id}')"
+              class="insert-button"
+              style="
+                padding: 8px 16px;
+                background: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-weight: bold;
+                margin-left: 10px;
+              ">
+              Insert
+            </button>
+            <div class="gradient-overlay"></div>
+          </td>
+        </tr>
+      `).join('');
+    
+      const style = `
+        <style>
+          .template-cell {
+            position: relative;
+            overflow: hidden;
+          }
+    
+          .gradient-overlay {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(
+              to right,
+              transparent 0%,
+              rgba(255, 235, 59, 0.2) 25%,
+              rgba(255, 235, 59, 0.3) 50%,
+              rgba(255, 235, 59, 0.2) 75%,
+              transparent 100%
+            );
+            animation: shine 2s infinite;
+            pointer-events: none;
+          }
+    
+          @keyframes shine {
+            0% {
+              transform: translateX(-100%);
+            }
+            100% {
+              transform: translateX(100%);
+            }
+          }
+    
+          .template-cell:hover {
+            transform: translateX(10px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            background: linear-gradient(
+              to right,
+              #ffffff,
+              #fff9c4
+            ) !important;
+          }
+    
+          .insert-button:hover {
+            background: #ff5252 !important;
+            transform: scale(1.05);
+          }
+        </style>
+      `;
+    
+      return style + (rows || `
+        <tr style="background-color: white;">
+          <td colspan="2" style="
+            text-align: center;
+            padding: 20px;
+            color: red;
+            border: 2px solid #ffcdd2;
+            border-radius: 8px;
+            background-color: #ffebee;
+          ">
+            No templates match your search.
+          </td>
+        </tr>
+      `);
+    };
+
+    templateModal.innerHTML = `
+      <div class="template-modal" style="background:white; border-radius:8px;">
+        <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h3 style="margin:0">Templates</h3>
+          <button onclick="this.parentElement.parentElement.parentElement.style.display='none'"
+            style="border:none; background:none; font-size:20px; cursor:pointer;">×</button>
+        </div>
+
+        <input type="text" placeholder="Search template..."
+          id="template-search"
+          style="width: 100%; padding: 8px 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px;" />
+
+        <table style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr>
+              // <th style="padding:10px; text-align:left; border-bottom:2px ;">Template Name</th>
+              // <th style="padding:10px; text-align:center; border-bottom:2px;">Actions</th>
+              
+            </tr>
+          </thead>
+          <tbody id="template-table-body">
+            ${renderTemplates(allTemplates)}
+          </tbody>
+        </table>
+      </div>`;
+
+    // Add search functionality
+    const searchInput = document.getElementById('template-search');
+    const tableBody = document.getElementById('template-table-body');
+    searchInput.addEventListener('input', (e) => {
+      const searchText = e.target.value.toLowerCase();
+      const filtered = allTemplates.filter(t => t.name.toLowerCase().includes(searchText));
+      tableBody.innerHTML = renderTemplates(filtered);
+    });
+
+  } catch (error) {
+    console.error('Error loading templates:', error);
+    templateModal.innerHTML = `
+      <div style="text-align: center; padding: 20px; background:white;">
+        <p style="color: red; font-weight: bold;">Error loading templates: ${error.message}</p>
+        <button onclick="this.parentElement.parentElement.style.display='none'"
+          style="padding: 6px 12px; margin-top: 10px; border-radius: 4px; border: none; background: #ccc; cursor: pointer;">
+          Close
+        </button>
+      </div>`;
+  }
+};
+
+// Load template content and insert into editor
+window.loadTemplate = async (templateId) => {
+  try {
+    const response = await fetch(`/get-template/${templateId}/`);
+    const data = await response.json();
+    if (data.template_content) {
+      editor.model.change((writer) => {
+        const viewFragment = editor.data.processor.toView(data.template_content);
+        const modelFragment = editor.data.toModel(viewFragment);
+        editor.model.insertContent(modelFragment, editor.model.document.selection);
+      });
+      templateModal.style.display = 'none';
+    }
+  } catch (error) {
+    console.error('Error loading template:', error);
+    alert('Failed to load template.');
+  }
+};
+
+// Save Template Button
+const saveTemplateButton = document.createElement('button');
+saveTemplateButton.innerHTML = `<i class="fas fa-save"></i> Save Template`;
+saveTemplateButton.className = 'toolbar-button';
+saveTemplateButton.style.cssText = `
+  padding: 6px 12px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+`;
+
+saveTemplateButton.onclick = async () => {
+  const templateName = prompt('Enter template name:');
+  if (templateName) {
+    try {
+      const selection = editor.model.document.selection;
+      const range = selection.getFirstRange();
+
+      if (!range) {
+        alert('Please select content to save as template');
+        return;
+      }
+
+      const viewFragment = editor.data.toView(editor.model.getSelectedContent(selection));
+      const selectedContent = editor.data.processor.toData(viewFragment);
+
+      if (!selectedContent.trim()) {
+        alert('Selected content is empty');
+        return;
+      }
+
+      await fetch('/save-template/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: templateName,
+          content: selectedContent
+        }),
+      });
+
+      alert('Template saved successfully');
+    } catch (error) {
+      console.error('Error saving template:', error);
+      alert('Error saving template');
+    }
+  }
+};
+
+
+
+
+
+      // Add Buttons to Toolbar
+      buttonsContainer.appendChild(saveReportButton);
+      buttonsContainer.appendChild(versionButton);
+      buttonsContainer.appendChild(templateButton);
+      buttonsContainer.appendChild(saveTemplateButton);
+
+      // Add Existing Custom Buttons
+      const existingButtons = document.createElement('div');
+      existingButtons.style.display = 'flex';
+      existingButtons.style.gap = '10px';
+      // existingButtons.appendChild(this.copyAction());
+      existingButtons.appendChild(this.choose());
+      // existingButtons.appendChild(this.actionDropDown());
+      existingButtons.appendChild(this.createUploadPDFButton());
+      existingButtons.appendChild(this.userDropdown());
+
+      // Combine Elements
+      customToolbar.appendChild(buttonsContainer);
+      customToolbar.appendChild(existingButtons);
+
+      // Add to Toolbar Container
+      toolbarContainer.appendChild(editor.ui.view.toolbar.element);
+      editor.ui.view.toolbar.element.appendChild(customToolbar);
+    }
+  }}
+/> 
 
 
   </div>)}
