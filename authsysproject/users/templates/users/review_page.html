@@ -545,12 +545,21 @@
                                       No History Files
                                   {% endif %}
                               </td>
-                              <td>
+                              <!-- <td>
                                   <button class="twostepcheck-button btn btn-sm" 
                                           data-patient-id="{{ data.dicom_data.patient_id }}" 
                                           style="background-color: {% if data.dicom_data.twostepcheck %}red{% else %}green{% endif %}; color: white;">
                                       {% if data.dicom_data.twostepcheck %}Ready to Go{% else %}Pending{% endif %}
                                   </button>
+                              </td> -->
+                              <td>
+                                <button class="twostepcheck-button btn btn-sm" 
+                                        data-patient-id="{{ data.dicom_data.patient_id }}"
+                                        data-patient-name="{{ data.dicom_data.patient_name }}"
+                                        data-study-date="{{ data.dicom_data.study_date }}"
+                                        style="background-color: {% if data.dicom_data.twostepcheck %}red{% else %}green{% endif %}; color: white;">
+                                  {% if data.dicom_data.twostepcheck %}Ready to Go{% else %}Pending{% endif %}
+                                </button>
                               </td>
                               <td>
                                   {% for radiologist in data.dicom_data.radiologist.all %}
@@ -1024,7 +1033,7 @@
     });
   </script> -->
 
-  <script>
+  <!-- <script>
     document.addEventListener("DOMContentLoaded", function () {
       const csrfToken = '{{ csrf_token }}'; // CSRF token for Django
   
@@ -1093,8 +1102,83 @@
         'Not Reported Yet'
       );
     });
-  </script>
+  </script> -->
   
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const csrfToken = '{{ csrf_token }}';
+    
+      // Universal handler for all buttons
+      function handleButtonClick(buttonClass, endpoint, activeText, inactiveText, needsFullParams = false) {
+        document.querySelectorAll(`.${buttonClass}`).forEach(button => {
+          button.addEventListener('click', function() {
+            // Common payload structure
+            const payload = {
+              status: !(this.style.backgroundColor === 'red')
+            };
+    
+            // Add parameters based on button requirements
+            if(needsFullParams) {
+              payload.patient_id = this.dataset.patientId;
+              payload.patient_name = this.dataset.patientName;
+              payload.study_date = this.dataset.studyDate;
+            } else {
+              payload.patient_id = this.dataset.patientId;
+            }
+    
+            // Determine endpoint URL pattern
+            const url = needsFullParams 
+              ? `/${endpoint}/`
+              : `/${endpoint}/${payload.patient_id}/`;
+    
+            fetch(url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+              },
+              body: JSON.stringify(payload)
+            })
+            .then(response => {
+              if (!response.ok) throw new Error('Network error');
+              return response.json();
+            })
+            .then(data => {
+              if (data.success) {
+                this.style.backgroundColor = data.new_status ? 'red' : 'green';
+                this.textContent = data.new_status ? activeText : inactiveText;
+              } else {
+                alert(`Error: ${data.error}`);
+              }
+            })
+            .catch(error => {
+              console.error('Update failed:', error);
+              alert('Failed to update status');
+            });
+          });
+        });
+      }
+    
+      // Initialize handlers
+      handleButtonClick(
+        'twostepcheck-button',
+        'update_twostepcheck',
+        'Ready to Go',
+        'Pending',
+        true // Requires full params
+      );
+      
+      handleButtonClick(
+        'isDone-button',
+        'update_isDone_status_xray',
+        'Reassign',
+        'Not Reported Yet',
+        false // Uses only patient_id
+      );
+    });
+  </script>
+
+
 </body>
 
 </html>

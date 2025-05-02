@@ -6618,18 +6618,56 @@ def corporate_doctor_dashboard(request):
     return render(request, 'users/corporate_doctor_dashboard.html', context)
 
 
-def update_twostepcheck(request, patient_id):
+# def update_twostepcheck(request, patient_id):
+#     try:
+#         data = json.loads(request.body)
+#         twostepcheck_status = data.get('status', False)
+
+#         patient = DICOMData.objects.get(patient_id=patient_id)
+#         patient.twostepcheck = twostepcheck_status
+#         patient.save()
+    
+#         return JsonResponse({'success': True, 'twostepcheck': patient.twostepcheck})
+#     except DICOMData.DoesNotExist:
+#         return JsonResponse({'success': False, 'error': 'Patient not found.'}, status=404)
+#     except Exception as e:
+#         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+def update_twostepcheck(request):
     try:
         data = json.loads(request.body)
-        twostepcheck_status = data.get('status', False)
+        
+        # Get all three parameters from request
+        patient_id = data.get('patient_id')
+        patient_name = data.get('patient_name')
+        study_date = data.get('study_date')
+        new_status = data.get('status', False)
 
-        patient = DICOMData.objects.get(patient_id=patient_id)
-        patient.twostepcheck = twostepcheck_status
+        # Validate required parameters
+        if not all([patient_id, patient_name, study_date]):
+            return JsonResponse({'success': False, 'error': 'Missing required parameters'}, status=400)
+
+        # Find the specific record using all three parameters
+        patient = DICOMData.objects.get(
+            patient_id=patient_id,
+            patient_name=patient_name,
+            study_date=study_date
+        )
+        
+        # Update only the twostepcheck status
+        patient.twostepcheck = new_status
         patient.save()
     
-        return JsonResponse({'success': True, 'twostepcheck': patient.twostepcheck})
+        return JsonResponse({
+            'success': True, 
+            'twostepcheck': patient.twostepcheck,
+            'patient_id': patient_id,
+            'study_date': study_date
+        })
+        
     except DICOMData.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Patient not found.'}, status=404)
+        return JsonResponse({'success': False, 'error': 'Patient not found'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
     
