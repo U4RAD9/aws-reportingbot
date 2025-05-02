@@ -133,6 +133,7 @@ from django.db.models.functions import TruncDate #by Rohan Jangid 28-05-2025
 india_tz = time("Asia/Kolkata")
 from django.views.decorators.http import require_http_methods #by Rohan Jangid 28-05-2025
 from pdf2docx import Converter
+from docx import Document
 import tempfile
 from django.http import FileResponse, Http404
 
@@ -5588,33 +5589,78 @@ def clientdata(request):
     })
 
 
+# def convert_pdf_to_word(request, report_id):
+#     try:
+#         # Get report
+#         report = XrayReport.objects.get(id=report_id)
+
+#         # Get presigned URL (your existing logic might already generate this)
+#         presigned_pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
+
+#         # Download PDF from S3 to a temporary file
+#         response = requests.get(presigned_pdf_url)
+#         if response.status_code != 200:
+#             return HttpResponse("Failed to download PDF from S3.", status=404)
+
+#         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
+#             temp_pdf.write(response.content)
+#             temp_pdf_path = temp_pdf.name
+
+#         # Create temp Word output path
+#         temp_docx = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
+#         temp_docx_path = temp_docx.name
+
+#         # Convert PDF to Word
+#         cv = Converter(temp_pdf_path)
+#         cv.convert(temp_docx_path, start=0, end=None)
+#         cv.close()
+
+#         # Return .docx file
+#         word_filename = report.pdf_file.name.replace(".pdf", ".docx").split('/')[-1]
+#         return FileResponse(open(temp_docx_path, 'rb'), as_attachment=True, filename=word_filename)
+
+#     except XrayReport.DoesNotExist:
+#         return HttpResponse("Report not found.", status=404)
+#     except Exception as e:
+#         return HttpResponse(f"Error: {str(e)}", status=500)
+
+
+
 def convert_pdf_to_word(request, report_id):
     try:
         # Get report
         report = XrayReport.objects.get(id=report_id)
 
-        # Get presigned URL (your existing logic might already generate this)
+        # Get presigned URL for the PDF
         presigned_pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
 
-        # Download PDF from S3 to a temporary file
+        # Download PDF from S3
         response = requests.get(presigned_pdf_url)
         if response.status_code != 200:
             return HttpResponse("Failed to download PDF from S3.", status=404)
 
+        # Write PDF to temporary file
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
             temp_pdf.write(response.content)
             temp_pdf_path = temp_pdf.name
 
-        # Create temp Word output path
-        temp_docx = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
-        temp_docx_path = temp_docx.name
+        # Prepare temporary DOCX path
+        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as temp_docx:
+            temp_docx_path = temp_docx.name
 
-        # Convert PDF to Word
+        # Convert PDF to DOCX
         cv = Converter(temp_pdf_path)
         cv.convert(temp_docx_path, start=0, end=None)
         cv.close()
 
-        # Return .docx file
+        # Optional: Re-save DOCX to ensure compatibility
+        try:
+            doc = Document(temp_docx_path)
+            doc.save(temp_docx_path)
+        except Exception as docx_error:
+            print("DOCX compatibility cleanup skipped due to error:", docx_error)
+
+        # Return the DOCX as download
         word_filename = report.pdf_file.name.replace(".pdf", ".docx").split('/')[-1]
         return FileResponse(open(temp_docx_path, 'rb'), as_attachment=True, filename=word_filename)
 
@@ -6668,7 +6714,7 @@ def update_twostepcheck(request, patient_id):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-        
+
 
 def update_NonReportable(request, patient_id):
     try:
