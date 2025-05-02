@@ -4,6 +4,33 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.4/jspdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+<script>
+  function exportToExcel() {
+    const rows = [];
+    
+    // Iterate through each patient entry
+    document.querySelectorAll('form ul li').forEach((li) => {
+      const row = [];
+      
+      // Collect data from all labels (visible and hidden)
+      li.querySelectorAll('label').forEach((label) => {
+        row.push(label.textContent);
+      });
+      
+      rows.push(row); // Add the row to the rows array
+    });
+    
+    // Create a workbook from the rows array
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, 'Patients Data');
+    
+    // Export the workbook to an Excel file
+    XLSX.writeFile(wb, 'patients_data.xlsx');
+  }
+</script>
+
 <script>
   var currentIndex = 0; // Index of currently selected patient
 
@@ -504,10 +531,12 @@
     <button class="btn btn-success col-lg-2" onclick="startProcess()">
       Start
     </button>
-    <form class="col-lg-2" method="post" action="{% url 'delete_all_patients_opto' %}">
+    <!-- <form class="col-lg-2" method="post" action="{% url 'delete_all_patients_opto' %}">
       {% csrf_token %}
       <button class="btn btn-danger" type="submit">Delete</button>
-    </form>
+    </form> -->
+    <button type="button" onclick="exportToExcel()">Export to Excel</button>
+
   
   </div>
   
