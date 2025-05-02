@@ -6634,43 +6634,41 @@ def corporate_doctor_dashboard(request):
 #         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-def update_twostepcheck(request):
+def update_twostepcheck(request, patient_id):
     try:
         data = json.loads(request.body)
         
-        # Get all three parameters from request
-        patient_id = data.get('patient_id')
+        # Get additional parameters from request body
         patient_name = data.get('patient_name')
         study_date = data.get('study_date')
         new_status = data.get('status', False)
 
-        # Validate required parameters
-        if not all([patient_id, patient_name, study_date]):
-            return JsonResponse({'success': False, 'error': 'Missing required parameters'}, status=400)
+        # Validate parameters
+        if not all([patient_name, study_date]):
+            return JsonResponse({'success': False, 'error': 'Missing parameters'}, status=400)
 
-        # Find the specific record using all three parameters
+        # Find the specific record
         patient = DICOMData.objects.get(
             patient_id=patient_id,
             patient_name=patient_name,
             study_date=study_date
         )
         
-        # Update only the twostepcheck status
+        # Update status
         patient.twostepcheck = new_status
         patient.save()
     
         return JsonResponse({
             'success': True, 
-            'twostepcheck': patient.twostepcheck,
-            'patient_id': patient_id,
-            'study_date': study_date
+            'twostepcheck': patient.twostepcheck
         })
         
     except DICOMData.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Patient not found'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-    
+
+        
 
 def update_NonReportable(request, patient_id):
     try:

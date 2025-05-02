@@ -1109,29 +1109,17 @@
       const csrfToken = '{{ csrf_token }}';
     
       // Universal handler for all buttons
-      function handleButtonClick(buttonClass, endpoint, activeText, inactiveText, needsFullParams = false) {
+      function handleButtonClick(buttonClass, endpoint, activeText, inactiveText) {
         document.querySelectorAll(`.${buttonClass}`).forEach(button => {
           button.addEventListener('click', function() {
-            // Common payload structure
             const payload = {
+              patient_name: this.dataset.patientName,
+              study_date: this.dataset.studyDate,
               status: !(this.style.backgroundColor === 'red')
             };
-    
-            // Add parameters based on button requirements
-            if(needsFullParams) {
-              payload.patient_id = this.dataset.patientId;
-              payload.patient_name = this.dataset.patientName;
-              payload.study_date = this.dataset.studyDate;
-            } else {
-              payload.patient_id = this.dataset.patientId;
-            }
-    
-            // Determine endpoint URL pattern
-            const url = needsFullParams 
-              ? `/${endpoint}/`
-              : `/${endpoint}/${payload.patient_id}/`;
-    
-            fetch(url, {
+      
+            // Use URL pattern with patient_id in path
+            fetch(`/${endpoint}/${this.dataset.patientId}/`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
