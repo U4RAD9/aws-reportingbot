@@ -737,20 +737,39 @@ def client_dashboard(request):
             twostepcheck=False
         )
 
-        # 🔹 Normalize patient IDs and names from DICOMData (replace spaces with underscores)
-        dicom_patient_ids = {entry.patient_id.replace(" ", "_") for entry in dicom_entries if entry.patient_id}
-        dicom_patient_names = {entry.patient_name.replace(" ", "_") for entry in dicom_entries if entry.patient_name}
+        # # 🔹 Normalize patient IDs and names from DICOMData (replace spaces with underscores)
+        # dicom_patient_ids = {entry.patient_id.replace(" ", "_") for entry in dicom_entries if entry.patient_id}
+        # dicom_patient_names = {entry.patient_name.replace(" ", "_") for entry in dicom_entries if entry.patient_name}
 
-        print("DICOM Patient IDs:", dicom_patient_ids)
-        print("DICOM Patient Names:", dicom_patient_names)
+        # print("DICOM Patient IDs:", dicom_patient_ids)
+        # print("DICOM Patient Names:", dicom_patient_names)
 
 
 
-        # 🔹 Filter XrayReport using normalized patient_id and name
-        pdfs = XrayReport.objects.filter(
-            Q(patient_id__in=dicom_patient_ids) |
-            Q(name__in=dicom_patient_names)
-        ).order_by('-id')
+        # # 🔹 Filter XrayReport using normalized patient_id and name
+        # pdfs = XrayReport.objects.filter(
+        #     Q(patient_id__in=dicom_patient_ids) |
+        #     Q(name__in=dicom_patient_names)
+        # ).order_by('-id')
+
+        # Collect normalized (patient_id, name) pairs from DICOMData
+        dicom_patient_pairs = set()
+        for entry in dicom_entries:
+            pid = entry.patient_id.replace(" ", "_").strip().upper() if entry.patient_id else ''
+            name = entry.patient_name.replace(" ", "_").strip().upper() if entry.patient_name else ''
+            if pid and name:
+                dicom_patient_pairs.add((pid, name))
+
+        # Build query for matching (patient_id, name) pairs
+        from django.db.models import Q
+        queries = [Q(patient_id=pid, name=name) for (pid, name) in dicom_patient_pairs]
+        pdfs = XrayReport.objects.none()
+
+        if queries:
+            combined_query = queries.pop()
+            for q in queries:
+                combined_query |= q
+            pdfs = XrayReport.objects.filter(combined_query).order_by('-id')
 
         # Apply search filter first
         if search_query:
@@ -764,21 +783,6 @@ def client_dashboard(request):
                 Q(location__icontains=search_query)
             )
 
-        # 🔹 Group by patient_id to get the latest report per patient
-        # grouped_pdfs = groupby(pdfs, key=attrgetter('patient_id'))
-
-        # for patient_id, group in grouped_pdfs:
-        #     group = list(group)  # Convert iterator to list
-        #     most_recent_pdf = group[0]  # First entry is the latest
-
-        #     # 🔹 Get corresponding DICOMData entry
-        #     dicom_data = dicom_entries.filter(patient_id=patient_id.replace("_", " ")).first()
-
-        #     if dicom_data:
-        #         most_recent_pdf.whatsapp_number = dicom_data.whatsapp_number
-        #         filtered_pdfs.append(most_recent_pdf)
-        #         test_dates_set.add(most_recent_pdf.test_date)
-        #         report_dates_set.add(most_recent_pdf.report_date)
 
 
         for pdf in pdfs:
