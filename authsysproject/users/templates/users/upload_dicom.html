@@ -503,7 +503,7 @@
               // Loop through each row in the table
               $('#patientTable tbody tr').each(function () {
                   var rowDate = $(this).find('td:nth-child(5)').text();
-                  var rowModality = $(this).find('td:nth-child(9)').text();
+                  var rowModality = ($(this).find('td:nth-child(9)').text() || "").trim().toLowerCase();
                   
                   
                   if ((selectedDate === '' || rowDate === selectedDate) && (selectedModality === '' || rowModality === selectedModality)) {
