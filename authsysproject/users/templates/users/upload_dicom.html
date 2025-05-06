@@ -170,7 +170,19 @@
             <th style="width: 150px;">Study Description</th>
             <th style="width: 150px;">Notes</th>
             <th style="width: 150px;">Body Part Examined</th>
-            <th style="width: 150px;">Modality</th>
+            <th style="width: 150px;">
+              <div class="filter-dropdown-container">
+                  <div>Modality</div>
+                    <div class="dropdown-select1" id="filter-modality-dropdown-modality">
+                        <select id="filter-modality-select-modality" class="form-control">
+                            <option value="">All</option>
+                            {% for Modality in modality %}
+                                <option value="{{ Modality }}">{{ Modality }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </th>
             <th style="width: 150px;">Referring Doctor Name</th>
             <th style="width: 150px;">WhatsApp Number</th>
             <th style="width: 150px;">History Files</th>
@@ -479,20 +491,22 @@
     <script>
       $(document).ready(function () {
           // Event handler for the change event of the test date dropdown
-          $('#filter-date-select-date').change(function () {
+          $('#filter-date-select-date', '#filter-modality-select-modality').change(function () {
               filterTable();
           });
     
           function filterTable() {
               var selectedDate = $('#filter-date-select-date').val();
+              var selectedModality = ($('#filter-modality-select-modality').val() || "").trim().toLowerCase();
               var visibleRowCount = 0;
     
               // Loop through each row in the table
               $('#patientTable tbody tr').each(function () {
                   var rowDate = $(this).find('td:nth-child(5)').text();
+                  var rowModality = $(this).find('td:nth-child(9)').text();
                   
                   
-                  if ((selectedDate === '' || rowDate === selectedDate)) {
+                  if ((selectedDate === '' || rowDate === selectedDate) && (selectedModality === '' || rowModality === selectedModality)) {
                       
                       $(this).show();
                       visibleRowCount++; // Increment visible row count

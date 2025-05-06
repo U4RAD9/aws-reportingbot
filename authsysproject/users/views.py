@@ -5566,6 +5566,9 @@ def clientdata(request):
     unique_dates = set(dicom.study_date for dicom in page_obj.object_list)
     sorted_unique_dates = sorted(unique_dates)
 
+    modality = set(dicom.Modality for dicom in page_obj.object_list)
+    sorted_modality = sorted(modality)
+
     # Get edit permissions for the client
     edit_permissions = {
         'patient_name': client.can_edit_patient_name,
@@ -5576,6 +5579,7 @@ def clientdata(request):
         'study_description': client.can_edit_study_description,
         'notes': client.can_edit_notes,
         'body_part_examined': client.can_edit_body_part_examined,
+        'modality': sorted_modality,
         'referring_doctor_name': client.can_edit_referring_doctor_name,
         'whatsapp_number': client.can_edit_whatsapp_number,
         'upload_history': True,  # Assuming all clients can upload history files
