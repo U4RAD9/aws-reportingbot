@@ -732,16 +732,10 @@ def client_dashboard(request):
         print("Institutions:", institution_names)
 
         # 🔹 Get all DICOMData entries for the client's institutions
-        # Add study_date filter to DICOMData queryset
-        study_date_filter = request.GET.get('study_date', None)
-        dicom_filter_kwargs = {
-            'institution_name__in': institution_names,
-            'twostepcheck': False
-        }
-        if study_date_filter:
-            dicom_filter_kwargs['study_date'] = study_date_filter
-
-        dicom_entries = DICOMData.objects.filter(**dicom_filter_kwargs)
+        dicom_entries = DICOMData.objects.filter(
+            institution_name__in=institution_names,
+            twostepcheck=False
+        )
 
         # 🔹 Normalize patient IDs and names from DICOMData (replace spaces with underscores)
         dicom_patient_ids = {entry.patient_id.replace(" ", "_") for entry in dicom_entries if entry.patient_id}
@@ -753,18 +747,10 @@ def client_dashboard(request):
 
 
         # 🔹 Filter XrayReport using normalized patient_id and name
-        # Add institution_name and test_date filter to XrayReport queryset
-        test_date_filter = request.GET.get('test_date', None)
-        pdf_filter = (
+        pdfs = XrayReport.objects.filter(
             Q(patient_id__in=dicom_patient_ids) |
             Q(name__in=dicom_patient_names)
-        )
-        if institution_names:
-            pdf_filter &= Q(institution_name__in=institution_names)
-        if test_date_filter:
-            pdf_filter &= Q(test_date=test_date_filter)
-
-        pdfs = XrayReport.objects.filter(pdf_filter).order_by('-id')
+        ).order_by('-id')
 
         # Apply search filter first
         if search_query:
