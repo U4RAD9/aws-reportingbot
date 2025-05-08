@@ -4,7 +4,6 @@ import base64
 # Corrected imports
 from django.db.models import Q, F, Value, CharField  # Core model fields/functions
 from django.db.models.functions import Substr, Concat, Cast  # Database functions
-from django.db.models import Case, When, Value, BooleanField
 from django.db.models.functions import Cast  # Add this import
 from urllib.parse import urlparse, parse_qs
 from tkinter import Tk, filedialog
@@ -1286,14 +1285,7 @@ def allocation1(request):
     # Fetch and order patients
     # Get search query
     search_query = request.GET.get('q', '')
-    # patients = DICOMData.objects.all().order_by('isDone=True', '-id')
-    patients = DICOMData.objects.annotate(
-        is_done_priority=Case(
-            When(isDone=True, then=Value(0)),
-            default=Value(1),
-            output_field=BooleanField()
-        )
-    ).order_by('is_done_priority', '-id')
+    patients = DICOMData.objects.all().order_by('isDone', '-id')
     # Apply search filter
     if search_query:
         patients = patients.filter(
