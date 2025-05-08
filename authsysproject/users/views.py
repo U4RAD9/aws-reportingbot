@@ -1285,7 +1285,7 @@ def allocation1(request):
     # Fetch and order patients
     # Get search query
     search_query = request.GET.get('q', '')
-    patients = DICOMData.objects.all().order_by('isDone', '-id')
+    patients = DICOMData.objects.all().order_by('NonReportable', 'isDone', '-id')
     # Apply search filter
     if search_query:
         patients = patients.filter(
