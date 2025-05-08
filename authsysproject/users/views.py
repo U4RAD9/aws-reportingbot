@@ -1327,8 +1327,8 @@ def allocation1(request):
     # Updated Total Counts for Statistics
     total_current_uploaded = DICOMData.objects.count()  # Total number of DICOMData records
     total_current_reported = DICOMData.objects.filter(isDone=True).count()  # Total cases marked as Done
-    total_unreported_cases = DICOMData.objects.filter(isDone=False).count()  # Total cases not marked as Done
-    total_nonreported_cases = DICOMData.objects.filter(isDone__isnull=True).count()  # Cases where isDone is not set
+    total_unreported_cases = DICOMData.objects.filter(isDone=False, NonReportable=False).count()
+    total_nonreported_cases = DICOMData.objects.filter(NonReportable=True).count()  # Cases where isDone is not set
 
     # Dynamic Status Options for Dropdown
     status_options = {
