@@ -761,15 +761,6 @@ def client_dashboard(request):
         #         dicom_patient_pairs.add((pid, name))
 
         # Build query for matching (patient_id, name) pairs
-        from django.db.models import Q
-        queries = [Q(patient_id=pid, name=name) for (pid, name) in dicom_patient_pairs]
-        pdfs = XrayReport.objects.none()
-
-        if queries:
-            combined_query = queries.pop()
-            for q in queries:
-                combined_query |= q
-            pdfs = XrayReport.objects.filter(combined_query).order_by('-id')
 
         # Apply search filter first
         if search_query:
