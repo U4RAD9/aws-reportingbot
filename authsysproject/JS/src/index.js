@@ -800,8 +800,32 @@ const notes = notesData.notes || 'No notes available';
             image.style.height = '100px';
             image.style.width = '120px';
             image.style.marginBottom = '0px';
+   if (item[1] === 'CT' || item[1] === 'MR') {
+                // --- 1. Fallback injection for missing orientation ---
+  const firstImageId = imageId[0];
+  const imagePlaneMeta = cornerstone.metaData.get('imagePlaneModule', firstImageId);
   
-            if (item[1] === 'CT' || item[1] === 'MR') {
+  if (!imagePlaneMeta || !Array.isArray(imagePlaneMeta.imageOrientationPatient)) {
+    console.warn(
+      `Missing ImageOrientationPatient for ${firstImageId}, injecting default axial orientation`
+    );
+    // Add a high-priority metadata provider for this one ID only
+    cornerstone.metaData.addProvider((type, id) => {
+      if (type !== 'imagePlaneModule' || id !== firstImageId) return undefined;
+      return {
+        ...imagePlaneMeta,
+        imageOrientationPatient: [1, 0, 0, 0, 1, 0],       // axial identity
+        imagePositionPatient: imagePlaneMeta?.imagePositionPatient || [0, 0, 0],
+        rowCosines: [1, 0, 0],
+        columnCosines: [0, 1, 0],
+        frameOfReferenceUID: imagePlaneMeta?.frameOfReferenceUID || '1.2.840.10008.1.2.1.999999',
+        rows: imagePlaneMeta?.rows || 512,
+        columns: imagePlaneMeta?.columns || 512,
+        pixelSpacing: imagePlaneMeta?.pixelSpacing || [1.0, 1.0],
+      };
+    }, /* priority */ 1000);
+  }
+
                 let volumeId = 'cornerstoneStreamingImageVolume: myVolume' + k;
                 k += 1;
                 image.dataset.value = volumeId;
