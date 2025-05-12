@@ -754,8 +754,8 @@ def client_dashboard(request):
         # ).order_by('-id')
 
         pdfs = XrayReport.objects.filter(
-            Q(patient_id__in=dicom_patient_ids, institution_name__in=institution_names) |
-            Q(name__in=dicom_patient_names, institution_name__in=institution_names)
+            Q(patient_id__in=dicom_patient_ids, institution_name__in=normalized_institutions) |
+            Q(name__in=dicom_patient_names, institution_name__in=normalized_institutions)
         ).order_by('-id')
 
 
