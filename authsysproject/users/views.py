@@ -738,9 +738,16 @@ def client_dashboard(request):
         )
 
         # # 🔹 Normalize patient IDs and names from DICOMData (replace spaces with underscores)
-        dicom_patient_ids = {entry.patient_id.replace(" ", "_") for entry in dicom_entries if entry.patient_id}
-        dicom_patient_names = {entry.patient_name.replace(" ", "_") for entry in dicom_entries if entry.patient_name}
-        normalized_institutions = {entry.institution_name.strip() for entry in dicom_entries if entry.institution_name}
+        # 🔹 Modified Normalization Code (add replace('NBSP', ''))
+        dicom_patient_ids = {
+            entry.patient_id.replace(" ", "_").replace("NBSP", "").strip()
+            for entry in dicom_entries if entry.patient_id
+        }
+        dicom_patient_names = {
+            entry.patient_name.replace(" ", "_").replace("NBSP", "").strip()
+            for entry in dicom_entries if entry.patient_name
+        }
+
         print("DICOM Patient IDs:", dicom_patient_ids)
         print("DICOM Patient Names:", dicom_patient_names)
 
@@ -748,8 +755,8 @@ def client_dashboard(request):
 
         ##🔹 Filter XrayReport using normalized patient_id and name
         pdfs = XrayReport.objects.filter(
-            institution_name__in=institution_names,
-            patient_id__in=dicom_patient_ids
+            Q(patient_id__in=dicom_patient_ids) |
+            Q(name__in=dicom_patient_names)
         ).order_by('-id')
 
         # Apply search filter first
