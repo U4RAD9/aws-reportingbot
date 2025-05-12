@@ -759,31 +759,11 @@ def client_dashboard(request):
         # ).order_by('-id')
 
         # Filter XrayReport entries
-        # pdfs = XrayReport.objects.filter(
-        #     institution_name__in=normalized_institutions
-        # ).filter(
-        #     Q(patient_id__in=dicom_patient_ids) |
-        #     Q(name__in=dicom_patient_names)
-        # ).order_by('-id')
-
-        # Build (patient_id, name, institution) triple list from DICOM entries
-        dicom_triples = [
-            (entry.patient_id.strip(), entry.patient_name.strip(), entry.institution_name.strip())
-            for entry in dicom_entries
-            if entry.patient_id and entry.patient_name and entry.institution_name
-        ]
-        
-        # Filter XrayReport based on matching all 3 fields
         pdfs = XrayReport.objects.filter(
-            models.Reduce(
-                lambda q, triple: q | (
-                    Q(patient_id=triple[0].replace(" ", "_")) &
-                    Q(name=triple[1].replace(" ", "_")) &
-                    Q(institution_name=triple[2])
-                ),
-                dicom_triples,
-                Q()  # initial empty Q object
-            )
+            institution_name__in=normalized_institutions
+        ).filter(
+            Q(patient_id__in=dicom_patient_ids) |
+            Q(name__in=dicom_patient_names)
         ).order_by('-id')
 
         # 🔹 Filter XrayReport using normalized patient_id/name AND institution name
