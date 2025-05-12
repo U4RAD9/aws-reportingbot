@@ -755,8 +755,8 @@ def client_dashboard(request):
 
         ##🔹 Filter XrayReport using normalized patient_id and name
         pdfs = XrayReport.objects.filter(
-            Q(patient_id__in=dicom_patient_ids) |
-            Q(name__in=dicom_patient_names)
+            patient_id__in=dicom_patient_ids,
+            name__in=dicom_patient_names
         ).order_by('-id')
 
         # Apply search filter first
