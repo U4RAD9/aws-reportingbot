@@ -752,16 +752,16 @@ def client_dashboard(request):
         #     Q(name__in=dicom_patient_names)
         # ).order_by('-id')
 
-        # pdfs = XrayReport.objects.filter(
-        #     Q(patient_id__in=dicom_patient_ids, institution_name__in=institution_names) |
-        #     Q(name__in=dicom_patient_names, institution_name__in=institution_names)
-        # ).order_by('-id')
+        pdfs = XrayReport.objects.filter(
+            Q(patient_id__in=dicom_patient_ids, institution_name__in=institution_names) |
+            Q(name__in=dicom_patient_names, institution_name__in=institution_names)
+        ).order_by('-id')
 
         # 🔹 Filter XrayReport using normalized patient_id/name AND institution name
-        pdfs = XrayReport.objects.filter(
-            (Q(patient_id__in=dicom_patient_ids) | Q(name__in=dicom_patient_names)),
-            institution_name__in=institution_names  # Mandatory institution match
-        ).order_by('-id')
+        # pdfs = XrayReport.objects.filter(
+        #     (Q(patient_id__in=dicom_patient_ids) | Q(name__in=dicom_patient_names)),
+        #     institution_name__in=institution_names  # Mandatory institution match
+        # ).order_by('-id')
 
 
         # Collect normalized (patient_id, name) pairs from DICOMData
