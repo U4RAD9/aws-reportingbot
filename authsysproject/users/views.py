@@ -710,120 +710,163 @@ def user_type_required(user_type):
 
 
 ####################################### 02-04-25 ##########################################
+# def client_dashboard(request):
+#     try:
+#         current_user_personal_info = Client.objects.get(user=request.user)
+#     except Client.DoesNotExist:
+#         return HttpResponse("Client object does not exist for this user.", status=404)
+
+#     filtered_pdfs = []
+#     test_dates_set = set()
+#     pdf_on_dbs_set = set()
+#     report_dates_set = set()
+
+#     # 🔹 Fetch all institution names associated with the client
+#     institutions = current_user_personal_info.institutions.all()
+#     institution_names = [inst.name for inst in institutions]
+
+#     # Get search query
+#     search_query = request.GET.get('q', '')
+
+#     if institution_names:
+#         print("Institutions:", institution_names)
+
+#         # 🔹 Get all DICOMData entries for the client's institutions
+#         dicom_entries = DICOMData.objects.filter(
+#             institution_name__in=institution_names,
+#             twostepcheck=False
+#         )
+
+#         # # 🔹 Normalize patient IDs and names from DICOMData (replace spaces with underscores)
+#         dicom_patient_ids = {entry.patient_id.replace(" ", "_") for entry in dicom_entries if entry.patient_id}
+#         dicom_patient_names = {entry.patient_name.replace(" ", "_") for entry in dicom_entries if entry.patient_name}
+#         normalized_institutions = {entry.institution_name.strip() for entry in dicom_entries if entry.institution_name}
+#         print("DICOM Patient IDs:", dicom_patient_ids)
+#         print("DICOM Patient Names:", dicom_patient_names)
+
+
+
+#         ##🔹 Filter XrayReport using normalized patient_id and name
+#         pdfs = XrayReport.objects.filter(
+#             Q(patient_id__in=dicom_patient_ids) |
+#             Q(name__in=dicom_patient_names)
+#         ).order_by('-id')
+
+#         # Apply search filter first
+#         if search_query:
+#             pdfs = pdfs.filter(
+#                 Q(name__icontains=search_query) |
+#                 Q(name__iexact=search_query) |
+#                 Q(patient_id__icontains=search_query) |
+#                 Q(patient_id__iexact=search_query) |
+#                 Q(test_date__icontains=search_query) |
+#                 Q(report_date__icontains=search_query) |
+#                 Q(location__icontains=search_query)
+#             )
+
+
+
+#         for pdf in pdfs:
+#             # Replace underscores in patient_id to match with DICOMData
+#             dicom_data = dicom_entries.filter(patient_id=pdf.patient_id.replace("_", " ")).first()
+        
+#             if dicom_data:
+#                 pdf.whatsapp_number = dicom_data.whatsapp_number
+#             else:
+#                 pdf.whatsapp_number = None
+        
+#             filtered_pdfs.append(pdf)
+#             test_dates_set.add(pdf.test_date)
+#             pdf_on_dbs_set.add(pdf.pdf_on_db)
+#             report_dates_set.add(pdf.report_date)
+
+#         # 🔹 Pagination (50 PDFs per page)
+#         paginator = Paginator(filtered_pdfs, 50)
+#         page_number = request.GET.get('page')
+#         page_obj = paginator.get_page(page_number)
+
+#         # 🔹 Generate presigned URLs for PDFs
+#         bucket_name = 'u4rad-s3-reporting-bot'
+#         for pdf in page_obj:
+#             pdf.signed_url = presigned_url(bucket_name, pdf.pdf_file.name) if pdf.pdf_file else None
+#             pdf.signed_url2 = presigned_url(bucket_name, pdf.pdf_file.name, inline=True) if pdf.pdf_file else None
+
+#         # 🔹 Get unique sorted test dates for the current page
+#         sorted_test_dates = sorted({pdf.test_date for pdf in page_obj.object_list})
+#         sorted_report_dates = sorted(report_dates_set)
+#         #sorted_pdf_on_db = sorted({pdf.pdf_on_db for pdf in page_obj.object_list})
+#         sorted_pdf_on_db = sorted(
+#             [pdf.pdf_on_db for pdf in page_obj.object_list if pdf.pdf_on_db is not None]
+#         )
+
+#         # 🔹 Prepare context
+#         context = {
+#             'pdfs': page_obj,
+#             'Test_Dates': sorted_test_dates,
+#             'PDF_On_Db' : sorted_pdf_on_db,
+#             'Report_Dates': sorted_report_dates,
+#             'Location': ", ".join(institution_names),  # Show multiple institutions
+#             'paginator': paginator,
+#             'page_obj': page_obj,
+#             'search_query': search_query,
+#         }
+
+#         return render(request, 'users/client.html', context)
+
+#     return HttpResponse("No institutions found for this client.", status=404)
+
+
+
 def client_dashboard(request):
-    try:
-        current_user_personal_info = Client.objects.get(user=request.user)
-    except Client.DoesNotExist:
-        return HttpResponse("Client object does not exist for this user.", status=404)
+    # Fetch all DICOM data once
+    dicom_entries = DICOMData.objects.all()
 
-    filtered_pdfs = []
-    test_dates_set = set()
-    pdf_on_dbs_set = set()
-    report_dates_set = set()
+    # Create an index for fast lookup (normalized keys)
+    dicom_index = {
+        (
+            entry.patient_id.replace(" ", "_"),
+            entry.patient_name.replace(" ", "_"),
+            entry.institution_name.strip().upper()
+        ): entry
+        for entry in dicom_entries
+    }
 
-    # 🔹 Fetch all institution names associated with the client
-    institutions = current_user_personal_info.institutions.all()
-    institution_names = [inst.name for inst in institutions]
+    # Fetch all XrayReport entries
+    pdf_reports = XrayReport.objects.all().order_by('-id')
 
-    # Get search query
-    search_query = request.GET.get('q', '')
-
-    if institution_names:
-        print("Institutions:", institution_names)
-
-        # 🔹 Get all DICOMData entries for the client's institutions
-        dicom_entries = DICOMData.objects.filter(
-            institution_name__in=institution_names,
-            twostepcheck=False
+    data = []
+    for pdf in pdf_reports:
+        key = (
+            pdf.patient_id,
+            pdf.name,
+            pdf.institution_name.strip().upper()
         )
+        dicom_data = dicom_index.get(key)
 
-        # # 🔹 Normalize patient IDs and names from DICOMData (replace spaces with underscores)
-        dicom_patient_ids = {entry.patient_id.replace(" ", "_") for entry in dicom_entries if entry.patient_id}
-        dicom_patient_names = {entry.patient_name.replace(" ", "_") for entry in dicom_entries if entry.patient_name}
-        normalized_institutions = {entry.institution_name.replace(" ", "_") for entry in dicom_entries if entry.institution_name}
-        print("DICOM Patient IDs:", dicom_patient_ids)
-        print("DICOM Patient Names:", dicom_patient_names)
+        if dicom_data:
+            whatsapp_number = dicom_data.whatsapp_number
+        else:
+            whatsapp_number = "N/A"
 
+        # Format date
+        test_date_str = pdf.test_date.strftime("%d-%m-%Y") if isinstance(pdf.test_date, datetime) else str(pdf.test_date)
 
+        data.append({
+            "id": pdf.id,
+            "name": pdf.name,
+            "patient_id": pdf.patient_id,
+            "test_date": test_date_str,
+            "institution_name": pdf.institution_name,
+            "pdf_url": pdf.get_pdf_url(),
+            "whatsapp_number": whatsapp_number
+        })
 
-        # ##🔹 Filter XrayReport using normalized patient_id and name
-        # pdfs = XrayReport.objects.filter(
-        #     Q(patient_id__in=dicom_patient_ids) |
-        #     Q(name__in=dicom_patient_names)
-        # ).order_by('-id')
+    # Paginate results (20 per page)
+    paginator = Paginator(data, 20)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
 
-        # Step 2: Filter reports by patient_id or name
-        initial_qs = XrayReport.objects.filter(
-            Q(patient_id__in=dicom_patient_ids) | Q(name__in=dicom_patient_names)
-        )
-        
-        # Step 3: Filter further by institution name (intersection filter)
-        pdfs = initial_qs.filter(
-            institution_name__in=normalized_institutions
-        ).order_by('-id')
-
-        # Apply search filter first
-        if search_query:
-            pdfs = pdfs.filter(
-                Q(name__icontains=search_query) |
-                Q(name__iexact=search_query) |
-                Q(patient_id__icontains=search_query) |
-                Q(patient_id__iexact=search_query) |
-                Q(test_date__icontains=search_query) |
-                Q(report_date__icontains=search_query) |
-                Q(location__icontains=search_query)
-            )
-
-
-
-        for pdf in pdfs:
-            # Replace underscores in patient_id to match with DICOMData
-            dicom_data = dicom_entries.filter(patient_id=pdf.patient_id.replace("_", " ")).first()
-        
-            if dicom_data:
-                pdf.whatsapp_number = dicom_data.whatsapp_number
-            else:
-                pdf.whatsapp_number = None
-        
-            filtered_pdfs.append(pdf)
-            test_dates_set.add(pdf.test_date)
-            pdf_on_dbs_set.add(pdf.pdf_on_db)
-            report_dates_set.add(pdf.report_date)
-
-        # 🔹 Pagination (50 PDFs per page)
-        paginator = Paginator(filtered_pdfs, 50)
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-
-        # 🔹 Generate presigned URLs for PDFs
-        bucket_name = 'u4rad-s3-reporting-bot'
-        for pdf in page_obj:
-            pdf.signed_url = presigned_url(bucket_name, pdf.pdf_file.name) if pdf.pdf_file else None
-            pdf.signed_url2 = presigned_url(bucket_name, pdf.pdf_file.name, inline=True) if pdf.pdf_file else None
-
-        # 🔹 Get unique sorted test dates for the current page
-        sorted_test_dates = sorted({pdf.test_date for pdf in page_obj.object_list})
-        sorted_report_dates = sorted(report_dates_set)
-        #sorted_pdf_on_db = sorted({pdf.pdf_on_db for pdf in page_obj.object_list})
-        sorted_pdf_on_db = sorted(
-            [pdf.pdf_on_db for pdf in page_obj.object_list if pdf.pdf_on_db is not None]
-        )
-
-        # 🔹 Prepare context
-        context = {
-            'pdfs': page_obj,
-            'Test_Dates': sorted_test_dates,
-            'PDF_On_Db' : sorted_pdf_on_db,
-            'Report_Dates': sorted_report_dates,
-            'Location': ", ".join(institution_names),  # Show multiple institutions
-            'paginator': paginator,
-            'page_obj': page_obj,
-            'search_query': search_query,
-        }
-
-        return render(request, 'users/client.html', context)
-
-    return HttpResponse("No institutions found for this client.", status=404)
+    return render(request, "client_dashboard.html", {"page_obj": page_obj})
 
 
 ####################################### 02-04-25 ##########################################
