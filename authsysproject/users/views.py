@@ -747,34 +747,11 @@ def client_dashboard(request):
 
 
 
-        # 🔹 Filter XrayReport using normalized patient_id and name
-        # pdfs = XrayReport.objects.filter(
-        #     Q(patient_id__in=dicom_patient_ids) |
-        #     Q(name__in=dicom_patient_names)
-        # ).order_by('-id')
-
+        ##🔹 Filter XrayReport using normalized patient_id and name
         pdfs = XrayReport.objects.filter(
-            Q(patient_id__in=dicom_patient_ids, institution_name__in=normalized_institutions) |
-            Q(name__in=dicom_patient_names, institution_name__in=normalized_institutions)
+            Q(patient_id__in=dicom_patient_ids) |
+            Q(name__in=dicom_patient_names)
         ).order_by('-id')
-
-
-        # 🔹 Filter XrayReport using normalized patient_id/name AND institution name
-        # pdfs = XrayReport.objects.filter(
-        #     (Q(patient_id__in=dicom_patient_ids) | Q(name__in=dicom_patient_names)),
-        #     institution_name__in=institution_names  # Mandatory institution match
-        # ).order_by('-id')
-
-
-        # Collect normalized (patient_id, name) pairs from DICOMData
-        # dicom_patient_pairs = set()
-        # for entry in dicom_entries:
-        #     pid = entry.patient_id.replace(" ", "_").strip().upper() if entry.patient_id else ''
-        #     name = entry.patient_name.replace(" ", "_").strip().upper() if entry.patient_name else ''
-        #     if pid and name:
-        #         dicom_patient_pairs.add((pid, name))
-
-        # Build query for matching (patient_id, name) pairs
 
         # Apply search filter first
         if search_query:
