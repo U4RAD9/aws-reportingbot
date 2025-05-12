@@ -740,7 +740,7 @@ def client_dashboard(request):
         # # 🔹 Normalize patient IDs and names from DICOMData (replace spaces with underscores)
         dicom_patient_ids = {entry.patient_id.replace(" ", "_") for entry in dicom_entries if entry.patient_id}
         dicom_patient_names = {entry.patient_name.replace(" ", "_") for entry in dicom_entries if entry.patient_name}
-        normalized_institutions = {entry.institution_name.strip() for entry in dicom_entries if entry.institution_name}
+        normalized_institutions = {entry.institution_name.replace(" ", "_") for entry in dicom_entries if entry.institution_name}
         print("DICOM Patient IDs:", dicom_patient_ids)
         print("DICOM Patient Names:", dicom_patient_names)
 
