@@ -753,18 +753,11 @@ def client_dashboard(request):
         #     Q(name__in=dicom_patient_names)
         # ).order_by('-id')
 
-        # pdfs = XrayReport.objects.filter(
-        #     Q(patient_id__in=dicom_patient_ids, institution_name__in=institution_names) |
-        #     Q(name__in=dicom_patient_names, institution_name__in=institution_names)
-        # ).order_by('-id')
-
-        # Filter XrayReport entries
         pdfs = XrayReport.objects.filter(
-            institution_name__in=normalized_institutions
-        ).filter(
-            Q(patient_id__in=dicom_patient_ids) |
-            Q(name__in=dicom_patient_names)
+            Q(patient_id__in=dicom_patient_ids, institution_name__in=institution_names) |
+            Q(name__in=dicom_patient_names, institution_name__in=institution_names)
         ).order_by('-id')
+
 
         # 🔹 Filter XrayReport using normalized patient_id/name AND institution name
         # pdfs = XrayReport.objects.filter(
