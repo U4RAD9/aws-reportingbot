@@ -740,6 +740,7 @@ def client_dashboard(request):
         # # 🔹 Normalize patient IDs and names from DICOMData (replace spaces with underscores)
         dicom_patient_ids = {entry.patient_id.replace(" ", "_") for entry in dicom_entries if entry.patient_id}
         dicom_patient_names = {entry.patient_name.replace(" ", "_") for entry in dicom_entries if entry.patient_name}
+        normalized_institutions = [inst.strip() for inst in institution_names]
 
         print("DICOM Patient IDs:", dicom_patient_ids)
         print("DICOM Patient Names:", dicom_patient_names)
@@ -752,9 +753,17 @@ def client_dashboard(request):
         #     Q(name__in=dicom_patient_names)
         # ).order_by('-id')
 
+        # pdfs = XrayReport.objects.filter(
+        #     Q(patient_id__in=dicom_patient_ids, institution_name__in=institution_names) |
+        #     Q(name__in=dicom_patient_names, institution_name__in=institution_names)
+        # ).order_by('-id')
+
+        # Filter XrayReport entries
         pdfs = XrayReport.objects.filter(
-            Q(patient_id__in=dicom_patient_ids, institution_name__in=institution_names) |
-            Q(name__in=dicom_patient_names, institution_name__in=institution_names)
+            institution_name__in=normalized_institutions
+        ).filter(
+            Q(patient_id__in=dicom_patient_ids) |
+            Q(name__in=dicom_patient_names)
         ).order_by('-id')
 
         # 🔹 Filter XrayReport using normalized patient_id/name AND institution name
