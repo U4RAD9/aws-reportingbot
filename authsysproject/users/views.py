@@ -743,8 +743,17 @@ def client_dashboard(request):
             entry.patient_id.replace(" ", "_").replace("NBSP", "").strip()
             for entry in dicom_entries if entry.patient_id
         }
+        # dicom_patient_names = {
+        #     entry.patient_name.replace(" ", "_").replace("NBSP", "").strip()
+        #     for entry in dicom_entries if entry.patient_name
+        # }
+
         dicom_patient_names = {
-            entry.patient_name.replace(" ", "_").replace("NBSP", "").strip()
+            entry.patient_name.replace(" ", "_")
+                              .replace("NBSP", "")
+                              .replace("_NBSP", "")  # Add this line
+                              .rstrip("_")           # Add this line
+                              .strip()
             for entry in dicom_entries if entry.patient_name
         }
 
