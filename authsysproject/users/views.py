@@ -752,6 +752,8 @@ def client_dashboard(request):
             entry.patient_name.replace(" ", "_")
                               .replace("NBSP", "")
                               .replace("_NBSP", "")  # Add this line
+                              .replace("YRS", "")
+                              .replace("_YRS", "")
                               .rstrip("_")           # Add this line
                               .strip()
             for entry in dicom_entries if entry.patient_name
