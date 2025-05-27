@@ -5537,11 +5537,11 @@ def clientdata(request):
             Q(whatsapp_number__icontains=search_query)
         )
 
-    # Apply status filter if exists
+    # Apply status filter
     if status_filter == 'reported':
-        base_queryset = base_queryset.filter(isDone=True)
+        dicom_data = dicom_data.filter(isDone=True)
     elif status_filter == 'reporting':
-        base_queryset = base_queryset.filter(isDone=False) 
+        dicom_data = dicom_data.filter(isDone=False)
     
 
     # Total filtered count
@@ -5569,11 +5569,30 @@ def clientdata(request):
             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
         ]
 
+        # 🔹 Modified Normalization Code (add replace('NBSP', ''))
+        dicom_patient_ids = {
+            dicom_data.patient_id.replace(" ", "_").replace("NBSP", "").strip()
+            for dicom_data in dicom_data if dicom_data.patient_id
+        }
+        # dicom_patient_names = {
+        #     entry.patient_name.replace(" ", "_").replace("NBSP", "").strip()
+        #     for entry in dicom_entries if entry.patient_name
+        # }
+
+        dicom_patient_names = {
+            dicom_data.patient_name.replace(" ", "_")
+                              .replace("NBSP", "")
+                              .replace("_NBSP", "")  # Add this line
+                              .rstrip("_")           # Add this line
+                              .strip()
+            for dicom_data in dicom_data if dicom_data.patient_name
+        }
+
         # ✅ Add PDF file URLs (just like xrayallocation)
         patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_")
         pdf_reports = XrayReport.objects.filter(
-            name=patient_name_with_underscores,
-            patient_id=dicom_data.patient_id
+            name=dicom_patient_names,
+            patient_id=dicom_patient_ids
         )
         dicom_data.pdf_file_urls = [
             presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports
