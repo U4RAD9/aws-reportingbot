@@ -5537,11 +5537,11 @@ def clientdata(request):
             Q(whatsapp_number__icontains=search_query)
         )
 
-    # Correct variable name
+    # Apply status filter if exists
     if status_filter == 'reported':
-        dicom_data = dicom_data.filter(isDone=True)
+        base_queryset = base_queryset.filter(isDone=True)
     elif status_filter == 'reporting':
-        dicom_data = dicom_data.filter(isDone=False)
+        base_queryset = base_queryset.filter(isDone=False) 
     
 
     # Total filtered count
