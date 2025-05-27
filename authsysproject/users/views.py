@@ -752,8 +752,6 @@ def client_dashboard(request):
             entry.patient_name.replace(" ", "_")
                               .replace("NBSP", "")
                               .replace("_NBSP", "")  # Add this line
-                              .replace("YRS", "")
-                              .replace("_YRS", "")
                               .rstrip("_")           # Add this line
                               .strip()
             for entry in dicom_entries if entry.patient_name
@@ -5518,6 +5516,8 @@ def clientdata(request):
 
     # Get search query
     search_query = request.GET.get('q', '')
+
+    status_filter = request.GET.get('status', '')
     
     # Filter DICOMData for all institutions linked to the client
     dicom_data = DICOMData.objects.filter(institution_name__in=institution_names).order_by('-id')
@@ -5536,6 +5536,11 @@ def clientdata(request):
             Q(referring_doctor_name__icontains=search_query) |
             Q(whatsapp_number__icontains=search_query)
         )
+
+    if status_filter == 'reported':
+        dicom_data = dicom_data.filter(isDone=True)
+    elif status_filter == 'reporting':
+        dicom_data = dicom_data.filter(isDone=False)    
     
 
     # Total filtered count
@@ -5594,6 +5599,7 @@ def clientdata(request):
         'is_done_count': is_done_count,
         'Date': sorted_unique_dates,
         'modality': sorted_modality,
+        'status_filter': status_filter,
     })
 
 

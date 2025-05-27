@@ -191,11 +191,24 @@
             <th style="width: 150px;">Mark As VIP</th>
             <th style="width: 150px;">Actions</th>
             <th style="width: 150px;">View Image</th>
+            <th style="width: 150px;">
+                <div class="filter-dropdown-container">
+                    <div>Status</div>
+                    <div class="dropdown-select1" id="filter-status-dropdown">
+                        <select id="filter-status-select" class="form-control">
+                            <option value="">All</option>
+                            <option value="reporting" {% if request.GET.status == "reporting" %}selected{% endif %}>Reporting</option>
+                            <option value="reported" {% if request.GET.status == "reported" %}selected{% endif %}>Reported</option>
+                        </select>
+                    </div>
+                </div>
+            </th>
+
           </tr>
         </thead>
         <tbody>
           {% for entry in page_obj %}
-          <tr>
+          <tr>         
             <td>{{ entry.patient_name }}</td>
             <td>{{ entry.patient_id }}</td>
             <td>{{ entry.age }}</td>
@@ -244,6 +257,13 @@
                   View Image
               </a>
             </td>
+            <td>
+              {% if data.isDone %}
+                <span class="badge badge-success" data-toggle="tooltip" title="This patient has been reported.">Reported</span>
+              {% else %}
+                <span class="badge badge-warning" data-toggle="tooltip" title="This patient is awaiting report.">Reporting</span>
+              {% endif %}
+            </td>   
           </tr>
           {% endfor %}
         </tbody>
@@ -498,15 +518,17 @@
           function filterTable() {
               var selectedDate = $('#filter-date-select-date').val();
               var selectedModality = ($('#filter-modality-select-modality').val() || "").trim().toLowerCase();
+              var selectedStatus = ($('#filter-status-select').val() || "").trim().toLowerCase();
               var visibleRowCount = 0;
     
               // Loop through each row in the table
               $('#patientTable tbody tr').each(function () {
                   var rowDate = $(this).find('td:nth-child(5)').text();
                   var rowModality = ($(this).find('td:nth-child(9)').text() || "").trim().toLowerCase();
+                  var rowStatus = ($(this).find('td:nth-child(17)').text() || "").trim().toLowerCase();
                   
                   
-                  if ((selectedDate === '' || rowDate === selectedDate) && (selectedModality === '' || rowModality === selectedModality)) {
+                  if ((selectedDate === '' || rowDate === selectedDate) && (selectedModality === '' || rowModality === selectedModality) && (selectedStatus === '' || rowStatus === selectedStatus)) {
                       
                       $(this).show();
                       visibleRowCount++; // Increment visible row count
