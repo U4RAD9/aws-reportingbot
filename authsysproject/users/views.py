@@ -5570,10 +5570,11 @@ def clientdata(request):
         ]
 
         # ✅ Add PDF file URLs (just like xrayallocation)
+        patient_id_with_underscores = dicom_data.patient_id.replace(" ", "_").replace("NBSP", "").replace("_NBSP", "").rstrip("_").strip()
         patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_").replace("NBSP", "").replace("_NBSP", "").rstrip("_").strip()
         pdf_reports = XrayReport.objects.filter(
             name=patient_name_with_underscores,
-            patient_id=dicom_data.patient_id
+            patient_id=patient_id_with_underscores
         )
         dicom_data.pdf_file_urls = [
             presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports
