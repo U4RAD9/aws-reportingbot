@@ -5568,6 +5568,16 @@ def clientdata(request):
             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
         ]
 
+        # ✅ Add PDF file URLs (just like xrayallocation)
+        patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_")
+        pdf_reports = XrayReport.objects.filter(
+            name=patient_name_with_underscores,
+            patient_id=dicom_data.patient_id
+        )
+        dicom_data.pdf_file_urls = [
+            presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports
+        ]
+
     # Get unique sorted dates from the filtered DICOM data
     unique_dates = set(dicom.study_date for dicom in page_obj.object_list)
     sorted_unique_dates = sorted(unique_dates)
