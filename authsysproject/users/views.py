@@ -5571,8 +5571,8 @@ def clientdata(request):
 
         # 🔹 Modified Normalization Code (add replace('NBSP', ''))
         dicom_patient_ids = {
-            dicom_data.patient_id.replace(" ", "_").replace("NBSP", "").strip()
-            for dicom_data in dicom_data if dicom_data.patient_id
+            e.patient_id.replace(" ", "_").replace("NBSP", "").strip()
+            for e in page_obj  if e.patient_id
         }
         # dicom_patient_names = {
         #     entry.patient_name.replace(" ", "_").replace("NBSP", "").strip()
@@ -5580,12 +5580,12 @@ def clientdata(request):
         # }
 
         dicom_patient_names = {
-            dicom_data.patient_name.replace(" ", "_")
+            e.patient_name.replace(" ", "_")
                               .replace("NBSP", "")
                               .replace("_NBSP", "")  # Add this line
                               .rstrip("_")           # Add this line
                               .strip()
-            for dicom_data in dicom_data if dicom_data.patient_name
+            for e in page_obj  if e.patient_name
         }
 
         # ✅ Add PDF file URLs (just like xrayallocation)
