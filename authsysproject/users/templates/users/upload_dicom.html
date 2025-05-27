@@ -536,7 +536,7 @@
               $('#patientTable tbody tr').each(function () {
                   var rowDate = $(this).find('td:nth-child(5)').text();
                   var rowModality = ($(this).find('td:nth-child(9)').text() || "").trim().toLowerCase();
-                  var rowStatus = ($(this).find('td:nth-child(18)').text() || "").trim().toLowerCase();
+                  var rowStatus = ($(this).find('td:nth-child(19)').text() || "").trim().toLowerCase();
                   
                   
                   if ((selectedDate === '' || rowDate === selectedDate) && (selectedModality === '' || rowModality === selectedModality) && (selectedStatus === '' || rowStatus === selectedStatus)) {
