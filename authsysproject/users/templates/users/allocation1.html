@@ -824,6 +824,7 @@
                         <div class="dropdown-select1" id="filter-allocate-dropdown-allocate">
                             <select id="filter-allocate-select-allocate" class="form-control">
                                 <option value="">All</option>
+                                <option value="Unassigned">Unassigned</option> 
                                 {% for radiologist in radiologists %}
                                     <option value="{{ radiologist.first_name }}">{{ radiologist.first_name }}</option>
                                 {% endfor %}
@@ -1472,7 +1473,9 @@
                 && (selectedInstitution_name === '' || rowInstitution_name === selectedInstitution_name) 
                 && (selectedModality === '' || rowModality === selectedModality) 
                 && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription)
-                && (selectedAllocate === "" || rowAllocate === selectedAllocate)
+                // && (selectedAllocate === "" || rowAllocate === selectedAllocate)
+                && (selectedAllocate === "unassigned" ? rowAllocate === "" : 
+                 (selectedAllocate === "" ? true : rowAllocate === selectedAllocate))
                 && (selectedStatus === "" || rowStatus === selectedStatus)) { 
                 $(this).show();
                 visibleRowCount++;
