@@ -25,6 +25,26 @@
       flex-direction: column;
     }
 
+    .modal-content {
+      border-radius: 10px;
+    }
+
+    /* Optional: Styles for button positioning */
+    .card {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+    }
+    .modal-body {
+      max-height: 400px; /* Set the max height to suit your design */
+      overflow-y: auto;  /* Enable vertical scrolling */
+    }
+    
+    /* Optional: Ensure the modal size is constrained */
+    .modal-dialog {
+      max-width: 600px; /* Adjust this to set a fixed width for the modal */
+      width: 100%;      /* Allow full width within the max-width constraint */
+    }
+
     .container {
       margin: 0 auto;
       width: 100%;
@@ -835,6 +855,7 @@
               </th>
                 <th>Mark for Non Reported</th>
               <!-- Add a column for the "Report" button -->
+                <th>Action</th>
               </tr>
         </thead>
         <tbody>
@@ -931,6 +952,9 @@
                     Alert
                 </button>
             </td> -->
+            <td>
+              <button type="button" class="btn btn-sm btn-custom" onclick="openEditModal({{ patient.id }})">Edit</button>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -947,6 +971,52 @@
   </div>
   </div>
 
+  <!-- Modal for Edit Form -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editModalLabel">Edit DICOM Data</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="editForm">
+              {% csrf_token %}
+              <input type="hidden" id="dicomId" />
+              <div class="mb-3">
+                <label for="patient_id" class="form-label">Patient Id:</label>
+                <input type="text" class="form-control" id="patient_id"/>
+              </div>
+              <div class="mb-3">
+                <label for="patient_name" class="form-label">Name:</label>
+                <input type="text" class="form-control" id="patient_name"/>
+              </div>
+              
+              <div class="mb-3">
+                <label for="age" class="form-label">Age:</label>
+                <input type="text" class="form-control" id="age"/>
+              </div>
+              <div class="mb-3">
+                <label for="gender" class="form-label">Gender:</label>
+                <input type="text" class="form-control" id="gender"/>
+              </div>
+              <div class="mb-3">
+                <label for="study_description" class="form-label">Study Description:</label>
+                <input type="text" class="form-control" id="study_description"/>
+              </div>
+              </div>
+              
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveEdit()">Save changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
   <!-- Include necessary libraries -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -956,7 +1026,52 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
  
+  <script>
+    function openEditModal(id) {
+        $("#dicomId").val(id);
+        const row = $("tr:has(button[onclick='openEditModal(" + id + ")'])");
+        $("#patient_id").val(row.find("td:eq(1)").text());
+        $("#patient_name").val(row.find("td:eq(2)").text());
+        $("#age").val(row.find("td:eq(3)").text());
+        $("#gender").val(row.find("td:eq(4)").text());
+        $("#study_description").val(row.find("td:eq(10)").text());
+        $('#editModal').modal('show');
+      }
 
+
+      function saveEdit() {
+        const id = $("#dicomId").val();
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value; // Get the CSRF token
+    
+        // Prepare the form data, including files
+        const formData = new FormData();
+        formData.append('patient_id', $("#patient_id").val());
+        formData.append('patient_name', $("#patient_name").val());
+        formData.append('age', $("#age").val());
+        formData.append('gender', $("#gender").val());
+        formData.append('study_description', $("#study_description").val());
+        formData.append('csrfmiddlewaretoken', csrftoken);
+    
+        // Make the POST request with FormData
+        $.ajax({
+            url: `/edit-dicom-data-coordinator/${id}/`,
+            type: 'POST',
+            data: formData,
+            processData: false,  // Don't process the data
+            contentType: false,  // Don't set content type
+            success: function (response) {
+                if (response.success) {
+                    location.reload();
+                } else {
+                    alert("Failed to update data!");
+                }
+            },
+            error: function () {
+                alert("Error while updating data!");
+            }
+        });
+    }
+  </script>
   <script>
     function goToPage() {
       var page = document.getElementById("pageInput").value;
