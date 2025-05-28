@@ -5694,29 +5694,6 @@ def edit_dicom_data(request, pk):
     return JsonResponse({'success': False}, status=400)
 
 
-@csrf_exempt
-def edit_dicom_data_coordinator(request, pk):
-    """Edit specific DICOMData entry."""
-    if request.method == "POST":
-        try:
-            dicom_entry = get_object_or_404(DICOMData, pk=pk)
-            dicom_entry.patient_id = request.POST.get('patient_id', dicom_entry.patient_id)
-            dicom_entry.patient_name = request.POST.get('patient_name', dicom_entry.patient_name)
-            dicom_entry.age = request.POST.get('age', dicom_entry.age)
-            dicom_entry.gender = request.POST.get('gender', dicom_entry.gender)
-            dicom_entry.study_date = request.POST.get('study_date', dicom_entry.study_date)
-            dicom_entry.study_description = request.POST.get('study_description', dicom_entry.study_description)
-            dicom_entry.save()
-
-            return JsonResponse({'success': True})
-        except Exception as e:
-            # Log the exception
-            logger.exception("Error updating DICOMData entry.")
-            return JsonResponse({'success': False, 'error': str(e)}, status=500)
-    return JsonResponse({'success': False}, status=400)
-
-
-
 
 
 @login_required

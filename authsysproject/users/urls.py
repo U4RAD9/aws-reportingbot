@@ -120,7 +120,6 @@ urlpatterns = [
     path('upload-ecg/', views.upload_ecg, name='upload_ecg'),
     path('clientdata/', views.clientdata, name='clientdata'),
     path('edit-dicom-data/<int:pk>/', views.edit_dicom_data, name='edit_dicom_data'),
-    path('edit-dicom-data-coordinator/<int:pk>/', views.edit_dicom_data_coordinator, name='edit_dicom_data_coordinator'),
     path('supercoordinator/', views.supercoordinator_view, name='supercoordinator'),
     path('supercoordinator/edit/<int:client_id>/', views.supercoordinator_view, name='edit_client'),
     path('send_whatsapp/', views.send_whatsapp, name='send_whatsapp'),

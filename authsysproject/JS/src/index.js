@@ -1577,11 +1577,13 @@ slab(val, id) {
     // Assign a handler for onchange
     list.onchange = this.handleSeletion;
   
-    // Auto-trigger handleSelection if only one option is available (excluding default)
-    if (list.options.length === 2) {
-      list.selectedIndex = 1;
-      list.dispatchEvent(new Event('change'));
-    }
+  for (let i = 0; i < list.options.length; i++) {
+  if (list.options[i].text.toLowerCase().includes("blanks")) {
+    list.selectedIndex = i;
+    list.dispatchEvent(new Event('change'));
+    break;
+  }
+}
   
     return list;
   }
@@ -3319,6 +3321,194 @@ pdf.autoTable({
 //       }
 //     })();
 //   }
+// UploadDivContentOnPDFWithoutImage() {
+//   (async () => {
+//     try {
+//       this.showLoader();
+//       const filename = this.createFilename();
+//       const editorContent = document.getElementsByClassName("ck-editor__editable")[0];
+      
+//       if (!editorContent) {
+//         throw new Error('CKEditor content not found');
+//       }
+
+//       const { location, accession, institutionName } = this.extractDataFromURL();
+      
+//       // Get all images including captured ones
+//       const images = editorContent.querySelectorAll("img");
+//       const signatureElement = images[1];
+//       const signatureUrl = signatureElement ? signatureElement.src : null;
+//       const logoElement = images[0];
+//       const logoUrl = logoElement ? logoElement.src : null;
+      
+//       // Extract remaining images (captured ones)
+//       const remainingReportImages = Array.prototype.slice.call(images, 2);
+
+//       const pdf = new jsPDF({
+//         orientation: "p",
+//         unit: "pt",
+//         format: "a4",
+//         compress: true, // Enable compression
+//       });
+
+//       let currentYPosition = 40;
+
+//       // Add logo if exists
+//       if (logoUrl) {
+//         currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
+//       }
+
+//       // Add table data
+//       const tableData = this.extractTableData(editorContent);
+//       if (Object.keys(tableData).length > 0) {
+//         const { patientId, patientName, age, gender, testDate, reportDate, referralDr, reportTime } = tableData;
+//         const tableContent = [
+//           ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+//           ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+//           ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"],
+//           ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
+//         ];
+
+//         currentYPosition += 20;
+
+//         pdf.autoTable({
+//           startY: currentYPosition,
+//           body: tableContent,
+//           theme: "grid",
+//           styles: { cellPadding: 3, fontSize: 10 },
+//         });
+//         currentYPosition = pdf.previousAutoTable.finalY + 20;
+//       }
+
+//       // Process main content
+//       const content = this.extractContent(editorContent);
+//       if (content) {
+//         const lines = content.split('\n');
+        
+//         for (const line of lines) {
+//           if (line.trim()) {
+//             let text = line;
+//             let isBold = false;
+
+//             // Extract bold sections
+//             const boldMatches = text.match(/\[BOLD\](.*?)\[\/BOLD\]/g);
+//             if (boldMatches) {
+//               isBold = true;
+//               text = text.replace(/\[BOLD\](.*?)\[\/BOLD\]/g, '$1');
+//             }
+
+//             // Check for bullet points
+//             const isBullet = text.startsWith('•');
+//             if (isBullet) {
+//               text = text.substring(1).trim();
+//               currentYPosition += 5;
+//             }
+
+//             // Add signature if it's a doctor's line
+//             if (text.includes("Dr.") && signatureUrl) {
+//               currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+//             }
+
+//             // Set font based on formatting
+//             pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+//             pdf.setFontSize(12);
+            
+//             const splitText = pdf.splitTextToSize(text, pdf.internal.pageSize.width - (isBullet ? 100 : 80));
+            
+//             if (currentYPosition + (splitText.length * 15) > pdf.internal.pageSize.height - 40) {
+//               pdf.addPage();
+//               currentYPosition = 40;
+//             }
+
+//             // Add bullet point if needed
+//             if (isBullet) {
+//               pdf.text('•', 60, currentYPosition);
+//               pdf.text(splitText, 80, currentYPosition);
+//             } else {
+//               pdf.text(splitText, 40, currentYPosition);
+//             }
+            
+//             currentYPosition += splitText.length * 15;
+//           }
+//         }
+//       }
+
+//       // Add captured images
+//       for (const image of remainingReportImages) {
+//         const imageUrl = image ? image.src : null;
+//         if (imageUrl) {
+//           currentYPosition = await this.addReportImage(pdf, imageUrl, currentYPosition);
+//         }
+//       }
+
+//       // Convert and upload PDF
+//       const pdfBlob = pdf.output("blob", { compress: true });
+//       const csrfToken = await this.getCSRFToken();
+//       const formData = new FormData();
+//       formData.append("pdf", pdfBlob, filename ? filename + ".pdf" : "download.pdf");
+//       formData.append("patientId", tableData.patientId);
+//       formData.append("patientName", tableData.patientName);
+//       formData.append("age", tableData.age);
+//       formData.append("gender", tableData.gender);
+//       formData.append("testDate", tableData.testDate);
+//       formData.append("reportDate", tableData.reportDate);
+//       formData.append("location", location);
+//       formData.append("accession", accession);
+//       formData.append("institution_name", institutionName);
+
+//       await axios.post("/upload_xray_pdf/", formData, {
+//         headers: {
+//           "Content-Type": "multipart/form-data",
+//           "X-CSRFToken": csrfToken,
+//         },
+//       });
+
+//       // Update isDone status
+//       const urlSearchParams = new URLSearchParams(window.location.search);
+//       const studyId = urlSearchParams.get("data-study-id");
+
+//       const updateResponse = await fetch(`/api/update_patient_done_status_xray/${studyId}/`, {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'application/json',
+//           'X-CSRFToken': csrfToken,
+//         },
+//         body: JSON.stringify({ isDone: true }),
+//       });
+
+//       if (updateResponse.ok) {
+//         this.setState({ isDone: true }, () => {
+//           this.handleClick();
+//         });
+//       } else {
+//         console.error('Failed to update isDone status');
+//       }
+
+//       this.showNotification("PDF successfully uploaded!");
+
+//       // Handle navigation
+//       const currentURL = window.location.href;
+//       setTimeout(() => {
+//         window.location.href = document.referrer + "?nocache=" + Date.now();
+//       }, 200);
+
+//       window.addEventListener("popstate", () => {
+//         if (window.location.href !== currentURL) {
+//           setTimeout(() => {
+//             window.location.reload(true);
+//           }, 200);
+//         }
+//       });
+
+//     } catch (error) {
+//       console.error("Error generating PDF:", error);
+//       this.showNotification("Error uploading PDF. Please try again.");
+//     } finally {
+//       this.hideLoader();
+//     }
+//   })();
+// }
+
 UploadDivContentOnPDFWithoutImage() {
   (async () => {
     try {
@@ -3331,30 +3521,22 @@ UploadDivContentOnPDFWithoutImage() {
       }
 
       const { location, accession, institutionName } = this.extractDataFromURL();
-      
-      // Get all images including captured ones
       const images = editorContent.querySelectorAll("img");
       const signatureElement = images[1];
       const signatureUrl = signatureElement ? signatureElement.src : null;
-      const logoElement = images[0];
-      const logoUrl = logoElement ? logoElement.src : null;
-      
-      // Extract remaining images (captured ones)
       const remainingReportImages = Array.prototype.slice.call(images, 2);
 
       const pdf = new jsPDF({
         orientation: "p",
         unit: "pt",
         format: "a4",
-        compress: true, // Enable compression
+        compress: true,
       });
 
-      let currentYPosition = 40;
-
-      // Add logo if exists
-      if (logoUrl) {
-        currentYPosition = await this.addLogo(pdf, logoUrl, currentYPosition);
-      }
+      const topMargin = 90;
+      const bottomMargin = 60;
+      const pageHeight = pdf.internal.pageSize.height;
+      let currentYPosition = topMargin;
 
       // Add table data
       const tableData = this.extractTableData(editorContent);
@@ -3382,50 +3564,46 @@ UploadDivContentOnPDFWithoutImage() {
       const content = this.extractContent(editorContent);
       if (content) {
         const lines = content.split('\n');
-        
+
         for (const line of lines) {
           if (line.trim()) {
             let text = line;
             let isBold = false;
 
-            // Extract bold sections
             const boldMatches = text.match(/\[BOLD\](.*?)\[\/BOLD\]/g);
             if (boldMatches) {
               isBold = true;
               text = text.replace(/\[BOLD\](.*?)\[\/BOLD\]/g, '$1');
             }
 
-            // Check for bullet points
             const isBullet = text.startsWith('•');
             if (isBullet) {
               text = text.substring(1).trim();
               currentYPosition += 5;
             }
 
-            // Add signature if it's a doctor's line
             if (text.includes("Dr.") && signatureUrl) {
               currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
             }
 
-            // Set font based on formatting
             pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
             pdf.setFontSize(12);
-            
+
             const splitText = pdf.splitTextToSize(text, pdf.internal.pageSize.width - (isBullet ? 100 : 80));
-            
-            if (currentYPosition + (splitText.length * 15) > pdf.internal.pageSize.height - 40) {
+
+            // Page break if needed
+            if (currentYPosition + (splitText.length * 15) > pageHeight - bottomMargin) {
               pdf.addPage();
-              currentYPosition = 40;
+              currentYPosition = topMargin;
             }
 
-            // Add bullet point if needed
             if (isBullet) {
               pdf.text('•', 60, currentYPosition);
               pdf.text(splitText, 80, currentYPosition);
             } else {
               pdf.text(splitText, 40, currentYPosition);
             }
-            
+
             currentYPosition += splitText.length * 15;
           }
         }
@@ -3435,7 +3613,7 @@ UploadDivContentOnPDFWithoutImage() {
       for (const image of remainingReportImages) {
         const imageUrl = image ? image.src : null;
         if (imageUrl) {
-          currentYPosition = await this.addReportImage(pdf, imageUrl, currentYPosition);
+          currentYPosition = await this.addReportImage(pdf, imageUrl, currentYPosition, topMargin, bottomMargin);
         }
       }
 
@@ -3461,7 +3639,6 @@ UploadDivContentOnPDFWithoutImage() {
         },
       });
 
-      // Update isDone status
       const urlSearchParams = new URLSearchParams(window.location.search);
       const studyId = urlSearchParams.get("data-study-id");
 
@@ -3484,7 +3661,6 @@ UploadDivContentOnPDFWithoutImage() {
 
       this.showNotification("PDF successfully uploaded!");
 
-      // Handle navigation
       const currentURL = window.location.href;
       setTimeout(() => {
         window.location.href = document.referrer + "?nocache=" + Date.now();
@@ -3505,7 +3681,7 @@ UploadDivContentOnPDFWithoutImage() {
       this.hideLoader();
     }
   })();
-}
+}            
 
 
   UploadDivContentOnPDF() {
