@@ -4825,6 +4825,44 @@ Undo/Reset icon */}Reset</button></div>
 {/*Button for capturing selected viewport */}
 <div className="button-container"><button className='tool-button' onClick={e =>
 this.capture(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Capture</button></div>
+<div
+  className="button-container"
+  style={{
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: '20px',
+  }}
+>
+  <button
+    className="tool-button"
+    style={{
+      backgroundColor: '#007bff',
+      color: '#fff',
+      padding: '10px 20px',
+      border: 'none',
+      borderRadius: '12px',
+      fontWeight: 'bold',
+      fontSize: '16px',
+      cursor: 'pointer',
+      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+      transition: 'background-color 0.3s ease',
+    }}
+    onMouseOver={(e) => (e.target.style.backgroundColor = '#0056b3')}
+    onMouseOut={(e) => (e.target.style.backgroundColor = '#007bff')}
+    onClick={() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const currentStudyId = urlParams.get('data-study-id');
+      if (currentStudyId) {
+        const ohifUrl = `https://pacs.reportingbot.in/ohif/viewer?url=../studies/${currentStudyId}/ohif-dicom-json`;
+        window.open(ohifUrl, '_blank');
+      } else {
+        alert('Study ID not found in URL.');
+      }
+    }}
+  >
+    📷 <span style={{ fontWeight: 'bold' }}>Open in OHIFViewer</span>
+  </button>
+</div>
 
 <div className="button-container"><button className='tool-button' onClick={e =>
 this.downloadAsJPEG(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Save as jpeg</button></div>
