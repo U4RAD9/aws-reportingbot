@@ -72,7 +72,7 @@ class DICOMData(models.Model):
     
 
     def __str__(self):
-        return str(self.patient_name, self.patient_id, self.study_id)
+        return str(self.patient_name)
     
 
     @staticmethod
