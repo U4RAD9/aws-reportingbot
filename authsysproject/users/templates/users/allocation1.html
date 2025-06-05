@@ -1005,6 +1005,10 @@
                 <label for="study_description" class="form-label">Study Description:</label>
                 <input type="text" class="form-control" id="study_description"/>
               </div>
+              <div class="mb-3">
+                <label for="notes" class="form-label">clinical history:</label>
+                <input type="text" class="form-control" id="notes"/>
+              </div>
               </div>
               
 
@@ -1036,6 +1040,7 @@
         $("#age").val(row.find("td:eq(3)").text());
         $("#gender").val(row.find("td:eq(4)").text());
         $("#study_description").val(row.find("td:eq(10)").text());
+        $("#notes").val(row.find("td:eq(13)").text());
         $('#editModal').modal('show');
       }
 
@@ -1051,6 +1056,7 @@
         formData.append('age', $("#age").val());
         formData.append('gender', $("#gender").val());
         formData.append('study_description', $("#study_description").val());
+        formData.append('notes', $("#notes").val());
         formData.append('csrfmiddlewaretoken', csrftoken);
     
         // Make the POST request with FormData

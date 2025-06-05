@@ -5705,6 +5705,7 @@ def edit_dicom_data_coordinator(request, pk):
             dicom_entry.age = request.POST.get('age', dicom_entry.age)
             dicom_entry.gender = request.POST.get('gender', dicom_entry.gender)
             dicom_entry.study_description = request.POST.get('study_description', dicom_entry.study_description)
+            dicom_entry.notes = request.POST.get('notes', dicom_entry.notes)
             dicom_entry.save()
 
             return JsonResponse({'success': True})
