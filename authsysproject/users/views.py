@@ -7161,7 +7161,7 @@ def export_patient_data(patients):
             "Radiologists": ", ".join([str(radiologist) for radiologist in patient.radiologist.all()]),
             "Studydescription":patient.study_description,
             "Notes modified at": patient.notes_modified_at.strftime("%Y-%m-%d %H:%M:%S") if patient.notes_modified_at else "",
-            "History Upload Time":  patient.history_files.first.uploaded_at.strftime("%Y-%m-%d %H:%M:%S") if patient.history_upload_time else "",
+            "History Upload Time":  patient.history_files.uploaded_at.strftime("%Y-%m-%d %H:%M:%S") if patient.history_upload_time else "",
             "Radiologist assigned at:": patient.radiologist_assigned_at.strftime("%Y-%m-%d %H:%M:%S") if patient.radiologist_assigned_at else "",
             "Report created at:": patient.patient.marked_done_at.strftime("%Y-%m-%d %H:%M:%S") if patient.report_created_at else "",
 
