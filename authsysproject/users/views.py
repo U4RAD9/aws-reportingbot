@@ -7137,7 +7137,6 @@ def delete_all_patients_doctor(request):
 ##################################################### Data Excel ###################################################
 
 
-
 def export_patient_data(patients):
     if not patients.exists():
         return HttpResponse("No data available for export.", content_type="text/plain")
@@ -7145,6 +7144,7 @@ def export_patient_data(patients):
     # Define columns for the Excel file
     data = []
     for patient in patients:
+        history_file = patient.history_files.first()  # Safely get the first history file
         data.append({
             "Patient Name": patient.patient_name,
             "Patient ID": patient.patient_id,
@@ -7161,7 +7161,9 @@ def export_patient_data(patients):
             "Radiologists": ", ".join([str(radiologist) for radiologist in patient.radiologist.all()]),
             "Studydescription":patient.study_description,
             "Notes modified at": patient.notes_modified_at.strftime("%Y-%m-%d %H:%M:%S") if patient.notes_modified_at else "",
-            "History Upload Time":  patient.history_files.uploaded_at.strftime("%Y-%m-%d %H:%M:%S") if patient.history_upload_time else "",
+"History Upload Time": history_file.uploaded_at.strftime("%Y-%m-%d %H:%M:%S") if history_file else "",
+
+           
             "Radiologist assigned at:": patient.radiologist_assigned_at.strftime("%Y-%m-%d %H:%M:%S") if patient.radiologist_assigned_at else "",
             "Report created at:": patient.patient.marked_done_at.strftime("%Y-%m-%d %H:%M:%S") if patient.report_created_at else "",
 
@@ -7180,6 +7182,7 @@ def export_patient_data(patients):
     response["Content-Disposition"] = 'attachment; filename="patient_data.xlsx"'
 
     return response
+
 
 @user_type_required('supercoordinator')
 # def all_patient_data(request):
