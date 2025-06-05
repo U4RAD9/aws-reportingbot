@@ -118,17 +118,25 @@ class PatientHistoryFile(models.Model):
     dicom_data = models.ForeignKey(DICOMData, related_name='history_files', on_delete=models.CASCADE)
     history_file = models.FileField(upload_to='patient_history_files/',storage=S3Boto3Storage(), null=True)
     # history_file = models.FileField(upload_to='patient_history_files/', null=True, default=None, blank=True)
-    uploaded_at = models.DateTimeField(auto_now_add=True)   
+    uploaded_at = models.DateTimeField(null=True, blank=True)
+
 
     def save(self, *args, **kwargs):
         india_tz = pytz.timezone("Asia/Kolkata")
         now_ist = now().astimezone(india_tz)
     
-        # If new instance or new file is being uploaded
-        if not self.pk or self.history_file and getattr(self.history_file, 'file', None):
+        if not self.pk:
             self.uploaded_at = now_ist
+        else:
+            # Check if the file has changed
+            old = PatientHistoryFile.objects.filter(pk=self.pk).first()
+            if old and old.history_file != self.history_file:
+                self.uploaded_at = now_ist
     
         super().save(*args, **kwargs)
+        print("New file:", self.history_file)
+        print("Old file:", old.history_file if old else "No old file")
+
 
     def _history_file_changed(self):
         if not self.pk:
