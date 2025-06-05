@@ -123,10 +123,11 @@ class PatientHistoryFile(models.Model):
     def save(self, *args, **kwargs):
         india_tz = pytz.timezone("Asia/Kolkata")
         now_ist = now().astimezone(india_tz)
-
-        if not self.pk or self._history_file_changed():
+    
+        # If new instance or new file is being uploaded
+        if not self.pk or self.history_file and getattr(self.history_file, 'file', None):
             self.uploaded_at = now_ist
-
+    
         super().save(*args, **kwargs)
 
     def _history_file_changed(self):
