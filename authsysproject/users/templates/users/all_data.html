@@ -159,7 +159,6 @@
                     <td>{{ patient.gender }}</td>
                     <td>{{ patient.study_date }}</td>
                     <td>{{ patient.study_time|time:"H:i:s" }}</td>
-                    <td>{{ patient.recived_on_db|date:"Y-m-d H:i:s" }}</td>
                     <td>{{ patient.Modality }}</td>
                     <td>{{ patient.urgent|yesno:"Yes,No" }}</td>
                     <td>{% if patient.isDone %}Reported{% else %}Unreported{% endif %}</td>
