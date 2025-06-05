@@ -38,6 +38,8 @@ class DICOMData(models.Model):
     whatsapp_number = models.CharField(max_length=10, blank=True, null=True)
     radiologist_assigned_at = models.DateTimeField(null=True, blank=True)
     marked_done_at = models.DateTimeField(null=True, blank=True)
+    notes_modified_at = models.DateTimeField(null=True, blank=True)
+
     
     def save(self, *args, **kwargs):
         india_tz = pytz.timezone("Asia/Kolkata")
@@ -55,6 +57,10 @@ class DICOMData(models.Model):
             # Check if isDone is changing from False to True
             if not old_instance.isDone and self.isDone:
                 self.marked_done_at = now().astimezone(india_tz)
+
+            # notes updated
+            if old_instance.notes != self.notes:
+                self.notes_modified_at = now().astimezone(india_tz)    
     
         else:
             # For a new instance, don't set the timestamps here — let them be handled later if applicable
