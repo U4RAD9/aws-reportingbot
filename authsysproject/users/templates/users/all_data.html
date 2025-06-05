@@ -141,6 +141,12 @@
                     <th>Radiologists</th>
                     <th>Studydescription</th>
                     <th>Notes</th>
+                    <th>Radiologist assigned at:</th>
+                    <th>Report created at:</th>
+                    <th>Notes modified at:</th>
+                    <th>History Upload Time</th>
+
+                    
                 </tr>
             </thead>
             <tbody>
@@ -162,6 +168,16 @@
                     <!-- <td>{{ patient.corporatecoordinator.all|join:", " }}</td> -->
                     <td>{{ patient.study_description }}</td>
                     <td>{{ patient.notes }}</td>
+                    <td>{{ patient.radiologist_assigned_at|date:"Y-m-d H:i:s" }}</td>
+                    <td>{{ patient.marked_done_at|date:"Y-m-d H:i:s" }}</td> 
+                    <td>{{ patient.notes_modified_at|date:"Y-m-d H:i:s" }}</td>
+                    <td>
+    {% if patient.history_files.all %}
+        {{ patient.history_files.first.uploaded_at|date:"Y-m-d H:i:s" }}
+    {% else %}
+        No history
+    {% endif %}
+</td>
                     
                 </tr>
                 {% endfor %}
