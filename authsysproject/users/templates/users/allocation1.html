@@ -887,11 +887,7 @@
                     {% if not forloop.last %}, {% endif %}
                 {% endfor %}
             </td>
-            <td>
-              <button class="openClinicalHistoryButton" data-clinical-history="{{ patient.notes }}">
-                View
-              </button>
-            </td>
+            <td>{{ patient.notes }}"></td>
 
             <td>
               {% for file_url in patient.history_file_urls %}
