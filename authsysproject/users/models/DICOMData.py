@@ -5,6 +5,8 @@ from .corporatecoordinator import CorporateCoordinator
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.utils.timezone import now
 import pytz
+from django.db.models.signals import m2m_changed
+from django.dispatch import receiver
 
 
 
@@ -43,28 +45,25 @@ class DICOMData(models.Model):
     
     def save(self, *args, **kwargs):
         india_tz = pytz.timezone("Asia/Kolkata")
+        now_ist = now().astimezone(india_tz)
         
         if not self.recived_on_db:
-            self.recived_on_db = now().astimezone(india_tz)
+            self.recived_on_db = now_ist
     
         if self.pk:  # This means the object already exists, so we can compare changes
             old_instance = DICOMData.objects.get(pk=self.pk)
     
             # Check if radiologist is being assigned
-            if not old_instance.radiologist.exists() and self.radiologist.exists():
-                self.radiologist_assigned_at = now().astimezone(india_tz)
+            # if not old_instance.radiologist.exists() and self.radiologist.exists():
+            #     self.radiologist_assigned_at = now().astimezone(india_tz)
     
             # Check if isDone is changing from False to True
             if not old_instance.isDone and self.isDone:
-                self.marked_done_at = now().astimezone(india_tz)
+                self.marked_done_at = now_ist
 
             # notes updated
             if old_instance.notes != self.notes:
-                self.notes_modified_at = now().astimezone(india_tz)    
-    
-        else:
-            # For a new instance, don't set the timestamps here — let them be handled later if applicable
-            pass
+                self.notes_modified_at = now_ist
     
         super(DICOMData, self).save(*args, **kwargs)
 
@@ -90,6 +89,16 @@ class DICOMData(models.Model):
             return "No notes available for this study."
         except Exception as e:
             raise Exception(f"Error fetching notes: {str(e)}")
+        
+
+    # Signal to update `radiologist_assigned_at` when radiologist M2M field is changed
+@receiver(m2m_changed, sender=DICOMData.radiologist.through)
+def update_radiologist_assigned_at(sender, instance, action, pk_set, **kwargs):
+    if action == "post_add":
+        if not instance.radiologist_assigned_at:
+            india_tz = pytz.timezone("Asia/Kolkata")
+            instance.radiologist_assigned_at = now().astimezone(india_tz)
+            instance.save()    
 
 
 
