@@ -723,6 +723,8 @@ link.click();
         const id = data.id;
         const study_date = data.date;
         const study_time = data.time;
+        const urlParams = new URLSearchParams(window.location.search);
+        const studydescription = urlParams.get("data-studydescription") || "No description available";
         
  // Fetch notes from dicom_data.py
  const notesResponse = await fetch('/get-dicom-notes/', {
@@ -777,6 +779,7 @@ const notes = notesData.notes || 'No notes available';
           Study Date: ${formattedDate}<br>
           Study Time: ${formattedTime}<br>
           Patient history: ${notes}<br>
+          Study Description: ${studydescription}<br>
       </p>
   `;
   
