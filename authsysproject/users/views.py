@@ -7165,7 +7165,7 @@ def export_patient_data(patients):
 
            
             "Radiologist assigned at:": patient.radiologist_assigned_at.strftime("%Y-%m-%d %H:%M:%S") if patient.radiologist_assigned_at else "",
-            "Report created at:": patient.patient.marked_done_at.strftime("%Y-%m-%d %H:%M:%S") if patient.report_created_at else "",
+            "Report created at:": patient.marked_done_at.strftime("%Y-%m-%d %H:%M:%S") if patient.marked_done_at else "",
 
         })
 
