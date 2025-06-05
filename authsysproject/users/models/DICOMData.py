@@ -36,16 +36,43 @@ class DICOMData(models.Model):
     institution_name = models.CharField(max_length=250, blank=True, null=True, default="None")
     referring_doctor_name = models.CharField(max_length=250, blank=True, null=True, default="None")
     whatsapp_number = models.CharField(max_length=10, blank=True, null=True)
-
-
+    radiologist_assigned_at = models.DateTimeField(null=True, blank=True)
+    marked_done_at = models.DateTimeField(null=True, blank=True)
+    
     def save(self, *args, **kwargs):
-        if not self.recived_on_db:  # Set the timestamp only if it isn't already set
-            india_tz = pytz.timezone("Asia/Kolkata")
+        india_tz = pytz.timezone("Asia/Kolkata")
+        
+        if not self.recived_on_db:
             self.recived_on_db = now().astimezone(india_tz)
+    
+        if self.pk:  # This means the object already exists, so we can compare changes
+            old_instance = DICOMData.objects.get(pk=self.pk)
+    
+            # Check if radiologist is being assigned
+            if not old_instance.radiologist.exists() and self.radiologist.exists():
+                self.radiologist_assigned_at = now().astimezone(india_tz)
+    
+            # Check if isDone is changing from False to True
+            if not old_instance.isDone and self.isDone:
+                self.marked_done_at = now().astimezone(india_tz)
+    
+        else:
+            # For a new instance, don't set the timestamps here — let them be handled later if applicable
+            pass
+    
         super(DICOMData, self).save(*args, **kwargs)
 
+
+    # def save(self, *args, **kwargs):
+    #     if not self.recived_on_db:  # Set the timestamp only if it isn't already set
+    #         india_tz = pytz.timezone("Asia/Kolkata")
+    #         self.recived_on_db = now().astimezone(india_tz)
+    #     super(DICOMData, self).save(*args, **kwargs)
+
+    
+
     def __str__(self):
-        return str(self.patient_name)
+        return str(self.patient_name, self.patient_id, self.study_id)
     
 
     @staticmethod
