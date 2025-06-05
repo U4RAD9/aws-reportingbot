@@ -114,32 +114,37 @@ class JPEGFile(models.Model):
     #jpeg_file = models.CharField(max_length=500)
 
 
+# class PatientHistoryFile(models.Model):
+#     dicom_data = models.ForeignKey(DICOMData, related_name='history_files', on_delete=models.CASCADE)
+#     history_file = models.FileField(upload_to='patient_history_files/',storage=S3Boto3Storage(), null=True)
+#     # history_file = models.FileField(upload_to='patient_history_files/', null=True, default=None, blank=True)
+#     uploaded_at = models.DateTimeField(auto_now_add=True)   
+
+
 class PatientHistoryFile(models.Model):
     dicom_data = models.ForeignKey(DICOMData, related_name='history_files', on_delete=models.CASCADE)
-    history_file = models.FileField(upload_to='patient_history_files/',storage=S3Boto3Storage(), null=True)
-    # history_file = models.FileField(upload_to='patient_history_files/', null=True, default=None, blank=True)
+    history_file = models.FileField(upload_to='patient_history_files/', storage=S3Boto3Storage(), null=True, blank=True)
     uploaded_at = models.DateTimeField(null=True, blank=True)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Store original file state when instance is loaded
+        self._original_history_file = self.history_file
 
     def save(self, *args, **kwargs):
         india_tz = pytz.timezone("Asia/Kolkata")
         now_ist = now().astimezone(india_tz)
-    
+        
+        # Always update uploaded_at for new instances
         if not self.pk:
             self.uploaded_at = now_ist
         else:
-            # Check if the file has changed
-            old = PatientHistoryFile.objects.filter(pk=self.pk).first()
-            if old and old.history_file != self.history_file:
+            # Compare current file with original file
+            if self.history_file != self._original_history_file:
                 self.uploaded_at = now_ist
-    
+        
         super().save(*args, **kwargs)
-        print("New file:", self.history_file)
-        print("Old file:", old.history_file if old else "No old file")
+        # Update original file reference after save
+        self._original_history_file = self.history_file
 
 
-    def _history_file_changed(self):
-        if not self.pk:
-            return True  # new instance
-        old = PatientHistoryFile.objects.filter(pk=self.pk).first()
-        return old and old.history_file != self.history_file 
