@@ -374,10 +374,18 @@ def upload_ecg(request):
                         missing_id.append({'id': patient_id, 'name': ecg_file.name})
                         break
 
-                    if PatientDetails.objects.filter(PatientId=patient_id).exists():
-                        print(f"Skipping file {ecg_file.name} - Duplicate data found.")
-                        rejected_details.append({'id': patient_id, 'name': ecg_file.name})
-                        break
+                    # if PatientDetails.objects.filter(PatientId=patient_id).exists():
+                    #     print(f"Skipping file {ecg_file.name} - Duplicate data found.")
+                    #     rejected_details.append({'id': patient_id, 'name': ecg_file.name})
+                    #     break
+
+                    original_patient_id = patient_id
+                    suffix = 1
+                    while PatientDetails.objects.filter(PatientId=patient_id).exists():
+                        suffix += 1
+                        patient_id = f"{original_patient_id}-{suffix}"
+                    print(f"Assigned unique patient ID: {patient_id}")
+
 
                     if not PatientDetails.objects.filter(PatientId=patient_id).exists():
                         patient_name = extract_patient_name(first_page_text)
