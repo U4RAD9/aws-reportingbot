@@ -5724,6 +5724,27 @@ def edit_dicom_data_coordinator(request, pk):
     return JsonResponse({'success': False}, status=400)
 
 
+@csrf_exempt
+def edit_ecg_data_coordinator(request, pk):
+    """Edit specific PatientDetails entry."""
+    if request.method == "POST":
+        try:
+            ecg_entry = get_object_or_404(PatientDetails, pk=pk)
+            ecg_entry.PatientId = request.POST.get('PatientId', ecg_entry.PatientId)
+            ecg_entry.PatientName = request.POST.get('PatientName', ecg_entry.PatientName)
+            ecg_entry.age = request.POST.get('age', ecg_entry.age)
+            ecg_entry.gender = request.POST.get('gender', ecg_entry.gender)
+            ecg_entry.HeartRate = request.POST.get('HeartRate', ecg_entry.HeartRate)
+            ecg_entry.save()
+
+            return JsonResponse({'success': True})
+        except Exception as e:
+            # Log the exception
+            logger.exception("Error updating ECG entry.")
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    return JsonResponse({'success': False}, status=400)    
+
+
 
 
 

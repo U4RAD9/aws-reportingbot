@@ -657,6 +657,7 @@
                                                 </select>
                                             </div>
                                         </th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -704,6 +705,9 @@
                                                     {% endif %}
                                                 {% endif %}
                                             </td>
+                                            <td>
+                                              <button type="button" class="btn btn-sm btn-custom" onclick="openEditModal({{ patient.id }})">Edit</button>
+                                            </td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
@@ -718,9 +722,103 @@
 
     </div>
 
+    <!-- Modal for Edit Form -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editModalLabel">Edit DICOM Data</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="editForm">
+              {% csrf_token %}
+              <input type="hidden" id="dicomId" />
+              <!-- <div class="mb-3">
+                <label for="PatientId" class="form-label">Patient Id:</label>
+                <input type="text" class="form-control" id="PatientId"/>
+              </div> -->
+              <div class="mb-3">
+                <label for="PatientName" class="form-label">Name:</label>
+                <input type="text" class="form-control" id="PatientName"/>
+              </div>
+              
+              <div class="mb-3">
+                <label for="age" class="form-label">Age:</label>
+                <input type="text" class="form-control" id="age"/>
+              </div>
+              <div class="mb-3">
+                <label for="gender" class="form-label">Gender:</label>
+                <input type="text" class="form-control" id="gender"/>
+              </div>
+              <div class="mb-3">
+                <label for="HeartRate" class="form-label">Heart Rate:</label>
+                <input type="text" class="form-control" id="HeartRate"/>
+              </div>
+              </div>
+              
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveEdit()">Save changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+
+
+    <script>
+      function openEditModal(id) {
+          $("#dicomId").val(id);
+          const row = $("tr:has(button[onclick='openEditModal(" + id + ")'])");
+          $("#PatientId").val(row.find("td:eq(1)").text());
+          $("#PatientName").val(row.find("td:eq(2)").text());
+          $("#age").val(row.find("td:eq(3)").text());
+          $("#gender").val(row.find("td:eq(4)").text());
+          $("#HeartRate").val(row.find("td:eq(5)").text());
+          $('#editModal').modal('show');
+        }
+  
+  
+        function saveEdit() {
+          const id = $("#dicomId").val();
+          const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value; // Get the CSRF token
+      
+          // Prepare the form data, including files
+          const formData = new FormData();
+          formData.append('PatientId', $("#PatientId").val());
+          formData.append('PatientName', $("#PatientName").val());
+          formData.append('age', $("#age").val());
+          formData.append('gender', $("#gender").val());
+          formData.append('HeartRate', $("#HeartRate").val());
+          formData.append('csrfmiddlewaretoken', csrftoken);
+      
+          // Make the POST request with FormData
+          $.ajax({
+              url: `/edit-dicom-data-coordinator/${id}/`,
+              type: 'POST',
+              data: formData,
+              processData: false,  // Don't process the data
+              contentType: false,  // Don't set content type
+              success: function (response) {
+                  if (response.success) {
+                      location.reload();
+                  } else {
+                      alert("Failed to update data!");
+                  }
+              },
+              error: function () {
+                  alert("Error while updating data!");
+              }
+          });
+      }
+    </script>
 
     <script>
 
