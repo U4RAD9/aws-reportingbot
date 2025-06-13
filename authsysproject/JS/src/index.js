@@ -3512,18 +3512,341 @@ pdf.autoTable({
 //   })();
 // }
 
+// UploadDivContentOnPDFWithoutImage() {
+//   (async () => {
+//     try {
+//       this.showLoader();
+//       const filename = this.createFilename();
+//       const editorContent = document.getElementsByClassName("ck-editor__editable")[0];
+      
+//       if (!editorContent) {
+//         throw new Error('CKEditor content not found');
+//       }
+
+//       const { location, accession, institutionName } = this.extractDataFromURL();
+//       const images = editorContent.querySelectorAll("img");
+//       const signatureElement = images[1];
+//       const signatureUrl = signatureElement ? signatureElement.src : null;
+//       const remainingReportImages = Array.prototype.slice.call(images, 2);
+
+//       const pdf = new jsPDF({
+//         orientation: "p",
+//         unit: "pt",
+//         format: "a4",
+//         compress: true,
+//       });
+
+//       const topMargin = 90;
+//       const bottomMargin = 60;
+//       const pageHeight = pdf.internal.pageSize.height;
+//       let currentYPosition = topMargin;
+
+//       // Add table data
+//       const tableData = this.extractTableData(editorContent);
+//       if (Object.keys(tableData).length > 0) {
+//         const { patientId, patientName, age, gender, testDate, reportDate, referralDr, reportTime } = tableData;
+//         const tableContent = [
+//           ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+//           ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+//           ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"],
+//           ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
+//         ];
+
+//         currentYPosition += 20;
+
+//         pdf.autoTable({
+//           startY: currentYPosition,
+//           body: tableContent,
+//           theme: "grid",
+//           styles: { cellPadding: 3, fontSize: 10 },
+//         });
+//         currentYPosition = pdf.previousAutoTable.finalY + 20;
+//       }
+
+//       // Process main content
+//       const content = this.extractContent(editorContent);
+//       if (content) {
+//         const lines = content.split('\n');
+
+//         for (const line of lines) {
+//           if (line.trim()) {
+//             let text = line;
+//             let isBold = false;
+
+//             const boldMatches = text.match(/\[BOLD\](.*?)\[\/BOLD\]/g);
+//             if (boldMatches) {
+//               isBold = true;
+//               text = text.replace(/\[BOLD\](.*?)\[\/BOLD\]/g, '$1');
+//             }
+
+//             const isBullet = text.startsWith('•');
+//             if (isBullet) {
+//               text = text.substring(1).trim();
+//               currentYPosition += 5;
+//             }
+
+//             if (text.includes("Dr.") && signatureUrl) {
+//               currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+//             }
+
+//             pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+//             pdf.setFontSize(12);
+
+//             const splitText = pdf.splitTextToSize(text, pdf.internal.pageSize.width - (isBullet ? 100 : 80));
+
+//             // Page break if needed
+//             if (currentYPosition + (splitText.length * 15) > pageHeight - bottomMargin) {
+//               pdf.addPage();
+//               currentYPosition = topMargin;
+//             }
+
+//             if (isBullet) {
+//               pdf.text('•', 60, currentYPosition);
+//               pdf.text(splitText, 80, currentYPosition);
+//             } else {
+//               pdf.text(splitText, 40, currentYPosition);
+//             }
+
+//             currentYPosition += splitText.length * 15;
+//           }
+//         }
+//       }
+
+//       // Add captured images
+//       for (const image of remainingReportImages) {
+//         const imageUrl = image ? image.src : null;
+//         if (imageUrl) {
+//           currentYPosition = await this.addReportImage(pdf, imageUrl, currentYPosition, topMargin, bottomMargin);
+//         }
+//       }
+
+//       // Convert and upload PDF
+//       const pdfBlob = pdf.output("blob", { compress: true });
+//       const csrfToken = await this.getCSRFToken();
+//       const formData = new FormData();
+//       formData.append("pdf", pdfBlob, filename ? filename + ".pdf" : "download.pdf");
+//       formData.append("patientId", tableData.patientId);
+//       formData.append("patientName", tableData.patientName);
+//       formData.append("age", tableData.age);
+//       formData.append("gender", tableData.gender);
+//       formData.append("testDate", tableData.testDate);
+//       formData.append("reportDate", tableData.reportDate);
+//       formData.append("location", location);
+//       formData.append("accession", accession);
+//       formData.append("institution_name", institutionName);
+
+//       await axios.post("/upload_xray_pdf/", formData, {
+//         headers: {
+//           "Content-Type": "multipart/form-data",
+//           "X-CSRFToken": csrfToken,
+//         },
+//       });
+
+//       const urlSearchParams = new URLSearchParams(window.location.search);
+//       const studyId = urlSearchParams.get("data-study-id");
+
+//       const updateResponse = await fetch(`/api/update_patient_done_status_xray/${studyId}/`, {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'application/json',
+//           'X-CSRFToken': csrfToken,
+//         },
+//         body: JSON.stringify({ isDone: true }),
+//       });
+
+//       if (updateResponse.ok) {
+//         this.setState({ isDone: true }, () => {
+//           this.handleClick();
+//         });
+//       } else {
+//         console.error('Failed to update isDone status');
+//       }
+
+//       this.showNotification("PDF successfully uploaded!");
+
+//       const currentURL = window.location.href;
+//       setTimeout(() => {
+//         window.location.href = document.referrer + "?nocache=" + Date.now();
+//       }, 200);
+
+//       window.addEventListener("popstate", () => {
+//         if (window.location.href !== currentURL) {
+//           setTimeout(() => {
+//             window.location.reload(true);
+//           }, 200);
+//         }
+//       });
+
+//     } catch (error) {
+//       console.error("Error generating PDF:", error);
+//       this.showNotification("Error uploading PDF. Please try again.");
+//     } finally {
+//       this.hideLoader();
+//     }
+//   })();
+// }            
+
+
+
 UploadDivContentOnPDFWithoutImage() {
   (async () => {
     try {
       this.showLoader();
       const filename = this.createFilename();
       const editorContent = document.getElementsByClassName("ck-editor__editable")[0];
-      
+
       if (!editorContent) {
         throw new Error('CKEditor content not found');
       }
 
+      const contentText = editorContent.textContent.toLowerCase();
+
       const { location, accession, institutionName } = this.extractDataFromURL();
+      const tableData = this.extractTableData(editorContent);
+      
+
+
+       const urlParams = new URLSearchParams(window.location.search);
+  
+
+    // Extract body part from URL parameters
+    const bodyPart = urlParams.get('data-bodypart');
+    const modality = urlParams.get('data-Modality');
+    const gender = urlParams.get('data-gender');
+
+      // --------------- SCENARIO 1: Gender-Body Part Mismatch Check ----------------
+      if (bodyPart?.toLowerCase() === 'abdomen') {
+        const femaleAnatomyTerms = ['uterus', 'ovaries', 'ovary', 'fallopian', 'cervix', 'endometrium', 'vagina', 'vulva', 'corpus luteum'];
+        const maleAnatomyTerms = ['prostate gland', 'seminal vesicle', 'seminal vesicles', 'vas deferens', 'bulbourethral gland', 'cowper', 'testes', 'testis', 'epididymis', 'penile urethra'];
+
+        const hasFemaleTerms = femaleAnatomyTerms.some(term => contentText.includes(term));
+        const hasMaleTerms = maleAnatomyTerms.some(term => contentText.includes(term));
+
+        if (gender?.toLowerCase() === 'male' && hasFemaleTerms) {
+          const proceed = confirm("Gender mismatch detected: This report mentions female anatomy terms for a male patient. Do you want to continue generating the PDF?");
+          if (!proceed) return this.hideLoader();
+        }
+        if (gender?.toLowerCase() === 'female' && hasMaleTerms) {
+          const proceed = confirm("Gender mismatch detected: This report mentions male anatomy terms for a female patient. Do you want to continue generating the PDF?");
+          if (!proceed) return this.hideLoader();
+        }
+      }
+
+      // --------------- SCENARIO 2: Tumor/Nodule Check ----------------
+      if (modality && ['ct', 'mri'].includes(modality.toLowerCase())) {
+        const tumorKeywords = ['nodule', 'cyst', 'lymphoma', 'carcinoma'];
+        const mentionsTumor = tumorKeywords.some(term => contentText.includes(term));
+        if (mentionsTumor) {
+          const sizePattern = /\b\d+(\.\d+)?\s*(mm|cm)\b/i;
+          const hasSize = sizePattern.test(contentText);
+          if (!hasSize) {
+            alert("Alert: Tumor/ Nodule size missing. Enter measurement in mm or cm.");
+            return this.hideLoader();
+          }
+
+          const cmPattern = /\b\d+(\.\d+)?\s*cm\b/i;
+          if (cmPattern.test(contentText)) {
+            const confirmSizeUnit = confirm("Please confirm: Tumor/Nodule size is entered in centimetres (cm) or millimetres (mm). Is this correct?");
+            if (!confirmSizeUnit) return this.hideLoader();
+          }
+
+          const statusTerms = ['benign', 'malignant', 'not confirmed'];
+          const hasStatus = statusTerms.some(term => contentText.includes(term));
+          if (!hasStatus) {
+            alert("Alert: Tumor /Nodule status (Benign/Malignant/Not Confirmed) not selected. Please choose an option.");
+            return this.hideLoader();
+          }
+        }
+      }
+
+      // --------------- SCENARIO 3: Uncertainty Words ----------------
+      const uncertainTerms = ['probably', 'maybe', 'likely', 'appears to be', 'suggests'];
+      const hasUncertainty = uncertainTerms.some(term => contentText.includes(term));
+      if (hasUncertainty) {
+        alert("Alert: Report contains uncertain terms like 'probably' or 'maybe'. Please revise the language for clarity before submission.");
+        return this.hideLoader();
+      }
+
+      // --------------- SCENARIO 4: Midline/Mediastinal Shift ----------------
+      const shiftTerms = ['midline shift', 'mediastinal shift', 'tracheal deviation', 'organ displacement'];
+      const mentionsShift = shiftTerms.some(term => contentText.includes(term));
+      if (mentionsShift) {
+        const sizePattern = /\b\d+(\.\d+)?\s*(mm|cm)\b/;
+        const directionPattern = /\b(leftward|rightward|superior|inferior)\b/;
+        if (!sizePattern.test(contentText) || !directionPattern.test(contentText)) {
+          alert("Alert: Organ displacement or shift detected. Please specify the measurement (mm/cm) and direction before finalizing the report.");
+          return this.hideLoader();
+        }
+      }
+
+      // --------------- SCENARIO 5: Laterality Check ----------------
+      const lateralityBodyParts = ['brain', 'face', 'ear', 'ears', 'nose', 'eye', 'eyes', 'nostril', 'nostrils', 'sinus', 'dentition', 'extremity', 'extremities', 'breast', 'breasts', 'heart', 'lung', 'lungs', 'kidney', 'kidneys', 'ovary', 'ovaries', 'hip', 'hips', 'testicle', 'testicles'];
+      const missingLaterality = [];
+
+      lateralityBodyParts.forEach(part => {
+        const regex = new RegExp(`\\b(?:right|left)?\\s{0,2}\\b${part}\\b`, 'gi');
+        const matches = [...contentText.matchAll(regex)];
+        matches.forEach(match => {
+          const matchedText = match[0].toLowerCase();
+          if (!matchedText.includes('right') && !matchedText.includes('left')) {
+            if (!missingLaterality.includes(part)) missingLaterality.push(part);
+          }
+        });
+      });
+
+      if (missingLaterality.length > 0) {
+        const list = missingLaterality.join(', ');
+        alert(`Warning: Laterality (Right/Left) not specified for: ${list}. Please update to proceed.`);
+        return this.hideLoader();
+      }
+
+      // --------------- SCENARIO 6: Foreign Object Notice ----------------
+      const confirmForeignObject = confirm("Notice: Foreign object or surgical implant detected in the image. Please confirm and specify its type and location in the report.");
+      if (!confirmForeignObject) return this.hideLoader();
+
+      // --------------- SCENARIO 7: Surgical History (CT/MRI Abdomen) ----------------
+      if (modality && ['ct', 'mri'].includes(modality.toLowerCase()) && bodyPart?.toLowerCase() === 'abdomen') {
+        const surgicalOrgans = ['breast', 'testicle', 'gall bladder', 'kidney', 'uterus', 'ovary', 'appendix', 'spleen', 'liver'];
+        const surgicalStatusTerms = ['removed', 'partially removed', 'intact'];
+        const missingSurgicalStatus = [];
+
+        surgicalOrgans.forEach(organ => {
+          const organRegex = new RegExp(`\\b${organ}\\b`, 'i');
+          const statusRegex = new RegExp(`\\b${organ}\\b[^.]{0,50}\\b(${surgicalStatusTerms.join('|')})\\b`, 'i');
+          if (organRegex.test(contentText) && !statusRegex.test(contentText)) {
+            missingSurgicalStatus.push(organ);
+          }
+        });
+
+        if (missingSurgicalStatus.length > 0) {
+          const list = missingSurgicalStatus.join(', ');
+          alert(`Reminder: Please specify if ${list} is intact, removed, or partially removed before submitting the report.`);
+          return this.hideLoader();
+        }
+      }
+
+      // --------------- SCENARIO 8: Modality Check ----------------
+      if (modality) {
+        const modalityLower = modality.toLowerCase();
+        const modalityTerms = {
+          'x-ray': ['x-ray', 'x ray', 'radiograph', 'chest pa'],
+          'ct': ['ct', 'computed tomography'],
+          'mri': ['mri', 'magnetic resonance imaging'],
+          'ultrasound': ['ultrasound', 'usg', 'sonography'],
+          'pet-ct': ['pet-ct', 'pet ct', 'positron emission tomography']
+        };
+        let conflictingTerms = [];
+        for (const [key, terms] of Object.entries(modalityTerms)) {
+          if (key !== modalityLower) conflictingTerms.push(...terms);
+        }
+        const mismatchDetected = conflictingTerms.some(term => contentText.includes(term.toLowerCase()));
+        if (mismatchDetected) {
+          const confirmModality = confirm("Alert: Please verify if the imaging modality matches the findings described. Kindly confirm or correct the selected modality before final submission.");
+          if (!confirmModality) return this.hideLoader();
+        }
+      }
+
+      // ---------- Remaining PDF generation logic continues here... ----------
       const images = editorContent.querySelectorAll("img");
       const signatureElement = images[1];
       const signatureUrl = signatureElement ? signatureElement.src : null;
@@ -3541,8 +3864,6 @@ UploadDivContentOnPDFWithoutImage() {
       const pageHeight = pdf.internal.pageSize.height;
       let currentYPosition = topMargin;
 
-      // Add table data
-      const tableData = this.extractTableData(editorContent);
       if (Object.keys(tableData).length > 0) {
         const { patientId, patientName, age, gender, testDate, reportDate, referralDr, reportTime } = tableData;
         const tableContent = [
@@ -3553,7 +3874,6 @@ UploadDivContentOnPDFWithoutImage() {
         ];
 
         currentYPosition += 20;
-
         pdf.autoTable({
           startY: currentYPosition,
           body: tableContent,
@@ -3563,16 +3883,13 @@ UploadDivContentOnPDFWithoutImage() {
         currentYPosition = pdf.previousAutoTable.finalY + 20;
       }
 
-      // Process main content
       const content = this.extractContent(editorContent);
       if (content) {
         const lines = content.split('\n');
-
         for (const line of lines) {
           if (line.trim()) {
             let text = line;
             let isBold = false;
-
             const boldMatches = text.match(/\[BOLD\](.*?)\[\/BOLD\]/g);
             if (boldMatches) {
               isBold = true;
@@ -3591,10 +3908,8 @@ UploadDivContentOnPDFWithoutImage() {
 
             pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
             pdf.setFontSize(12);
-
             const splitText = pdf.splitTextToSize(text, pdf.internal.pageSize.width - (isBullet ? 100 : 80));
 
-            // Page break if needed
             if (currentYPosition + (splitText.length * 15) > pageHeight - bottomMargin) {
               pdf.addPage();
               currentYPosition = topMargin;
@@ -3612,7 +3927,6 @@ UploadDivContentOnPDFWithoutImage() {
         }
       }
 
-      // Add captured images
       for (const image of remainingReportImages) {
         const imageUrl = image ? image.src : null;
         if (imageUrl) {
@@ -3620,7 +3934,6 @@ UploadDivContentOnPDFWithoutImage() {
         }
       }
 
-      // Convert and upload PDF
       const pdfBlob = pdf.output("blob", { compress: true });
       const csrfToken = await this.getCSRFToken();
       const formData = new FormData();
@@ -3684,7 +3997,7 @@ UploadDivContentOnPDFWithoutImage() {
       this.hideLoader();
     }
   })();
-}            
+}
 
 
   UploadDivContentOnPDF() {
