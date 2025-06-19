@@ -353,6 +353,7 @@ def upload_ecg(request):
                 #
                 for page_number, page in enumerate(pdf_reader.pages):
                     first_page_text = page.extract_text()
+                    first_page_text = clean_text(first_page_text)
                     first_page_text = deduplicate_text(first_page_text)
 
                     # Fixing the page text if it contains space after each character.
@@ -404,26 +405,50 @@ def upload_ecg(request):
 
                         date, created = Date.objects.get_or_create(date_field=formatted_date, location_id=location.id)
 
+                        # patient = PatientDetails(
+                        #     PatientId=clean_text(patient_id),
+                        #     PatientName=clean_text(patient_name),
+                        #     age=clean_text(patient_age),
+                        #     gender=clean_text(patient_gender),
+                        #     HeartRate=clean_text(heart_rate),
+                        #     PRInterval=clean_text(pr_interval),
+                        #     TestDate=formatted_date,
+                        #     ReportDate=formatted_date,
+                        #     date=date,
+                        #     location=location
+                        # )
+
+                        cleaned_patient_id = clean_text(patient_id)
+                        cleaned_patient_name = clean_text(patient_name)
+                        cleaned_patient_age = clean_text(patient_age)
+                        cleaned_patient_gender = clean_text(patient_gender)
+                        cleaned_heart_rate = clean_text(heart_rate)
+                        cleaned_pr_interval = clean_text(pr_interval)
+                        
                         patient = PatientDetails(
-                            PatientId=clean_text(patient_id),
-                            PatientName=clean_text(patient_name),
-                            age=clean_text(patient_age),
-                            gender=clean_text(patient_gender),
-                            HeartRate=clean_text(heart_rate),
-                            PRInterval=clean_text(pr_interval),
+                            PatientId=cleaned_patient_id,
+                            PatientName=cleaned_patient_name,
+                            age=cleaned_patient_age,
+                            gender=cleaned_patient_gender,
+                            HeartRate=cleaned_heart_rate,
+                            PRInterval=cleaned_pr_interval,
                             TestDate=formatted_date,
                             ReportDate=formatted_date,
                             date=date,
                             location=location
                         )
+
                         patient.save()
-                        new_patient_name = patient_name.replace(" ", "_")
+                        #new_patient_name = clean_text(patient_name.replace(" ", "_"))
                         # Convert PDF page to image and upload to S3
                         doc = fitz.open(stream=pdf_bytes, filetype='pdf')
                         page = doc.load_page(page_number)
                         image_bytes = page.get_pixmap().tobytes()
                         image_buffer = io.BytesIO(image_bytes)
-                        image_file = ContentFile(image_buffer.getvalue(), name=f"{patient_id}_{new_patient_name}.jpg")
+                        #image_file = ContentFile(image_buffer.getvalue(), name=f"{patient_id}_{new_patient_name}.jpg")
+                        # Safe filenames for S3
+                        safe_filename_name = cleaned_patient_name.replace(" ", "_")
+                        image_file = ContentFile(image_buffer.getvalue(), name=f"{cleaned_patient_id}_{safe_filename_name}.jpg")
 
                         # Upload image to S3
                         s3_image_path = f"ecg_jpgs/{image_file.name}"
@@ -431,7 +456,9 @@ def upload_ecg(request):
                         patient.image = s3_image_path  # Save S3 path in the database
 
                         # Save PDF file to S3
-                        reportimage_file = ContentFile(pdf_bytes, name=f"{patient_id}_{new_patient_name}.pdf")
+                        #reportimage_file = ContentFile(pdf_bytes, name=f"{patient_id}_{new_patient_name}.pdf")
+                        reportimage_file = ContentFile(pdf_bytes, name=f"{cleaned_patient_id}_{safe_filename_name}.pdf")
+
                         s3_pdf_path = f"ecg_pdfs/{reportimage_file.name}"
                         upload_to_s3(reportimage_file, s3_pdf_path)
                         patient.reportimage = s3_pdf_path  # Save S3 path in the database
