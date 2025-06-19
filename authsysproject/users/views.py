@@ -342,9 +342,15 @@ def upload_ecg(request):
                     print(f"Error reading ECG file: {str(e)}")
                     processing_error.append({'id': None, 'name': ecg_file.name})
                     continue
+                
+                # Function to clean text by removing null characters and stripping whitespace
+                def clean_text(text):
+                    if text:
+                        return text.replace('\x00', '').strip()
+                    return ''
 
                 pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
-
+                #
                 for page_number, page in enumerate(pdf_reader.pages):
                     first_page_text = page.extract_text()
                     first_page_text = deduplicate_text(first_page_text)
