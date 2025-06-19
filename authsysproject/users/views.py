@@ -405,12 +405,12 @@ def upload_ecg(request):
                         date, created = Date.objects.get_or_create(date_field=formatted_date, location_id=location.id)
 
                         patient = PatientDetails(
-                            PatientId=patient_id,
-                            PatientName=patient_name,
-                            age=patient_age,
-                            gender=patient_gender,
-                            HeartRate=heart_rate,
-                            PRInterval=pr_interval,
+                            PatientId=clean_text(patient_id),
+                            PatientName=clean_text(patient_name),
+                            age=clean_text(patient_age),
+                            gender=clean_text(patient_gender),
+                            HeartRate=clean_text(heart_rate),
+                            PRInterval=clean_text(pr_interval),
                             TestDate=formatted_date,
                             ReportDate=formatted_date,
                             date=date,
