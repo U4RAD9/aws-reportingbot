@@ -3949,33 +3949,16 @@ def add_logo_to_pdf(request, pdf_id):
         logo_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'logo.png')
         footer_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'footer.png')
 
-        # Get image dimensions (using Pillow)
-        from PIL import Image
-        
-        # Logo dimensions
-        with Image.open(logo_path) as img:
-            logo_width, logo_height = img.size
-            logo_aspect_ratio = logo_width / logo_height
-        
-        # Footer dimensions
-        with Image.open(footer_path) as img:
-            footer_width, footer_height = img.size
-            footer_aspect_ratio = footer_width / footer_height
+        # Get page dimensions (letter size in points)
+        page_width = letter[0]  # 612 points (8.5 inches)
+        page_height = letter[1]  # 792 points (11 inches)
 
-        # Set desired display dimensions
-        logo_display_width = 320  # Same as your original
-        logo_display_height = logo_display_width / logo_aspect_ratio
+        # Convert margins from pixels to points (1px = 0.75pt at 72dpi)
+        top_margin = 10 * 0.75  # 10px top margin for logo
+        side_margin = 5 * 0.75   # 5px side margins
 
-        footer_display_width = 400  # Adjust as needed
-        footer_display_height = footer_display_width / footer_aspect_ratio
-
-        # Calculate positions
-        page_width = letter[0]
-        footer_x = (page_width - footer_display_width) / 2  # Center horizontally
-        footer_y = 0  # At the very bottom
-
-        logo_x = 40  # Left margin
-        logo_y = 735  # From top (same as your original)
+        # Calculate maximum available width for logo/footer
+        max_content_width = page_width - (2 * side_margin)
 
         # Process each page
         for page in reader.pages:
@@ -3983,23 +3966,32 @@ def add_logo_to_pdf(request, pdf_id):
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
                 c = canvas.Canvas(overlay_temp.name, pagesize=letter)
                 
-                # Add logo to every page
+                # Add logo to every page (full width with 5px side margins)
+                logo_width = max_content_width
+                logo_height = 60  # Fixed height, will maintain aspect ratio
+                logo_y = page_height - logo_height - top_margin  # 10px from top
+                
                 c.drawImage(
                     logo_path,
-                    x=logo_x,
+                    x=side_margin,  # 5px left margin
                     y=logo_y,
-                    width=logo_display_width,
-                    height=logo_display_height,
+                    width=logo_width,
+                    height=logo_height,
+                    preserveAspectRatio=True,
                     mask='auto'
                 )
                 
-                # Add footer to every page
+                # Add footer to every page (full width with 5px side margins)
+                footer_height = 40  # Fixed height, will maintain aspect ratio
+                footer_width = max_content_width
+                
                 c.drawImage(
                     footer_path, 
-                    x=footer_x, 
-                    y=footer_y,
-                    width=footer_display_width, 
-                    height=footer_display_height,
+                    x=side_margin,  # 5px left margin
+                    y=0,  # At very bottom
+                    width=footer_width, 
+                    height=footer_height,
+                    preserveAspectRatio=True,
                     mask='auto'
                 )
                 
@@ -4032,7 +4024,6 @@ def add_logo_to_pdf(request, pdf_id):
         return HttpResponse("Report not found.", status=404)
     except Exception as e:
         return HttpResponse(f"Error: {str(e)}", status=500)
-
 
 @login_required
 
