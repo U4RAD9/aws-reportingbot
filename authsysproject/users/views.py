@@ -4043,69 +4043,68 @@ def add_logo_to_pdf(request, pdf_id):
         reader = PdfReader(original_pdf_path)
         writer = PdfWriter()
 
-        # Paths to logo and footer images
+        # Paths to logo and footer images (verify these paths exist)
         logo_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'logo.png')
         footer_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'footer.png')
 
-        # Verify logo exists
+        # Verify logo file exists
         if not os.path.exists(logo_path):
             return HttpResponse(f"Logo file not found at: {logo_path}", status=404)
 
-        # Get page dimensions
+        # Get page dimensions (letter size in points)
         page_width = letter[0]  # 612 points
         page_height = letter[1]  # 792 points
 
-        # Set exact positioning
-        side_margin = 3.75  # 5px in points
+        # Set margins (5px = ~3.75 points)
+        side_margin = 3.75
         content_width = page_width - (2 * side_margin)
-        
-        # Logo dimensions
-        logo_height = 60  # Fixed height
+
+        # Get logo dimensions while maintaining aspect ratio
+        logo_display_height = 60  # Fixed height in points
+        footer_display_height = 40  # Fixed height in points
 
         # Process each page
         for page in reader.pages:
+            # Create overlay for this page
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
                 c = canvas.Canvas(overlay_temp.name, pagesize=letter)
                 
-                # FIRST draw the footer (bottom layer)
-                footer_height = 40
-                c.drawImage(
-                    footer_path,
-                    x=side_margin,
-                    y=1,  # 1 point from bottom
-                    width=content_width,
-                    height=footer_height,
-                    preserveAspectRatio=True,
-                    anchor='s',
-                    mask='auto'
-                )
-                
-                # THEN draw the logo (top layer) - LAST ITEM DRAWN WILL BE ON TOP
+                # Add logo to EVERY page - absolutely flush to top
                 c.drawImage(
                     logo_path,
                     x=side_margin,
-                    y=page_height - 1,  # 1 point from top
+                    y=page_height - logo_display_height,  # Adjusted to prevent clipping
                     width=content_width,
-                    height=logo_height,
+                    height=logo_display_height,
                     preserveAspectRatio=True,
-                    anchor='n',
-                    mask='auto'
+                    mask='auto',
+                    anchor='n'  # Anchor to top
                 )
                 
-                # Add transparent rectangle under logo if needed to "clear" space
-                # c.setFillColorRGB(1,1,1, alpha=0)  # Transparent
-                # c.rect(side_margin, page_height-logo_height, content_width, logo_height, fill=1, stroke=0)
+                # Add footer to EVERY page - absolutely flush to bottom
+                c.drawImage(
+                    footer_path,
+                    x=side_margin,
+                    y=0,
+                    width=content_width,
+                    height=footer_display_height,
+                    preserveAspectRatio=True,
+                    mask='auto',
+                    anchor='s'  # Anchor to bottom
+                )
                 
                 c.save()
                 overlay_pdf_path = overlay_temp.name
 
-            # Merge overlay
+            # Merge the overlay with the page
             overlay = PdfReader(overlay_pdf_path)
             page.merge_page(overlay.pages[0])
             writer.add_page(page)
+
+            # Clean up temporary overlay file
             os.unlink(overlay_pdf_path)
 
-        # Save and return
+        # Save final modified PDF
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as final_output:
             writer.write(final_output)
             final_output_path = final_output.name
@@ -4113,7 +4112,7 @@ def add_logo_to_pdf(request, pdf_id):
         filename = report.pdf_file.name.split("/")[-1]
         response = FileResponse(open(final_output_path, "rb"), as_attachment=True, filename=filename)
         
-        # Cleanup
+        # Clean up temporary files
         os.unlink(original_pdf_path)
         os.unlink(final_output_path)
         
