@@ -4022,7 +4022,6 @@ def xray_pdf_report(request):
 #         return HttpResponse(f"Error: {str(e)}", status=500)
 
 
-
 def add_logo_to_pdf(request, pdf_id):
     try:
         report = XrayReport.objects.get(id=pdf_id)
@@ -4044,19 +4043,25 @@ def add_logo_to_pdf(request, pdf_id):
         reader = PdfReader(original_pdf_path)
         writer = PdfWriter()
 
-        # Paths to logo and footer images
+        # Paths to logo and footer images (verify these paths exist)
         logo_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'logo.png')
         footer_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'footer.png')
+
+        # Verify logo file exists
+        if not os.path.exists(logo_path):
+            return HttpResponse(f"Logo file not found at: {logo_path}", status=404)
 
         # Get page dimensions (letter size in points)
         page_width = letter[0]  # 612 points
         page_height = letter[1]  # 792 points
 
-        # Convert 5px margin to points (1px = 0.75pt at 72dpi)
-        side_margin = 5 * 0.75  # ~3.75 points
-
-        # Calculate available width for content
+        # Set margins (5px = ~3.75 points)
+        side_margin = 3.75
         content_width = page_width - (2 * side_margin)
+
+        # Get logo dimensions while maintaining aspect ratio
+        logo_display_height = 60  # Fixed height in points
+        footer_display_height = 40  # Fixed height in points
 
         # Process each page
         for page in reader.pages:
@@ -4064,30 +4069,28 @@ def add_logo_to_pdf(request, pdf_id):
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
                 c = canvas.Canvas(overlay_temp.name, pagesize=letter)
                 
-                # Add logo to every page - absolutely flush to top
-                logo_height = 60  # Fixed height in points
+                # Add logo to EVERY page - absolutely flush to top
                 c.drawImage(
                     logo_path,
-                    x=side_margin,  # 5px left margin
-                    y=page_height,  # Start from very top
-                    width=content_width,  # Full available width
-                    height=logo_height,
+                    x=side_margin,
+                    y=page_height - logo_display_height,  # Adjusted to prevent clipping
+                    width=content_width,
+                    height=logo_display_height,
                     preserveAspectRatio=True,
-                    anchor='n',  # Anchor to north (top)
-                    mask='auto'
+                    mask='auto',
+                    anchor='n'  # Anchor to top
                 )
                 
-                # Add footer to every page - absolutely flush to bottom
-                footer_height = 40  # Fixed height in points
+                # Add footer to EVERY page - absolutely flush to bottom
                 c.drawImage(
-                    footer_path, 
-                    x=side_margin,  # 5px left margin
-                    y=0,  # Flush to bottom
-                    width=content_width,  # Full available width
-                    height=footer_height,
+                    footer_path,
+                    x=side_margin,
+                    y=0,
+                    width=content_width,
+                    height=footer_display_height,
                     preserveAspectRatio=True,
-                    anchor='s',  # Anchor to south (bottom)
-                    mask='auto'
+                    mask='auto',
+                    anchor='s'  # Anchor to bottom
                 )
                 
                 c.save()
@@ -4119,7 +4122,9 @@ def add_logo_to_pdf(request, pdf_id):
         return HttpResponse("Report not found.", status=404)
     except Exception as e:
         return HttpResponse(f"Error: {str(e)}", status=500)
-        
+
+    
+       
 @login_required
 
 
