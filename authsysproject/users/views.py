@@ -4056,11 +4056,11 @@ def add_logo_to_pdf(request, pdf_id):
         page_height = letter[1]  # 792 points
 
         # Set margins (5px = ~3.75 points)
-        side_margin = 3.75
+        side_margin = 0
         content_width = page_width - (2 * side_margin)
 
         # Get logo dimensions while maintaining aspect ratio
-        logo_display_height = 60  # Fixed height in points
+        logo_display_height = 10  # Fixed height in points
         footer_display_height = 40  # Fixed height in points
 
         # Process each page
