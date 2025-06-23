@@ -3955,6 +3955,8 @@ def add_logo_to_pdf(request, pdf_id):
 
         # Convert 5px margin to points (1px = 0.75pt at 72dpi)
         side_margin = 5 * 0.75  # ~3.75 points
+
+        # Calculate available width for content
         content_width = page_width - (2 * side_margin)
 
         # Process each page
@@ -3963,26 +3965,26 @@ def add_logo_to_pdf(request, pdf_id):
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
                 c = canvas.Canvas(overlay_temp.name, pagesize=letter)
                 
-                # Add logo - absolutely flush to top with no margin
+                # Add logo - absolutely flush to top (0px margin)
                 logo_height = 60  # Fixed height in points
                 c.drawImage(
                     logo_path,
                     x=side_margin,  # 5px left margin
-                    y=page_height,  # Start drawing from very top
-                    width=content_width,
+                    y=page_height - logo_height,  # Flush to top
+                    width=content_width,  # Full available width
                     height=logo_height,
                     preserveAspectRatio=True,
                     anchor='n',  # Anchor to north (top)
                     mask='auto'
                 )
                 
-                # Add footer - flush to bottom with 5px side margins
+                # Add footer - absolutely flush to bottom with 5px side margins
                 footer_height = 40  # Fixed height in points
                 c.drawImage(
                     footer_path, 
                     x=side_margin,  # 5px left margin
                     y=0,  # Flush to bottom
-                    width=content_width,
+                    width=content_width,  # Full available width
                     height=footer_height,
                     preserveAspectRatio=True,
                     anchor='s',  # Anchor to south (bottom)
@@ -4019,7 +4021,7 @@ def add_logo_to_pdf(request, pdf_id):
     except Exception as e:
         return HttpResponse(f"Error: {str(e)}", status=500)
 
-
+        
 @login_required
 
 
