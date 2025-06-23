@@ -4025,62 +4025,106 @@ def xray_pdf_report(request):
 def add_logo_to_pdf(request, pdf_id):
     try:
         report = XrayReport.objects.get(id=pdf_id)
-        
-        # 1. Verify logo file exists
-        logo_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'logo.png')
-        if not os.path.exists(logo_path):
-            return HttpResponse(f"Logo file not found at: {logo_path}", status=404)
-        
-        # 2. Download original PDF
+
+        # Get presigned URL
         presigned_pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
+
+        # Download the PDF from S3
         response = requests.get(presigned_pdf_url)
         if response.status_code != 200:
-            return HttpResponse("Failed to download PDF", status=404)
-            
-        # 3. Create modified PDF
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
-            # Create a new PDF with logo on every page
-            packet = io.BytesIO()
-            can = canvas.Canvas(packet, pagesize=letter)
-            
-            # Draw logo (absolute positioning)
-            can.drawImage(logo_path, 
-                         x=40,  # Left margin
-                         y=letter[1]-70,  # 70 points from top
-                         width=200,  # Fixed width
-                         height=60,  # Fixed height
-                         mask='auto',
-                         preserveAspectRatio=True)
-            can.save()
-            
-            # Merge with original
-            packet.seek(0)
-            new_pdf = PdfReader(packet)
-            original_pdf = PdfReader(io.BytesIO(response.content))
-            
-            output = PdfWriter()
-            
-            for i in range(len(original_pdf.pages)):
-                page = original_pdf.pages[i]
-                if i < len(new_pdf.pages):
-                    page.merge_page(new_pdf.pages[0])
-                output.add_page(page)
-                
-            output.write(temp_pdf)
-            temp_pdf_path = temp_pdf.name
+            return HttpResponse("Failed to download PDF from S3.", status=404)
 
-        # 4. Return the modified PDF
-        filename = report.pdf_file.name.split("/")[-1]
-        response = FileResponse(open(temp_pdf_path, "rb"), 
-                              as_attachment=True, 
-                              filename=filename)
+        # Save original PDF temporarily
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as original_pdf:
+            original_pdf.write(response.content)
+            original_pdf_path = original_pdf.name
+
+        # Read original PDF
+        reader = PdfReader(original_pdf_path)
+        writer = PdfWriter()
+
+        # Paths to logo and footer images
+        logo_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'logo.png')
+        footer_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'footer.png')
+
+        # Verify logo exists
+        if not os.path.exists(logo_path):
+            return HttpResponse(f"Logo file not found at: {logo_path}", status=404)
+
+        # Get page dimensions
+        page_width = letter[0]  # 612 points
+        page_height = letter[1]  # 792 points
+
+        # Set exact positioning
+        side_margin = 3.75  # 5px in points
+        content_width = page_width - (2 * side_margin)
         
-        # 5. Cleanup
-        os.unlink(temp_pdf_path)
+        # Logo dimensions
+        logo_height = 60  # Fixed height
+
+        # Process each page
+        for page in reader.pages:
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
+                c = canvas.Canvas(overlay_temp.name, pagesize=letter)
+                
+                # FIRST draw the footer (bottom layer)
+                footer_height = 40
+                c.drawImage(
+                    footer_path,
+                    x=side_margin,
+                    y=1,  # 1 point from bottom
+                    width=content_width,
+                    height=footer_height,
+                    preserveAspectRatio=True,
+                    anchor='s',
+                    mask='auto'
+                )
+                
+                # THEN draw the logo (top layer) - LAST ITEM DRAWN WILL BE ON TOP
+                c.drawImage(
+                    logo_path,
+                    x=side_margin,
+                    y=page_height - 1,  # 1 point from top
+                    width=content_width,
+                    height=logo_height,
+                    preserveAspectRatio=True,
+                    anchor='n',
+                    mask='auto'
+                )
+                
+                # Add transparent rectangle under logo if needed to "clear" space
+                # c.setFillColorRGB(1,1,1, alpha=0)  # Transparent
+                # c.rect(side_margin, page_height-logo_height, content_width, logo_height, fill=1, stroke=0)
+                
+                c.save()
+                overlay_pdf_path = overlay_temp.name
+
+            # Merge overlay
+            overlay = PdfReader(overlay_pdf_path)
+            page.merge_page(overlay.pages[0])
+            writer.add_page(page)
+            os.unlink(overlay_pdf_path)
+
+        # Save and return
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as final_output:
+            writer.write(final_output)
+            final_output_path = final_output.name
+
+        filename = report.pdf_file.name.split("/")[-1]
+        response = FileResponse(open(final_output_path, "rb"), as_attachment=True, filename=filename)
+        
+        # Cleanup
+        os.unlink(original_pdf_path)
+        os.unlink(final_output_path)
+        
         return response
 
+    except XrayReport.DoesNotExist:
+        return HttpResponse("Report not found.", status=404)
     except Exception as e:
-        return HttpResponse(f"Error: {str(e)}", status=500) 
+        return HttpResponse(f"Error: {str(e)}", status=500)
+
+    
        
 @login_required
 
