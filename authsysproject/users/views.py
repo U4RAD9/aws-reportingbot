@@ -3924,6 +3924,105 @@ def xray_pdf_report(request):
 #         return HttpResponse(f"Error: {str(e)}", status=500)
 
 
+# def add_logo_to_pdf(request, pdf_id):
+#     try:
+#         report = XrayReport.objects.get(id=pdf_id)
+
+#         # Get presigned URL
+#         presigned_pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
+
+#         # Download the PDF from S3
+#         response = requests.get(presigned_pdf_url)
+#         if response.status_code != 200:
+#             return HttpResponse("Failed to download PDF from S3.", status=404)
+
+#         # Save original PDF temporarily
+#         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as original_pdf:
+#             original_pdf.write(response.content)
+#             original_pdf_path = original_pdf.name
+
+#         # Read original PDF
+#         reader = PdfReader(original_pdf_path)
+#         writer = PdfWriter()
+
+#         # Paths to logo and footer images
+#         logo_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'logo.png')
+#         footer_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'footer.png')
+
+#         # Get page dimensions (letter size in points)
+#         page_width = letter[0]  # 612 points
+#         page_height = letter[1]  # 792 points
+
+#         # Convert 5px margin to points (1px = 0.75pt at 72dpi)
+#         side_margin = 5 * 0.75  # ~3.75 points
+
+#         # Calculate available width for content
+#         content_width = page_width - (2 * side_margin)
+
+#         # Process each page
+#         for page in reader.pages:
+#             # Create overlay for this page
+#             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
+#                 c = canvas.Canvas(overlay_temp.name, pagesize=letter)
+                
+#                 # Add logo - absolutely flush to top (0px margin)
+#                 logo_height = 60  # Fixed height in points
+#                 c.drawImage(
+#                     logo_path,
+#                     x=side_margin,  # 5px left margin
+#                     y=page_height - logo_height,  # Flush to top
+#                     width=content_width,  # Full available width
+#                     height=logo_height,
+#                     preserveAspectRatio=True,
+#                     anchor='n',  # Anchor to north (top)
+#                     mask='auto'
+#                 )
+                
+#                 # Add footer - absolutely flush to bottom with 5px side margins
+#                 footer_height = 40  # Fixed height in points
+#                 c.drawImage(
+#                     footer_path, 
+#                     x=side_margin,  # 5px left margin
+#                     y=0,  # Flush to bottom
+#                     width=content_width,  # Full available width
+#                     height=footer_height,
+#                     preserveAspectRatio=True,
+#                     anchor='s',  # Anchor to south (bottom)
+#                     mask='auto'
+#                 )
+                
+#                 c.save()
+#                 overlay_pdf_path = overlay_temp.name
+
+#             # Merge the overlay with the page
+#             overlay = PdfReader(overlay_pdf_path)
+#             page.merge_page(overlay.pages[0])
+#             writer.add_page(page)
+
+#             # Clean up temporary overlay file
+#             os.unlink(overlay_pdf_path)
+
+#         # Save final modified PDF
+#         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as final_output:
+#             writer.write(final_output)
+#             final_output_path = final_output.name
+
+#         filename = report.pdf_file.name.split("/")[-1]
+#         response = FileResponse(open(final_output_path, "rb"), as_attachment=True, filename=filename)
+        
+#         # Clean up temporary files
+#         os.unlink(original_pdf_path)
+#         os.unlink(final_output_path)
+        
+#         return response
+
+#     except XrayReport.DoesNotExist:
+#         return HttpResponse("Report not found.", status=404)
+#     except Exception as e:
+#         return HttpResponse(f"Error: {str(e)}", status=500)
+
+
+
 def add_logo_to_pdf(request, pdf_id):
     try:
         report = XrayReport.objects.get(id=pdf_id)
@@ -3965,12 +4064,12 @@ def add_logo_to_pdf(request, pdf_id):
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
                 c = canvas.Canvas(overlay_temp.name, pagesize=letter)
                 
-                # Add logo - absolutely flush to top (0px margin)
+                # Add logo - absolutely flush to top with NO margin
                 logo_height = 60  # Fixed height in points
                 c.drawImage(
                     logo_path,
                     x=side_margin,  # 5px left margin
-                    y=page_height - logo_height,  # Flush to top
+                    y=page_height,  # Start drawing from very top
                     width=content_width,  # Full available width
                     height=logo_height,
                     preserveAspectRatio=True,
