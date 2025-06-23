@@ -4059,7 +4059,7 @@ def add_logo_to_pdf(request, pdf_id):
         side_margin = 3.75  # 5px in points
         content_width = page_width - (2 * side_margin)
         
-        # Logo dimensions - will stretch full width with 5px side margins
+        # Logo dimensions
         logo_height = 60  # Fixed height
 
         # Process each page
@@ -4067,19 +4067,7 @@ def add_logo_to_pdf(request, pdf_id):
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
                 c = canvas.Canvas(overlay_temp.name, pagesize=letter)
                 
-                # LOGO - Absolutely flush to top edge
-                c.drawImage(
-                    logo_path,
-                    x=side_margin,  # 5px left margin
-                    y=page_height - 1,  # Start from VERY top (1 point from edge)
-                    width=content_width,  # Full available width
-                    height=logo_height,
-                    preserveAspectRatio=True,
-                    anchor='n',  # Grow downward from top
-                    mask='auto'
-                )
-                
-                # FOOTER - Absolutely flush to bottom
+                # FIRST draw the footer (bottom layer)
                 footer_height = 40
                 c.drawImage(
                     footer_path,
@@ -4088,9 +4076,25 @@ def add_logo_to_pdf(request, pdf_id):
                     width=content_width,
                     height=footer_height,
                     preserveAspectRatio=True,
-                    anchor='s',  # Grow upward from bottom
+                    anchor='s',
                     mask='auto'
                 )
+                
+                # THEN draw the logo (top layer) - LAST ITEM DRAWN WILL BE ON TOP
+                c.drawImage(
+                    logo_path,
+                    x=side_margin,
+                    y=page_height - 1,  # 1 point from top
+                    width=content_width,
+                    height=logo_height,
+                    preserveAspectRatio=True,
+                    anchor='n',
+                    mask='auto'
+                )
+                
+                # Add transparent rectangle under logo if needed to "clear" space
+                # c.setFillColorRGB(1,1,1, alpha=0)  # Transparent
+                # c.rect(side_margin, page_height-logo_height, content_width, logo_height, fill=1, stroke=0)
                 
                 c.save()
                 overlay_pdf_path = overlay_temp.name
@@ -4119,9 +4123,8 @@ def add_logo_to_pdf(request, pdf_id):
         return HttpResponse("Report not found.", status=404)
     except Exception as e:
         return HttpResponse(f"Error: {str(e)}", status=500)
-
-
-
+    
+       
 @login_required
 
 
