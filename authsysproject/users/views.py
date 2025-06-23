@@ -4064,12 +4064,12 @@ def add_logo_to_pdf(request, pdf_id):
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
                 c = canvas.Canvas(overlay_temp.name, pagesize=letter)
                 
-                # Add logo - absolutely flush to top with NO margin
+                # Add logo to every page - absolutely flush to top
                 logo_height = 60  # Fixed height in points
                 c.drawImage(
                     logo_path,
                     x=side_margin,  # 5px left margin
-                    y=page_height,  # Start drawing from very top
+                    y=page_height,  # Start from very top
                     width=content_width,  # Full available width
                     height=logo_height,
                     preserveAspectRatio=True,
@@ -4077,7 +4077,7 @@ def add_logo_to_pdf(request, pdf_id):
                     mask='auto'
                 )
                 
-                # Add footer - absolutely flush to bottom with 5px side margins
+                # Add footer to every page - absolutely flush to bottom
                 footer_height = 40  # Fixed height in points
                 c.drawImage(
                     footer_path, 
@@ -4119,7 +4119,6 @@ def add_logo_to_pdf(request, pdf_id):
         return HttpResponse("Report not found.", status=404)
     except Exception as e:
         return HttpResponse(f"Error: {str(e)}", status=500)
-
         
 @login_required
 
