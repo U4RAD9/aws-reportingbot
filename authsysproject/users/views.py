@@ -137,6 +137,7 @@ import tempfile
 from django.http import FileResponse, Http404
 
 
+
 def login(request):
     if request.method == 'POST':
         email = request.POST['email']
@@ -3926,57 +3927,106 @@ def xray_pdf_report(request):
 def add_logo_to_pdf(request, pdf_id):
     try:
         report = XrayReport.objects.get(id=pdf_id)
+
+        # Get presigned URL
         presigned_pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
 
+        # Download the PDF from S3
         response = requests.get(presigned_pdf_url)
         if response.status_code != 200:
             return HttpResponse("Failed to download PDF from S3.", status=404)
 
+        # Save original PDF temporarily
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as original_pdf:
             original_pdf.write(response.content)
             original_pdf_path = original_pdf.name
 
+        # Read original PDF
         reader = PdfReader(original_pdf_path)
         writer = PdfWriter()
 
+        # Paths to logo and footer images
         logo_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'logo.png')
         footer_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'footer.png')
 
-        # Read dimensions of footer image to calculate height ratio for scaling
-        footer_image = ImageReader(footer_path)
-        footer_width, footer_height = footer_image.getSize()
+        # Get image dimensions (using Pillow)
+        from PIL import Image
+        
+        # Logo dimensions
+        with Image.open(logo_path) as img:
+            logo_width, logo_height = img.size
+            logo_aspect_ratio = logo_width / logo_height
+        
+        # Footer dimensions
+        with Image.open(footer_path) as img:
+            footer_width, footer_height = img.size
+            footer_aspect_ratio = footer_width / footer_height
 
-        for i, page in enumerate(reader.pages):
-            packet = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
-            c = canvas.Canvas(packet.name, pagesize=letter)
+        # Set desired display dimensions
+        logo_display_width = 320  # Same as your original
+        logo_display_height = logo_display_width / logo_aspect_ratio
 
-            page_width, page_height = letter
+        footer_display_width = 400  # Adjust as needed
+        footer_display_height = footer_display_width / footer_aspect_ratio
 
-            # --- Add logo on every page (top-left or top-right) ---
-            logo_width = 320
-            logo_height = 60
-            x_pos_logo = 40  # You can change this to (page_width - logo_width - 40) for top-right
-            y_pos_logo = 735
-            c.drawImage(logo_path, x=x_pos_logo, y=y_pos_logo, width=logo_width, height=logo_height, mask='auto')
+        # Calculate positions
+        page_width = letter[0]
+        footer_x = (page_width - footer_display_width) / 2  # Center horizontally
+        footer_y = 0  # At the very bottom
 
-            # --- Add footer centered at bottom ---
-            footer_display_width = 300
-            footer_display_height = footer_display_width * (footer_height / footer_width)
-            x_center = (page_width - footer_display_width) / 2
-            y_pos_footer = 0
-            c.drawImage(footer_path, x=x_center, y=y_pos_footer, width=footer_display_width, height=footer_display_height, mask='auto')
+        logo_x = 40  # Left margin
+        logo_y = 735  # From top (same as your original)
 
-            c.save()
-            overlay_pdf = PdfReader(packet.name)
-            page.merge_page(overlay_pdf.pages[0])
+        # Process each page
+        for page in reader.pages:
+            # Create overlay for this page
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
+                c = canvas.Canvas(overlay_temp.name, pagesize=letter)
+                
+                # Add logo to every page
+                c.drawImage(
+                    logo_path,
+                    x=logo_x,
+                    y=logo_y,
+                    width=logo_display_width,
+                    height=logo_display_height,
+                    mask='auto'
+                )
+                
+                # Add footer to every page
+                c.drawImage(
+                    footer_path, 
+                    x=footer_x, 
+                    y=footer_y,
+                    width=footer_display_width, 
+                    height=footer_display_height,
+                    mask='auto'
+                )
+                
+                c.save()
+                overlay_pdf_path = overlay_temp.name
+
+            # Merge the overlay with the page
+            overlay = PdfReader(overlay_pdf_path)
+            page.merge_page(overlay.pages[0])
             writer.add_page(page)
 
+            # Clean up temporary overlay file
+            os.unlink(overlay_pdf_path)
+
+        # Save final modified PDF
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as final_output:
             writer.write(final_output)
             final_output_path = final_output.name
 
         filename = report.pdf_file.name.split("/")[-1]
-        return FileResponse(open(final_output_path, "rb"), as_attachment=True, filename=filename)
+        response = FileResponse(open(final_output_path, "rb"), as_attachment=True, filename=filename)
+        
+        # Clean up temporary files
+        os.unlink(original_pdf_path)
+        os.unlink(final_output_path)
+        
+        return response
 
     except XrayReport.DoesNotExist:
         return HttpResponse("Report not found.", status=404)
