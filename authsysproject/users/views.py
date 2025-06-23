@@ -3606,9 +3606,6 @@ def add_logo_to_ecg_pdf(request, pdf_id):
             # Add your logo here (update logo path)
             # logo_path = 'static/logo.png'  # should be accessible locally or from static folder
             logo_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'logo.png')
-            #c.drawImage(logo_path, x=450, y=750, width=100, height=50, mask='auto')  # position logo
-            # c.drawImage(logo_path, x=40, y=750, width=120, height=60, preserveAspectRatio=True, mask='auto')
-            # Set a larger width and maintain aspect ratio accordingly
             logo_width = 320  # Increase this for a bigger logo
             logo_height = 60  # Adjust proportionally
             
@@ -3617,6 +3614,15 @@ def add_logo_to_ecg_pdf(request, pdf_id):
             y_pos = 735  # Lower y if you increase the height to avoid clipping
             
             c.drawImage(logo_path, x=x_pos, y=y_pos, width=logo_width, height=logo_height, mask='auto')
+
+            # === Add Footer Image ===
+            footer_path = os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', 'footer.png')
+            footer_width = 550  # full width of the page
+            footer_height = 50  # adjust height to match your image
+        
+            footer_x = 30  # left margin
+            footer_y = 20  # close to bottom
+            c.drawImage(footer_path, x=footer_x, y=footer_y, width=footer_width, height=footer_height, mask='auto')
             c.save()
             overlay_pdf_path = overlay_temp.name
 
@@ -4123,7 +4129,9 @@ def add_logo_to_pdf(request, pdf_id):
     except Exception as e:
         return HttpResponse(f"Error: {str(e)}", status=500)
 
-    
+
+
+
        
 @login_required
 
