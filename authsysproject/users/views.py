@@ -4060,10 +4060,7 @@ def add_logo_to_pdf(request, pdf_id):
         # Get page dimensions (letter size in points)
         page_width = letter[0]  # 612 points
         page_height = letter[1]  # 792 points
-
-        # Set margins (5px = ~3.75 points)
-        side_margin = 0
-        content_width = page_width - (2 * side_margin)
+        content_width = page_width
 
         # Get logo dimensions while maintaining aspect ratio
         logo_display_height = 50  # Fixed height in points
@@ -4078,7 +4075,7 @@ def add_logo_to_pdf(request, pdf_id):
                 # Add logo to EVERY page - absolutely flush to top
                 c.drawImage(
                     logo_path,
-                    x=side_margin,
+                    x=0,
                     y=page_height - logo_display_height + 5,  # Adjusted to prevent clipping
                     width=content_width,
                     height=logo_display_height,
@@ -4090,8 +4087,8 @@ def add_logo_to_pdf(request, pdf_id):
                 # Add footer to EVERY page - absolutely flush to bottom
                 c.drawImage(
                     footer_path,
-                    x=side_margin,
-                    y=0,
+                    x=0,
+                    y=5,
                     width=content_width,
                     height=footer_display_height,
                     preserveAspectRatio=True,
