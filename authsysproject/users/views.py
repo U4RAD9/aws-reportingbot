@@ -4073,7 +4073,7 @@ def add_logo_to_pdf(request, pdf_id):
                 c.drawImage(
                     logo_path,
                     x=side_margin,
-                    y=page_height - logo_display_height + 15,  # Adjusted to prevent clipping
+                    y=page_height - logo_display_height + 10,  # Adjusted to prevent clipping
                     width=content_width,
                     height=logo_display_height,
                     preserveAspectRatio=True,
