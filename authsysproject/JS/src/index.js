@@ -3863,7 +3863,12 @@ if (!runFinalCommonPopups()) return this.hideLoader();
           startY: currentYPosition,
           body: tableContent,
           theme: "grid",
-          styles: { cellPadding: 3, fontSize: 10 },
+          styles: {
+            cellPadding: 3,
+            fontSize: 10,
+            fontStyle: 'bold',         // Bold text
+            textColor: [0, 0, 0],      // Black text (RGB)
+          },
         });
         currentYPosition = pdf.previousAutoTable.finalY + 20;
       }

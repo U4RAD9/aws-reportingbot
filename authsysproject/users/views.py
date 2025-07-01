@@ -6876,7 +6876,7 @@ def review_page(request):
             print(f"ID {error['id']}: {error['study_date']} → {error['error']}")
 
     # ========== PAGINATION & CONTEXT ==========
-    paginator = Paginator(filtered_data, 50)
+    paginator = Paginator(filtered_data, 300)
     page_obj = paginator.get_page(request.GET.get('page'))
 
     context = {
