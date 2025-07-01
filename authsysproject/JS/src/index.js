@@ -3733,31 +3733,31 @@ UploadDivContentOnPDFWithoutImage() {
       }
 
       // --------------- SCENARIO 2: Tumor/Nodule Check ----------------
-      if (modality && ['ct', 'mri'].includes(modality.toLowerCase())) {
-        const tumorKeywords = ['nodule', 'cyst', 'lymphoma', 'carcinoma'];
-        const mentionsTumor = tumorKeywords.some(term => contentText.includes(term));
-        if (mentionsTumor) {
-          const sizePattern = /\b\d+(\.\d+)?\s*(mm|cm)\b/i;
-          const hasSize = sizePattern.test(contentText);
-          if (!hasSize) {
-            alert("Alert: Tumor/ Nodule size missing. Enter measurement in mm or cm.");
-            return this.hideLoader();
-          }
+      // if (modality && ['ct', 'mri'].includes(modality.toLowerCase())) {
+      //   const tumorKeywords = ['nodule', 'cyst', 'lymphoma', 'carcinoma'];
+      //   const mentionsTumor = tumorKeywords.some(term => contentText.includes(term));
+      //   if (mentionsTumor) {
+      //     const sizePattern = /\b\d+(\.\d+)?\s*(mm|cm)\b/i;
+      //     const hasSize = sizePattern.test(contentText);
+      //     if (!hasSize) {
+      //       alert("Alert: Tumor/ Nodule size missing. Enter measurement in mm or cm.");
+      //       return this.hideLoader();
+      //     }
 
-          const cmPattern = /\b\d+(\.\d+)?\s*cm\b/i;
-          if (cmPattern.test(contentText)) {
-            const confirmSizeUnit = confirm("Please confirm: Tumor/Nodule size is entered in centimetres (cm) or millimetres (mm). Is this correct?");
-            if (!confirmSizeUnit) return this.hideLoader();
-          }
+      //     const cmPattern = /\b\d+(\.\d+)?\s*cm\b/i;
+      //     if (cmPattern.test(contentText)) {
+      //       const confirmSizeUnit = confirm("Please confirm: Tumor/Nodule size is entered in centimetres (cm) or millimetres (mm). Is this correct?");
+      //       if (!confirmSizeUnit) return this.hideLoader();
+      //     }
 
-          const statusTerms = ['benign', 'malignant', 'not confirmed'];
-          const hasStatus = statusTerms.some(term => contentText.includes(term));
-          if (!hasStatus) {
-            alert("Alert: Tumor /Nodule status (Benign/Malignant/Not Confirmed) not selected. Please choose an option.");
-            return this.hideLoader();
-          }
-        }
-      }
+      //     const statusTerms = ['benign', 'malignant', 'not confirmed'];
+      //     const hasStatus = statusTerms.some(term => contentText.includes(term));
+      //     if (!hasStatus) {
+      //       alert("Alert: Tumor /Nodule status (Benign/Malignant/Not Confirmed) not selected. Please choose an option.");
+      //       return this.hideLoader();
+      //     }
+      //   }
+      // }
 
   
       // --------------- SCENARIO 4: Midline/Mediastinal Shift ----------------
