@@ -3761,54 +3761,54 @@ UploadDivContentOnPDFWithoutImage() {
 
   
       // --------------- SCENARIO 4: Midline/Mediastinal Shift ----------------
-      const shiftTerms = ['midline shift', 'mediastinal shift', 'tracheal deviation', 'organ displacement'];
-      const mentionsShift = shiftTerms.some(term => contentText.includes(term));
-      if (mentionsShift) {
-        const sizePattern = /\b\d+(\.\d+)?\s*(mm|cm)\b/;
-        const directionPattern = /\b(leftward|rightward|superior|inferior)\b/;
-        if (!sizePattern.test(contentText) || !directionPattern.test(contentText)) {
-          alert("Alert: Organ displacement or shift detected. Please specify the measurement (mm/cm) and direction before finalizing the report.");
-          return this.hideLoader();
-        }
-      }
+      // const shiftTerms = ['midline shift', 'mediastinal shift', 'tracheal deviation', 'organ displacement'];
+      // const mentionsShift = shiftTerms.some(term => contentText.includes(term));
+      // if (mentionsShift) {
+      //   const sizePattern = /\b\d+(\.\d+)?\s*(mm|cm)\b/;
+      //   const directionPattern = /\b(leftward|rightward|superior|inferior)\b/;
+      //   if (!sizePattern.test(contentText) || !directionPattern.test(contentText)) {
+      //     alert("Alert: Organ displacement or shift detected. Please specify the measurement (mm/cm) and direction before finalizing the report.");
+      //     return this.hideLoader();
+      //   }
+      // }
 
 
      // --------------- SCENARIO 5: Laterality Check ----------------
-const lateralityBodyParts = [
-  'brain', 'face', 'ear', 'ears', 'nose', 'eye', 'eyes', 'nostril', 'nostrils',
-  'sinus', 'dentition', 'extremity', 'extremities', 'breast', 'breasts', 'heart',
-  'lung', 'lungs', 'kidney', 'kidneys', 'ovary', 'ovaries', 'hip', 'hips',
-  'testicle', 'testicles'
-];
+// const lateralityBodyParts = [
+//   'brain', 'face', 'ear', 'ears', 'nose', 'eye', 'eyes', 'nostril', 'nostrils',
+//   'sinus', 'dentition', 'extremity', 'extremities', 'breast', 'breasts', 'heart',
+//   'lung', 'lungs', 'kidney', 'kidneys', 'ovary', 'ovaries', 'hip', 'hips',
+//   'testicle', 'testicles'
+// ];
 
-const missingLaterality = [];
+// const missingLaterality = [];
 
-// Check for 'bilateral' or 'bi-lateral' in the report content
-// const isBilateralMentioned = /\bbi-?lateral\b/i.test(contentText);
-const isBilateralMentioned = /\b(bi-?lateral|both)\b/i.test(contentText);
+// // Check for 'bilateral' or 'bi-lateral' in the report content
+// // const isBilateralMentioned = /\bbi-?lateral\b/i.test(contentText);
+// const isBilateralMentioned = /\b(bi-?lateral|both)\b/i.test(contentText);
 
 
-if (!isBilateralMentioned) {
-  lateralityBodyParts.forEach(part => {
-    const regex = new RegExp(`\\b(?:right|left)?\\s{0,2}\\b${part}\\b`, 'gi');
-    const matches = [...contentText.matchAll(regex)];
+// if (!isBilateralMentioned) {
+//   lateralityBodyParts.forEach(part => {
+//     const regex = new RegExp(`\\b(?:right|left)?\\s{0,2}\\b${part}\\b`, 'gi');
+//     const matches = [...contentText.matchAll(regex)];
 
-    matches.forEach(match => {
-      const matchedText = match[0].toLowerCase();
-      if (!matchedText.includes('right') && !matchedText.includes('left')) {
-        if (!missingLaterality.includes(part)) {
-          missingLaterality.push(part);
-        }
-      }
-    });
-  });
+//     matches.forEach(match => {
+//       const matchedText = match[0].toLowerCase();
+//       if (!matchedText.includes('right') && !matchedText.includes('left')) {
+//         if (!missingLaterality.includes(part)) {
+//           missingLaterality.push(part);
+//         }
+//       }
+//     });
+//   });
 
-  if (missingLaterality.length > 0) {
-    const list = missingLaterality.join(', ');
-    alert(`Warning: Laterality (Right/Left) not specified for: ${list}. Please update to proceed.`);
-    return this.hideLoader();
-  }
-}
+//   if (missingLaterality.length > 0) {
+//     const list = missingLaterality.join(', ');
+//     alert(`Warning: Laterality (Right/Left) not specified for: ${list}. Please update to proceed.`);
+//     return this.hideLoader();
+//   }
+// }
 
 
    // SCENARIO 6: Final Common Confirmation Popups
@@ -3868,6 +3868,8 @@ if (!runFinalCommonPopups()) return this.hideLoader();
             fontSize: 10,
             fontStyle: 'bold',         // Bold text
             textColor: [0, 0, 0],      // Black text (RGB)
+            lineColor: [0, 0, 0], // <-- Border color (black)
+            lineWidth: 0.2         // <-- Border thickness
           },
         });
         currentYPosition = pdf.previousAutoTable.finalY + 20;
