@@ -181,6 +181,12 @@
       align-items: center;
       gap: 5px;
     }
+
+    .btn-custom:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      background-color: #6c757d; /* Bootstrap's secondary color */
+    }
   </style>
 </head>
 
@@ -362,8 +368,13 @@
               <input type="checkbox" class="vip-checkbox" data-patient-id="{{ entry.patient_id }}" 
                   {% if entry.vip %}checked{% endif %}>
             </td>
-            <td>
+            <!-- <td>
               <button class="btn btn-sm btn-custom" onclick="openEditModal({{ entry.id }})">Edit</button>
+            </td> -->
+            <td>
+              <button class="btn btn-sm btn-custom" onclick="openEditModal({{ entry.id }})" {% if entry.isDone %}disabled{% endif %}>
+                Edit
+              </button>
             </td>
             <td>
               <a class="reportButton btn btn-sm btn-success"
