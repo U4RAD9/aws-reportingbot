@@ -867,6 +867,7 @@ def client_dashboard(request):
             'paginator': paginator,
             'page_obj': page_obj,
             'search_query': search_query,
+            'client': current_user_personal_info,  # Add client to context
         }
 
         return render(request, 'users/client.html', context)
@@ -4126,6 +4127,152 @@ def add_logo_to_pdf(request, pdf_id):
     except Exception as e:
         return HttpResponse(f"Error: {str(e)}", status=500)
 
+
+
+def download_pdf_with_logo(request, pdf_id):
+    try:
+        # Get the current client
+        client = Client.objects.get(user=request.user)
+        
+        # Get the report
+        report = XrayReport.objects.get(id=pdf_id)
+        
+        # Get presigned URL
+        bucket_name = 'u4rad-s3-reporting-bot'
+        presigned_pdf_url = presigned_url(bucket_name, report.pdf_file.name)
+        
+        # Download the PDF from S3
+        response = requests.get(presigned_pdf_url)
+        if response.status_code != 200:
+            logger.error(f"Failed to download PDF from S3 for report {report.id}")
+            return HttpResponse("Failed to download PDF from S3.", status=404)
+
+        # Save original PDF temporarily
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as original_pdf:
+            original_pdf.write(response.content)
+            original_pdf_path = original_pdf.name
+
+        # Read original PDF
+        reader = PdfReader(original_pdf_path)
+        writer = PdfWriter()
+
+        # Function to get image path or download from storage
+        def get_image_path(image_field, default_filename):
+            if image_field:
+                try:
+                    # For local files
+                    if hasattr(image_field, 'path') and os.path.exists(image_field.path):
+                        return image_field.path
+                    
+                    # For S3 files
+                    if default_storage.exists(image_field.name):
+                        with default_storage.open(image_field.name, 'rb') as f:
+                            content = f.read()
+                            with tempfile.NamedTemporaryFile(suffix=os.path.splitext(image_field.name)[1], delete=False) as temp_img:
+                                temp_img.write(content)
+                                return temp_img.name
+                except Exception as e:
+                    logger.warning(f"Error accessing image: {str(e)}")
+            
+            # Fallback to default
+            return os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', default_filename)
+
+        # Get client's custom header and footer
+        logo_path = get_image_path(client.upload_header, 'logo.png')
+        footer_path = get_image_path(client.upload_footer, 'footer.png')
+
+        # Verify files exist
+        if not os.path.exists(logo_path):
+            logger.error(f"Logo file not found: {logo_path}")
+            return HttpResponse("Logo file not found.", status=404)
+        if not os.path.exists(footer_path):
+            logger.error(f"Footer file not found: {footer_path}")
+            return HttpResponse("Footer file not found.", status=404)
+
+        # Page dimensions
+        page_width = letter[0]  # 612 points
+        page_height = letter[1]  # 792 points
+        content_width = page_width
+
+        # Dimensions for logo and footer
+        logo_display_height = 50
+        footer_display_height = 40
+
+        # Process each page
+        for page in reader.pages:
+            # Create overlay
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
+                c = canvas.Canvas(overlay_temp.name, pagesize=letter)
+                
+                # Add client's custom logo
+                c.drawImage(
+                    logo_path,
+                    x=0,
+                    y=page_height - logo_display_height + 5,
+                    width=content_width,
+                    height=logo_display_height,
+                    preserveAspectRatio=True,
+                    mask='auto',
+                    anchor='n'
+                )
+                
+                # Add client's custom footer
+                c.drawImage(
+                    footer_path,
+                    x=0,
+                    y=5,
+                    width=content_width,
+                    height=footer_display_height,
+                    preserveAspectRatio=True,
+                    mask='auto',
+                    anchor='s'
+                )
+                
+                c.save()
+                overlay_pdf_path = overlay_temp.name
+
+            # Merge overlay with page
+            overlay = PdfReader(overlay_pdf_path)
+            page.merge_page(overlay.pages[0])
+            writer.add_page(page)
+
+            # Clean up temporary overlay file
+            os.unlink(overlay_pdf_path)
+
+        # Save final PDF
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as final_output:
+            writer.write(final_output)
+            final_output_path = final_output.name
+
+        # Prepare response
+        filename = f"{report.patient_id}_{report.name}_with_logo.pdf"
+        response = FileResponse(
+            open(final_output_path, "rb"),
+            as_attachment=True,
+            filename=filename
+        )
+        
+        # Clean up temporary files
+        os.unlink(original_pdf_path)
+        os.unlink(final_output_path)
+        
+        # Clean up temporary image files if they were created
+        if client.upload_header and not hasattr(client.upload_header, 'path'):
+            os.unlink(logo_path)
+        if client.upload_footer and not hasattr(client.upload_footer, 'path'):
+            os.unlink(footer_path)
+            
+        return response
+
+    except Client.DoesNotExist:
+        logger.error("Client not found for download request")
+        return HttpResponse("Client not found.", status=404)
+    except XrayReport.DoesNotExist:
+        logger.error(f"Report not found: {pdf_id}")
+        return HttpResponse("Report not found.", status=404)
+    except Exception as e:
+        logger.exception("Error in download_pdf_with_logo")
+        return HttpResponse(f"Error: {str(e)}", status=500)
 
 
 
