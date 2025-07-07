@@ -547,12 +547,13 @@
                   </a>
                   <a class="btn btn-info" href="{{ pdf.signed_url2 }}" target="_blank">View PDF</a>
                   <!-- Add the new Download with Logo button -->
-                  {% if pdf.signed_url %}
-                    <a class="btn btn-warning" href="{% url 'download_pdf_with_logo' pdf.id %}">
-                      Download with Logo
-                    </a>
+                  {% if client.upload_header and client.upload_footer %}
+                          <a class="btn btn-warning" href="{% url 'download_pdf_with_logo' pdf.id %}">
+                              Download with Logo
+                          </a>
+                      {% endif %}
                   {% else %}
-                    No PDF available
+                      No PDF available
                   {% endif %}
                   <!-- Add the Send WhatsApp Button -->
                   <button class="btn btn-sm btn-success sendWhatsAppButton" data-patient-id="{{ pdf.patient_id }}"
