@@ -4174,8 +4174,7 @@ def download_pdf_with_logo(request, pdf_id):
                 except Exception as e:
                     logger.warning(f"Error accessing image: {str(e)}")
             
-            # Fallback to default
-            return os.path.join(settings.BASE_DIR, 'users', 'static', 'company_logos', default_filename)
+            
 
         # Get client's custom header and footer
         logo_path = get_image_path(client.upload_header, 'logo.png')
