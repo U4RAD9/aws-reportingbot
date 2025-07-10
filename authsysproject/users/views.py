@@ -219,29 +219,30 @@ def login(request):
 #         return 'Missing'
 
 
+
 def extract_patient_id(text):
     try:
         id = ''
-        if "Id :" in str(text):
-            id = str(text).split("Id :")[1].split(" ")[1].split("\n")[0].strip()
+        if "Id :" in text:
+            id = text.split("Id :")[1].split(" ")[1].split("\n")[0].strip().lower()
             if id == '':
-                fetched_id = str(text).split("Id :")[1].split("Name :")[0].strip()
+                fetched_id = text.split("Id :")[1].split("Name :")[0].strip().lower()
                 id = fetched_id
                 if id == '':
-                    id = str(text).split("Comments")[1].split("HR")[0].strip()
-        elif "Id:" in str(text):
-            id = str(text).split("Id:")[1].split(" ")[1].split("\n")[0].strip()
+                    id = text.split("Comments")[1].split("HR")[0].strip()
+        elif "Id:" in text:
+            id = text.split("Id:")[1].split(" ")[1].split("\n")[0].strip().lower()
             if id == '':
-                fetched_id = str(text).split("Id:")[1].split("Name :")[0].strip()
+                fetched_id = text.split("Id:")[1].split("Name :")[0].strip().lower()
                 id = fetched_id
                 if id == '':
-                    id = str(text).split("Comments")[1].split("HR")[0].strip()
+                    id = text.split("Comments")[1].split("HR")[0].strip()
                     if id == '':
-                        id = str(text).split("Id:")[1].split("Name:")[0].strip()
-
-        return id.replace(" ", "").lower()
+                        id = text.split("Id:")[1].split("Name:")[0].strip()
+        return id.replace(" ", "")
     except IndexError:
         return 'Missing'
+
 
 
 
@@ -260,11 +261,19 @@ def extract_patient_id(text):
         #     return str(text).split("Comments")[1].split("HR")[0].strip()
         
 
+# def extract_patient_name(text):
+#     try:
+#         return str(text).split("Name")[1].split("\n")[0].split(":")[1].strip()
+#     except IndexError:
+#         return 'None'
+
 def extract_patient_name(text):
     try:
-        return str(text).split("Name")[1].split("\n")[0].split(":")[1].strip()
+        name = text.split("Name")[1].split("\n")[0].split(":")[1].strip()
+        return name.replace(" ", "")
     except IndexError:
         return 'None'
+
 
 def extract_patient_age(text):
     try:
@@ -375,8 +384,7 @@ def upload_ecg(request):
                 # Function to clean text by removing null characters and stripping whitespace
                 def clean_text(text):
                     if text:
-                        # return text.replace('\x00', '').strip()
-                        return text.replace('\x00', '').replace('\n', ' ').strip()
+                        return text.replace('\x00', '').strip()
                     return ''
 
                 pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
@@ -477,11 +485,8 @@ def upload_ecg(request):
                         image_buffer = io.BytesIO(image_bytes)
                         #image_file = ContentFile(image_buffer.getvalue(), name=f"{patient_id}_{new_patient_name}.jpg")
                         # Safe filenames for S3
-                        # safe_filename_name = cleaned_patient_name.replace(" ", "_")
-                        safe_patient_id = cleaned_patient_id.replace(" ", "")
-                        safe_filename_name = cleaned_patient_name.replace(" ", "")
-                        # image_file = ContentFile(image_buffer.getvalue(), name=f"{cleaned_patient_id}_{safe_filename_name}.jpg")
-                        image_file = ContentFile(image_buffer.getvalue(), name=f"{safe_patient_id}_{safe_filename_name}.jpg")
+                        safe_filename_name = cleaned_patient_name.replace(" ", "_")
+                        image_file = ContentFile(image_buffer.getvalue(), name=f"{cleaned_patient_id}_{safe_filename_name}.jpg")
 
                         # Upload image to S3
                         s3_image_path = f"ecg_jpgs/{image_file.name}"
@@ -490,8 +495,7 @@ def upload_ecg(request):
 
                         # Save PDF file to S3
                         #reportimage_file = ContentFile(pdf_bytes, name=f"{patient_id}_{new_patient_name}.pdf")
-                        # reportimage_file = ContentFile(pdf_bytes, name=f"{cleaned_patient_id}_{safe_filename_name}.pdf")
-                        reportimage_file = ContentFile(pdf_bytes, name=f"{safe_patient_id}_{safe_filename_name}.pdf")
+                        reportimage_file = ContentFile(pdf_bytes, name=f"{cleaned_patient_id}_{safe_filename_name}.pdf")
 
                         s3_pdf_path = f"ecg_pdfs/{reportimage_file.name}"
                         upload_to_s3(reportimage_file, s3_pdf_path)
