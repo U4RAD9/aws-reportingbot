@@ -1447,6 +1447,16 @@ def allocation1(request):
             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
         ]
 
+        # ADD THIS SECTION: Get PDF reports for the patient
+        patient_name_underscore = patient.patient_name.replace(" ", "_")
+        pdf_reports = XrayReport.objects.filter(
+            patient_id=patient.patient_id,
+            name=patient_name_underscore
+        )
+        patient.presigned_pdf_urls = [
+            presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports
+        ]
+
     # Get unique dates from the patients on the current page
     unique_dates = set(patient.study_date for patient in page_obj.object_list)
     sorted_unique_dates = sorted(unique_dates, reverse=False)

@@ -16,6 +16,21 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 
   <style>
+    a.pdfButton {
+      display: inline-block;
+      padding: 3px 5px;
+      background-color: #4CAF50; /* Green color */
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      font-size: 14px;
+    }
+    
+    a.pdfButton:hover {
+      background-color: #45a049; /* Darker green */
+    }
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -840,6 +855,7 @@
                 <th>Mark As VIP</th>
                 <th>Mark for Review</th>
                 <th>Image</th>
+                <th>Report</th>
                 <!--THE UPDATE FROM ROHAN JANGID-->
                 <th>
                   <div class="filter-dropdown-container">
@@ -927,6 +943,17 @@
                  data-accession="{{ patient.accession_number }}" onclick="changeButtonColor(this);">
                   View Image
               </a>
+            </td>
+            <!-- Add this cell in each patient row -->
+            <td>
+              {% for pdf_url in patient.presigned_pdf_urls %}
+                <a class="pdfButton" target="_blank" href="{{ pdf_url }}">
+                  View Report {{ forloop.counter }}
+                </a>
+                <br>
+              {% empty %}
+                No PDF
+              {% endfor %}
             </td>
             <td>
                 {% if patient.NonReportable %}
