@@ -261,19 +261,11 @@ def extract_patient_id(text):
         #     return str(text).split("Comments")[1].split("HR")[0].strip()
         
 
-# def extract_patient_name(text):
-#     try:
-#         return str(text).split("Name")[1].split("\n")[0].split(":")[1].strip()
-#     except IndexError:
-#         return 'None'
-
 def extract_patient_name(text):
     try:
-        name = text.split("Name")[1].split("\n")[0].split(":")[1].strip()
-        return name.replace(" ", "")
+        return str(text).split("Name")[1].split("\n")[0].split(":")[1].strip()
     except IndexError:
         return 'None'
-
 
 def extract_patient_age(text):
     try:
