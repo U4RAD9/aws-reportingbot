@@ -184,39 +184,67 @@ def login(request):
     return render(request, 'users/login.html')
 
 
+# def extract_patient_id(text):
+#     try:
+#         if "Id :" in str(text):
+#             id = str(text).split("Id :")[1].split(" ")[1].split("\n")[0].strip().lower()
+#             # print("This is the first fetched id :", id)
+#             if id == '':
+#                 fetched_id = str(text).split("Id :")[1].split("Name :")[0].strip().lower()
+#                 id = fetched_id.replace(" ", "")
+#                 if id == '':
+#                     id = str(text).split("Comments")[1].split("HR")[0].strip()
+#                     # print("comments", id)
+#                     if id == '':
+#                         print("Id is not mentioned in the file. ")
+#                         print("Id :" , id)
+#         if "Id:" in str(text):
+#             id = str(text).split("Id:")[1].split(" ")[1].split("\n")[0].strip().lower()
+#             # print("This is the first fetched id :", id)
+#             if id == '':
+#                 fetched_id = str(text).split("Id:")[1].split("Name :")[0].strip().lower()
+#                 id = fetched_id.replace(" ", "")
+#                 if id == '':
+#                     id = str(text).split("Comments")[1].split("HR")[0].strip()
+#                     # print("comments", id)
+#                     # Adding the case to remove the extra space issue.
+#                     if id == '':
+#                         id = str(text).split("Id:")[1].split("Name:")[0].strip()
+#                         if id == '':
+#                             print("Id is not mentioned in the file. ")
+#                             print("Id :" , id)
+            
+#         return id
+#     except IndexError:
+#         return 'Missing'
+
+
 def extract_patient_id(text):
     try:
+        id = ''
         if "Id :" in str(text):
-            id = str(text).split("Id :")[1].split(" ")[1].split("\n")[0].strip().lower()
-            # print("This is the first fetched id :", id)
+            id = str(text).split("Id :")[1].split(" ")[1].split("\n")[0].strip()
             if id == '':
-                fetched_id = str(text).split("Id :")[1].split("Name :")[0].strip().lower()
-                id = fetched_id.replace(" ", "")
+                fetched_id = str(text).split("Id :")[1].split("Name :")[0].strip()
+                id = fetched_id
                 if id == '':
                     id = str(text).split("Comments")[1].split("HR")[0].strip()
-                    # print("comments", id)
-                    if id == '':
-                        print("Id is not mentioned in the file. ")
-                        print("Id :" , id)
-        if "Id:" in str(text):
-            id = str(text).split("Id:")[1].split(" ")[1].split("\n")[0].strip().lower()
-            # print("This is the first fetched id :", id)
+        elif "Id:" in str(text):
+            id = str(text).split("Id:")[1].split(" ")[1].split("\n")[0].strip()
             if id == '':
-                fetched_id = str(text).split("Id:")[1].split("Name :")[0].strip().lower()
-                id = fetched_id.replace(" ", "")
+                fetched_id = str(text).split("Id:")[1].split("Name :")[0].strip()
+                id = fetched_id
                 if id == '':
                     id = str(text).split("Comments")[1].split("HR")[0].strip()
-                    # print("comments", id)
-                    # Adding the case to remove the extra space issue.
                     if id == '':
                         id = str(text).split("Id:")[1].split("Name:")[0].strip()
-                        if id == '':
-                            print("Id is not mentioned in the file. ")
-                            print("Id :" , id)
-            
-        return id
+
+        return id.replace(" ", "").lower()
     except IndexError:
         return 'Missing'
+
+
+
     # try:
         # id = str(text).split("Id")[1].split("\n")[0]
         # print(id)
@@ -347,7 +375,8 @@ def upload_ecg(request):
                 # Function to clean text by removing null characters and stripping whitespace
                 def clean_text(text):
                     if text:
-                        return text.replace('\x00', '').strip()
+                        # return text.replace('\x00', '').strip()
+                        return text.replace('\x00', '').replace('\n', ' ').strip()
                     return ''
 
                 pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
@@ -448,8 +477,11 @@ def upload_ecg(request):
                         image_buffer = io.BytesIO(image_bytes)
                         #image_file = ContentFile(image_buffer.getvalue(), name=f"{patient_id}_{new_patient_name}.jpg")
                         # Safe filenames for S3
-                        safe_filename_name = cleaned_patient_name.replace(" ", "_")
-                        image_file = ContentFile(image_buffer.getvalue(), name=f"{cleaned_patient_id}_{safe_filename_name}.jpg")
+                        # safe_filename_name = cleaned_patient_name.replace(" ", "_")
+                        safe_patient_id = cleaned_patient_id.replace(" ", "")
+                        safe_filename_name = cleaned_patient_name.replace(" ", "")
+                        # image_file = ContentFile(image_buffer.getvalue(), name=f"{cleaned_patient_id}_{safe_filename_name}.jpg")
+                        image_file = ContentFile(image_buffer.getvalue(), name=f"{safe_patient_id}_{safe_filename_name}.jpg")
 
                         # Upload image to S3
                         s3_image_path = f"ecg_jpgs/{image_file.name}"
@@ -458,7 +490,8 @@ def upload_ecg(request):
 
                         # Save PDF file to S3
                         #reportimage_file = ContentFile(pdf_bytes, name=f"{patient_id}_{new_patient_name}.pdf")
-                        reportimage_file = ContentFile(pdf_bytes, name=f"{cleaned_patient_id}_{safe_filename_name}.pdf")
+                        # reportimage_file = ContentFile(pdf_bytes, name=f"{cleaned_patient_id}_{safe_filename_name}.pdf")
+                        reportimage_file = ContentFile(pdf_bytes, name=f"{safe_patient_id}_{safe_filename_name}.pdf")
 
                         s3_pdf_path = f"ecg_pdfs/{reportimage_file.name}"
                         upload_to_s3(reportimage_file, s3_pdf_path)
@@ -1436,10 +1469,10 @@ def allocation1(request):
     #             patient.recived_on_db = time('UTC').localize(patient.recived_on_db)
     #         patient.recived_on_db = patient.recived_on_db.astimezone(india_tz)
     # Extract only the date from recived_on_db
-    patients = patients.annotate(received_date=TruncDate('recived_on_db')) #28-05-2025 by Rohan jangid
+    patients = patients.annotate(received_date=TruncDate('recived_on_db')) 
 
     # unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None}
-    unique_recived_on_db = {patient.received_date for patient in patients if patient.received_date is not None} #28-05-2025 by Rohan jangid
+    unique_recived_on_db = {patient.received_date for patient in patients if patient.received_date is not None}
     sorted_unique_recived_on_db = sorted(unique_recived_on_db, reverse=False)
 
     # Study Description of patients
@@ -1465,7 +1498,7 @@ def allocation1(request):
         'page_obj': page_obj,
         'status_filter': status_filter,
         'search_query': search_query
-    })#by rohan 28-03-2025
+    })
 
 def assign_radiologist(request):
     print("I'm in assign radiologist")
@@ -2069,7 +2102,7 @@ def presigned_url(bucket_name, object_name, operation='get_object', inline=False
 #     return url
 
 
-# by rohan 28-03-2025
+
 @user_type_required('radiologist')
 def xrayallocation(request):
     radiologist_group = Group.objects.get(name='radiologist')
