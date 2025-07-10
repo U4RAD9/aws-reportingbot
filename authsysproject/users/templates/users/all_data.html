@@ -64,8 +64,8 @@
                     <option value="DX" {% if "DX" in selected_modalities %}selected{% endif %}>DX</option>
                     <option value="CR" {% if "CR" in selected_modalities %}selected{% endif %}>CR</option>
                     <option value="DR" {% if "DR" in selected_modalities %}selected{% endif %}>DR</option>
-                    <option value="DR" {% if "SR" in selected_modalities %}selected{% endif %}>SR</option>
-                    <option value="DR" {% if "PR" in selected_modalities %}selected{% endif %}>PR</option>
+                    <option value="SR" {% if "SR" in selected_modalities %}selected{% endif %}>SR</option>
+                    <option value="PR" {% if "PR" in selected_modalities %}selected{% endif %}>PR</option>
                 </select>
             </div>
             
@@ -170,13 +170,13 @@
                     <td>{{ patient.notes }}</td>
                     <td>{{ patient.recived_on_db|date:"Y-m-d H:i:s" }}</td>
                     <td>{{ patient.notes_modified_at|date:"Y-m-d H:i:s" }}</td>
-                                        <td>
-    {% if patient.history_files.all %}
-        {{ patient.history_files.first.uploaded_at|date:"Y-m-d H:i:s" }}
-    {% else %}
-        No history
-    {% endif %}
-</td>
+                    <td>
+                        {% if patient.history_files.all %}
+                            {{ patient.history_files.first.uploaded_at|date:"Y-m-d H:i:s" }}
+                        {% else %}
+                            No history
+                        {% endif %}
+                    </td>
                     <td>{{ patient.radiologist_assigned_at|date:"Y-m-d H:i:s" }}</td>
                     <td>{{ patient.marked_done_at|date:"Y-m-d H:i:s" }}</td> 
                     
