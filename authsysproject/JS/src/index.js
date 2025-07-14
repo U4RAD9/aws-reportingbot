@@ -3395,7 +3395,8 @@ if (!runFinalCommonPopups()) return this.hideLoader();
       let currentYPosition = topMargin;
 
       if (Object.keys(tableData).length > 0) {
-        const { patientId, patientName, age, gender, testDate, reportDate, referralDr, reportTime } = tableData;
+        const { patientId, patientName, age, gender, testDate, reportDate, referralDr} = tableData;
+        const  reportTime = new Date().toLocaleTimeString('en-GB', { hour12: false });
         const tableContent = [
           ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
           ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
