@@ -2178,7 +2178,8 @@ def xrayallocation(request):
         
         # Fetch PDFs for the patient
         patient_name_with_underscores = patient.patient_name.replace(" ", "_")
-        pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient.patient_id)
+        patient_id_with_underscores = patient.patient_id.replace(" ", "_")
+        pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient_id_with_underscores)
         
         pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
         # Get history files
@@ -2299,7 +2300,8 @@ def xrayallocationreverse(request):
 
         # Fetch PDFs for the patient
         patient_name_with_underscores = patient.patient_name.replace(" ", "_")
-        pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient.patient_id)
+        patient_id_with_underscores = patient.patient_id.replace(" ", "_")
+        pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient_id_with_underscores)
         
         pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
 
