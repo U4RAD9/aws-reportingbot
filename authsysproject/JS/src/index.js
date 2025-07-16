@@ -1746,7 +1746,20 @@ slab(val, id) {
     );
     const patientName = patientNameElement?.innerHTML.trim(); // Trim extra spaces
     const PatientId = PatientIdElement?.innerHTML.trim(); // Trim extra spaces
-    const location = urlSearchParams.get("data-institution_name");
+    // const location = urlSearchParams.get("data-institution_name");
+    const rawLocation = urlSearchParams.get("data-institution_name");
+
+    // Sanitize institution name only
+    const sanitizeInstitution = (text) => {
+      if (!text) return "";
+      return text
+        .replace(/[:.,]/g, '')       // remove colons, commas, periods
+        .replace(/\s+/g, '_')        // replace spaces with underscores
+        .replace(/_+/g, '_')         // collapse multiple underscores
+        .trim();
+    };
+    
+    const location = sanitizeInstitution(rawLocation);
 
     let filename;
     if (!patientName || !PatientId) {
