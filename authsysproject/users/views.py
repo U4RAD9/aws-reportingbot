@@ -861,6 +861,12 @@ def client_dashboard(request):
                 pdf.whatsapp_number = dicom_data.whatsapp_number
             else:
                 pdf.whatsapp_number = None
+
+        
+            if dicom_data:
+                pdf.email = dicom_data.email
+            else:
+                pdf.email = None    
         
             filtered_pdfs.append(pdf)
             test_dates_set.add(pdf.test_date)
