@@ -541,7 +541,7 @@
                 <td>{{ pdf.report_date }}</td>
                 <td>{{ pdf.location }}</td>
                 <td>{{ pdf.whatsapp_number }}</td>
-                td>{{ pdf.email }}</td>
+                <td>{{ pdf.email }}</td>
                 <td>
                   <a class="reportButton" href="{{ pdf.signed_url }}" download>DOWNLOAD</a>
                   <a href="{% url 'convert_pdf_to_word' report_id=pdf.id %}" class="btn btn-primary">
