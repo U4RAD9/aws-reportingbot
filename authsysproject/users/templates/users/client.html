@@ -593,66 +593,67 @@
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-tools@latest/dist/cornerstoneTools.js"></script>
 
   <script>
-    // document.addEventListener('DOMContentLoaded', function () {
-    //     document.querySelectorAll('.sendEmailButton').forEach(function (button) {
-    //         button.addEventListener('click', function () {
-    //             const patientId = this.dataset.patientId;
-    //             const email = this.dataset.email;
-    //             const name = this.dataset.name;
-    //             const pdfUrl = this.dataset.pdfUrl;
-    //             console.log("Email button clicked:", {patientId, email, name, pdfUrl});
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.sendEmailButton').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const patientId = this.dataset.patientId;
+                const email = this.dataset.email;
+                const name = this.dataset.name;
+                const pdfUrl = this.dataset.pdfUrl;
+                console.log("Email button clicked:", {patientId, email, name, pdfUrl});
     
     
-    //             if (!email || !pdfUrl || !name) {
-    //                 alert("Missing data.");
-    //                 return;
-    //             }
+                if (!email || !pdfUrl || !name) {
+                    alert("Missing data.");
+                    return;
+                }
     
-    //             fetch(`/email-pdf-with-logo/${patientID}/`, {
-    //                 method: 'POST',
-    //                 headers: {
-    //                     'X-CSRFToken': '{{ csrf_token }}',
-    //                     'Content-Type': 'application/json'
-    //                 },
-    //                 body: JSON.stringify({
-    //                     patient_id: patientId,
-    //                     email: email,
-    //                     name: name,
-    //                     pdf_url: pdfUrl
-    //                 })
-    //             })
-    //             .then(res => res.json())
-    //             .then(data => {
-    //                 alert(data.message || 'Email sent!');
-    //             })
-    //             .catch(error => {
-    //                 console.error('Error sending email:', error);
-    //                 alert('Email sending failed.');
-    //             });
-    //         });
-    //     });
-    // });
-    fetch(`/email-pdf-raw/${patientId}/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': '{{ csrf_token }}',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            patient_id: patientId,
-            email: email,
-            name: name,
-            pdf_url: pdfUrl
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message || 'Email sent!');
-    })
-    .catch(error => {
-        console.error('Error sending email:', error);
-        alert('Email sending failed.');
+                // fetch(`/email-pdf-with-logo/${patientID}/`, {
+                //     method: 'POST',
+                //     headers: {
+                //         'X-CSRFToken': '{{ csrf_token }}',
+                //         'Content-Type': 'application/json'
+                //     },
+                //     body: JSON.stringify({
+                //         patient_id: patientId,
+                //         email: email,
+                //         name: name,
+                //         pdf_url: pdfUrl
+                //     })
+                // })
+                // .then(res => res.json())
+                // .then(data => {
+                //     alert(data.message || 'Email sent!');
+                // })
+                // .catch(error => {
+                //     console.error('Error sending email:', error);
+                //     alert('Email sending failed.');
+                // });
+                fetch(`/email-pdf-raw/${patientId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        patient_id: patientId,
+                        email: email,
+                        name: name,
+                        pdf_url: pdfUrl
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message || 'Email sent!');
+                })
+                .catch(error => {
+                    console.error('Error sending email:', error);
+                    alert('Email sending failed.');
+                });
+            });
+        });
     });
+    
     
   </script>
 
