@@ -569,6 +569,7 @@
       formData.append('body_part_examined', $("#body_part_examined").val());
       formData.append('referring_doctor_name', $("#referring_doctor_name").val());
       formData.append('whatsapp_number', $("#whatsapp_number").val());
+      formData.append('email', $("#email").val());
       formData.append('csrfmiddlewaretoken', csrftoken);
   
       // Append selected files to the FormData object
@@ -639,7 +640,7 @@
             $('#patientTable tbody tr').each(function () {
                 var rowDate = $(this).find('td:nth-child(5)').text();
                 var rowModality = ($(this).find('td:nth-child(9)').text() || "").trim().toLowerCase();
-                var rowStatus = ($(this).find('td:nth-child(19)').text() || "").trim().toLowerCase();
+                var rowStatus = ($(this).find('td:nth-child(20)').text() || "").trim().toLowerCase();
                 
                 
                 if ((selectedDate === '' || rowDate === selectedDate) && 
