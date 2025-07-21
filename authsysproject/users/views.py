@@ -137,6 +137,9 @@ import tempfile
 from django.http import FileResponse, Http404
 
 
+from django.core.mail import EmailMessage
+from django.http import HttpResponseBadRequest
+
 
 def login(request):
     if request.method == 'POST':
