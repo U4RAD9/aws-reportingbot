@@ -6248,6 +6248,7 @@ def edit_dicom_data(request, pk):
             dicom_entry.body_part_examined = request.POST.get('body_part_examined', dicom_entry.body_part_examined)
             dicom_entry.referring_doctor_name = request.POST.get('referring_doctor_name', dicom_entry.referring_doctor_name)
             dicom_entry.whatsapp_number = request.POST.get('whatsapp_number', dicom_entry.whatsapp_number)
+            dicom_entry.email = request.POST.get('email', dicom_entry.email)
             dicom_entry.save()
 
             # Handle history file uploads
