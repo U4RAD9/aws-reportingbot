@@ -608,7 +608,7 @@
                     return;
                 }
     
-                fetch(`/email-pdf-with-logo/${data.patientId}`, {
+                fetch(`/email-pdf-with-logo/${pdf.patient_id}`, {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': '{{ csrf_token }}',
