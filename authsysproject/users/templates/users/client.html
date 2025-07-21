@@ -554,6 +554,14 @@
                   {% else %}
                       .
                   {% endif %}
+                  <button 
+                    class="btn btn-sm btn-primary sendEmailButton" 
+                    data-patient-id="{{ pdf.patient_id }}"
+                    data-email="{{ pdf.email }}" 
+                    data-name="{{ pdf.name }}" 
+                    data-pdf-url="{{ pdf.signed_url }}">
+                    Send Email
+                  </button>
                   <!-- Add the Send WhatsApp Button -->
                   <button class="btn btn-sm btn-success sendWhatsAppButton" data-patient-id="{{ pdf.patient_id }}"
                     data-whatsapp="{{ pdf.whatsapp_number }}" data-name="{{ pdf.name }}"
@@ -581,6 +589,48 @@
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-core@latest/dist/cornerstone.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-wado-image-loader@latest/dist/cornerstoneWADOImageLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-tools@latest/dist/cornerstoneTools.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.sendEmailButton').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const patientId = this.dataset.patientId;
+                const email = this.dataset.email;
+                const name = this.dataset.name;
+                const pdfUrl = this.dataset.pdfUrl;
+                console.log("Email button clicked:", {patientId, email, name, pdfUrl});
+    
+    
+                if (!email || !pdfUrl || !name) {
+                    alert("Missing data.");
+                    return;
+                }
+    
+                fetch('/send-report-email/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        patient_id: patientId,
+                        email: email,
+                        name: name,
+                        pdf_url: pdfUrl
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message || 'Email sent!');
+                })
+                .catch(error => {
+                    console.error('Error sending email:', error);
+                    alert('Email sending failed.');
+                });
+            });
+        });
+    });
+  </script>
 
   <script>
     // Function to update the counts of rows with 'Report' and 'Reported' button states

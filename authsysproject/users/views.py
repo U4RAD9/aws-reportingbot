@@ -8228,3 +8228,115 @@ def get_dicom_notes(request):
             return JsonResponse({'error': str(e)}, status=500)
     return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+
+
+@csrf_exempt
+def email_pdf_with_logo(request, patient_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        name = data.get('name')
+
+        if not email or not name:
+            return JsonResponse({'error': 'Name and email are required'}, status=400)
+
+        print(f"📩 Starting email process for patient_id={patient_id}, name={name}, email={email}")
+
+        try:
+            report = XrayReport.objects.get(patient_id=patient_id)
+            print(f"✅ Report found: {report.pdf_file.name}")
+        except XrayReport.DoesNotExist:
+            print(f"⚠️ Report not found for patient_id {patient_id}")
+            report = None
+
+        client = Client.objects.first()
+        # client = Client.objects.get(user=request.user)
+        if not client or not client.upload_header or not client.upload_footer:
+            print("⚠️ Client or header/footer missing")
+            client = None
+
+        final_output_path = None
+        should_attach = False
+
+        if report:
+            try:
+                pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
+
+                response = requests.get(pdf_url)
+                if response.status_code != 200:
+                    raise ValueError("PDF download failed")
+
+                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
+                    temp_pdf.write(response.content)
+                    original_pdf_path = temp_pdf.name
+
+                def get_image_path(image_field):
+                    if hasattr(image_field, 'path') and os.path.exists(image_field.path):
+                        return image_field.path
+                    elif default_storage.exists(image_field.name):
+                        with default_storage.open(image_field.name, 'rb') as f:
+                            content = f.read()
+                            with tempfile.NamedTemporaryFile(suffix=os.path.splitext(image_field.name)[1], delete=False) as temp_img:
+                                temp_img.write(content)
+                                return temp_img.name
+                    return None
+
+                logo_path = get_image_path(client.upload_header)
+                footer_path = get_image_path(client.upload_footer)
+
+                if not logo_path or not footer_path:
+                    raise FileNotFoundError("Logo/footer file not found")
+
+                reader = PdfReader(original_pdf_path)
+                writer = PdfWriter()
+
+                for page in reader.pages:
+                    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
+                        c = canvas.Canvas(overlay_temp.name, pagesize=letter)
+                        page_width, page_height = letter
+                        c.drawImage(logo_path, x=0, y=page_height - 50, width=page_width, height=50)
+                        c.drawImage(footer_path, x=0, y=5, width=page_width, height=40)
+                        c.save()
+                        overlay_pdf_path = overlay_temp.name
+
+                    overlay = PdfReader(overlay_pdf_path)
+                    page.merge_page(overlay.pages[0])
+                    writer.add_page(page)
+                    os.unlink(overlay_pdf_path)
+
+                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as final_output:
+                    writer.write(final_output)
+                    final_output_path = final_output.name
+                    should_attach = True
+                print(f"✅ Modified PDF ready at {final_output_path}")
+
+            except Exception as e:
+                print(f"⚠️ Failed to process PDF: {e}")
+                should_attach = False
+
+        subject = f"Your Medical Report - {name}"
+        if should_attach:
+            body = f"Dear {name},\n\nPlease find your medical report attached.\n\nRegards,\nYour Clinic"
+        else:
+            body = f"Dear {name},\n\nWe could not attach your report, but it is being worked on. We'll send it shortly or contact your provider if needed.\n\nRegards,\nYour Clinic"
+
+        email_message = EmailMessage(subject, body, to=[email])
+        if should_attach:
+            print("📎 Attaching PDF to email")
+            email_message.attach_file(final_output_path)
+
+        email_message.send()
+        print(f"✅ Email sent to {email} (with{'out' if not should_attach else ''} attachment)")
+
+        if should_attach and final_output_path and os.path.exists(final_output_path):
+            os.unlink(final_output_path)
+
+        return JsonResponse({'message': f'Email sent to {email} ({"with" if should_attach else "without"} PDF)'})
+
+    except Exception as e:
+        print(f"❌ Fatal error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
