@@ -6177,6 +6177,7 @@ def clientdata(request):
         'body_part_examined': client.can_edit_body_part_examined,
         'referring_doctor_name': client.can_edit_referring_doctor_name,
         'whatsapp_number': client.can_edit_whatsapp_number,
+        'email': client.can_edit_email,
         'upload_history': True,  # Assuming all clients can upload history files
         'search_query': search_query,
     }
