@@ -6107,7 +6107,7 @@ def clientdata(request):
     status_filter = request.GET.get('status', '')
     
     # Filter DICOMData for all institutions linked to the client
-    dicom_data = DICOMData.objects.filter(institution_name__in=institution_names, twostepcheck=False).order_by('-id')
+    dicom_data = DICOMData.objects.filter(institution_name__in=institution_names).order_by('-id')
 
     # Apply search filter
     if search_query:
@@ -6157,15 +6157,29 @@ def clientdata(request):
         ]
 
         # ✅ Add PDF file URLs (just like xrayallocation)
-        patient_id_with_underscores = dicom_data.patient_id.replace(" ", "_").replace("NBSP", "").replace("_NBSP", "").rstrip("_").strip()
-        patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_").replace("NBSP", "").replace("_NBSP", "").rstrip("_").strip()
-        pdf_reports = XrayReport.objects.filter(
-            name=patient_name_with_underscores,
-            patient_id=patient_id_with_underscores
-        )
-        dicom_data.pdf_file_urls = [
-            presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports
-        ]
+        # patient_id_with_underscores = dicom_data.patient_id.replace(" ", "_").replace("NBSP", "").replace("_NBSP", "").rstrip("_").strip()
+        # patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_").replace("NBSP", "").replace("_NBSP", "").rstrip("_").strip()
+        # pdf_reports = XrayReport.objects.filter(
+        #     name=patient_name_with_underscores,
+        #     patient_id=patient_id_with_underscores
+        # )
+        # dicom_data.pdf_file_urls = [
+        #     presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports
+        # ]
+
+        # Only show PDF URLs if twostepcheck is False
+        if dicom_data.twostepcheck == False:
+            patient_id_with_underscores = dicom_data.patient_id.replace(" ", "_").replace("NBSP", "").replace("_NBSP", "").rstrip("_").strip()
+            patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_").replace("NBSP", "").replace("_NBSP", "").rstrip("_").strip()
+            pdf_reports = XrayReport.objects.filter(
+                name=patient_name_with_underscores,
+                patient_id=patient_id_with_underscores
+            )
+            dicom_data.pdf_file_urls = [
+                presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports
+            ]
+        else:
+            dicom_data.pdf_file_urls = []  # Or don't add this attribute at all
 
     # Get unique sorted dates from the filtered DICOM data
     unique_dates = set(dicom.study_date for dicom in page_obj.object_list)
