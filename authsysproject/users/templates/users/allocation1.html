@@ -918,19 +918,20 @@
             </td>
 
             <td>
-              {% for file_url in patient.history_file_urls %}
-                <a class="imageButton" target="_blank" href="{{ file_url }}">
+              {% for file in patient.history_file_infos %}
+                <a class="imageButton" target="_blank" href="{{ file.url }}">
                   History Files {{ forloop.counter }}
                 </a>
-                {% if file_url.uploaded_at %}
+                {% if file.uploaded_at %}
                   <br>
                   <small class="text-muted">
-                    Uploaded: {{ file_url.uploaded_at|date:"Y-m-d H:i" }}
+                    Uploaded: {{ file.uploaded_at|date:"Y-m-d H:i" }}
                   </small>
                 {% endif %}
                 <br>
               {% endfor %}
             </td>
+
             <td>
               <input type="checkbox" class="urgent-checkbox" data-patient-id="{{ patient.patient_id }}" 
                   {% if patient.urgent %}checked{% endif %}>

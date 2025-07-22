@@ -1452,8 +1452,15 @@ def allocation1(request):
 
         # Get history files
         history_files = patient.history_files.all()
-        patient.history_file_urls = [
-            presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+        # patient.history_file_urls = [
+        #     presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+        # ]
+        patient.history_file_infos = [
+            {
+                'url': presigned_url(bucket_name, history_file.history_file.name, inline=True),
+                'uploaded_at': history_file.uploaded_at
+            }
+            for history_file in history_files
         ]
 
         # ADD THIS SECTION: Get PDF reports for the patient
