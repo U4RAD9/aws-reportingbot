@@ -6107,7 +6107,7 @@ def clientdata(request):
     status_filter = request.GET.get('status', '')
     
     # Filter DICOMData for all institutions linked to the client
-    dicom_data = DICOMData.objects.filter(institution_name__in=institution_names).order_by('-id')
+    dicom_data = DICOMData.objects.filter(institution_name__in=institution_names, twostepcheck=False).order_by('-id')
 
     # Apply search filter
     if search_query:
