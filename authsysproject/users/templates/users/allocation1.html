@@ -922,10 +922,10 @@
                 <a class="imageButton" target="_blank" href="{{ file_url }}">
                   History Files {{ forloop.counter }}
                 </a>
-                {% if history_file.uploaded_at %}
+                {% if file_url.uploaded_at %}
                   <br>
                   <small class="text-muted">
-                    Uploaded: {{ history_file.uploaded_at|date:"Y-m-d H:i" }}
+                    Uploaded: {{ file_url.uploaded_at|date:"Y-m-d H:i" }}
                   </small>
                 {% endif %}
                 <br>
