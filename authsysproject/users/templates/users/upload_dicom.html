@@ -337,18 +337,31 @@
             <td>{{ entry.gender }}</td>
             <td>{{ entry.study_date }}</td>
             <td>{{ entry.study_description }}</td>
-            <td>{{ entry.notes }}</td>
+            <td>
+              {{ entry.notes|linebreaksbr }}
+              {% if entry.notes_modified_at %}
+                <br>
+                <small class="text-muted">Last modified: {{ entry.notes_modified_at|date:"Y-m-d H:i" }}</small>
+              {% endif %}
+            </td>
             <td>{{ entry.body_part_examined }}</td>
             <td>{{ entry.Modality }}</td>
             <td>{{ entry.referring_doctor_name }}</td>
             <td>{{ entry.whatsapp_number }}</td>
             <td>{{ entry.email }}</td>
             <td>
-                {% for url in entry.history_file_urls %}
-                   <a class="imageButton" target="_blank" href="{{ url }}">
-                    H{{ forloop.counter }}
-                  </a>
-                {% endfor %}
+              {% for history_file in entry.history_files.all %}
+                <a class="imageButton" target="_blank" href="{{ history_file.history_file.url }}">
+                  H{{ forloop.counter }}
+                </a>
+                {% if history_file.uploaded_at %}
+                  <br>
+                  <small class="text-muted">
+                    Uploaded: {{ history_file.uploaded_at|date:"Y-m-d H:i" }}
+                  </small>
+                {% endif %}
+                <br>
+              {% endfor %}
             </td>
             <td>
               {% for url in entry.pdf_file_urls %}
