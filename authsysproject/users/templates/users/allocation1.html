@@ -902,14 +902,33 @@
                     {{ radiologist.user.first_name }}
                     {% if not forloop.last %}, {% endif %}
                 {% endfor %}
+                {% if patient.radiologist_assigned_at %}
+                  <br>
+                  <small class="text-muted">
+                    Assigned: {{ patient.radiologist_assigned_at|date:"Y-m-d H:i" }}
+                  </small>
+                {% endif %}
             </td>
-            <td>{{ patient.notes }}</td>
+            <td>
+              {{ patient.notes|linebreaksbr }}
+              {% if patient.notes_modified_at %}
+                <br>
+                <small class="text-muted">Last modified: {{ patient.notes_modified_at|date:"Y-m-d H:i" }}</small>
+              {% endif %}
+            </td>
 
             <td>
               {% for file_url in patient.history_file_urls %}
                 <a class="imageButton" target="_blank" href="{{ file_url }}">
                   History Files {{ forloop.counter }}
                 </a>
+                {% if history_file.uploaded_at %}
+                  <br>
+                  <small class="text-muted">
+                    Uploaded: {{ history_file.uploaded_at|date:"Y-m-d H:i" }}
+                  </small>
+                {% endif %}
+                <br>
               {% endfor %}
             </td>
             <td>
