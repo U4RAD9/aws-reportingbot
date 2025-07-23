@@ -1525,8 +1525,7 @@
             var rowModality = ($(this).find('td:nth-child(10)').text() || "").trim().toLowerCase();
             var rowStudydescription = ($(this).find('td:nth-child(11)').text() || "").trim().toLowerCase();
             var rowCorporatecoordinator = ($(this).find('td:nth-child(12)').text() || "").trim().toLowerCase();
-            var rowAllocate = $(this).find('td:nth-child(13)').data('radiologist') || "";
-            rowAllocate = rowAllocate.trim().toLowerCase();
+            var rowAllocate = ($(this).find('td:nth-child(13)').text() || "").trim().toLowerCase();
             var rowStatus = ($(this).find('td:nth-child(22)').text() || "").trim().toLowerCase();
 
             if ((selectedDate === '' || rowDate === selectedDate) 
@@ -1538,7 +1537,7 @@
                 && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription)
                 // && (selectedAllocate === "" || rowAllocate === selectedAllocate)
                 && (selectedAllocate === "unassigned" ? rowAllocate === "" : 
-                 (selectedAllocate === "" ? true : rowAllocate.indexOf(selectedAllocate) !== -1))
+                 (selectedAllocate === "" ? true : rowAllocate === selectedAllocate))
                 && (selectedStatus === "" || rowStatus === selectedStatus)) { 
                 $(this).show();
                 visibleRowCount++;
@@ -1558,46 +1557,32 @@
 
   <script>
     // Function to filter the table by status
-    function filterTableByStatus(status) {
-        // Show all rows initially
-        $("tbody tr").show();
-  
-        if (status) {
-            // Filter rows based on the selected status
-            $("tbody tr").filter(function() {
-                var rowStatus = $(this).find("td").eq(20).text().trim(); // Adjust column index if needed
-                return rowStatus.toLowerCase() !== status.toLowerCase(); // Case-insensitive comparison
-            }).hide();
-        }
-        console.log("Filtered Rows:", $("tbody tr:visible").length);
-    }
-  
-    // Function to apply filter and update URL
     function applyFilter() {
-        var selectedStatus = document.getElementById("filter-status-select").value;
-  
-        // Update URL without refreshing the page
-        var newUrl = window.location.pathname + (selectedStatus ? "?isdone=" + selectedStatus : "");
-        window.history.pushState({ path: newUrl }, "", newUrl);
-  
-        // Apply table filter
-        filterTableByStatus(selectedStatus);
+    var selectedStatus = document.getElementById("filter-status-select").value;
+    console.log("Selected Status:", selectedStatus);
+
+    // Update URL without refreshing the page
+    var newUrl = window.location.pathname + (selectedStatus ? "?isdone=" + selectedStatus : "");
+    window.history.pushState({ path: newUrl }, "", newUrl);
+
+    filterTable();
+}
+
+  $(document).ready(function () {
+    var urlParams = new URLSearchParams(window.location.search);
+    var statusFromUrl = urlParams.get("isdone");
+    if (statusFromUrl) {
+        $("#filter-status-select").val(statusFromUrl);
     }
-  
-    // Event handler for the "Status" dropdown filter
+
+    filterTable();
+});
+
     $(document).on("change", "#filter-status-select", function () {
-        applyFilter();
-    });
-  
-    // Apply filter on page load based on URL parameter
-    $(document).ready(function () {
-        var urlParams = new URLSearchParams(window.location.search);
-        var statusFromUrl = urlParams.get("isdone");
-        if (statusFromUrl) {
-            $("#filter-status-select").val(statusFromUrl);
-            filterTableByStatus(statusFromUrl);
-        }
-    });
+filterTable();   
+
+});
+    
   
 
         function refreshPage() {
