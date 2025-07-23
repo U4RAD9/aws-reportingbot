@@ -6489,44 +6489,117 @@ def supercoordinator_view(request, client_id=None):
 
 
 
-@csrf_exempt
-def send_whatsapp(request):
-    print("I'm inside whatsApp")
-    if request.method == "POST":
-        try:
-            # Parse the incoming JSON data
-            data = json.loads(request.body)
-            whatsapp_number = data.get('whatsapp_number')
-            patient_name = data.get('patient_name')
-            pdf_url = data.get('pdf_url')
-            patient_id = data.get('patient_id')
+# @csrf_exempt
+# def send_whatsapp(request):
+#     print("I'm inside whatsApp")
+#     if request.method == "POST":
+#         try:
+#             # Parse the incoming JSON data
+#             data = json.loads(request.body)
+#             whatsapp_number = data.get('whatsapp_number')
+#             patient_name = data.get('patient_name')
+#             pdf_url = data.get('pdf_url')
+#             patient_id = data.get('patient_id')
 
 
-            # Twilio credentials and client setup
-            account_sid = settings.TWILIO_ACCOUNT_SID
-            auth_token = settings.TWILIO_AUTH_TOKEN
-            client = tw(account_sid, auth_token)
-            print(account_sid, auth_token)
+#             # Twilio credentials and client setup
+#             account_sid = settings.TWILIO_ACCOUNT_SID
+#             auth_token = settings.TWILIO_AUTH_TOKEN
+#             client = tw(account_sid, auth_token)
+#             print(account_sid, auth_token)
 
             
-            # Send the WhatsApp message
-            message = client.messages.create(
-                content_sid='HX6f6b9d0ea4a3606a7f27cf5e72f3403f',  # Content SID for WhatsApp template
-                from_='MG228f0104ea3ddfc780cfcc1a0ca561d9',
-                to=f'whatsapp:+91{whatsapp_number}',  # Indian country code
-                content_variables=json.dumps({'1': patient_name, '2': pdf_url}),
-            )
-            print(message)
+#             # Send the WhatsApp message
+#             message = client.messages.create(
+#                 content_sid='HX6f6b9d0ea4a3606a7f27cf5e72f3403f',  # Content SID for WhatsApp template
+#                 from_='MG228f0104ea3ddfc780cfcc1a0ca561d9',
+#                 to=f'whatsapp:+91{whatsapp_number}',  # Indian country code
+#                 content_variables=json.dumps({'1': patient_name, '2': pdf_url}),
+#             )
+#             print(message)
 
-            return JsonResponse({"success": True, "message": "WhatsApp message sent successfully."})
+#             return JsonResponse({"success": True, "message": "WhatsApp message sent successfully."})
         
-        except Exception as e:
-            return JsonResponse({"success": False, "message": str(e)})
+#         except Exception as e:
+#             return JsonResponse({"success": False, "message": str(e)})
 
-    return JsonResponse({"success": False, "message": "Invalid request method."})  
+#     return JsonResponse({"success": False, "message": "Invalid request method."})  
 
 
 
+@csrf_exempt
+def send_whatsapp(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid request method."}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        whatsapp_number = data.get('whatsapp_number')
+        patient_name = data.get('patient_name')
+        pdf_url = data.get('pdf_url')
+        patient_id = data.get('patient_id')
+
+        
+        if not (whatsapp_number and patient_name and pdf_url):
+            return JsonResponse({"success": False, "message": "Missing required fields."}, status=400)
+
+        API_URL = "https://app2.cunnekt.com/v1/sendnotification"
+        API_KEY = "33c0c252d80b77bce62342b08a6902d7774e9a8f"
+        TEMPLATE_ID = "730036499641018"  
+
+        headers = {
+            "Content-Type": "application/json",
+            "API-KEY": API_KEY
+        }
+
+        payload = {
+            "templateid": TEMPLATE_ID,
+            "mobile": whatsapp_number,
+            "overridebot": "yes",
+            "template": {
+                "components": [
+                    {
+                        "type": "header",
+                        "parameters": [
+                            {
+                                "type": "document",
+                                "document": {
+                                    "link": pdf_url,
+                                    "filename": f"{patient_name}_Report.pdf"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "type": "body",
+                        "parameters": [
+                            {
+                                "type": "text",
+                                "text": patient_name
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+
+        print(f"Sending WhatsApp to {whatsapp_number} for patient {patient_name}")
+
+        response = requests.post(API_URL, headers=headers, json=payload)
+        print("Raw response:", response.text)
+
+        try:
+            res_json = response.json()
+        except Exception:
+            return JsonResponse({"success": False, "message": "Invalid response from Cunnekt"}, status=500)
+
+        if res_json.get("status") is True:
+            return JsonResponse({"success": True, "message": "WhatsApp message sent successfully."})
+        else:
+            return JsonResponse({"success": False, "message": res_json.get("message", "Failed to send message.")})
+
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
 
 
 def allocatecoordinator1(request):
