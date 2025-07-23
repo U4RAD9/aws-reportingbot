@@ -8467,6 +8467,9 @@ def email_pdf_raw(request, patient_id):
 
         if not email or not name or not pdf_url:
             return JsonResponse({'error': 'Missing required fields'}, status=400)
+        
+        if email is None:
+            return JsonResponse({'error': 'Email is required'}, status=400)
 
         print(f"📩 Emailing raw PDF for patient_id={patient_id}, name={name}, email={email}")
 

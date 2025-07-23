@@ -900,7 +900,50 @@
   </script>
 
 
-  <script>
+<script>
+  $(document).on("click", ".sendWhatsAppButton", function () {
+    var whatsappNumber = $(this).data("whatsapp");
+    var patientName = $(this).data("name");
+    var pdfUrl = $(this).data("pdf-url");
+    var patientId = $(this).data("patient-id");
+
+    if (
+      !whatsappNumber ||                            
+      typeof whatsappNumber !== "string" || 
+      !/^\d{10,15}$/.test(whatsappNumber)          
+    ) {
+      alert("Invalid WhatsApp number. Please check the number.");
+      return;
+    }
+    var data = {
+      whatsapp_number: whatsappNumber,
+      patient_name: patientName,
+      pdf_url: pdfUrl,
+      patient_id: patientId,
+    };
+
+    $.ajax({
+      url: "/send_whatsapp/", 
+      type: "POST",
+      data: JSON.stringify(data),
+      contentType: "application/json",
+      success: function (response) {
+        if (response.success) {
+          alert("✅ WhatsApp message sent successfully!");
+        } else {
+          alert("❌ Error sending WhatsApp message.");
+        }
+      },
+      error: function () {
+        alert("Error sending WhatsApp message.");
+      },
+    });
+  });
+</script>
+
+
+
+  <!-- <script>
     // Event listener for the Send WhatsApp button
     $(document).on("click", ".sendWhatsAppButton", function () {
       var whatsappNumber = $(this).data("whatsapp");
@@ -934,7 +977,7 @@
         },
       });
     });
-  </script>
+  </script> -->
 </body>
 
 </html>
