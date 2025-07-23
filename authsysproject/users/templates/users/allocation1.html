@@ -1538,7 +1538,7 @@
                 && (selectedStudydescription === '' || rowStudydescription === selectedStudydescription)
                 // && (selectedAllocate === "" || rowAllocate === selectedAllocate)
                 && (selectedAllocate === "unassigned" ? rowAllocate === "" : 
-                 (selectedAllocate === "" ? true : rowAllocate === selectedAllocate))
+                 (selectedAllocate === "" ? true : rowAllocate.indexOf(selectedAllocate) !== -1))
                 && (selectedStatus === "" || rowStatus === selectedStatus)) { 
                 $(this).show();
                 visibleRowCount++;
