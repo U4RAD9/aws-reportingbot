@@ -897,7 +897,7 @@
                     {% if not forloop.last %}, {% endif %}
                 {% endfor %}
             </td>
-            <td data-radiologist="{{ radiologist.user.id }}">
+            <!-- <td data-radiologist="{{ radiologist.user.id }}">
                 {% for radiologist in patient.radiologist.all %}
                     {{ radiologist.user.first_name }}
                     {% if not forloop.last %}, {% endif %}
@@ -907,6 +907,18 @@
                   <small class="text-muted">
                     Assigned: {{ patient.radiologist_assigned_at|date:"Y-m-d H:i" }}
                   </small>
+                {% endif %}
+            </td> -->
+            <td data-radiologist="{% for radiologist in patient.radiologist.all %}{{ radiologist.user.first_name }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                {% for radiologist in patient.radiologist.all %}
+                    {{ radiologist.user.first_name }}
+                    {% if not forloop.last %}, {% endif %}
+                {% endfor %}
+                {% if patient.radiologist_assigned_at %}
+                    <br>
+                    <small class="text-muted">
+                        Assigned: {{ patient.radiologist_assigned_at|date:"Y-m-d H:i" }}
+                    </small>
                 {% endif %}
             </td>
             <td>
@@ -1513,8 +1525,9 @@
             var rowModality = ($(this).find('td:nth-child(10)').text() || "").trim().toLowerCase();
             var rowStudydescription = ($(this).find('td:nth-child(11)').text() || "").trim().toLowerCase();
             var rowCorporatecoordinator = ($(this).find('td:nth-child(12)').text() || "").trim().toLowerCase();
-            var rowAllocate = ($(this).find('td:nth-child(13)').text() || "").trim().toLowerCase();
-            var rowStatus = ($(this).find('td:nth-child(21)').text() || "").trim().toLowerCase();
+            var rowAllocate = $(this).find('td:nth-child(13)').data('radiologist') || "";
+            rowAllocate = rowAllocate.trim().toLowerCase();
+            var rowStatus = ($(this).find('td:nth-child(22)').text() || "").trim().toLowerCase();
 
             if ((selectedDate === '' || rowDate === selectedDate) 
                 && (selectedCorporatecoordinator === "" || rowCorporatecoordinator === selectedCorporatecoordinator) 
