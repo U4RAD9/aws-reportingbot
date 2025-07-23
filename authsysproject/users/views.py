@@ -6539,6 +6539,10 @@ def send_whatsapp(request):
         pdf_url = data.get('pdf_url')
         patient_id = data.get('patient_id')
 
+        whatsapp_number = str(whatsapp_number)
+        if not whatsapp_number.startswith("91"):
+            whatsapp_number = "91" + whatsapp_number
+
         
         if not (whatsapp_number and patient_name and pdf_url):
             return JsonResponse({"success": False, "message": "Missing required fields."}, status=400)
