@@ -1525,7 +1525,8 @@
             var rowModality = ($(this).find('td:nth-child(10)').text() || "").trim().toLowerCase();
             var rowStudydescription = ($(this).find('td:nth-child(11)').text() || "").trim().toLowerCase();
             var rowCorporatecoordinator = ($(this).find('td:nth-child(12)').text() || "").trim().toLowerCase();
-            var rowAllocate = ($(this).find('td:nth-child(13)').text() || "").trim().toLowerCase();
+            var rowAllocate = $(this).find('td:nth-child(13)').data('radiologist') || "";
+            rowAllocate = rowAllocate.trim().toLowerCase();
             var rowStatus = ($(this).find('td:nth-child(22)').text() || "").trim().toLowerCase();
 
             if ((selectedDate === '' || rowDate === selectedDate) 
