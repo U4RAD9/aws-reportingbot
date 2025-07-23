@@ -606,7 +606,15 @@
                 if (!email || !pdfUrl || !name) {
                     alert("Missing data.");
                     return;
+
                 }
+                 if (email ==="None"){
+                  alert("Enter correct email");
+                  return;
+                 }
+              
+
+                
     
                 // fetch(`/email-pdf-with-logo/${patientID}/`, {
                 //     method: 'POST',
@@ -907,14 +915,6 @@
     var pdfUrl = $(this).data("pdf-url");
     var patientId = $(this).data("patient-id");
 
-    if (
-      !whatsappNumber ||                            
-      typeof whatsappNumber !== "string" || 
-      !/^\d{10,15}$/.test(whatsappNumber)          
-    ) {
-      alert("Invalid WhatsApp number. Please check the number.");
-      return;
-    }
     var data = {
       whatsapp_number: whatsappNumber,
       patient_name: patientName,
