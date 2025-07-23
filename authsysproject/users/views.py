@@ -7193,7 +7193,10 @@ def review_page(request):
         pdf_reports = XrayReport.objects.none()
         if all(query_params.values()):
             try:
-                pdf_reports = XrayReport.objects.filter(**query_params)
+                pdf_reports = XrayReport.objects.filter(
+                    name__iexact=storage_patient_name,
+                    patient_id__iexact=storage_patient_id,
+                    test_date=test_date_obj)
                 
                 # Cross-verify first match
                 if pdf_reports.exists():
