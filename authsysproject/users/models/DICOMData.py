@@ -37,6 +37,8 @@ class DICOMData(models.Model):
     #accession_number = models.CharField(max_length=50, null=True, blank=True)
     institution_name = models.CharField(max_length=250, blank=True, null=True, default="None")
     referring_doctor_name = models.CharField(max_length=250, blank=True, null=True, default="None")
+    email = models.EmailField(max_length=150, null=True, blank=True)
+
     whatsapp_number = models.CharField(max_length=10, blank=True, null=True)
     radiologist_assigned_at = models.DateTimeField(null=True, blank=True)
     marked_done_at = models.DateTimeField(null=True, blank=True)

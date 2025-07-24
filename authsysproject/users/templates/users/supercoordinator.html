@@ -126,6 +126,13 @@
                     </label>
                     <br>
                     <label>
+                        <input type="checkbox" name="can_edit_email" 
+                            {% if client_to_edit and client_to_edit.can_edit_email %}checked{% endif %}>
+                        Edit Email
+                    </label>
+
+                    <br>
+                    <label>
                         <input type="checkbox" name="can_edit_whatsapp_number" 
                             {% if client_to_edit and client_to_edit.can_edit_whatsapp_number %}checked{% endif %}>
                         Edit WhatsApp Number
@@ -156,6 +163,7 @@
                         <td>{{ client.institution_name }}</td>
                         <td>
                             <a href="?client_id={{ client.id }}" class="btn btn-link">Edit</a>
+                            
                         </td>
                     </tr>
                 {% empty %}
