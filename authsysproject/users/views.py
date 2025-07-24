@@ -136,6 +136,7 @@ from pdf2docx import Converter
 import tempfile
 from django.http import FileResponse, Http404
 
+from django.http import HttpResponseBadRequest
 
 
 def login(request):
@@ -609,6 +610,279 @@ def user_type_required(user_type):
         return _wrapped_view
 
     return decorator
+
+
+from django.views.decorators.csrf import csrf_exempt
+from django.core.mail import EmailMessage
+from django.http import JsonResponse
+import json
+
+from django.shortcuts import render
+
+def test_email_template(request):
+    return render(request, 'send_email_test.html')
+
+from django.core.mail import EmailMessage
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+
+from django.conf import settings
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+
+# @csrf_exempt
+# def email_pdf_with_logo(request, pdf_id):
+#     print(">>> HTTP Method:", request.method)  # Add this line
+
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body)
+#             email = data.get('email')
+#             name = data.get('name')
+#             pdf_url = data.get('pdf_url')
+
+#             print(f"Email: {email}, Name: {name}, PDF URL: {pdf_url}, PDF ID: {pdf_id}")
+#             return JsonResponse({'message': 'Email sent successfully (mock)'})
+#         except Exception as e:
+#             return JsonResponse({'error': str(e)}, status=400)
+#     else:
+#         return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+
+import json
+import requests
+from django.core.mail import EmailMessage
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+# @csrf_exempt
+# def email_pdf_with_logo(request, pdf_id):
+#     print(">>> HTTP Method:", request.method)
+
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body)
+#             email = data.get('email')
+#             name = data.get('name')
+#             pdf_url = data.get('pdf_url')
+
+#             if not email or not name or not pdf_url:
+#                 return JsonResponse({'error': 'Missing email, name, or PDF URL'}, status=400)
+
+#             print(f"Email: {email}, Name: {name}, PDF URL: {pdf_url}, PDF ID: {pdf_id}")
+
+#             # Step 1: Download the PDF from URL
+#             response = requests.get(pdf_url)
+#             if response.status_code != 200:
+#                 return JsonResponse({'error': 'Failed to download PDF from the URL'}, status=400)
+
+#             pdf_content = response.content
+#             pdf_filename = f"{pdf_id}.pdf"
+
+#             # Step 2: Compose and send email
+#             subject = f"Your Report PDF - {pdf_id}"
+#             body = f"Dear {name},\n\nPlease find your report attached.\n\nRegards,\nYour Clinic"
+
+#             email_message = EmailMessage(
+#                 subject=subject,
+#                 body=body,
+#                 to=[email]
+#             )
+#             email_message.attach(pdf_filename, pdf_content, 'application/pdf')
+#             email_message.send()
+
+#             return JsonResponse({'message': f'Email sent successfully to {email}'})
+
+#         except Exception as e:
+#             print(">>> ERROR:", e)
+#             return JsonResponse({'error': str(e)}, status=500)
+
+#     else:
+#         return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+
+
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+import tempfile
+import os
+import requests
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from PyPDF2 import PdfReader, PdfWriter
+from django.core.mail import EmailMessage
+from django.conf import settings
+from django.core.files.storage import default_storage
+from django.shortcuts import get_object_or_404
+
+
+
+
+from django.views.decorators.csrf import csrf_exempt
+from django.core.mail import EmailMessage
+from django.core.files.storage import default_storage
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+from users.models.XrayPdfReport import XrayReport
+from users.models.Client import Client
+from PyPDF2 import PdfReader, PdfWriter
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+import tempfile, os, json, requests
+
+@csrf_exempt
+def email_pdf_with_logo(request, patient_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        name = data.get('name')
+
+        if not email or not name:
+            return JsonResponse({'error': 'Name and email are required'}, status=400)
+
+        print(f"📩 Starting email process for patient_id={patient_id}, name={name}, email={email}")
+
+        try:
+            report = XrayReport.objects.get(patient_id=patient_id)
+            print(f"✅ Report found: {report.pdf_file.name}")
+        except XrayReport.DoesNotExist:
+            print(f"⚠️ Report not found for patient_id {patient_id}")
+            report = None
+
+        client = Client.objects.first()
+        # client = Client.objects.get(user=request.user)
+        if not client or not client.upload_header or not client.upload_footer:
+            print("⚠️ Client or header/footer missing")
+            client = None
+
+        final_output_path = None
+        should_attach = False
+
+        if report:
+            try:
+                pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
+
+                response = requests.get(pdf_url)
+                if response.status_code != 200:
+                    raise ValueError("PDF download failed")
+
+                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
+                    temp_pdf.write(response.content)
+                    original_pdf_path = temp_pdf.name
+
+                def get_image_path(image_field):
+                    if hasattr(image_field, 'path') and os.path.exists(image_field.path):
+                        return image_field.path
+                    elif default_storage.exists(image_field.name):
+                        with default_storage.open(image_field.name, 'rb') as f:
+                            content = f.read()
+                            with tempfile.NamedTemporaryFile(suffix=os.path.splitext(image_field.name)[1], delete=False) as temp_img:
+                                temp_img.write(content)
+                                return temp_img.name
+                    return None
+
+                logo_path = get_image_path(client.upload_header)
+                footer_path = get_image_path(client.upload_footer)
+
+                if not logo_path or not footer_path:
+                    raise FileNotFoundError("Logo/footer file not found")
+
+                reader = PdfReader(original_pdf_path)
+                writer = PdfWriter()
+
+                for page in reader.pages:
+                    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
+                        c = canvas.Canvas(overlay_temp.name, pagesize=letter)
+                        page_width, page_height = letter
+                        c.drawImage(logo_path, x=0, y=page_height - 50, width=page_width, height=50)
+                        c.drawImage(footer_path, x=0, y=5, width=page_width, height=40)
+                        c.save()
+                        overlay_pdf_path = overlay_temp.name
+
+                    overlay = PdfReader(overlay_pdf_path)
+                    page.merge_page(overlay.pages[0])
+                    writer.add_page(page)
+                    os.unlink(overlay_pdf_path)
+
+                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as final_output:
+                    writer.write(final_output)
+                    final_output_path = final_output.name
+                    should_attach = True
+                print(f"✅ Modified PDF ready at {final_output_path}")
+
+            except Exception as e:
+                print(f"⚠️ Failed to process PDF: {e}")
+                should_attach = False
+
+        subject = f"Your Medical Report - {name}"
+        if should_attach:
+            body = f"Dear {name},\n\nPlease find your medical report attached.\n\nRegards,\nYour Clinic"
+        else:
+            body = f"Dear {name},\n\nWe could not attach your report, but it is being worked on. We'll send it shortly or contact your provider if needed.\n\nRegards,\nYour Clinic"
+
+        email_message = EmailMessage(subject, body, to=[email])
+        if should_attach:
+            print("📎 Attaching PDF to email")
+            email_message.attach_file(final_output_path)
+
+        email_message.send()
+        print(f"✅ Email sent to {email} (with{'out' if not should_attach else ''} attachment)")
+
+        if should_attach and final_output_path and os.path.exists(final_output_path):
+            os.unlink(final_output_path)
+
+        return JsonResponse({'message': f'Email sent to {email} ({"with" if should_attach else "without"} PDF)'})
+
+    except Exception as e:
+        print(f"❌ Fatal error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+
+
+@csrf_exempt
+def send_report_email(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        email = data.get('email')
+        name = data.get('name')
+        pdf_url = data.get('pdf_url')
+        
+        if not email:
+            return JsonResponse({'error': 'Missing email'}, status=400)
+
+        email_subject = f"Radiology Report for {name}"
+        email_body = f"""
+Dear {name},
+
+Your radiology report is available. You can view it at:
+
+{pdf_url}
+
+Regards,
+Your Radiology Team
+        """
+
+        message = EmailMessage(
+            subject=email_subject,
+            body=email_body,
+            to=[email],
+            from_email=settings.DEFAULT_FROM_EMAIL
+        )
+        message.send()
+        return JsonResponse({'message': 'Email sent successfully.'})
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
 
 
 # def client_dashboard(request):
@@ -6071,6 +6345,8 @@ def clientdata(request):
             Q(notes__icontains=search_query) |
             Q(body_part_examined__icontains=search_query) |
             Q(referring_doctor_name__icontains=search_query) |
+
+            Q(email__icontains=search_query) |
             Q(whatsapp_number__icontains=search_query)
         )
 
@@ -6135,6 +6411,9 @@ def clientdata(request):
         'notes': client.can_edit_notes,
         'body_part_examined': client.can_edit_body_part_examined,
         'referring_doctor_name': client.can_edit_referring_doctor_name,
+
+        'email': client.can_edit_email,
+
         'whatsapp_number': client.can_edit_whatsapp_number,
         'upload_history': True,  # Assuming all clients can upload history files
         'search_query': search_query,
@@ -6205,6 +6484,9 @@ def edit_dicom_data(request, pk):
             dicom_entry.notes = request.POST.get('notes', dicom_entry.notes)
             dicom_entry.body_part_examined = request.POST.get('body_part_examined', dicom_entry.body_part_examined)
             dicom_entry.referring_doctor_name = request.POST.get('referring_doctor_name', dicom_entry.referring_doctor_name)
+
+            dicom_entry.email = request.POST.get('email', dicom_entry.email)
+
             dicom_entry.whatsapp_number = request.POST.get('whatsapp_number', dicom_entry.whatsapp_number)
             dicom_entry.save()
 
@@ -6290,6 +6572,8 @@ def supercoordinator_view(request, client_id=None):
     can_edit_notes = False
     can_edit_body_part_examined = False
     can_edit_referring_doctor_name = False
+
+    can_edit_email = False
     can_edit_whatsapp_number = False
     # Check if the logged-in user is a superuser
     if not request.user.is_superuser:
@@ -6315,6 +6599,8 @@ def supercoordinator_view(request, client_id=None):
         can_edit_notes = request.POST.get('can_edit_notes') == 'on'
         can_edit_body_part_examined = request.POST.get('can_edit_body_part_examined') == 'on'
         can_edit_referring_doctor_name = request.POST.get('can_edit_referring_doctor_name') == 'on'
+        
+        can_edit_email = request.POST.get('can_edit_email') =='on'
         can_edit_whatsapp_number = request.POST.get('can_edit_whatsapp_number') == 'on'
         
 
@@ -6375,6 +6661,8 @@ def supercoordinator_view(request, client_id=None):
                 'can_edit_notes': can_edit_notes,
                 'can_edit_body_part_examined': can_edit_body_part_examined,
                 'can_edit_referring_doctor_name': can_edit_referring_doctor_name,
+
+                'can_edit_email': can_edit_email,
                 'can_edit_whatsapp_number': can_edit_whatsapp_number,
             }
         )
@@ -6411,47 +6699,128 @@ def supercoordinator_view(request, client_id=None):
         'can_edit_notes': can_edit_notes,
         'can_edit_body_part_examined': can_edit_body_part_examined,
         'can_edit_referring_doctor_name': can_edit_referring_doctor_name,
+
+        'can_edit_email': can_edit_email,
         'can_edit_whatsapp_number': can_edit_whatsapp_number,
     })
 
 
 
-@csrf_exempt
-def send_whatsapp(request):
-    print("I'm inside whatsApp")
-    if request.method == "POST":
-        try:
-            # Parse the incoming JSON data
-            data = json.loads(request.body)
-            whatsapp_number = data.get('whatsapp_number')
-            patient_name = data.get('patient_name')
-            pdf_url = data.get('pdf_url')
-            patient_id = data.get('patient_id')
+# @csrf_exempt
+# def send_whatsapp(request):
+#     print("I'm inside whatsApp")
+#     if request.method == "POST":
+#         try:
+#             # Parse the incoming JSON data
+#             data = json.loads(request.body)
+#             whatsapp_number = data.get('whatsapp_number')
+#             patient_name = data.get('patient_name')
+#             pdf_url = data.get('pdf_url')
+#             patient_id = data.get('patient_id')
 
 
-            # Twilio credentials and client setup
-            account_sid = settings.TWILIO_ACCOUNT_SID
-            auth_token = settings.TWILIO_AUTH_TOKEN
-            client = tw(account_sid, auth_token)
-            print(account_sid, auth_token)
+#             # Twilio credentials and client setup
+#             account_sid = settings.TWILIO_ACCOUNT_SID
+#             auth_token = settings.TWILIO_AUTH_TOKEN
+#             client = tw(account_sid, auth_token)
+#             print(account_sid, auth_token)
 
             
-            # Send the WhatsApp message
-            message = client.messages.create(
-                content_sid='HX6f6b9d0ea4a3606a7f27cf5e72f3403f',  # Content SID for WhatsApp template
-                from_='MG228f0104ea3ddfc780cfcc1a0ca561d9',
-                to=f'whatsapp:+91{whatsapp_number}',  # Indian country code
-                content_variables=json.dumps({'1': patient_name, '2': pdf_url}),
-            )
-            print(message)
+#             # Send the WhatsApp message
+#             message = client.messages.create(
+#                 content_sid='HX6f6b9d0ea4a3606a7f27cf5e72f3403f',  # Content SID for WhatsApp template
+#                 from_='MG228f0104ea3ddfc780cfcc1a0ca561d9',
+#                 to=f'whatsapp:+91{whatsapp_number}',  # Indian country code
+#                 content_variables=json.dumps({'1': patient_name, '2': pdf_url}),
+#             )
+#             print(message)
 
-            return JsonResponse({"success": True, "message": "WhatsApp message sent successfully."})
+#             return JsonResponse({"success": True, "message": "WhatsApp message sent successfully."})
         
-        except Exception as e:
-            return JsonResponse({"success": False, "message": str(e)})
+#         except Exception as e:
+#             return JsonResponse({"success": False, "message": str(e)})
 
-    return JsonResponse({"success": False, "message": "Invalid request method."})  
+#     return JsonResponse({"success": False, "message": "Invalid request method."})  
 
+
+
+
+@csrf_exempt
+def send_whatsapp(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid request method."}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        whatsapp_number = data.get('whatsapp_number')
+        patient_name = data.get('patient_name')
+        pdf_url = data.get('pdf_url')
+        patient_id = data.get('patient_id')
+
+        whatsapp_number = str(whatsapp_number)
+        if not whatsapp_number.startswith("91"):
+            whatsapp_number = "91" + whatsapp_number
+
+
+        if not (whatsapp_number and patient_name and pdf_url):
+            return JsonResponse({"success": False, "message": "Missing required fields."}, status=400)
+
+        API_URL = "https://app2.cunnekt.com/v1/sendnotification"
+        TEMPLATE_ID = "730036499641018"  
+ 
+        headers = {
+            "Content-Type": "application/json",
+            # "API-KEY": API_KEY
+        }
+
+        payload = {
+            "templateid": TEMPLATE_ID,
+            "mobile": whatsapp_number,
+            "overridebot": "yes",
+            "template": {
+                "components": [
+                    {
+                        "type": "header",
+                        "parameters": [
+                            {
+                                "type": "document",
+                                "document": {
+                                    "link": pdf_url,
+                                    "filename": f"{patient_name}_Report.pdf"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "type": "body",
+                        "parameters": [
+                            {
+                                "type": "text",
+                                "text": patient_name
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+
+        print(f"Sending WhatsApp to {whatsapp_number} for patient {patient_name}")
+
+        response = requests.post(API_URL, headers=headers, json=payload)
+        print("Raw Cunnekt response:", response.text)
+
+        try:
+            res_json = response.json()
+        except Exception:
+            return JsonResponse({"success": False, "message": "Invalid response from Cunnekt"}, status=500)
+
+        if res_json.get("status") is True:
+            return JsonResponse({"success": True, "message": "WhatsApp message sent successfully."})
+        else:
+            return JsonResponse({"success": False, "message": res_json.get("message", "Failed to send message.")})
+
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
 
 
 
