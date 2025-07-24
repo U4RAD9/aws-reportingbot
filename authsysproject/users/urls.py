@@ -153,6 +153,13 @@ urlpatterns = [
      path('get-template/<int:template_id>/',views.get_template, name='get_template'),
      path('get-dicom-notes/', get_dicom_notes, name='get_dicom_notes'),
 
+    # BY Gautam Suri
+    path('send-report-email/', views.send_report_email, name='send_report_email'),
+
+    path('test-email-ui/', views.test_email_template),
+
+    path('email-pdf-with-logo/<str:patient_id>/', views.email_pdf_with_logo, name='email_pdf_with_logo'),
+
 
 ] 
 #+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
