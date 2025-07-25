@@ -594,6 +594,13 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
+
+       function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+
         document.querySelectorAll('.sendEmailButton').forEach(function (button) {
             button.addEventListener('click', function () {
                 const patientId = this.dataset.patientId;
@@ -608,10 +615,16 @@
                     return;
 
                 }
-                 if (email ==="None"){
-                  alert("Enter correct email");
-                  return;
-                 }
+                if (email === "None" || email.trim() === "") {
+                    alert("Enter a valid email address.");
+                    return;
+                }
+
+                if (!isValidEmail(email)) {
+                    alert("Invalid email format.");
+                    return;
+                }
+                 
               
 
                 
