@@ -1463,11 +1463,19 @@ def allocation1(request):
             for history_file in history_files
         ]
 
-        # ADD THIS SECTION: Get PDF reports for the patient
-        patient_name_underscore = patient.patient_name.replace(" ", "_")
+        # # ADD THIS SECTION: Get PDF reports for the patient
+        # patient_name_underscore = patient.patient_name.replace(" ", "_")
+        # pdf_reports = XrayReport.objects.filter(
+        #     patient_id=patient.patient_id,
+        #     name=patient_name_underscore
+        # )
+        # PDF fetching with normalization
+        patient_id_normalized = patient.patient_id.replace(" ", "_")
+        patient_name_normalized = patient.patient_name.replace(" ", "_")
+        
         pdf_reports = XrayReport.objects.filter(
-            patient_id=patient.patient_id,
-            name=patient_name_underscore
+            patient_id__in=[patient.patient_id, patient_id_normalized],
+            name=patient_name_normalized
         )
         patient.presigned_pdf_urls = [
             presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports
