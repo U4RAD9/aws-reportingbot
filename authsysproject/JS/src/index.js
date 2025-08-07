@@ -3601,7 +3601,7 @@ UploadDivContentOnPDFWithoutImage() {
 
         if (genderMismatch) {
           const userChoice = window.confirm(
-            `${mismatchMessage}\n\nChoose:\nOK - To fix the issue\nCancel - To proceed without fixing`
+            `${mismatchMessage}\n\nChoose:\nI agree  and make changes - To fix the issue\nCancel - To proceed without fixing`
           );
           
           if (!userChoice) {
@@ -3786,7 +3786,8 @@ if (!runFinalCommonPopups()) return this.hideLoader();
       if (Object.keys(tableData).length > 0) {
         const { patientId, patientName, age, gender, testDate,referralDr} = tableData;
         const  reportTime = new Date().toLocaleTimeString('en-GB', { hour12: false });
-       const reportDate = new Date().toISOString().split('T')[0];
+      //  const reportDate = new Date().toISOString().split('T')[0];
+      const reportDate = new Date().toISOString().split('T')[0].split('-').reverse().join('-');
 
         const tableContent = [
           ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
