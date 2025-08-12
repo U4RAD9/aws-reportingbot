@@ -571,7 +571,7 @@
           <br />
           <img
             id="findingImage"
-            src="static/image/audio.jpg"
+            src="static/image/audio.jpeg"
             alt="Description of image"
             style="width: 250px; height: 100px"
           />
@@ -611,16 +611,340 @@
     return filename;
     console.log("ok");
   }
+  //Here I'm converting HTML content to pdf and downloading it*****************************************************************
+  // function GetDivContentOnPDF(callback) {
+  //   const filename = createFilename();
+  //   const a4Width = 210; // A4 width in millimeters
+  //   const a4Height = 297; // A4 height in millimeters
+  //   const graphWidth = 80; // Reduced width for each graph
+  //   const graphHeight = 100; // Reduced height for each graph
+  //   const tableTopMargin = 30; // Increased margin above the table
+  //   const tableHeight = 25; // Adjusted table height
+
+  //   // Reduce the graph width and height for side-by-side display
+  //   document.getElementById("myPlot").style.width = graphWidth + "mm";
+  //   document.getElementById("myPlot").style.height = graphHeight + "mm";
+  //   document.getElementById("myPlot2").style.width = graphWidth + "mm";
+  //   document.getElementById("myPlot2").style.height = graphHeight + "mm";
+
+  //   // Wait for Plotly to render the graphs
+  //   Promise.all([
+  //     Plotly.toImage("myPlot", {
+  //       format: "png",
+  //       width: graphWidth * 4,
+  //       height: graphHeight * 4,
+  //     }),
+  //     Plotly.toImage("myPlot2", {
+  //       format: "png",
+  //       width: graphWidth * 4,
+  //       height: graphHeight * 4,
+  //     }),
+  //   ]).then(function ([url1, url2]) {
+  //     const pdf = new jsPDF("p", "mm", [a4Width, a4Height]);
+  //     pdf.setFontSize(5); // Set the font size to 10
+
+  //     // Capture the table content and findings
+  //     html2canvas(document.getElementById("patientTable"), {
+  //       scale: 10,
+  //     }).then((tableCanvas) => {
+  //       const tableImgData = tableCanvas.toDataURL("image/png", 1.0);
+  //       pdf.addImage(
+  //         tableImgData,
+  //         "PNG",
+  //         10,
+  //         tableTopMargin,
+  //         a4Width - 20,
+  //         tableHeight
+  //       );
+
+  //       // Add the first graph as an image to the PDF
+  //       pdf.addImage(
+  //         url1,
+  //         "PNG",
+  //         0,
+  //         tableHeight + tableTopMargin + 10,
+  //         graphWidth * 1.6,
+  //         graphHeight
+  //       );
+
+  //       // Add the second graph as an image next to the first one
+  //       pdf.addImage(
+  //         url2,
+  //         "PNG",
+  //         100,
+  //         tableHeight + tableTopMargin + 10,
+  //         graphWidth * 1.6,
+  //         graphHeight
+  //       );
+
+  //       // Set the font size for the finding text
+  //       pdf.setFontSize(12); // Adjust the font size as needed
+
+  //       const findingText = "Finding:";
+  //       const hearingLossRText =
+  //         document.getElementById("hearingLossRText").innerText;
+  //       const hearingLossLText =
+  //         document.getElementById("hearingLossLText").innerText;
+
+  //       const yOffset = tableHeight + tableTopMargin + graphHeight + 40; // Adjust the Y coordinate
+  //       pdf.text(20, yOffset, findingText);
+  //       pdf.text(20, yOffset + 10, hearingLossRText);
+  //       pdf.text(20, yOffset + 20, hearingLossLText);
+
+  //       // Capture the table content within the CKEditor div
+  //       const ckEditorTable = document.querySelector("table");
+  //       if (ckEditorTable) {
+  //         const ckEditorTableText = ckEditorTable.textContent || "";
+  //         // Adjust the font size as needed
+  //         pdf.setFontSize(2);
+  //         // Set the text color to white
+  //         pdf.setTextColor(255, 255, 255);
+
+  //         // Calculate the Y coordinate for the text at the bottom of the page
+  //         const yOffsetBottom = a4Height - 20;
+  //         pdf.text(20, yOffsetBottom, ckEditorTableText);
+  //       }
+
+  //       // Reset the graph container dimensions to their original values
+  //       document.getElementById("myPlot").style.width = "100%";
+  //       document.getElementById("myPlot").style.height = "400px";
+  //       document.getElementById("myPlot2").style.width = "100%";
+  //       document.getElementById("myPlot2").style.height = "400px";
+
+  //       // Trigger the download of the PDF
+  //       pdf.save(filename + ".pdf");
+
+  //       console.log("PDF downloaded to the device.");
+  //       // Execute the callback function once PDF generation is complete
+  //       if (callback && typeof callback === "function") {
+  //         callback();
+  //       }
+  //     });
+  //   });
+  // }
+
+  // function GetDivContentOnPDF(callback) {
+  //   const filename = createFilename();
+  //   const a4Width = 210; // A4 width in millimeters
+  //   const a4Height = 297; // A4 height in millimeters
+  //   const graphWidth = 80; // Reduced width for each graph
+  //   const graphHeight = 100; // Reduced height for each graph
+  //   const tableTopMargin = 30; // Increased margin above the table
+  //   const tableHeight = 25; // Adjusted table height
+
+  //   // Reduce the graph width and height for side-by-side display
+  //   document.getElementById("myPlot").style.width = graphWidth + "mm";
+  //   document.getElementById("myPlot").style.height = graphHeight + "mm";
+  //   document.getElementById("myPlot2").style.width = graphWidth + "mm";
+  //   document.getElementById("myPlot2").style.height = graphHeight + "mm";
+
+  //   // Wait for Plotly to render the graphs
+  //   Promise.all([
+  //     Plotly.toImage("myPlot", {
+  //       format: "png",
+  //       width: graphWidth * 4,
+  //       height: graphHeight * 4,
+  //     }),
+  //     Plotly.toImage("myPlot2", {
+  //       format: "png",
+  //       width: graphWidth * 4,
+  //       height: graphHeight * 4,
+  //     }),
+  //   ]).then(function ([url1, url2]) {
+  //     const pdf = new jsPDF("p", "mm", [a4Width, a4Height]);
+  //     pdf.setFontSize(5); // Set the font size to 10
+
+  //     // Capture the table content and findings
+  //     html2canvas(document.getElementById("patientTable"), {
+  //       scale: 10,
+  //     }).then((tableCanvas) => {
+  //       const tableImgData = tableCanvas.toDataURL("image/png", 1.0);
+  //       pdf.addImage(
+  //         tableImgData,
+  //         "PNG",
+  //         10,
+  //         tableTopMargin,
+  //         a4Width - 20,
+  //         tableHeight
+  //       );
+
+  //       // Add the first graph as an image to the PDF
+  //       pdf.addImage(
+  //         url1,
+  //         "PNG",
+  //         0,
+  //         tableHeight + tableTopMargin + 10,
+  //         graphWidth * 1.6,
+  //         graphHeight
+  //       );
+
+  //       // Add the second graph as an image next to the first one
+  //       pdf.addImage(
+  //         url2,
+  //         "PNG",
+  //         100,
+  //         tableHeight + tableTopMargin + 10,
+  //         graphWidth * 1.6,
+  //         graphHeight
+  //       );
+
+  //       // Set the font size for the finding text
+  //       pdf.setFontSize(12); // Adjust the font size as needed
+
+  //       const findingText = "Finding:";
+  //       const hearingLossRText =
+  //         document.getElementById("hearingLossRText").innerText;
+  //       const hearingLossLText =
+  //         document.getElementById("hearingLossLText").innerText;
+
+  //       const yOffset = tableHeight + tableTopMargin + graphHeight + 40; // Adjust the Y coordinate
+  //       pdf.text(20, yOffset, findingText);
+  //       pdf.text(20, yOffset + 10, hearingLossRText);
+  //       pdf.text(20, yOffset + 20, hearingLossLText);
+
+  //       // Capture the image content within the findingImage div
+  //       html2canvas(document.getElementById("findingImage")).then(
+  //         (imageCanvas) => {
+  //           const imgData = imageCanvas.toDataURL("image/png");
+  //           const imageWidth = 80; // Adjust the image width as needed
+  //           const imageHeight = 40; // Adjust the image height as needed
+  //           const imageX = 20; // Adjust the X coordinate of the image
+  //           const imageY = yOffset + 30; // Adjust the Y coordinate of the image
+
+  //           pdf.addImage(
+  //             imgData,
+  //             "PNG",
+  //             imageX,
+  //             imageY,
+  //             imageWidth,
+  //             imageHeight
+  //           );
+
+  //           // Capture the table content within the CKEditor div
+  //           const ckEditorTable = document.querySelector("table");
+  //           if (ckEditorTable) {
+  //             const ckEditorTableText = ckEditorTable.textContent || "";
+  //             // Adjust the font size as needed
+  //             pdf.setFontSize(2);
+  //             // Set the text color to white
+  //             pdf.setTextColor(255, 255, 255);
+
+  //             // Calculate the Y coordinate for the text at the bottom of the page
+  //             const yOffsetBottom = a4Height - 20;
+  //             pdf.text(20, yOffsetBottom, ckEditorTableText);
+  //           }
+
+  //           // Reset the graph container dimensions to their original values
+  //           document.getElementById("myPlot").style.width = "100%";
+  //           document.getElementById("myPlot").style.height = "400px";
+  //           document.getElementById("myPlot2").style.width = "100%";
+  //           document.getElementById("myPlot2").style.height = "400px";
+
+  //           // Trigger the download of the PDF
+  //           pdf.save(filename + ".pdf");
+
+  //           console.log("PDF downloaded to the device.");
+  //           // Execute the callback function once PDF generation is complete
+  //           if (callback && typeof callback === "function") {
+  //             callback();
+  //           }
+  //         }
+  //       );
+  //     });
+  //   });
+  // }
+
+
+  // function GetDivContentOnPDF(callback) {
+  //     const filename = createFilename();
+  //     const a4Width = 210; // A4 width in mm
+  //     const a4Height = 297; // A4 height in mm
+  //     const graphWidth = 80; // Adjusted width
+  //     const graphHeight = 100; // Adjusted height
+  //     const tableTopMargin = 10; // Space above the table
+  //     const tableHeight = 25; // Height of patient details table
+  
+  //     // Adjust graph sizes for side-by-side display
+  //     document.getElementById("myPlot").style.width = graphWidth + "mm";
+  //     document.getElementById("myPlot").style.height = graphHeight + "mm";
+  //     document.getElementById("myPlot2").style.width = graphWidth + "mm";
+  //     document.getElementById("myPlot2").style.height = graphHeight + "mm";
+  
+  //     // Capture Graphs
+  //     Promise.all([
+  //         Plotly.toImage("myPlot", { format: "png", width: graphWidth * 4, height: graphHeight * 4 }),
+  //         Plotly.toImage("myPlot2", { format: "png", width: graphWidth * 4, height: graphHeight * 4 }),
+  //     ]).then(function ([url1, url2]) {
+  //         const pdf = new jsPDF("p", "mm", [a4Width, a4Height]);
+  
+  //         pdf.setFontSize(5);
+  
+  //         // Capture Patient Table
+  //         html2canvas(document.getElementById("patientTable"), { scale: 10 }).then((tableCanvas) => {
+  //             const tableImgData = tableCanvas.toDataURL("image/png", 1.0);
+  //             pdf.addImage(tableImgData, "PNG", 10, tableTopMargin, a4Width - 20, tableHeight);
+  
+  //             // Add Graphs
+  //             const graphYOffset = tableHeight + tableTopMargin;
+  //             pdf.addImage(url1, "PNG", 0, graphYOffset, graphWidth * 1.6, graphHeight);
+  //             pdf.addImage(url2, "PNG", 100, graphYOffset, graphWidth * 1.6, graphHeight);
+
+  //             // Capture Averages Table
+  //             html2canvas(document.getElementById("averagesTable")).then((averagesCanvas) => {
+  //                 const averagesImgData = averagesCanvas.toDataURL("image/png");
+  //                 const averagesYOffset = graphYOffset + graphHeight;
+  //                 pdf.addImage(averagesImgData, "PNG", 10, averagesYOffset, a4Width - 20, 25);
+  
+  //                 // Capture Audiometry Table
+  //                 html2canvas(document.getElementById("audiometryTable")).then((audiometryCanvas) => {
+  //                     const audiometryImgData = audiometryCanvas.toDataURL("image/png");
+  //                     const audiometryYOffset = averagesYOffset + 30;
+  //                     pdf.addImage(audiometryImgData, "PNG", 20, audiometryYOffset, a4Width - 40, 30);
+      
+  //                     // Capture Findings Text
+  //                     pdf.setFontSize(12);
+  //                     const findingText = "Finding:";
+  //                     const hearingLossRText = document.getElementById("hearingLossRText").innerText;
+  //                     const hearingLossLText = document.getElementById("hearingLossLText").innerText;
+  //                     const findingsYOffset = audiometryYOffset + 40;
+      
+  //                     pdf.text(20, findingsYOffset, findingText);
+  //                     pdf.text(20, findingsYOffset + 10, hearingLossRText);
+  //                     pdf.text(20, findingsYOffset + 20, hearingLossLText);
+      
+  //                     // Capture and Add Finding Image
+  //                     html2canvas(document.getElementById("findingImage")).then((imageCanvas) => {
+  //                         const imgData = imageCanvas.toDataURL("image/png");
+  //                         const imageX = 20;
+  //                         const imageY = findingsYOffset + 50;
+  //                         pdf.addImage(imgData, "PNG", imageX, imageY, 80, 40);
+      
+  //                         // Save PDF
+  //                         pdf.save(filename + ".pdf");
+      
+  //                         console.log("PDF generated successfully.");
+  //                         if (callback && typeof callback === "function") {
+  //                             callback();
+  //                         }
+  //                     });
+  //                 });
+  //             });
+  //         });
+  //     });
+  // }
 
 
   function GetDivContentOnPDF(callback) {
     const filename = createFilename();
     const a4Width = 210; // A4 width in mm
     const a4Height = 297; // A4 height in mm
+    const headerMargin = 33; // Top margin (header)
+    const footerMargin = 33; // Bottom margin (footer)
+    const usableHeight = a4Height - headerMargin - footerMargin;
+
     const graphWidth = 80; // Adjusted width
     const graphHeight = 100; // Adjusted height
-    const tableTopMargin = 10; // Space above the table
-    const tableHeight = 25; // Height of patient details table
+    const tableHeight = 25;
 
     // Adjust graph sizes for side-by-side display
     document.getElementById("myPlot").style.width = graphWidth + "mm";
@@ -640,49 +964,51 @@
         // Capture Patient Table
         html2canvas(document.getElementById("patientTable"), { scale: 10 }).then((tableCanvas) => {
             const tableImgData = tableCanvas.toDataURL("image/png", 1.0);
-            pdf.addImage(tableImgData, "PNG", 10, tableTopMargin, a4Width - 20, tableHeight);
+            const tableTop = headerMargin;
+
+            pdf.addImage(tableImgData, "PNG", 10, tableTop, a4Width - 20, tableHeight);
 
             // Add Graphs
-            const graphYOffset = tableHeight + tableTopMargin;
+            const graphYOffset = tableTop + tableHeight + 5;
             pdf.addImage(url1, "PNG", 0, graphYOffset, graphWidth * 1.6, graphHeight);
             pdf.addImage(url2, "PNG", 100, graphYOffset, graphWidth * 1.6, graphHeight);
 
-            // Capture Averages Table
+            // Averages Table
             html2canvas(document.getElementById("averagesTable")).then((averagesCanvas) => {
                 const averagesImgData = averagesCanvas.toDataURL("image/png");
-                const averagesYOffset = graphYOffset + graphHeight + 10; // Adjusted spacing
+                const averagesYOffset = graphYOffset + graphHeight + 10;
                 pdf.addImage(averagesImgData, "PNG", 10, averagesYOffset, a4Width - 20, 25);
 
-                // Capture Audiometry Table
+                // Audiometry Table
                 html2canvas(document.getElementById("audiometryTable")).then((audiometryCanvas) => {
                     const audiometryImgData = audiometryCanvas.toDataURL("image/png");
-                    const audiometryYOffset = averagesYOffset + 30; // Adjusted spacing
+                    const audiometryYOffset = averagesYOffset + 30;
                     pdf.addImage(audiometryImgData, "PNG", 10, audiometryYOffset, a4Width - 20, 30);
 
-                    // Capture Findings Text
+                    // Findings Text
                     pdf.setFontSize(12);
                     const findingText = "Finding:";
                     const hearingLossRText = document.getElementById("hearingLossRText").innerText;
                     const hearingLossLText = document.getElementById("hearingLossLText").innerText;
-                    const findingsYOffset = audiometryYOffset + 40; // Adjusted spacing
+                    const findingsYOffset = audiometryYOffset + 40;
 
                     pdf.text(20, findingsYOffset, findingText);
                     pdf.text(20, findingsYOffset + 10, hearingLossRText);
                     pdf.text(20, findingsYOffset + 20, hearingLossLText);
 
-                    // Capture and Add Finding Image
+                    // Finding Image
                     html2canvas(document.getElementById("findingImage")).then((imageCanvas) => {
                         const imgData = imageCanvas.toDataURL("image/png");
                         const imageX = 20;
-                        const imageY = findingsYOffset + 30; // Adjusted spacing
+                        const imageY = findingsYOffset + 30;
                         const imageWidth = 80;
                         const imageHeight = 40;
 
-                        // Ensure image fits within the remaining space
-                        if (imageY + imageHeight < a4Height) {
+                        // Ensure it fits within the usable space (before footer)
+                        if (imageY + imageHeight < a4Height - footerMargin) {
                             pdf.addImage(imgData, "PNG", imageX, imageY, imageWidth, imageHeight);
                         } else {
-                            console.warn("Image exceeds page height and will not be added.");
+                            console.warn("Image exceeds usable page height and will not be added.");
                         }
 
                         // Save PDF
@@ -697,7 +1023,7 @@
             });
         });
     });
-  }
+}
 
   ////////////////////////////////////////////////////////////////// Upload Audiometry As PDF //////////////////////////////////////////////////////////////////////////
 
