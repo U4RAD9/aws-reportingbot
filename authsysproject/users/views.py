@@ -4413,28 +4413,50 @@ def download_pdf_with_logo(request, pdf_id):
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
                 c = canvas.Canvas(overlay_temp.name, pagesize=letter)
                 
-                # Add client's custom logo
+                # # Add client's custom logo
+                # c.drawImage(
+                #     logo_path,
+                #     x=0,
+                #     y=page_height - logo_display_height + 5,
+                #     width=content_width,
+                #     height=logo_display_height,
+                #     preserveAspectRatio=True,
+                #     mask='auto',
+                #     anchor='n'
+                # )
+                
+                # # Add client's custom footer
+                # c.drawImage(
+                #     footer_path,
+                #     x=0,
+                #     y=5,
+                #     width=content_width,
+                #     height=footer_display_height,
+                #     preserveAspectRatio=True,
+                #     mask='auto',
+                #     anchor='s'
+                # )
+
+                # Add client's custom logo - full width, no margin
                 c.drawImage(
                     logo_path,
                     x=0,
-                    y=page_height - logo_display_height + 5,
-                    width=content_width,
+                    y=page_height - logo_display_height,
+                    width=page_width,  # full width
                     height=logo_display_height,
-                    preserveAspectRatio=True,
-                    mask='auto',
-                    anchor='n'
+                    preserveAspectRatio=False,  # fill entire width
+                    mask='auto'
                 )
                 
-                # Add client's custom footer
+                # Add client's custom footer - full width, no margin
                 c.drawImage(
                     footer_path,
                     x=0,
-                    y=5,
-                    width=content_width,
+                    y=0,
+                    width=page_width,  # full width
                     height=footer_display_height,
-                    preserveAspectRatio=True,
-                    mask='auto',
-                    anchor='s'
+                    preserveAspectRatio=False,  # fill entire width
+                    mask='auto'
                 )
                 
                 c.save()
