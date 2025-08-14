@@ -6254,35 +6254,78 @@ def clientdata(request):
     })
 
 
+# def convert_pdf_to_word(request, report_id):
+#     try:
+#         # Get report
+#         report = XrayReport.objects.get(id=report_id)
+
+#         # Get presigned URL (your existing logic might already generate this)
+#         presigned_pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
+
+#         # Download PDF from S3 to a temporary file
+#         response = requests.get(presigned_pdf_url)
+#         if response.status_code != 200:
+#             return HttpResponse("Failed to download PDF from S3.", status=404)
+
+#         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
+#             temp_pdf.write(response.content)
+#             temp_pdf_path = temp_pdf.name
+
+#         # Create temp Word output path
+#         temp_docx = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
+#         temp_docx_path = temp_docx.name
+
+#         # Convert PDF to Word
+#         cv = Converter(temp_pdf_path)
+#         cv.convert(temp_docx_path, start=0, end=None)
+#         cv.close()
+
+#         # Return .docx file
+#         word_filename = report.pdf_file.name.replace(".pdf", ".docx").split('/')[-1]
+#         return FileResponse(open(temp_docx_path, 'rb'), as_attachment=True, filename=word_filename)
+
+#     except XrayReport.DoesNotExist:
+#         return HttpResponse("Report not found.", status=404)
+#     except Exception as e:
+#         return HttpResponse(f"Error: {str(e)}", status=500)
+
+
 def convert_pdf_to_word(request, report_id):
     try:
         # Get report
         report = XrayReport.objects.get(id=report_id)
 
-        # Get presigned URL (your existing logic might already generate this)
+        # Get presigned URL
         presigned_pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
-
-        # Download PDF from S3 to a temporary file
         response = requests.get(presigned_pdf_url)
         if response.status_code != 200:
             return HttpResponse("Failed to download PDF from S3.", status=404)
 
+        # Save PDF to temp file
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
             temp_pdf.write(response.content)
             temp_pdf_path = temp_pdf.name
 
-        # Create temp Word output path
-        temp_docx = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
-        temp_docx_path = temp_docx.name
-
         # Convert PDF to Word
+        temp_docx_path = tempfile.NamedTemporaryFile(suffix=".docx", delete=False).name
         cv = Converter(temp_pdf_path)
         cv.convert(temp_docx_path, start=0, end=None)
         cv.close()
 
-        # Return .docx file
-        word_filename = report.pdf_file.name.replace(".pdf", ".docx").split('/')[-1]
-        return FileResponse(open(temp_docx_path, 'rb'), as_attachment=True, filename=word_filename)
+        # Re-save DOCX in compatibility mode (older Word versions)
+        doc = Document(temp_docx_path)
+        compatible_docx_path = tempfile.NamedTemporaryFile(suffix=".docx", delete=False).name
+        doc.save(compatible_docx_path)
+
+        # Optional: If you want to go to legacy .doc format
+        # This requires pypandoc installed
+        # import pypandoc
+        # compatible_doc_path = tempfile.NamedTemporaryFile(suffix=".doc", delete=False).name
+        # pypandoc.convert_file(temp_docx_path, 'doc', outputfile=compatible_doc_path)
+
+        # Return compatible DOCX
+        word_filename = os.path.basename(report.pdf_file.name).replace(".pdf", ".docx")
+        return FileResponse(open(compatible_docx_path, 'rb'), as_attachment=True, filename=word_filename)
 
     except XrayReport.DoesNotExist:
         return HttpResponse("Report not found.", status=404)
