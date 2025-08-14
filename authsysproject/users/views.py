@@ -6304,27 +6304,38 @@ def convert_pdf_to_word(request, report_id):
         if response.status_code != 200:
             return HttpResponse("Failed to download PDF from S3.", status=404)
 
-        # Save PDF to temp file
+        # Save PDF
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
             temp_pdf.write(response.content)
             temp_pdf_path = temp_pdf.name
 
-        # Convert PDF to DOCX (temporary)
-        temp_docx_path = tempfile.NamedTemporaryFile(suffix=".docx", delete=False).name
+        # Convert PDF → DOCX
+        temp_docx_path = os.path.join(tempfile.gettempdir(), "temp_file.docx")
         cv = Converter(temp_pdf_path)
         cv.convert(temp_docx_path, start=0, end=None)
         cv.close()
 
-        # Convert DOCX to DOC (max compatibility)
-        temp_doc_path = tempfile.NamedTemporaryFile(suffix=".doc", delete=False).name
-        subprocess.run([
-            "soffice", "--headless", "--convert-to", "doc", "--outdir",
-            os.path.dirname(temp_doc_path), temp_docx_path
-        ], check=True)
+        if not os.path.exists(temp_docx_path) or os.path.getsize(temp_docx_path) == 0:
+            return HttpResponse("DOCX generation failed.", status=500)
 
-        # Return DOC file
+        # Convert DOCX → DOC
+        output_dir = tempfile.gettempdir()
+        result = subprocess.run(
+            ["soffice", "--headless", "--convert-to", "doc", "--outdir", output_dir, temp_docx_path],
+            capture_output=True,
+            text=True
+        )
+
+        if result.returncode != 0:
+            return HttpResponse(f"LibreOffice conversion failed: {result.stderr}", status=500)
+
+        converted_doc_path = os.path.join(output_dir, "temp_file.doc")
+        if not os.path.exists(converted_doc_path) or os.path.getsize(converted_doc_path) == 0:
+            return HttpResponse("DOC conversion failed: empty file.", status=500)
+
+        # Serve the DOC
         word_filename = os.path.basename(report.pdf_file.name).replace(".pdf", ".doc")
-        return FileResponse(open(temp_doc_path, 'rb'), as_attachment=True, filename=word_filename)
+        return FileResponse(open(converted_doc_path, 'rb'), as_attachment=True, filename=word_filename)
 
     except XrayReport.DoesNotExist:
         return HttpResponse("Report not found.", status=404)
