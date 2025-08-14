@@ -6318,7 +6318,8 @@ def convert_pdf_to_word(request, report_id):
         # Convert DOCX to DOC (max compatibility)
         temp_doc_path = tempfile.NamedTemporaryFile(suffix=".doc", delete=False).name
         subprocess.run([
-            "unoconv", "-f", "doc", "-o", temp_doc_path, temp_docx_path
+            "soffice", "--headless", "--convert-to", "doc", "--outdir",
+            os.path.dirname(temp_doc_path), temp_docx_path
         ], check=True)
 
         # Return DOC file
