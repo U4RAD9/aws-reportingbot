@@ -11,6 +11,7 @@ from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from venv import logger
+from docx import Document  # <-- ADD THIS
 from datetime import  time as dt_time  # Rename to dt_time
 from django.forms import CharField, DateField
 from django.shortcuts import get_object_or_404, render, redirect
