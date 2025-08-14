@@ -136,6 +136,7 @@ from django.views.decorators.http import require_http_methods #by Rohan Jangid 2
 from pdf2docx import Converter
 import tempfile
 from django.http import FileResponse, Http404
+import pypandoc  # pip install pypandoc
 
 
 from django.core.mail import EmailMessage
@@ -6293,40 +6294,30 @@ def clientdata(request):
 
 def convert_pdf_to_word(request, report_id):
     try:
-        # Get report
         report = XrayReport.objects.get(id=report_id)
 
-        # Get presigned URL
         presigned_pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
         response = requests.get(presigned_pdf_url)
         if response.status_code != 200:
             return HttpResponse("Failed to download PDF from S3.", status=404)
 
-        # Save PDF to temp file
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
             temp_pdf.write(response.content)
             temp_pdf_path = temp_pdf.name
 
-        # Convert PDF to Word
+        # Step 1: Convert PDF to DOCX (temporary)
         temp_docx_path = tempfile.NamedTemporaryFile(suffix=".docx", delete=False).name
         cv = Converter(temp_pdf_path)
         cv.convert(temp_docx_path, start=0, end=None)
         cv.close()
 
-        # Re-save DOCX in compatibility mode (older Word versions)
-        doc = Document(temp_docx_path)
-        compatible_docx_path = tempfile.NamedTemporaryFile(suffix=".docx", delete=False).name
-        doc.save(compatible_docx_path)
+        # Step 2: Convert DOCX → DOC (max compatibility)
+        temp_doc_path = tempfile.NamedTemporaryFile(suffix=".doc", delete=False).name
+        pypandoc.convert_file(temp_docx_path, 'doc', outputfile=temp_doc_path)
 
-        # Optional: If you want to go to legacy .doc format
-        # This requires pypandoc installed
-        # import pypandoc
-        # compatible_doc_path = tempfile.NamedTemporaryFile(suffix=".doc", delete=False).name
-        # pypandoc.convert_file(temp_docx_path, 'doc', outputfile=compatible_doc_path)
-
-        # Return compatible DOCX
-        word_filename = os.path.basename(report.pdf_file.name).replace(".pdf", ".docx")
-        return FileResponse(open(compatible_docx_path, 'rb'), as_attachment=True, filename=word_filename)
+        # Step 3: Return DOC file
+        word_filename = os.path.basename(report.pdf_file.name).replace(".pdf", ".doc")
+        return FileResponse(open(temp_doc_path, 'rb'), as_attachment=True, filename=word_filename)
 
     except XrayReport.DoesNotExist:
         return HttpResponse("Report not found.", status=404)
