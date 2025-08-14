@@ -2223,120 +2223,213 @@ async getHeaderFooterImages(institutionName) {
 //   }
 // }
 
+// extractContent(editor) {
+//   if (!editor) {
+//     return null;
+//   }
+
+//   try {
+//     const tempDiv = document.createElement('div');
+//     tempDiv.innerHTML = editor.innerHTML;
+
+//     const processNode = (node) => {
+//       // Handle text nodes
+//       if (node.nodeType === Node.TEXT_NODE) {
+//         return node.textContent;
+//       }
+
+//       // Handle element nodes 
+//       if (node.nodeType === Node.ELEMENT_NODE) {
+//         let text = '';
+//         const tag = node.tagName.toLowerCase();
+        
+//         switch (tag) {
+//           case 'p':
+//             // Skip the first table that contains patient info
+//             const firstTable = node.closest('figure.table');
+//             if (firstTable && firstTable === tempDiv.querySelector('figure.table')) {
+//               return '';
+//             }
+
+//             // Check if paragraph contains a list
+//             if (node.querySelector('ul, ol')) {
+//               return Array.from(node.childNodes)
+//                 .map(child => processNode(child))
+//                 .join('');
+//             }
+//             text = Array.from(node.childNodes)
+//               .map(child => processNode(child))
+//               .join('');
+//             return text + '\n';
+          
+//           case 'strong':
+//           case 'b':
+//             // Mark bold text with [BOLD] tags
+//             return `[BOLD]${node.textContent}[/BOLD]`;
+          
+//           case 'ul':
+//           case 'ol':
+//             // Process lists
+//             return Array.from(node.children)
+//               .map(li => `• ${processNode(li)}`)
+//               .join('\n') + '\n';
+          
+//           case 'li':
+//             return Array.from(node.childNodes)
+//               .map(child => processNode(child))
+//               .join('');
+          
+//           case 'table':
+//             // Skip the first table that contains patient info
+//             if (node === tempDiv.querySelector('table')) {
+//               return '';
+//             }
+//             return processTable(node);
+          
+//           case 'br':
+//             return '\n';
+          
+//           default:
+//             return Array.from(node.childNodes)
+//               .map(child => processNode(child))
+//               .join('');
+//         }
+//       }
+//       return '';
+//     };
+
+//     const processTable = (table) => {
+//       // Skip the first table that contains patient info
+//       if (table === tempDiv.querySelector('table')) {
+//         return '';
+//       }
+
+//       let tableContent = '';
+//       const rows = table.rows;
+      
+//       for (let i = 0; i < rows.length; i++) {
+//         const cells = rows[i].cells;
+//         let rowContent = [];
+        
+//         for (let j = 0; j < cells.length; j++) {
+//           const cellNode = cells[j];
+//           const cellText = Array.from(cellNode.childNodes)
+//             .map(child => processNode(child))
+//             .join('')
+//             .trim();
+//           rowContent.push(cellText);
+//         }
+        
+//         if (rowContent.length === 1) {
+//           tableContent += rowContent[0] + '\n';
+//         } else {
+//           tableContent += rowContent.join('\t') + '\n';
+//         }
+//       }
+      
+//       return tableContent + '\n';
+//     };
+
+//     const content = Array.from(tempDiv.childNodes)
+//       .map(node => processNode(node))
+//       .join('')
+//       .replace(/\n{3,}/g, '\n\n')
+//       .trim();
+
+//     return content;
+//   } catch (error) {
+//     console.error('Error extracting content:', error);
+//     return null;
+//   }
+// }
+
+
 extractContent(editor) {
-  if (!editor) {
-    return null;
-  }
+  if (!editor) return null;
 
   try {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = editor.innerHTML;
+    const firstTable = tempDiv.querySelector('table');
 
     const processNode = (node) => {
-      // Handle text nodes
       if (node.nodeType === Node.TEXT_NODE) {
         return node.textContent;
       }
 
-      // Handle element nodes 
       if (node.nodeType === Node.ELEMENT_NODE) {
-        let text = '';
         const tag = node.tagName.toLowerCase();
-        
         switch (tag) {
           case 'p':
-            // Skip the first table that contains patient info
-            const firstTable = node.closest('figure.table');
-            if (firstTable && firstTable === tempDiv.querySelector('figure.table')) {
-              return '';
-            }
+            if (node.closest('table') === firstTable) return '';
+            return Array.from(node.childNodes).map(processNode).join('') + '\n';
 
-            // Check if paragraph contains a list
-            if (node.querySelector('ul, ol')) {
-              return Array.from(node.childNodes)
-                .map(child => processNode(child))
-                .join('');
-            }
-            text = Array.from(node.childNodes)
-              .map(child => processNode(child))
-              .join('');
-            return text + '\n';
-          
           case 'strong':
           case 'b':
-            // Mark bold text with [BOLD] tags
             return `[BOLD]${node.textContent}[/BOLD]`;
-          
+
           case 'ul':
           case 'ol':
-            // Process lists
             return Array.from(node.children)
               .map(li => `• ${processNode(li)}`)
               .join('\n') + '\n';
-          
+
           case 'li':
-            return Array.from(node.childNodes)
-              .map(child => processNode(child))
-              .join('');
-          
+            return Array.from(node.childNodes).map(processNode).join('');
+
           case 'table':
-            // Skip the first table that contains patient info
-            if (node === tempDiv.querySelector('table')) {
-              return '';
-            }
             return processTable(node);
-          
+
           case 'br':
             return '\n';
-          
+
           default:
-            return Array.from(node.childNodes)
-              .map(child => processNode(child))
-              .join('');
+            return Array.from(node.childNodes).map(processNode).join('');
         }
       }
       return '';
     };
 
     const processTable = (table) => {
-      // Skip the first table that contains patient info
-      if (table === tempDiv.querySelector('table')) {
-        return '';
+      if (table === firstTable) return '';
+
+      let rowsData = [];
+      for (let row of table.rows) {
+        const rowContent = Array.from(row.cells)
+          .map(cell => Array.from(cell.childNodes).map(processNode).join('').trim());
+        rowsData.push(rowContent);
       }
 
-      let tableContent = '';
-      const rows = table.rows;
-      
-      for (let i = 0; i < rows.length; i++) {
-        const cells = rows[i].cells;
-        let rowContent = [];
-        
-        for (let j = 0; j < cells.length; j++) {
-          const cellNode = cells[j];
-          const cellText = Array.from(cellNode.childNodes)
-            .map(child => processNode(child))
-            .join('')
-            .trim();
-          rowContent.push(cellText);
-        }
-        
-        if (rowContent.length === 1) {
-          tableContent += rowContent[0] + '\n';
-        } else {
-          tableContent += rowContent.join('\t') + '\n';
-        }
-      }
-      
-      return tableContent + '\n';
+      if (rowsData.length === 0) return '';
+
+      // Calculate column widths
+      let colWidths = [];
+      rowsData.forEach(row => {
+        row.forEach((cell, i) => {
+          colWidths[i] = Math.max(colWidths[i] || 0, cell.length);
+        });
+      });
+
+      const padCell = (cell, i) => cell.padEnd(colWidths[i], ' ');
+
+      const createBorder = () =>
+        '+' + colWidths.map(w => '-'.repeat(w + 2)).join('+') + '+\n';
+
+      let output = createBorder();
+      rowsData.forEach((row, idx) => {
+        output += '| ' + row.map((cell, i) => padCell(cell, i)).join(' | ') + ' |\n';
+        output += createBorder();
+      });
+
+      return output + '\n';
     };
 
-    const content = Array.from(tempDiv.childNodes)
-      .map(node => processNode(node))
+    return Array.from(tempDiv.childNodes)
+      .map(processNode)
       .join('')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
 
-    return content;
   } catch (error) {
     console.error('Error extracting content:', error);
     return null;
