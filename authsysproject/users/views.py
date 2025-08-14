@@ -1,6 +1,7 @@
 from collections import defaultdict
 import math
 import base64
+import subprocess
 # Corrected imports
 from django.db.models import Q, F, Value, CharField  # Core model fields/functions
 from django.db.models.functions import Substr, Concat, Cast  # Database functions
@@ -6294,28 +6295,33 @@ def clientdata(request):
 
 def convert_pdf_to_word(request, report_id):
     try:
+        # Get report
         report = XrayReport.objects.get(id=report_id)
 
+        # Get presigned URL
         presigned_pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
         response = requests.get(presigned_pdf_url)
         if response.status_code != 200:
             return HttpResponse("Failed to download PDF from S3.", status=404)
 
+        # Save PDF to temp file
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
             temp_pdf.write(response.content)
             temp_pdf_path = temp_pdf.name
 
-        # Step 1: Convert PDF to DOCX (temporary)
+        # Convert PDF to DOCX (temporary)
         temp_docx_path = tempfile.NamedTemporaryFile(suffix=".docx", delete=False).name
         cv = Converter(temp_pdf_path)
         cv.convert(temp_docx_path, start=0, end=None)
         cv.close()
 
-        # Step 2: Convert DOCX → DOC (max compatibility)
+        # Convert DOCX to DOC (max compatibility)
         temp_doc_path = tempfile.NamedTemporaryFile(suffix=".doc", delete=False).name
-        pypandoc.convert_file(temp_docx_path, 'doc', outputfile=temp_doc_path)
+        subprocess.run([
+            "unoconv", "-f", "doc", "-o", temp_doc_path, temp_docx_path
+        ], check=True)
 
-        # Step 3: Return DOC file
+        # Return DOC file
         word_filename = os.path.basename(report.pdf_file.name).replace(".pdf", ".doc")
         return FileResponse(open(temp_doc_path, 'rb'), as_attachment=True, filename=word_filename)
 
@@ -6323,7 +6329,6 @@ def convert_pdf_to_word(request, report_id):
         return HttpResponse("Report not found.", status=404)
     except Exception as e:
         return HttpResponse(f"Error: {str(e)}", status=500)
-
     
 
 
