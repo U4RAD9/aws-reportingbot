@@ -2344,6 +2344,100 @@ async getHeaderFooterImages(institutionName) {
 // }
 
 
+// extractContent(editor) {
+//   if (!editor) return null;
+
+//   try {
+//     const tempDiv = document.createElement('div');
+//     tempDiv.innerHTML = editor.innerHTML;
+//     const firstTable = tempDiv.querySelector('table');
+
+//     const processNode = (node) => {
+//       if (node.nodeType === Node.TEXT_NODE) {
+//         return node.textContent;
+//       }
+
+//       if (node.nodeType === Node.ELEMENT_NODE) {
+//         const tag = node.tagName.toLowerCase();
+//         switch (tag) {
+//           case 'p':
+//             if (node.closest('table') === firstTable) return '';
+//             return Array.from(node.childNodes).map(processNode).join('') + '\n';
+
+//           case 'strong':
+//           case 'b':
+//             return `[BOLD]${node.textContent}[/BOLD]`;
+
+//           case 'ul':
+//           case 'ol':
+//             return Array.from(node.children)
+//               .map(li => `• ${processNode(li)}`)
+//               .join('\n') + '\n';
+
+//           case 'li':
+//             return Array.from(node.childNodes).map(processNode).join('');
+
+//           case 'table':
+//             return processTable(node);
+
+//           case 'br':
+//             return '\n';
+
+//           default:
+//             return Array.from(node.childNodes).map(processNode).join('');
+//         }
+//       }
+//       return '';
+//     };
+
+//     const processTable = (table) => {
+//       if (table === firstTable) return '';
+
+//       let rowsData = [];
+//       for (let row of table.rows) {
+//         const rowContent = Array.from(row.cells)
+//           .map(cell => Array.from(cell.childNodes).map(processNode).join('').trim());
+//         rowsData.push(rowContent);
+//       }
+
+//       if (rowsData.length === 0) return '';
+
+//       // Calculate column widths
+//       let colWidths = [];
+//       rowsData.forEach(row => {
+//         row.forEach((cell, i) => {
+//           colWidths[i] = Math.max(colWidths[i] || 0, cell.length);
+//         });
+//       });
+
+//       const padCell = (cell, i) => cell.padEnd(colWidths[i], ' ');
+
+//       const createBorder = () =>
+//         '+' + colWidths.map(w => '-'.repeat(w + 2)).join('+') + '+\n';
+
+//       let output = createBorder();
+//       rowsData.forEach((row, idx) => {
+//         output += '| ' + row.map((cell, i) => padCell(cell, i)).join(' | ') + ' |\n';
+//         output += createBorder();
+//       });
+
+//       return output + '\n';
+//     };
+
+//     return Array.from(tempDiv.childNodes)
+//       .map(processNode)
+//       .join('')
+//       .replace(/\n{3,}/g, '\n\n')
+//       .trim();
+
+//   } catch (error) {
+//     console.error('Error extracting content:', error);
+//     return null;
+//   }
+// }
+
+
+
 extractContent(editor) {
   if (!editor) return null;
 
@@ -2391,37 +2485,21 @@ extractContent(editor) {
     };
 
     const processTable = (table) => {
+      // Ignore the very first table
       if (table === firstTable) return '';
 
       let rowsData = [];
       for (let row of table.rows) {
         const rowContent = Array.from(row.cells)
-          .map(cell => Array.from(cell.childNodes).map(processNode).join('').trim());
-        rowsData.push(rowContent);
+          .map(cell => `<td>${Array.from(cell.childNodes).map(processNode).join('').trim()}</td>`)
+          .join('');
+        rowsData.push(`<tr>${rowContent}</tr>`);
       }
 
       if (rowsData.length === 0) return '';
 
-      // Calculate column widths
-      let colWidths = [];
-      rowsData.forEach(row => {
-        row.forEach((cell, i) => {
-          colWidths[i] = Math.max(colWidths[i] || 0, cell.length);
-        });
-      });
-
-      const padCell = (cell, i) => cell.padEnd(colWidths[i], ' ');
-
-      const createBorder = () =>
-        '+' + colWidths.map(w => '-'.repeat(w + 2)).join('+') + '+\n';
-
-      let output = createBorder();
-      rowsData.forEach((row, idx) => {
-        output += '| ' + row.map((cell, i) => padCell(cell, i)).join(' | ') + ' |\n';
-        output += createBorder();
-      });
-
-      return output + '\n';
+      // ✅ Return as real HTML table instead of ASCII table
+      return `<table border="1" style="border-collapse: collapse; width: 100%;">${rowsData.join('')}</table>\n`;
     };
 
     return Array.from(tempDiv.childNodes)
