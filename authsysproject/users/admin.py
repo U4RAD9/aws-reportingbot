@@ -38,6 +38,7 @@ from .models.DailyCountECG import ECGSetCount
 from .models .StudyReport import StudyReport
 from .models .CKEditorTemplate import CKEditorTemplate
 
+from .models.faq import FAQ
 
 
 admin.site.register(PersonalInfo)
@@ -92,5 +93,14 @@ class PatientHistoryFileInline(admin.TabularInline):
 @admin.register(DICOMData)
 class DICOMDataAdmin(admin.ModelAdmin):
     inlines = [DICOMFileInline, JPEGFileInline, PatientHistoryFileInline]
+
+
+
+@admin.register(FAQ)
+class FAQAdmin(admin.ModelAdmin):
+    list_display = ('question', 'target_group', 'created_by', 'created_at')
+    search_fields = ('question', 'answer')
+    list_filter = ('target_group', 'created_at')
+
 
 
