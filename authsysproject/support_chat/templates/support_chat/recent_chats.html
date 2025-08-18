@@ -1,0 +1,18 @@
+{% extends "users/base.html" %}
+
+{% block content %}
+  <h2>📜 Recent Chats</h2>
+  {% if rooms %}
+    <ul>
+      {% for chat in rooms %}
+        <li>
+          Chat ID: {{ chat.id }} | Closed: {{ chat.is_closed }} |
+          <a href="{% url 'get_messages' chat.id %}">Open Chat</a>
+
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+   <p>No recent chats found.</p>
+  {% endif %}
+{% endblock %}
