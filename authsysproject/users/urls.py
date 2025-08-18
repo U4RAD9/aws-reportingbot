@@ -162,6 +162,9 @@ urlpatterns = [
 
     path('email-pdf-with-logo/<str:patient_id>/', views.email_pdf_with_logo, name='email_pdf_with_logo'),
 
+    path('create-faq/', views.create_faq, name='create_faq'),
+    path('view-faq/', views.view_faq, name='view_faq'),
+
 
 ] 
 #+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

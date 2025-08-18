@@ -1171,9 +1171,22 @@ def client_dashboard(request):
         sorted_pdf_on_db = sorted(
             [pdf.pdf_on_db for pdf in page_obj.object_list if pdf.pdf_on_db is not None]
         )
+        from support_chat.models import ChatRoom
+
+        # room = ChatRoom.objects.filter(participant1=request.user).first()
+        # room = ChatRoom.objects.get_or_create(participant1=request.user)
+        # Try to find existing room for this user
+        user = request.user
+
+        room = ChatRoom.objects.filter(participant1=user).first()
+
+# If not exists, create with only participant1 (no staff yet)
+        if not room:
+            room = ChatRoom.objects.create(participant1=user) 
 
         # 🔹 Prepare context
         context = {
+            'room': room,
             'pdfs': page_obj,
             'Test_Dates': sorted_test_dates,
             'PDF_On_Db' : sorted_pdf_on_db,
@@ -1187,7 +1200,7 @@ def client_dashboard(request):
 
         return render(request, 'users/client.html', context)
 
-    return HttpResponse("No institutions found for this client.", status=404)
+
 
 
 ####################################### 02-04-25 ##########################################
@@ -6524,7 +6537,19 @@ def clientdata(request):
         'search_query': search_query,
     }
 
+    from support_chat.models import ChatRoom
+
+      
+    user = request.user
+
+    room = ChatRoom.objects.filter(participant1=user).first()
+
+# If not exists, create with only participant1 (no staff yet)
+    if not room:
+        room = ChatRoom.objects.create(participant1=user) 
+
     return render(request, 'users/upload_dicom.html', {
+        'room': room,
         'dicom_data': page_obj,
         'edit_permissions': edit_permissions,
         'page_obj': page_obj,
@@ -6534,6 +6559,7 @@ def clientdata(request):
         'modality': sorted_modality,
         'status_filter': status_filter,
     })
+
 
 
 # def convert_pdf_to_word(request, report_id):
@@ -6920,8 +6946,8 @@ def send_whatsapp(request):
             return JsonResponse({"success": False, "message": "Missing required fields."}, status=400)
 
         API_URL = "https://app2.cunnekt.com/v1/sendnotification"
-        API_KEY = "33c0c252d80b77bce62342b08a6902d7774e9a8f"
-        TEMPLATE_ID = "730036499641018"  
+        API_KEY = "74fcc289444d70ee119a00374a5e786cf908eddb"
+        TEMPLATE_ID = "3073529896143435"  
 
         headers = {
             "Content-Type": "application/json",
@@ -8948,3 +8974,42 @@ def email_pdf_raw(request, patient_id):
     except Exception as e:
         print(f"❌ Fatal error: {e}")
         return JsonResponse({'error': str(e)}, status=500)
+
+
+
+
+        
+from django.contrib.auth.models import Group
+from .forms import FAQForm
+
+
+@login_required
+def view_faq(request):
+    group_name = ''
+    if request.user.groups.exists():
+        group_name = request.user.groups.first().name
+
+    faqs = FAQ.objects.filter(target_group=group_name).order_by('-created_at')
+
+    return render(request, 'users/view_faq.html', {'faqs': faqs, 'group_name': group_name})
+
+#by Gautam Suri
+from django.contrib import messages
+
+@login_required
+def create_faq(request):
+    if not request.user.groups.filter(name='xraycoordinator').exists():
+        return redirect('view_faq')
+
+    if request.method == 'POST':
+        form = FAQForm(request.POST)
+        if form.is_valid():
+            faq = form.save(commit=False)
+            faq.created_by = request.user
+            faq.save()
+            messages.success(request, 'FAQ created successfully!')
+            form = FAQForm() 
+    else:
+        form = FAQForm()
+
+    return render(request, 'users/create_faq.html', {'form': form})

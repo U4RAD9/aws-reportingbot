@@ -221,12 +221,18 @@
         </form>
       </div>
       <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
-        <ul class="navbar-nav">
+        <ul class="navbar-nav d-flex align-items-center">
           <li class="nav-item">
             <a href="/clientdata/client" class="nav-link">
               <button class="btn btn-sm btn-info"><strong>Reports</strong></button>
             </a> 
           </li>
+
+            <li class="nav-item">
+    <a href="{% url 'view_faq' %}" class="nav-link">
+      <button class="btn btn-warning btn-sm"><strong>FAQs</strong></button>
+    </a>
+  </li>
           <li class="nav-item">
             <a href="/logout" class="nav-link">
               <button class="logout-button btn btn-sm btn-danger"><strong>Logout</strong></button>
@@ -439,6 +445,7 @@
       </table>
     </div>
   </div>
+ {% include "support_chat/chat_widget.html" %} 
 
   <!-- Modal for Edit Form -->
   <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
@@ -517,6 +524,7 @@
       </div>
     </div>
   </div>
+  
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
@@ -703,7 +711,15 @@
         // Initialize row count on page load
         filterTable();
     });
+
+
+      window.roomId = "{{ room.id }}";
+  window.currentUsername = "{{ request.user.username }}";
+  console.log("Room ID:", roomId);
+  console.log("Current user:", currentUsername);
   </script>
+
+
 
 </body>
 

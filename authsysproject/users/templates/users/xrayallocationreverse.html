@@ -1043,6 +1043,23 @@
   <div class="footer">
     <p>&copy; 2019-2025 XRAi Digital. All rights reserved.</p>
   </div>
+
+
+   <script>
+
+
+    
+  window.roomId = "{{ room.id }}";
+  window.currentUsername = "{{ request.user.username }}";
+  console.log("Room ID:", roomId);
+  console.log("Current user:", currentUsername);
+
+
+</script>
+
+
+
+{% include "support_chat/chat_widget.html" %}
 </body>
 
 </html>

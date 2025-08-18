@@ -1020,6 +1020,37 @@
   <div class="footer">
     <p>&copy; 2019-2025 XRAi Digital. All rights reserved.</p>
   </div>
+
+
+
+   <script>
+
+
+    
+  window.roomId = "{{ room.id }}";
+  window.currentUsername = "{{ request.user.username }}";
+  console.log("Room ID:", roomId);
+  console.log("Current user:", currentUsername);
+
+let alertSocket = new WebSocket("ws://" + window.location.host + "/ws/alerts/");
+
+alertSocket.onopen = function() {
+    console.log("🔔 Alert socket connected.");  // should print now
+};
+
+alertSocket.onmessage = function(e) {
+    let data = JSON.parse(e.data);
+    console.log("Alert received:", data);
+    if (data.type === "alert") {
+        alert("🔔 New message from " + data.sender + " in room " + data.room_id);
+    }
+};
+
+</script>
+
+
+
+{% include "support_chat/chat_widget.html" %}
 </body>
 
 </html>

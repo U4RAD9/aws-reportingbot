@@ -956,6 +956,19 @@
       },
     });
   });
+
+
+
+
+  
+let alertSocket = new WebSocket("ws://" + window.location.host + "/ws/alerts/");
+
+alertSocket.onmessage = function(e) {
+    let data = JSON.parse(e.data);
+    if (data.type === "alert") {
+        alert("🔔 New message from " + data.sender + " in room " + data.room_id);
+    }
+};
 </script>
 
 
@@ -995,6 +1008,20 @@
       });
     });
   </script> -->
+
+
+  <script>
+  window.roomId = "{{ room.id }}";
+  window.currentUsername = "{{ request.user.username }}";
+  console.log("Room ID:", roomId);
+  console.log("Current user:", currentUsername);
+
+</script>
+
+
+
+{% include "support_chat/chat_widget.html" %}
+
 </body>
 
 </html>

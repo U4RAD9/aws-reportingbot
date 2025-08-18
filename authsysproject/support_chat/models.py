@@ -3,8 +3,7 @@ from django.contrib.auth.models import User
 
 class ChatRoom(models.Model):
     participant1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chatroom_client')
-    participant2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chatroom_coordinator', null=True,
-    blank=True)
+    participant2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chatroom_coordinator', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_closed = models.BooleanField(default=False)  
     email_sent = models.BooleanField(default=False)

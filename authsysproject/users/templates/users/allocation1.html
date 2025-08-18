@@ -492,6 +492,8 @@
         font-size: 14px;
         border: none;
         max-height: 50px;
+
+        margin-left:3px;
     }
 
     button:hover {
@@ -581,6 +583,8 @@
                       </div>
                     </li>
                     <li class="nav-item dropdown">
+
+
                         <button type="button" class="btn btn-info btn-sm mt-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                             Action
                           </button>
@@ -594,7 +598,21 @@
                             <li> <a class="dropdown-item" href="/allocate1">Allocate</a></li>
                             <li> <a class="dropdown-item" href="/allocatecoordinator1">Allocate to Corporate Coordinator</a></li>
                             <li> <a class="dropdown-item" href="/reporting_status">Reporting Status</a></li>
+                            
                         </ul>
+                    <li class="nav-item ms-3">
+                  <a class="btn btn-primary btn-sm mt-2" href="{% url 'coordinator_dashboard' %}" target="_blank">Live Support</a>
+                    </li>
+
+                        <li class="nav-item dropdown">
+  <button type="button" class="btn btn-warning btn-sm mt-2 dropdown-toggle" data-bs-toggle="dropdown">
+    FAQ
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+   <li><a class="dropdown-item" href="{% url 'create_faq' %}">Create FAQ</a></li>
+    <li><a class="dropdown-item" href="{% url 'view_faq' %}">View FAQ</a></li>
+  </ul>
+</li>
                     </li>
                     <li class="nav-item">
                         <a href="/logout" class="nav-link">
@@ -1614,6 +1632,23 @@ filterTable();
                 scrollToTopButton.fadeOut();
             }
         }
+
+
+
+        let alertSocket = new WebSocket("ws://" + window.location.host + "/ws/alerts/");
+
+alertSocket.onopen = function() {
+    console.log("🔔 Alert socket connected.");  // should print now
+};
+
+alertSocket.onmessage = function(e) {
+    let data = JSON.parse(e.data);
+    console.log("Alert received:", data);
+    if (data.type === "alert") {
+        alert("🔔 New message from " + data.sender + " in room " + data.room_id);
+    }
+};
+
     </script>
 
 
