@@ -34,6 +34,7 @@ class Client(models.Model):
     can_edit_whatsapp_number = models.BooleanField(default=False)
     upload_header = models.FileField(upload_to='headers/', null=True, blank=True)
     upload_footer = models.FileField(upload_to='footers/', null=True, blank=True)
+    
 
     def __str__(self):
         return self.name

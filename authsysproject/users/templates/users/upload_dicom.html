@@ -304,6 +304,10 @@
                 </div>
             </th>
             <th>Doctor</th>
+
+            <th>Email</th>
+
+
             <th>WhatsApp</th>
             <th>Email</th>
             <th>History</th>
@@ -347,6 +351,9 @@
             <td>{{ entry.body_part_examined }}</td>
             <td>{{ entry.Modality }}</td>
             <td>{{ entry.referring_doctor_name }}</td>
+
+            <td>{{ entry.email }}</td>
+
             <td>{{ entry.whatsapp_number }}</td>
             <td>{{ entry.email }}</td>
             <td>
@@ -481,6 +488,12 @@
               <label for="referring_doctor_name" class="form-label">Referring Doctor Name:</label>
               <input type="text" class="form-control" id="referring_doctor_name" {% if not edit_permissions.referring_doctor_name %} disabled {% endif %} />
             </div>
+
+            <div class="mb-3">
+              <label for="email" class="form-label">Email:</label>
+              <input type="email" class="form-control" id="email" {% if not edit_permissions.email %} disabled {% endif %} />
+
+
             <div class="mb-3">
               <label for="whatsapp_number" class="form-label">WhatsApp Number:</label>
               <input type="text" class="form-control" id="whatsapp_number" {% if not edit_permissions.whatsapp_number %} disabled {% endif %} />
@@ -571,6 +584,10 @@
       $("#notes").val(row.find("td:eq(6)").text());
       $("#body_part_examined").val(row.find("td:eq(7)").text());
       $("#referring_doctor_name").val(row.find("td:eq(9)").text());
+
+      $("#email").val(row.find("td:eq(8)").text());
+
+
       $("#whatsapp_number").val(row.find("td:eq(10)").text());
       $("#email").val(row.find("td:eq(11)").text());
       $('#editModal').modal('show');
@@ -592,6 +609,9 @@
       formData.append('notes', $("#notes").val());
       formData.append('body_part_examined', $("#body_part_examined").val());
       formData.append('referring_doctor_name', $("#referring_doctor_name").val());
+
+      formData.append('email', $("#email").val());
+      
       formData.append('whatsapp_number', $("#whatsapp_number").val());
       formData.append('email', $("#email").val());
       formData.append('csrfmiddlewaretoken', csrftoken);
@@ -658,7 +678,7 @@
             var selectedDate = $('#filter-date-select-date').val();
             var selectedModality = ($('#filter-modality-select-modality').val() || "").trim().toLowerCase();
             var selectedStatus = ($('#filter-status-select').val() || "").trim().toLowerCase();
-            var visibleRowCount = 0;
+            var visibleRowCount = 0;  
   
             // Loop through each row in the table
             $('#patientTable tbody tr').each(function () {

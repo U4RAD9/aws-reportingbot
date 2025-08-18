@@ -1,0 +1,814 @@
+<style>
+#chat-box {
+    position: fixed;
+    bottom: 90px; /* Above the widget button */
+    right: 20px;
+    width: 380px;
+    max-height: 500px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+    font-family: Arial, sans-serif;
+    z-index: 9998;
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    overflow: hidden;
+}
+
+
+  #chat-header {
+    background-color: black; /* Bootstrap primary color */
+    color: #fff;
+    padding: 10px 15px;
+    border-radius: 8px 8px 0 0;
+    font-weight: bold;
+    position: relative;
+  }
+
+  #chat-toggle-button {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    width: 24px;
+    height: 24px;
+    background-color: transparent;
+    color: white;
+    font-size: 18px;
+    text-align: center;
+    line-height: 24px;
+    border: none;
+    cursor: pointer;
+  }
+
+  #dropdown-menu {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background-color: #f9f9f9;
+    border-top: 1px solid #ddd;
+    font-size: 14px;
+  }
+
+  #dropdown-menu.open {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+  }
+
+  #chat-messages {
+    height: 250px;
+    overflow-y: auto;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+  }
+#chat-input-container {
+    display: flex;
+    padding: 10px;
+    gap: 8px;
+    align-items: center; 
+    border-top: 1px solid #eee;
+    box-sizing: border-box; 
+}
+
+#chat-input {
+    flex-grow: 1;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    min-height: 36px; 
+    box-sizing: border-box;
+}
+
+#chat-send {
+    padding: 8px 12px;
+    background-color:black;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+#chat-send:hover{
+    background-color: #555; 
+}
+ #upload-btn {
+   padding: 8px 12px;
+    background-color: black;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-weight: bold;
+ }
+
+ #upload-btn:hover {
+      background-color: #555;
+
+ }
+
+  #chat-send {
+    padding: 8px 12px;
+    background-color: black;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .message.left {
+    justify-content: flex-start;
+  }
+
+  .message.right {
+    justify-content: flex-end;
+  }
+
+  .bubble {
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 70%;
+    word-wrap: break-word;
+    font-size: 14px;
+  }
+
+  .bubble.left {
+    background-color: #f1f0f0;
+    text-align: left;
+  }
+
+  .bubble.right {
+    background-color: #dcf8c6;
+    text-align: right;
+  }
+
+  .message {
+    display: flex;
+    width: 100%;
+  }
+
+  .chat-preview-img {
+    max-width: 100%;
+    max-height: 200px;
+    margin-top: 5px;
+    border-radius: 5px;
+    display: block;
+  }
+
+  #chat-widget-button {
+    position: fixed;
+    bottom: 20px;
+    right: 25px;
+    width: 65px;
+    height: 55px;
+    border-radius: 15px; 
+    background-color: black;
+    color: orangered;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
+    border: 2px solid orangered;
+    transition: all 0.3s ease; 
+    font-weight: bold;
+    text-align: center;
+}
+
+/* Hover effect */
+#chat-widget-button:hover {
+    background-color: orangered;
+    color: black;
+    transform: scale(1.1); 
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    border-color: black; 
+}
+
+
+.tooltip-text {
+    visibility: hidden;
+    width: max-content;
+    background-color: black;
+    color: white;
+    text-align: center;
+    padding: 5px 8px;
+    border-radius: 6px;
+    position: absolute;
+    bottom: 70px;
+    left: 40%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none; 
+}
+
+#chat-widget-button:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+
+.message .bubble ul {
+    padding-left: 20px;
+    margin: 5px 0;
+}
+
+.message .bubble li {
+    margin-bottom: 5px;
+}
+
+
+.faq-item {
+    margin: 8px 0;
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f9f9f9;
+}
+
+.faq-question {
+    font-weight: bold;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.faq-answer {
+    margin-top: 4px;
+    padding: 5px;
+    font-size: 0.9em;
+    color: #333;
+}
+
+.faq-heading {
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #444;
+}
+
+
+</style>
+<div id="chat-widget-button">Ask Echo
+    <span class="tooltip-text">How can I help you?</span>
+
+</div>
+
+<div id="chat-box">
+  <div id="chat-header">💬 Support Chat</div>
+    <div><button id="chat-minimize-button" style="
+        position: absolute;
+        top: 8px;
+        right: 22px;
+        width: 24px;
+        height: 24px;
+        background-color: transparent;
+        color: black;
+        font-size: 18px;
+        border: none;
+        cursor: pointer;
+    ">➖</button>
+
+
+
+  <div id="dropdown-menu">
+    <div style="margin-bottom: 10px; font-weight: bold;">📜 Recent Chats</div>
+    <a href="#" id="startNewChatBtn">Start New Chat</a><br>
+    <a href="#" id="loadRecents">🔄 Refresh List</a>
+    <div id="recent-chat-links" style="margin-top: 10px;"></div>
+  </div>
+
+  <div id="chat-messages"></div>
+  <div id="file-previews" style="padding: 0 10px 10px 10px; max-height: 150px; overflow-y: auto;"></div>
+
+  <div id="chat-input-container">
+    <input id="chat-input" type="text" placeholder="Type your message..." />
+    <input type="file" id="chat-file" multiple style="display: none;" />
+    <button id="upload-btn" title="Attach files">📎</button>
+    <button id="chat-send">Send</button>
+  </div>
+</div>
+
+<script>
+
+
+const chatBox = document.getElementById("chat-box");
+const widgetButton = document.getElementById("chat-widget-button");
+const minimizeButton = document.getElementById("chat-minimize-button");
+
+widgetButton.addEventListener("click", () => {
+    chatBox.style.display = "flex";
+    widgetButton.style.display = "none";
+});
+
+minimizeButton.addEventListener("click", () => {
+    chatBox.style.display = "none";
+    widgetButton.style.display = "flex";
+});
+
+    let djangoRoomId = "{{ room.id|default:'' }}";
+    window.currentUsername = "{{ request.user.username|default:'' }}";
+    window.coordinatorsList = {};
+    let isFirstMessage = true;
+    let chatSocket;
+    const chatMessages = document.getElementById("chat-messages");
+    const input = document.getElementById("chat-input");
+    const sendButton = document.getElementById("chat-send");
+    const fileInput = document.getElementById("chat-file");
+    const uploadBtn = document.getElementById("upload-btn");
+    const filePreviewsContainer = document.getElementById("file-previews");
+    let selectedFiles = [];
+
+    
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let cookie of cookies) {
+          cookie = cookie.trim();
+          if (cookie.startsWith(name + "=")) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+
+    function formatISTTimestamp(isoTimestamp) {
+        const date = new Date(isoTimestamp);
+        
+        const options = {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        };
+        return date.toLocaleString('en-IN', options);
+    }
+    
+    function appendMessage(sender, message, timestamp, fileUrls = []) {
+      const time = formatISTTimestamp(timestamp);
+      
+      const side = sender.trim().toLowerCase() === window.currentUsername.trim().toLowerCase() ? "right" : "left";
+      const senderLabel = side === "right" ? "You:" : `${sender}:`;
+  
+      const messageDiv = document.createElement("div");
+      messageDiv.className = `message ${side}`;
+  
+      const bubbleDiv = document.createElement("div");
+      bubbleDiv.className = `bubble ${side}`;
+  
+      const messageContent = document.createElement("div");
+      messageContent.innerHTML = `<strong>${senderLabel}</strong> <br>${message || ''}`;
+      bubbleDiv.appendChild(messageContent);
+  
+      if (fileUrls && fileUrls.length > 0) {
+        fileUrls.forEach(url => {
+          const ext = url.split('.').pop().toLowerCase();
+          if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
+            const img = document.createElement("img");
+            img.src = url;
+            img.className = "chat-preview-img";
+            img.alt = "Preview";
+            bubbleDiv.appendChild(img);
+          } else {
+            const link = document.createElement("a");
+            link.href = url;
+            link.textContent = "📎 Download File";
+            link.target = "_blank";
+            bubbleDiv.appendChild(document.createElement("br"));
+            bubbleDiv.appendChild(link);
+          }
+        });
+      }
+  
+      const timeEl = document.createElement("small");
+      timeEl.textContent = time;
+      bubbleDiv.appendChild(document.createElement("br"));
+      bubbleDiv.appendChild(timeEl);
+  
+      messageDiv.appendChild(bubbleDiv);
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    
+    }
+  
+    function showClosedNotice() {
+      input.disabled = true;
+      sendButton.disabled = true;
+      input.placeholder = "Chat is closed";
+      const notice = document.createElement("div");
+      notice.className = "alert alert-warning";
+      notice.innerHTML = `
+        <strong>🔒 This chat has been closed.</strong><br>
+        <a href="#" id="startNewChatBtn" class="btn btn-sm btn-primary mt-2">Start New Chat</a>
+      `;
+      chatMessages.appendChild(notice);
+  
+      const newChatButton = notice.querySelector("#startNewChatBtn");
+      newChatButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        createNewChat();
+      });
+  
+      const recentChatsButton = notice.querySelector("#loadRecents");
+      recentChatsButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        document.getElementById("dropdown-menu").classList.add("open");
+        document.getElementById("chat-toggle-button").textContent = "❌";
+        loadRecentChats();
+      });
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    function openWebSocket(roomId) {
+      if (chatSocket) chatSocket.close();
+  
+      chatSocket = new WebSocket(
+        `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws/chat/${roomId}/`
+      );
+  
+      chatSocket.onmessage = function (e) {
+        let data;
+        try {
+          data = JSON.parse(e.data);
+          console.log(">>> Raw message received:", data);
+        } catch (err) {
+          console.error("Error parsing WS message:", err, e.data);
+          return;
+        }
+  
+        if (data.type === "chat_closed") {
+          chatMessages.innerHTML = "";
+          showClosedNotice();
+          return;
+        }
+  
+        if (data.type === "bot_message") {
+          const nowIso = new Date().toISOString();
+          appendMessage("SystemBot", data.message || "", nowIso, []);
+          return;
+        }
+
+        if (data.type === "faq_list") {
+          setTimeout(() => {
+            renderFAQs(data.faqs);
+           }, 2000);
+        return;
+  }
+  
+        if (data.type === "file") {
+          appendMessage(
+            data.sender || "SystemBot",
+            "",
+            data.timestamp || new Date().toISOString(),
+            data.file_urls || []
+          );
+          return;
+        }
+  
+        if (data.type === "message") {
+          appendMessage(
+            data.sender || "Unknown",
+            data.message || "",
+            data.timestamp || new Date().toISOString(),
+            data.file_urls || []
+          );
+          return;
+        }
+        if (data.type === "history") {
+          return;
+        }
+
+
+        console.warn("Unhandled WS message:", data);
+      };
+
+      function renderFAQs(faqs) {
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("faq-wrapper");
+
+        const heading = document.createElement("div");
+        heading.classList.add("faq-heading");
+        heading.innerHTML = "<strong>Here are some helpful FAQs:</strong>";
+        wrapper.appendChild(heading);
+
+        faqs.forEach(faq => {
+        const item = document.createElement("div");
+        item.classList.add("faq-item");
+
+        item.innerHTML = `
+            <div class="faq-question">
+                ▶ ${faq.question}
+            </div>
+            <div class="faq-answer" style="display:none;">
+                ${faq.answer}
+            </div>
+        `;
+
+        item.querySelector(".faq-question").addEventListener("click", () => {
+            const ans = item.querySelector(".faq-answer");
+            ans.style.display = ans.style.display === "block" ? "none" : "block";
+        });
+
+        wrapper.appendChild(item);
+    });
+
+    chatMessages.appendChild(wrapper);
+}
+
+      chatSocket.onerror = function (e) {
+        console.error("WebSocket error:", e);
+      };
+  
+      chatSocket.onclose = function () {
+        console.warn("WebSocket closed");
+      };
+    }
+  
+    function renderFilePreviews() {
+      filePreviewsContainer.innerHTML = "";
+      selectedFiles.forEach((file, index) => {
+        const fileDiv = document.createElement("div");
+        fileDiv.style.position = "relative";
+        fileDiv.style.display = "inline-block";
+        fileDiv.style.marginRight = "8px";
+        fileDiv.style.marginBottom = "8px";
+        if (file.type.startsWith("image/")) {
+          const img = document.createElement("img");
+          img.src = URL.createObjectURL(file);
+          img.style.maxWidth = "100px";
+          img.style.maxHeight = "100px";
+          img.style.borderRadius = "5px";
+          img.alt = file.name;
+          fileDiv.appendChild(img);
+        } else {
+          const icon = document.createElement("div");
+          icon.textContent = "📎";
+          icon.style.fontSize = "40px";
+          icon.style.textAlign = "center";
+          fileDiv.appendChild(icon);
+          const name = document.createElement("div");
+          name.textContent = file.name;
+          name.style.maxWidth = "100px";
+          name.style.fontSize = "12px";
+          name.style.wordBreak = "break-all";
+          fileDiv.appendChild(name);
+        }
+        const removeBtn = document.createElement("button");
+        removeBtn.textContent = "✖";
+        removeBtn.style.position = "absolute";
+        removeBtn.style.top = "0";
+        removeBtn.style.right = "0";
+        removeBtn.style.background = "rgba(0,0,0,0.6)";
+        removeBtn.style.color = "white";
+        removeBtn.style.border = "none";
+        removeBtn.style.borderRadius = "0 5px 0 5px";
+        removeBtn.style.cursor = "pointer";
+        removeBtn.style.padding = "0 4px";
+        removeBtn.title = "Remove";
+        removeBtn.addEventListener("click", () => {
+          selectedFiles.splice(index, 1);
+          renderFilePreviews();
+        });
+        fileDiv.appendChild(removeBtn);
+        filePreviewsContainer.appendChild(fileDiv);
+      });
+    }
+    
+    function loadRecentChats() {
+      const recentChatLinksContainer = document.getElementById("recent-chat-links");
+      recentChatLinksContainer.innerHTML = "";
+  
+      fetch("/api/recent-chats/")
+        .then(res => res.json())
+        .then(data => {
+          if (data.recent_rooms.length === 0) {
+            recentChatLinksContainer.innerHTML = "<div style='padding:5px;'>No recent chats</div>";
+            return;
+          }
+          data.recent_rooms.forEach(room => {
+            const link = document.createElement("a");
+            
+            const date = new Date(room.created_at);
+            const formattedTime = date.toLocaleString('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+
+            link.textContent = `Room #${room.id} (${formattedTime})`;
+            link.classList.add("recent-chat-item");
+            link.dataset.roomId = room.id;
+            link.style.display = "block";
+            link.style.padding = "5px";
+            link.style.textDecoration = "none";
+            link.style.color = "#333";
+            link.addEventListener("click", e => {
+              e.preventDefault();
+              const roomId = link.dataset.roomId;
+              window.roomId = roomId;
+              input.disabled = false;
+              sendButton.disabled = false;
+              input.placeholder = "Type your message...";
+              loadOldMessages(roomId);
+              openWebSocket(roomId);
+            });
+            recentChatLinksContainer.appendChild(link);
+          });
+        })
+        .catch(err => {
+          console.error("Error loading recent chats:", err);
+          recentChatLinksContainer.innerHTML = "<div style='padding:5px;'>Error loading chats.</div>";
+        });
+    }
+    
+    function loadOldMessages(roomId) {
+      chatMessages.innerHTML = "";
+      fetch(`/api/chat/${roomId}/messages/`)
+        .then(res => res.json())
+        .then(data => {
+          data.messages.forEach(({ message, sender, timestamp, file_urls }) => {
+            appendMessage(sender, message, timestamp, file_urls);
+          });
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+          if (data.is_closed) {
+            showClosedNotice();
+          } else {
+            input.disabled = false;
+            sendButton.disabled = false;
+            input.placeholder = "Type your message...";
+          }
+          isFirstMessage = (data.messages.length === 0);
+        })
+        .catch(err => {
+          console.error("Error loading messages:", err);
+        });
+    }
+    
+    async function createNewChat() {
+      try {
+        const response = await fetch("/chats/new/", {
+          method: "POST",
+          headers: { "X-CSRFToken": getCookie("csrftoken") }
+        });
+        const data = await response.json();
+  
+        if (data.room_id) {
+          window.roomId = data.room_id;
+          input.disabled = false;
+          sendButton.disabled = false;
+          input.placeholder = "Type your message...";
+          chatMessages.innerHTML = "";
+          openWebSocket(window.roomId);
+          isFirstMessage = true;
+        }
+      } catch (err) {
+        console.error("Error starting new chat:", err);
+        chatMessages.innerHTML = `<div style="padding:10px;">Error starting chat. Please refresh the page.</div>`;
+      }
+    }
+
+    function sendMessage() {
+      if (input.disabled) return;
+      const message = input.value.trim();
+      const files = selectedFiles;
+  
+      if (!message && files.length === 0) return;
+  
+      let taggedUsername = null;
+     
+        const tagMatch = message.match(/@([\w.@+-]+)/);
+        if (tagMatch && window.coordinatorsList && window.coordinatorsList[tagMatch[1]]) {
+          taggedUsername = tagMatch[1];
+        }
+    
+
+      if (message) {
+        chatSocket.send(JSON.stringify({
+          message: message,
+          sender: window.currentUsername,
+          tagged_username: taggedUsername
+        }));
+        input.value = "";
+        isFirstMessage = false;
+      }
+  
+      if (files.length > 0) {
+        const formData = new FormData();
+        formData.append("sender", window.currentUsername);
+        formData.append("room_id", window.roomId);
+        for (const file of files) {
+          formData.append("files", file);
+        }
+        fetch(`/api/chat/${window.roomId}/send-files/`, {
+          method: "POST",
+          headers: { "X-CSRFToken": getCookie("csrftoken") },
+          body: formData
+        })
+          .then(res => res.json())
+          .then(() => {
+            selectedFiles = [];
+            filePreviewsContainer.innerHTML = "";
+            fileInput.value = "";
+          })
+          .catch(err => console.error("Upload error:", err));
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async function () {
+      let response = await fetch("/api/user/open-room/");
+      let data = await response.json();
+  
+      const serverRoomId = data.room_id;
+  
+      if (serverRoomId) {
+        window.roomId = serverRoomId;
+        loadOldMessages(window.roomId);
+        openWebSocket(window.roomId);
+      } else {
+        createNewChat();
+      }
+  
+      document.getElementById("startNewChatBtn").addEventListener("click", (e) => {
+        e.preventDefault();
+        createNewChat();
+      });
+  
+
+  
+      uploadBtn.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", (e) => {
+        for (const file of e.target.files) {
+          selectedFiles.push(file);
+        }
+        renderFilePreviews();
+        fileInput.value = "";
+      });
+  
+      sendButton.addEventListener("click", sendMessage);
+      input.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") sendMessage();
+      });
+  
+      fetch("/api/coordinators/")
+        .then(res => res.json())
+        .then(data => {
+          data.forEach(coord => {
+            window.coordinatorsList[coord.username] = coord.id;
+          });
+        });
+  
+      const suggestionsBox = document.createElement("div");
+      suggestionsBox.style.position = "absolute";
+      suggestionsBox.style.background = "#fff";
+      suggestionsBox.style.border = "1px solid #ccc";
+      suggestionsBox.style.display = "none";
+      suggestionsBox.style.zIndex = "9999";
+      document.body.appendChild(suggestionsBox);
+  
+      input.addEventListener("input", () => {
+        //if (!isFirstMessage) return;
+        const val = input.value;
+        const atIndex = val.lastIndexOf("@");
+        if (atIndex >= 0) {
+          const query = val.substring(atIndex + 1).toLowerCase();
+          const matches = Object.keys(window.coordinatorsList).filter(name => name.toLowerCase().startsWith(query));
+          if (matches.length > 0) {
+            suggestionsBox.innerHTML = matches.map(name => `<div class="suggestion-item" style="padding:5px;cursor:pointer;">${name}</div>`).join("");
+            const rect = input.getBoundingClientRect();
+            suggestionsBox.style.top = `${rect.bottom + window.scrollY}px`;
+            suggestionsBox.style.left = `${rect.left + window.scrollX}px`;
+            suggestionsBox.style.display = "block";
+          } else {
+            suggestionsBox.style.display = "none";
+          }
+        } else {
+          suggestionsBox.style.display = "none";
+        }
+      });
+  
+      document.addEventListener("click", e => {
+        if (e.target.classList.contains("suggestion-item")) {
+          const val = input.value;
+          const atIndex = val.lastIndexOf("@");
+          input.value = val.substring(0, atIndex + 1) + e.target.innerText + " ";
+          suggestionsBox.style.display = "none";
+          input.focus();
+        } else {
+          suggestionsBox.style.display = "none";
+        }
+      });
+    });
+</script>

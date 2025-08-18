@@ -523,6 +523,7 @@
                </th>
                 <th>Report Date</th>
                 <th>Location</th>
+                <th>Email</th>
                 <th>WhatsApp Number</th>
                 <th>Email ID</th>
                 <th>Actions</th>
@@ -540,9 +541,11 @@
                 <td>{{ pdf.pdf_on_db }}</td>
                 <td>{{ pdf.report_date }}</td>
                 <td>{{ pdf.location }}</td>
+                <td>{{ pdf.email }}</td>
                 <td>{{ pdf.whatsapp_number }}</td>
                 <td>{{ pdf.email }}</td>
                 <td>
+
                   <a class="reportButton" href="{{ pdf.signed_url }}" download>DOWNLOAD</a>
                   <a href="{% url 'convert_pdf_to_word' report_id=pdf.id %}" class="btn btn-primary">
                     Download as Word
@@ -550,7 +553,8 @@
                   <a class="btn btn-info" href="{{ pdf.signed_url2 }}" target="_blank">View PDF</a>
                   <!-- Add the new Download with Logo button -->
                   {% if client.upload_header and client.upload_footer %}
-                          <a class="btn btn-warning" href="{% url 'download_pdf_with_logo' pdf.id %}">
+                          <a class="btn btn-warning" href="{% url '
+                          \download_pdf_with_logo' pdf.id %}">
                               Download with Logo
                           </a>
                   {% else %}

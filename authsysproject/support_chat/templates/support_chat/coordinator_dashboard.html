@@ -1,0 +1,410 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coordinator Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f9fafb;
+            color: #333;
+            margin: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .chat-room-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .chat-room {
+            background-color: #ffffff;
+            border: 2px solid #000; 
+            border-radius: 6px;     
+            padding: 15px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: none;      
+            display: flex;
+            flex-direction: column; 
+         }
+
+
+        .chat-room h3 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0;
+            font-size: 1.2em;
+            color: #1a1a1a;
+        }
+
+        .chat-room h3 span {
+            font-size: 0.9em;
+        }
+
+        .close-room-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .close-room-btn:hover {
+            background-color: #b02a37;
+        }
+
+        .message {
+            display: flex;
+            margin: 8px 0;
+        }
+
+        .message.left {
+            justify-content: flex-start;
+        }
+
+        .message.right {
+            justify-content: flex-end;
+        }
+
+        .bubble {
+            padding: 10px 14px;
+            border-radius: 12px;
+            max-width: 65%;
+            word-wrap: break-word;
+            font-size: 0.95em;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .bubble.right {
+            background-color: #d1e7dd;
+        }
+
+        .bubble.left {
+            background-color: #e2e3e5;
+        }
+
+        .file-preview img {
+            max-height: 60px;
+            margin: 3px;
+            border-radius: 4px;
+        }
+
+        input[type="text"].reply-box {
+            padding: 10px;
+            margin-top: 8px;
+            border: 1px solid #110d2fff;
+            border-radius: 8px;
+            font-size: 0.95em;
+        }
+
+        input[type="file"] {
+            margin-right: 10px;
+        }
+
+        .send-files-btn {
+            background-color: #0d6efd;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .send-files-btn:hover {
+            background-color: #0b5ed7;
+        }
+
+        .file-preview {
+            margin-top: 6px;
+        }
+
+        [id^="chat-messages-"]::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        [id^="chat-messages-"]::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 4px;
+        }
+
+        @media (min-width: 768px) {
+            .chat-room {
+                width: calc(50% - 20px);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .chat-room {
+                width: calc(33.33% - 20px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <h2>Coordinator Chat Dashboard</h2>
+
+    <div class="chat-room-grid">
+        {% for room_id, room_data in room_messages.items %}
+        <div class="chat-room" data-room="{{ room_id }}">
+            <h3>
+                Room {{ room_id }}
+
+                     {% if room_data.is_for_you %}
+                        <span style="color: green; font-weight: bold;">🔒 You are Tagged</span>
+                    {% endif %}
+
+                {% if not room_data.is_closed %}
+                    <button class="close-room-btn" data-room="{{ room_id }}">Close</button>
+                {% else %}
+                    <span style="background-color:#aaa; font-weight: bold;">Closed</span>
+
+                    {% endif %}
+            </h3>
+
+            <div id="chat-messages-{{ room_id }}" style="height:200px;overflow-y:auto;border:1px solid #eee;padding:10px;">
+                {% for msg in room_data.messages %}
+                <div class="message {% if msg.sender.username == request.user.username %}right{% else %}left{% endif %}">
+                    <div class="bubble {% if msg.sender.username == request.user.username %}right{% else %}left{% endif %}">
+                        <strong>
+                        {% if msg.sender.username == request.user.username %}
+                            You
+                        {% else %}
+                            {{ msg.sender.username }}
+                        {% endif %}
+                        :</strong> {{ msg.content }}
+<br><small class="timestamp" data-timestamp="{{ msg.timestamp.isoformat }}" style="font-size: 10px;"></small>
+
+                        {% if msg.file %}
+                        <div style="margin-top: 5px;">
+                            {% with file_url="/serve-file/"|add:msg.file %}
+                                {% if ".png" in msg.file or ".jpg" in msg.file or ".jpeg" in msg.file %}
+                                    <img src="{{ file_url }}" alt="Image" style="max-height:100px; border-radius: 5px;">
+                                {% else %}
+                                    <a href="{{ file_url }}" target="_blank">📎 Download File</a>
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if not room_data.is_closed %}
+            <div style="margin: 8px 0;">
+                <input type="file" class="file-input" data-room="{{ room_id }}" multiple>
+                <button class="send-files-btn" data-room="{{ room_id }}">📎 Upload</button>
+                <div class="file-preview" data-room="{{ room_id }}"></div>
+            </div>
+
+            <input type="text" class="reply-box" data-room="{{ room_id }}" placeholder="Type reply...">
+            {% else %}
+            <div style="margin: 8px 0;">
+                <input type="file" class="file-input" data-room="{{ room_id }}" multiple disabled>
+                <button class="send-files-btn" data-room="{{ room_id }}" disabled style="background:#ccc;cursor:not-allowed;">📎 Upload</button>
+                <div class="file-preview" data-room="{{ room_id }}"></div>
+            </div>
+
+            <input type="text" class="reply-box" data-room="{{ room_id }}" disabled placeholder="Chat is closed">
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+<script>
+  window.currentUsername = "{{ request.user.username|default:'dvdd' }}";
+  window.currentUserId = {{ request.user.id }};
+</script>
+
+<script>
+  const sockets = {};
+
+  function getCSRF() {
+    const cookieValue = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)');
+    return cookieValue ? cookieValue.pop() : '';
+  }
+
+function formatTimestamp(timestamp) {
+        if (!timestamp) return "Time not available";
+        const date = new Date(timestamp);
+        const options = {
+            hour: 'numeric',
+            minute: 'numeric',
+            hour12: true,
+            month: 'short',
+            day: 'numeric'
+        };
+        return new Intl.DateTimeFormat('en-US', options).format(date);
+    }
+document.querySelectorAll('small.timestamp').forEach(span => {
+    const ts = span.dataset.timestamp;
+    span.textContent = formatTimestamp(ts);
+});
+
+
+  document.querySelectorAll(".reply-box").forEach(input => {
+    const roomId = input.dataset.room;
+    const socket = new WebSocket(
+      `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws/chat/${roomId}/`
+    );
+
+    sockets[roomId] = socket;
+    const container = document.getElementById(`chat-messages-${roomId}`);
+
+    socket.onopen = () => {
+      console.log(`WebSocket connected for room ${roomId}`);
+    };
+
+    
+
+    socket.onmessage = (e) => {
+  const data = JSON.parse(e.data);
+  if (data.tagged_username && data.tagged_username !== window.currentUsername) return;
+
+  const isSelf = data.sender === window.currentUsername;
+  const container = document.getElementById(`chat-messages-${roomId}`);
+ const formattedTimestamp = data.timestamp ? formatTimestamp(data.timestamp) : "Time not available";
+
+
+  if (data.type === "message" || !data.type) {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = `message ${isSelf ? "right" : "left"}`;
+
+    const bubbleDiv = document.createElement("div");
+    bubbleDiv.className = `bubble ${isSelf ? "right" : "left"}`;
+    bubbleDiv.innerHTML = `
+      <strong>${isSelf ? "You" : data.sender}:</strong> ${data.message || ""}
+  <br><small class="timestamp" data-timestamp="${data.timestamp}">${formatTimestamp(data.timestamp)}</small>
+    `;
+
+    messageDiv.appendChild(bubbleDiv);
+    container.appendChild(messageDiv);
+
+    // Attach file previews if any
+    if (data.file_urls && data.file_urls.length > 0) {
+      data.file_urls.forEach(url => {
+        const ext = url.split('.').pop().toLowerCase();
+        const fileDiv = document.createElement("div");
+        fileDiv.className = `message ${isSelf ? "right" : "left"}`;
+
+        const fileBubble = document.createElement("div");
+        fileBubble.className = `bubble ${isSelf ? "right" : "left"}`;
+        if (["jpg", "jpeg", "png", "gif"].includes(ext)) {
+          fileBubble.innerHTML = `<img src="${url}" style="max-width:150px;border-radius:5px;">`;
+        } else {
+          fileBubble.innerHTML = `<a href="${url}" target="_blank">📎 Download File</a>`;
+        }
+
+        fileDiv.appendChild(fileBubble);
+        container.appendChild(fileDiv);
+      });
+    }
+
+    container.scrollTop = container.scrollHeight;
+  }
+};
+
+    socket.onclose = () => {
+      console.log(`WebSocket closed for room ${roomId}`);
+    };
+
+    input.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        if (input.disabled) return;
+
+        const message = input.value.trim();
+        if (message !== "") {
+          socket.send(JSON.stringify({
+            message: message,
+            sender: window.currentUsername
+          }));
+          input.value = "";
+        }
+      }
+    });
+  });
+
+  document.querySelectorAll(".send-files-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const roomId = btn.dataset.room;
+      const input = document.querySelector(`.file-input[data-room="${roomId}"]`);
+      const files = input.files;
+      if (!files.length) return;
+
+      const formData = new FormData();
+      formData.append("sender", window.currentUsername);
+      for (let i = 0; i < files.length; i++) {
+        formData.append("files", files[i]);
+      }
+
+      fetch(`/api/chat/${roomId}/send-files/`, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCSRF()
+        },
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+  data.file_urls.forEach(url => {
+    const ext = url.split('.').pop().toLowerCase();
+    const msgDiv = document.createElement("div");
+    msgDiv.className = "message right";
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble right";
+
+    if (["jpg", "jpeg", "png", "gif"].includes(ext)) {
+      bubble.innerHTML = `<img src="${url}" style="max-width:150px;border-radius:5px;">`;
+    } else {
+      bubble.innerHTML = `<a href="${url}" target="_blank">📎 Download File</a>`;
+    }
+
+    msgDiv.appendChild(bubble);
+    container.appendChild(msgDiv);
+    container.scrollTop = container.scrollHeight;
+  });
+
+        input.value = '';
+      });
+    });
+  });
+
+  document.querySelectorAll(".close-room-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const roomId = btn.dataset.room;
+      if (sockets[roomId]) {
+        sockets[roomId].send(JSON.stringify({
+          type: "close_chat",
+          sender: window.currentUsername
+        }));
+        
+        btn.innerText = "Closed ✅";
+        btn.disabled = true;
+        btn.style.backgroundColor = "#aaa";
+        btn.style.cursor = "not-allowed";
+
+        const inputBox = document.querySelector(`.reply-box[data-room="${roomId}"]`);
+        if (inputBox) {
+          inputBox.disabled = true;
+          inputBox.placeholder = "Chat is closed";
+        }
+      }
+    });
+  });
+</script>
+
+
+</body>
+</html>

@@ -37,3 +37,19 @@ class PersonalInfoForm(forms.ModelForm):
 class ECGUploadForm(forms.Form):
     ecg_file = MultiFileField(min_num=1, max_num=50, max_file_size=1024 * 1024 * 5)
     location = forms.ModelChoiceField(queryset=Location.objects.all(), label="Select Location", required=True)
+
+
+
+
+from django import forms
+from .models.faq import FAQ
+
+class FAQForm(forms.ModelForm):
+    class Meta:
+        model = FAQ
+        fields = ['question', 'answer', 'target_group']
+        widgets = {
+            'question': forms.TextInput(attrs={'class': 'form-control'}),
+            'answer': forms.Textarea(attrs={'class': 'form-control'}),
+            'target_group': forms.Select(attrs={'class': 'form-select'}),
+        }
