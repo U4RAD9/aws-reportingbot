@@ -170,13 +170,13 @@
                     <td>{{ patient.notes }}</td>
                     <td>{{ patient.recived_on_db|date:"Y-m-d H:i:s" }}</td>
                     <td>{{ patient.notes_modified_at|date:"Y-m-d H:i:s" }}</td>
-                                        <td>
-    {% if patient.history_files.all %}
-        {{ patient.history_files.first.uploaded_at|date:"Y-m-d H:i:s" }}
-    {% else %}
-        No history
-    {% endif %}
-</td>
+                    <td>
+                        {% if patient.history_files.all %}
+                            {{ patient.history_files.first.uploaded_at|date:"Y-m-d H:i:s" }}
+                        {% else %}
+                            No history
+                        {% endif %}
+                    </td>
                     <td>{{ patient.radiologist_assigned_at|date:"Y-m-d H:i:s" }}</td>
                     <td>{{ patient.marked_done_at|date:"Y-m-d H:i:s" }}</td> 
                     

@@ -150,8 +150,10 @@ urlpatterns = [
     path('get-client-header-footer/', get_client_header_footer, name='get-client-header-footer'),
     
     path('save-template/', save_template, name='save-template'),
-     path('get-template/<int:template_id>/',views.get_template, name='get_template'),
-     path('get-dicom-notes/', get_dicom_notes, name='get_dicom_notes'),
+    path('get-template/<int:template_id>/',views.get_template, name='get_template'),
+    path('get-dicom-notes/', get_dicom_notes, name='get_dicom_notes'),
+    path('email-pdf-with-logo/<str:patient_id>/', views.email_pdf_with_logo, name='email_pdf_with_logo'),
+    path('email-pdf-raw/<str:patient_id>/', views.email_pdf_raw, name='email_pdf_raw'),
 
     # BY Gautam Suri
     path('send-report-email/', views.send_report_email, name='send_report_email'),

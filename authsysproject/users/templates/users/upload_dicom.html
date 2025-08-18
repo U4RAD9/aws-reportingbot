@@ -11,6 +11,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  
   <style>
     /* General Mobile-Friendly Styles */
     body {
@@ -308,7 +309,9 @@
 
 
             <th>WhatsApp</th>
+            <th>Email</th>
             <th>History</th>
+
             <th>Report</th>
             <th>Urgent</th>
             <th>MLC</th>
@@ -338,7 +341,13 @@
             <td>{{ entry.gender }}</td>
             <td>{{ entry.study_date }}</td>
             <td>{{ entry.study_description }}</td>
-            <td>{{ entry.notes }}</td>
+            <td>
+              {{ entry.notes|linebreaksbr }}
+              {% if entry.notes_modified_at %}
+                <br>
+                <small class="text-muted">Last modified: {{ entry.notes_modified_at|date:"Y-m-d H:i" }}</small>
+              {% endif %}
+            </td>
             <td>{{ entry.body_part_examined }}</td>
             <td>{{ entry.Modality }}</td>
             <td>{{ entry.referring_doctor_name }}</td>
@@ -346,12 +355,20 @@
             <td>{{ entry.email }}</td>
 
             <td>{{ entry.whatsapp_number }}</td>
+            <td>{{ entry.email }}</td>
             <td>
-                {% for url in entry.history_file_urls %}
-                   <a class="imageButton" target="_blank" href="{{ url }}">
-                    H{{ forloop.counter }}
-                  </a>
-                {% endfor %}
+              {% for history_file in entry.history_files.all %}
+                <a class="imageButton" target="_blank" href="{{ history_file.history_file.url }}">
+                  H{{ forloop.counter }}
+                </a>
+                {% if history_file.uploaded_at %}
+                  <br>
+                  <small class="text-muted">
+                    Uploaded: {{ history_file.uploaded_at|date:"Y-m-d H:i" }}
+                  </small>
+                {% endif %}
+                <br>
+              {% endfor %}
             </td>
             <td>
               {% for url in entry.pdf_file_urls %}
@@ -398,9 +415,20 @@
                   View
               </a>
             </td>
-            <td>
+            <!-- <td>
               {% if entry.isDone %}
                 <span class="badge bg-success">Reported</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Reporting</span>
+              {% endif %}
+            </td> -->
+            <td>
+              {% if entry.isDone %}
+                {% if not entry.twostepcheck %}
+                  <span class="badge bg-success">Reported</span>
+                {% else %}
+                  <span class="badge bg-info text-dark">In review</span>
+                {% endif %}
               {% else %}
                 <span class="badge bg-warning text-dark">Reporting</span>
               {% endif %}
@@ -469,6 +497,10 @@
             <div class="mb-3">
               <label for="whatsapp_number" class="form-label">WhatsApp Number:</label>
               <input type="text" class="form-control" id="whatsapp_number" {% if not edit_permissions.whatsapp_number %} disabled {% endif %} />
+            </div>
+            <div class="mb-3">
+              <label for="email" class="form-label">Email ID:</label>
+              <input type="text" class="form-control" id="email" {% if not edit_permissions.email %} disabled {% endif %} />
             </div>
             <div class="mb-3">
               <label for="history_files" class="form-label">Patient History File:</label>
@@ -557,6 +589,7 @@
 
 
       $("#whatsapp_number").val(row.find("td:eq(10)").text());
+      $("#email").val(row.find("td:eq(11)").text());
       $('#editModal').modal('show');
     }
 
@@ -580,6 +613,7 @@
       formData.append('email', $("#email").val());
       
       formData.append('whatsapp_number', $("#whatsapp_number").val());
+      formData.append('email', $("#email").val());
       formData.append('csrfmiddlewaretoken', csrftoken);
   
       // Append selected files to the FormData object
@@ -650,7 +684,7 @@
             $('#patientTable tbody tr').each(function () {
                 var rowDate = $(this).find('td:nth-child(5)').text();
                 var rowModality = ($(this).find('td:nth-child(9)').text() || "").trim().toLowerCase();
-                var rowStatus = ($(this).find('td:nth-child(19)').text() || "").trim().toLowerCase();
+                var rowStatus = ($(this).find('td:nth-child(20)').text() || "").trim().toLowerCase();
                 
                 
                 if ((selectedDate === '' || rowDate === selectedDate) && 

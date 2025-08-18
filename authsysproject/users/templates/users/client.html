@@ -525,19 +525,7 @@
                 <th>Location</th>
                 <th>Email</th>
                 <th>WhatsApp Number</th>
-                <th> 
-
-                  <button 
-    class="btn btn-sm btn-primary sendEmailButton" 
-    data-patient-id="{{ pdf.patient_id }}"
-    data-email="{{ pdf.email }}" 
-    data-name="{{ pdf.name }}" 
-    data-pdf-url="{{ pdf.signed_url }}">
-    Send Email
-  </button>
-                </th> 
-
-
+                <th>Email ID</th>
                 <th>Actions</th>
                 <th>
                   Select All<input class="ml-1" type="checkbox" id="selectAllCheckbox" />
@@ -555,6 +543,7 @@
                 <td>{{ pdf.location }}</td>
                 <td>{{ pdf.email }}</td>
                 <td>{{ pdf.whatsapp_number }}</td>
+                <td>{{ pdf.email }}</td>
                 <td>
 
                   <a class="reportButton" href="{{ pdf.signed_url }}" download>DOWNLOAD</a>
@@ -571,31 +560,14 @@
                   {% else %}
                       .
                   {% endif %}
-
-                  <!-- Add the Send Email Button -->
-                  {% comment %} <button  class="btn btn-sm btn-primary sendEmailButton" data-patient-id="{{ pdf.patient_id }}"
-                    data-email="{{ pdf.email }}" data-name="{{ pdf.name }}"
+                  <button 
+                    class="btn btn-sm btn-primary sendEmailButton" 
+                    data-patient-id="{{ pdf.patient_id }}"
+                    data-email="{{ pdf.email }}" 
+                    data-name="{{ pdf.name }}" 
                     data-pdf-url="{{ pdf.signed_url }}">
                     Send Email
-                  </button> 
-
-                  {% endcomment %}
-{% comment %} 
-<button>
-  class="btn btn-sm btn-primary emailWithLogoButton"
-  data-id="{{ pdf.id }}">
-  Send Email
-</button> {% endcomment %}
-  <button 
-    class="btn btn-sm btn-primary sendEmailButton" 
-    data-patient-id="{{ pdf.patient_id }}"
-    data-email="{{ pdf.email }}" 
-    data-name="{{ pdf.name }}" 
-    data-pdf-url="{{ pdf.signed_url }}">
-    Send Email
-  </button>
-
-
+                  </button>
                   <!-- Add the Send WhatsApp Button -->
                   <button class="btn btn-sm btn-success sendWhatsAppButton" data-patient-id="{{ pdf.patient_id }}"
                     data-whatsapp="{{ pdf.whatsapp_number }}" data-name="{{ pdf.name }}"
@@ -623,6 +595,92 @@
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-core@latest/dist/cornerstone.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-wado-image-loader@latest/dist/cornerstoneWADOImageLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cornerstone-tools@latest/dist/cornerstoneTools.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+       function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+
+        document.querySelectorAll('.sendEmailButton').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const patientId = this.dataset.patientId;
+                const email = this.dataset.email;
+                const name = this.dataset.name;
+                const pdfUrl = this.dataset.pdfUrl;
+                console.log("Email button clicked:", {patientId, email, name, pdfUrl});
+    
+    
+                if (!email || !pdfUrl || !name) {
+                    alert("Missing data.");
+                    return;
+
+                }
+                if (email === "None" || email.trim() === "") {
+                    alert("Enter a valid email address.");
+                    return;
+                }
+
+                if (!isValidEmail(email)) {
+                    alert("Invalid email format.");
+                    return;
+                }
+                 
+              
+
+                
+    
+                // fetch(`/email-pdf-with-logo/${patientID}/`, {
+                //     method: 'POST',
+                //     headers: {
+                //         'X-CSRFToken': '{{ csrf_token }}',
+                //         'Content-Type': 'application/json'
+                //     },
+                //     body: JSON.stringify({
+                //         patient_id: patientId,
+                //         email: email,
+                //         name: name,
+                //         pdf_url: pdfUrl
+                //     })
+                // })
+                // .then(res => res.json())
+                // .then(data => {
+                //     alert(data.message || 'Email sent!');
+                // })
+                // .catch(error => {
+                //     console.error('Error sending email:', error);
+                //     alert('Email sending failed.');
+                // });
+                fetch(`/email-pdf-raw/${patientId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        patient_id: patientId,
+                        email: email,
+                        name: name,
+                        pdf_url: pdfUrl
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message || 'Email sent!');
+                })
+                .catch(error => {
+                    console.error('Error sending email:', error);
+                    alert('Email sending failed.');
+                });
+            });
+        });
+    });
+    
+    
+  </script>
 
   <script>
     // Function to update the counts of rows with 'Report' and 'Reported' button states
@@ -866,8 +924,43 @@
     });
   </script>
 
-{% comment %} 
-  <script>
+
+<script>
+  $(document).on("click", ".sendWhatsAppButton", function () {
+    var whatsappNumber = $(this).data("whatsapp");
+    var patientName = $(this).data("name");
+    var pdfUrl = $(this).data("pdf-url");
+    var patientId = $(this).data("patient-id");
+
+    var data = {
+      whatsapp_number: whatsappNumber,
+      patient_name: patientName,
+      pdf_url: pdfUrl,
+      patient_id: patientId,
+    };
+
+    $.ajax({
+      url: "/send_whatsapp/", 
+      type: "POST",
+      data: JSON.stringify(data),
+      contentType: "application/json",
+      success: function (response) {
+        if (response.success) {
+          alert("✅ WhatsApp message sent successfully!");
+        } else {
+          alert("❌ Error sending WhatsApp message.");
+        }
+      },
+      error: function () {
+        alert("Error sending WhatsApp message.");
+      },
+    });
+  });
+</script>
+
+
+
+  <!-- <script>
     // Event listener for the Send WhatsApp button
     $(document).on("click", ".sendWhatsAppButton", function () {
       var whatsappNumber = $(this).data("whatsapp");
@@ -901,115 +994,7 @@
         },
       });
     });
-  </script> {% endcomment %}
-
-<script>
-  // Event listener for the Send WhatsApp button
-  $(document).on("click", ".sendWhatsAppButton", function () {
-    var whatsappNumber = $(this).data("whatsapp");
-    var patientName = $(this).data("name");
-    var pdfUrl = $(this).data("pdf-url");
-    var patientId = $(this).data("patient-id");
-
-    // ✅ Validate the WhatsApp number before sending
-    if (
-      !whatsappNumber ||                            // not null/undefined
-      typeof whatsappNumber !== "string" || 
-      !/^\d{10,15}$/.test(whatsappNumber)           // 10 to 15 digits only
-    ) {
-      alert("Invalid WhatsApp number. Please check the number.");
-      return;
-    }
-
-    // Prepare the data to send to the backend
-    var data = {
-      whatsapp_number: whatsappNumber,
-      patient_name: patientName,
-      pdf_url: pdfUrl,
-      patient_id: patientId,
-    };
-
-    // Send the data to the backend using AJAX
-    $.ajax({
-      url: "/send_whatsapp/", // Update this with the correct backend URL
-      type: "POST",
-      data: JSON.stringify(data),
-      contentType: "application/json",
-      success: function (response) {
-        if (response.success) {
-          alert("✅ WhatsApp message sent successfully!");
-        } else {
-          alert("❌ Error sending WhatsApp message.");
-        }
-      },
-      error: function () {
-        alert("❌ Error sending WhatsApp message.");
-      },
-    });
-  });
-</script>
-
-
-
-
-  <script>
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.sendEmailButton').forEach(function (button) {
-        button.addEventListener('click', function () {
-            const patientId = this.dataset.patientId;
-            const email = this.dataset.email;
-            const name = this.dataset.name;
-            const pdfUrl = this.dataset.pdfUrl;
-            console.log("Email button clicked:", {patientId, email, name, pdfUrl});
-
-
-            if (!email || !pdfUrl || !name) {
-                alert("Missing data.");
-                return;
-            }
-
-            fetch('/send-report-email/', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    patient_id: patientId,
-                    email: email,
-                    name: name,
-                    pdf_url: pdfUrl
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                alert(data.message || 'Email sent!');
-            })
-            .catch(error => {
-                console.error('Error sending email:', error);
-                alert('Email sending failed.');
-            });
-        });
-    });
-});
-</script> 
-
-{% comment %} <script>
-  document.querySelectorAll('.emailWithLogoButton').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.getAttribute('data-id');
-      fetch(`/email-pdf-with-logo/${id}/`, {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-        }
-      })
-      .then(res => res.json())
-      .then(data => alert(data.message || data.error));
-    });
-  });
-</script> {% endcomment %}
-
+  </script> -->
 </body>
 
 </html>

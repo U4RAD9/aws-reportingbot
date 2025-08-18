@@ -571,10 +571,11 @@
           <br />
           <img
             id="findingImage"
-            src="static/image/audio.png"
+            src="static/image/audio.jpeg"
             alt="Description of image"
             style="width: 250px; height: 100px"
           />
+          
         </div>
       </div>
     </div>
@@ -937,10 +938,13 @@
     const filename = createFilename();
     const a4Width = 210; // A4 width in mm
     const a4Height = 297; // A4 height in mm
+    const headerMargin = 33; // Top margin (header)
+    const footerMargin = 33; // Bottom margin (footer)
+    const usableHeight = a4Height - headerMargin - footerMargin;
+
     const graphWidth = 80; // Adjusted width
     const graphHeight = 100; // Adjusted height
-    const tableTopMargin = 10; // Space above the table
-    const tableHeight = 25; // Height of patient details table
+    const tableHeight = 25;
 
     // Adjust graph sizes for side-by-side display
     document.getElementById("myPlot").style.width = graphWidth + "mm";
@@ -960,49 +964,51 @@
         // Capture Patient Table
         html2canvas(document.getElementById("patientTable"), { scale: 10 }).then((tableCanvas) => {
             const tableImgData = tableCanvas.toDataURL("image/png", 1.0);
-            pdf.addImage(tableImgData, "PNG", 10, tableTopMargin, a4Width - 20, tableHeight);
+            const tableTop = headerMargin;
+
+            pdf.addImage(tableImgData, "PNG", 10, tableTop, a4Width - 20, tableHeight);
 
             // Add Graphs
-            const graphYOffset = tableHeight + tableTopMargin;
+            const graphYOffset = tableTop + tableHeight + 5;
             pdf.addImage(url1, "PNG", 0, graphYOffset, graphWidth * 1.6, graphHeight);
             pdf.addImage(url2, "PNG", 100, graphYOffset, graphWidth * 1.6, graphHeight);
 
-            // Capture Averages Table
+            // Averages Table
             html2canvas(document.getElementById("averagesTable")).then((averagesCanvas) => {
                 const averagesImgData = averagesCanvas.toDataURL("image/png");
-                const averagesYOffset = graphYOffset + graphHeight + 10; // Adjusted spacing
+                const averagesYOffset = graphYOffset + graphHeight + 10;
                 pdf.addImage(averagesImgData, "PNG", 10, averagesYOffset, a4Width - 20, 25);
 
-                // Capture Audiometry Table
+                // Audiometry Table
                 html2canvas(document.getElementById("audiometryTable")).then((audiometryCanvas) => {
                     const audiometryImgData = audiometryCanvas.toDataURL("image/png");
-                    const audiometryYOffset = averagesYOffset + 30; // Adjusted spacing
+                    const audiometryYOffset = averagesYOffset + 30;
                     pdf.addImage(audiometryImgData, "PNG", 10, audiometryYOffset, a4Width - 20, 30);
 
-                    // Capture Findings Text
+                    // Findings Text
                     pdf.setFontSize(12);
                     const findingText = "Finding:";
                     const hearingLossRText = document.getElementById("hearingLossRText").innerText;
                     const hearingLossLText = document.getElementById("hearingLossLText").innerText;
-                    const findingsYOffset = audiometryYOffset + 40; // Adjusted spacing
+                    const findingsYOffset = audiometryYOffset + 40;
 
                     pdf.text(20, findingsYOffset, findingText);
                     pdf.text(20, findingsYOffset + 10, hearingLossRText);
                     pdf.text(20, findingsYOffset + 20, hearingLossLText);
 
-                    // Capture and Add Finding Image
+                    // Finding Image
                     html2canvas(document.getElementById("findingImage")).then((imageCanvas) => {
                         const imgData = imageCanvas.toDataURL("image/png");
                         const imageX = 20;
-                        const imageY = findingsYOffset + 30; // Adjusted spacing
+                        const imageY = findingsYOffset + 30;
                         const imageWidth = 80;
                         const imageHeight = 40;
 
-                        // Ensure image fits within the remaining space
-                        if (imageY + imageHeight < a4Height) {
+                        // Ensure it fits within the usable space (before footer)
+                        if (imageY + imageHeight < a4Height - footerMargin) {
                             pdf.addImage(imgData, "PNG", imageX, imageY, imageWidth, imageHeight);
                         } else {
-                            console.warn("Image exceeds page height and will not be added.");
+                            console.warn("Image exceeds usable page height and will not be added.");
                         }
 
                         // Save PDF
@@ -1017,7 +1023,7 @@
             });
         });
     });
-  }
+}
 
   ////////////////////////////////////////////////////////////////// Upload Audiometry As PDF //////////////////////////////////////////////////////////////////////////
 

@@ -1,6 +1,7 @@
 from collections import defaultdict
 import math
 import base64
+import subprocess
 # Corrected imports
 from django.db.models import Q, F, Value, CharField  # Core model fields/functions
 from django.db.models.functions import Substr, Concat, Cast  # Database functions
@@ -11,6 +12,7 @@ from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from venv import logger
+from docx import Document  # <-- ADD THIS
 from datetime import  time as dt_time  # Rename to dt_time
 from django.forms import CharField, DateField
 from django.shortcuts import get_object_or_404, render, redirect
@@ -135,7 +137,11 @@ from django.views.decorators.http import require_http_methods #by Rohan Jangid 2
 from pdf2docx import Converter
 import tempfile
 from django.http import FileResponse, Http404
+import pypandoc  # pip install pypandoc
 
+from django.http import HttpResponseBadRequest
+
+from django.core.mail import EmailMessage
 from django.http import HttpResponseBadRequest
 
 
@@ -185,39 +191,68 @@ def login(request):
     return render(request, 'users/login.html')
 
 
+# def extract_patient_id(text):
+#     try:
+#         if "Id :" in str(text):
+#             id = str(text).split("Id :")[1].split(" ")[1].split("\n")[0].strip().lower()
+#             # print("This is the first fetched id :", id)
+#             if id == '':
+#                 fetched_id = str(text).split("Id :")[1].split("Name :")[0].strip().lower()
+#                 id = fetched_id.replace(" ", "")
+#                 if id == '':
+#                     id = str(text).split("Comments")[1].split("HR")[0].strip()
+#                     # print("comments", id)
+#                     if id == '':
+#                         print("Id is not mentioned in the file. ")
+#                         print("Id :" , id)
+#         if "Id:" in str(text):
+#             id = str(text).split("Id:")[1].split(" ")[1].split("\n")[0].strip().lower()
+#             # print("This is the first fetched id :", id)
+#             if id == '':
+#                 fetched_id = str(text).split("Id:")[1].split("Name :")[0].strip().lower()
+#                 id = fetched_id.replace(" ", "")
+#                 if id == '':
+#                     id = str(text).split("Comments")[1].split("HR")[0].strip()
+#                     # print("comments", id)
+#                     # Adding the case to remove the extra space issue.
+#                     if id == '':
+#                         id = str(text).split("Id:")[1].split("Name:")[0].strip()
+#                         if id == '':
+#                             print("Id is not mentioned in the file. ")
+#                             print("Id :" , id)
+            
+#         return id
+#     except IndexError:
+#         return 'Missing'
+
+
+
 def extract_patient_id(text):
     try:
-        if "Id :" in str(text):
-            id = str(text).split("Id :")[1].split(" ")[1].split("\n")[0].strip().lower()
-            # print("This is the first fetched id :", id)
+        id = ''
+        if "Id :" in text:
+            id = text.split("Id :")[1].split(" ")[1].split("\n")[0].strip().lower()
             if id == '':
-                fetched_id = str(text).split("Id :")[1].split("Name :")[0].strip().lower()
-                id = fetched_id.replace(" ", "")
+                fetched_id = text.split("Id :")[1].split("Name :")[0].strip().lower()
+                id = fetched_id
                 if id == '':
-                    id = str(text).split("Comments")[1].split("HR")[0].strip()
-                    # print("comments", id)
-                    if id == '':
-                        print("Id is not mentioned in the file. ")
-                        print("Id :" , id)
-        if "Id:" in str(text):
-            id = str(text).split("Id:")[1].split(" ")[1].split("\n")[0].strip().lower()
-            # print("This is the first fetched id :", id)
+                    id = text.split("Comments")[1].split("HR")[0].strip()
+        elif "Id:" in text:
+            id = text.split("Id:")[1].split(" ")[1].split("\n")[0].strip().lower()
             if id == '':
-                fetched_id = str(text).split("Id:")[1].split("Name :")[0].strip().lower()
-                id = fetched_id.replace(" ", "")
+                fetched_id = text.split("Id:")[1].split("Name :")[0].strip().lower()
+                id = fetched_id
                 if id == '':
-                    id = str(text).split("Comments")[1].split("HR")[0].strip()
-                    # print("comments", id)
-                    # Adding the case to remove the extra space issue.
+                    id = text.split("Comments")[1].split("HR")[0].strip()
                     if id == '':
-                        id = str(text).split("Id:")[1].split("Name:")[0].strip()
-                        if id == '':
-                            print("Id is not mentioned in the file. ")
-                            print("Id :" , id)
-            
-        return id
+                        id = text.split("Id:")[1].split("Name:")[0].strip()
+        return id.replace(" ", "")
     except IndexError:
         return 'Missing'
+
+
+
+
     # try:
         # id = str(text).split("Id")[1].split("\n")[0]
         # print(id)
@@ -1106,6 +1141,12 @@ def client_dashboard(request):
                 pdf.whatsapp_number = dicom_data.whatsapp_number
             else:
                 pdf.whatsapp_number = None
+
+        
+            if dicom_data:
+                pdf.email = dicom_data.email
+            else:
+                pdf.email = None    
         
             filtered_pdfs.append(pdf)
             test_dates_set.add(pdf.test_date)
@@ -1688,8 +1729,33 @@ def allocation1(request):
 
         # Get history files
         history_files = patient.history_files.all()
-        patient.history_file_urls = [
-            presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+        # patient.history_file_urls = [
+        #     presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+        # ]
+        patient.history_file_infos = [
+            {
+                'url': presigned_url(bucket_name, history_file.history_file.name, inline=True),
+                'uploaded_at': history_file.uploaded_at
+            }
+            for history_file in history_files
+        ]
+
+        # # ADD THIS SECTION: Get PDF reports for the patient
+        # patient_name_underscore = patient.patient_name.replace(" ", "_")
+        # pdf_reports = XrayReport.objects.filter(
+        #     patient_id=patient.patient_id,
+        #     name=patient_name_underscore
+        # )
+        # PDF fetching with normalization
+        patient_id_normalized = patient.patient_id.replace(" ", "_")
+        patient_name_normalized = patient.patient_name.replace(" ", "_")
+        
+        pdf_reports = XrayReport.objects.filter(
+            patient_id__in=[patient.patient_id, patient_id_normalized],
+            name=patient_name_normalized
+        )
+        patient.presigned_pdf_urls = [
+            presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports
         ]
 
     # Get unique dates from the patients on the current page
@@ -1710,10 +1776,10 @@ def allocation1(request):
     #             patient.recived_on_db = time('UTC').localize(patient.recived_on_db)
     #         patient.recived_on_db = patient.recived_on_db.astimezone(india_tz)
     # Extract only the date from recived_on_db
-    patients = patients.annotate(received_date=TruncDate('recived_on_db')) #28-05-2025 by Rohan jangid
+    patients = patients.annotate(received_date=TruncDate('recived_on_db')) 
 
     # unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None}
-    unique_recived_on_db = {patient.received_date for patient in patients if patient.received_date is not None} #28-05-2025 by Rohan jangid
+    unique_recived_on_db = {patient.received_date for patient in patients if patient.received_date is not None}
     sorted_unique_recived_on_db = sorted(unique_recived_on_db, reverse=False)
 
     # Study Description of patients
@@ -1739,7 +1805,7 @@ def allocation1(request):
         'page_obj': page_obj,
         'status_filter': status_filter,
         'search_query': search_query
-    })#by rohan 28-03-2025
+    })
 
 def assign_radiologist(request):
     print("I'm in assign radiologist")
@@ -2343,7 +2409,7 @@ def presigned_url(bucket_name, object_name, operation='get_object', inline=False
 #     return url
 
 
-# by rohan 28-03-2025
+
 @user_type_required('radiologist')
 def xrayallocation(request):
     radiologist_group = Group.objects.get(name='radiologist')
@@ -2413,7 +2479,8 @@ def xrayallocation(request):
         
         # Fetch PDFs for the patient
         patient_name_with_underscores = patient.patient_name.replace(" ", "_")
-        pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient.patient_id)
+        patient_id_with_underscores = patient.patient_id.replace(" ", "_")
+        pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient_id_with_underscores)
         
         pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
         # Get history files
@@ -2534,7 +2601,8 @@ def xrayallocationreverse(request):
 
         # Fetch PDFs for the patient
         patient_name_with_underscores = patient.patient_name.replace(" ", "_")
-        pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient.patient_id)
+        patient_id_with_underscores = patient.patient_id.replace(" ", "_")
+        pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient_id_with_underscores)
         
         pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
 
@@ -4622,28 +4690,50 @@ def download_pdf_with_logo(request, pdf_id):
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
                 c = canvas.Canvas(overlay_temp.name, pagesize=letter)
                 
-                # Add client's custom logo
+                # # Add client's custom logo
+                # c.drawImage(
+                #     logo_path,
+                #     x=0,
+                #     y=page_height - logo_display_height + 5,
+                #     width=content_width,
+                #     height=logo_display_height,
+                #     preserveAspectRatio=True,
+                #     mask='auto',
+                #     anchor='n'
+                # )
+                
+                # # Add client's custom footer
+                # c.drawImage(
+                #     footer_path,
+                #     x=0,
+                #     y=5,
+                #     width=content_width,
+                #     height=footer_display_height,
+                #     preserveAspectRatio=True,
+                #     mask='auto',
+                #     anchor='s'
+                # )
+
+                # Add client's custom logo - full width, no margin
                 c.drawImage(
                     logo_path,
                     x=0,
-                    y=page_height - logo_display_height + 5,
-                    width=content_width,
+                    y=page_height - logo_display_height,
+                    width=page_width,  # full width
                     height=logo_display_height,
-                    preserveAspectRatio=True,
-                    mask='auto',
-                    anchor='n'
+                    preserveAspectRatio=False,  # fill entire width
+                    mask='auto'
                 )
                 
-                # Add client's custom footer
+                # Add client's custom footer - full width, no margin
                 c.drawImage(
                     footer_path,
                     x=0,
-                    y=5,
-                    width=content_width,
+                    y=0,
+                    width=page_width,  # full width
                     height=footer_display_height,
-                    preserveAspectRatio=True,
-                    mask='auto',
-                    anchor='s'
+                    preserveAspectRatio=False,  # fill entire width
+                    mask='auto'
                 )
                 
                 c.save()
@@ -6383,15 +6473,29 @@ def clientdata(request):
         ]
 
         # ✅ Add PDF file URLs (just like xrayallocation)
-        patient_id_with_underscores = dicom_data.patient_id.replace(" ", "_").replace("NBSP", "").replace("_NBSP", "").rstrip("_").strip()
-        patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_").replace("NBSP", "").replace("_NBSP", "").rstrip("_").strip()
-        pdf_reports = XrayReport.objects.filter(
-            name=patient_name_with_underscores,
-            patient_id=patient_id_with_underscores
-        )
-        dicom_data.pdf_file_urls = [
-            presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports
-        ]
+        # patient_id_with_underscores = dicom_data.patient_id.replace(" ", "_").replace("NBSP", "").replace("_NBSP", "").rstrip("_").strip()
+        # patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_").replace("NBSP", "").replace("_NBSP", "").rstrip("_").strip()
+        # pdf_reports = XrayReport.objects.filter(
+        #     name=patient_name_with_underscores,
+        #     patient_id=patient_id_with_underscores
+        # )
+        # dicom_data.pdf_file_urls = [
+        #     presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports
+        # ]
+
+        # Only show PDF URLs if twostepcheck is False
+        if dicom_data.twostepcheck == False:
+            patient_id_with_underscores = dicom_data.patient_id.replace(" ", "_").replace("NBSP", "").replace("_NBSP", "").rstrip("_").strip()
+            patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_").replace("NBSP", "").replace("_NBSP", "").rstrip("_").strip()
+            pdf_reports = XrayReport.objects.filter(
+                name=patient_name_with_underscores,
+                patient_id=patient_id_with_underscores
+            )
+            dicom_data.pdf_file_urls = [
+                presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports
+            ]
+        else:
+            dicom_data.pdf_file_urls = []  # Or don't add this attribute at all
 
     # Get unique sorted dates from the filtered DICOM data
     unique_dates = set(dicom.study_date for dicom in page_obj.object_list)
@@ -6415,6 +6519,7 @@ def clientdata(request):
         'email': client.can_edit_email,
 
         'whatsapp_number': client.can_edit_whatsapp_number,
+        'email': client.can_edit_email,
         'upload_history': True,  # Assuming all clients can upload history files
         'search_query': search_query,
     }
@@ -6431,41 +6536,90 @@ def clientdata(request):
     })
 
 
+# def convert_pdf_to_word(request, report_id):
+#     try:
+#         # Get report
+#         report = XrayReport.objects.get(id=report_id)
+
+#         # Get presigned URL (your existing logic might already generate this)
+#         presigned_pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
+
+#         # Download PDF from S3 to a temporary file
+#         response = requests.get(presigned_pdf_url)
+#         if response.status_code != 200:
+#             return HttpResponse("Failed to download PDF from S3.", status=404)
+
+#         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
+#             temp_pdf.write(response.content)
+#             temp_pdf_path = temp_pdf.name
+
+#         # Create temp Word output path
+#         temp_docx = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
+#         temp_docx_path = temp_docx.name
+
+#         # Convert PDF to Word
+#         cv = Converter(temp_pdf_path)
+#         cv.convert(temp_docx_path, start=0, end=None)
+#         cv.close()
+
+#         # Return .docx file
+#         word_filename = report.pdf_file.name.replace(".pdf", ".docx").split('/')[-1]
+#         return FileResponse(open(temp_docx_path, 'rb'), as_attachment=True, filename=word_filename)
+
+#     except XrayReport.DoesNotExist:
+#         return HttpResponse("Report not found.", status=404)
+#     except Exception as e:
+#         return HttpResponse(f"Error: {str(e)}", status=500)
+
+
 def convert_pdf_to_word(request, report_id):
     try:
         # Get report
         report = XrayReport.objects.get(id=report_id)
 
-        # Get presigned URL (your existing logic might already generate this)
+        # Get presigned URL
         presigned_pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
-
-        # Download PDF from S3 to a temporary file
         response = requests.get(presigned_pdf_url)
         if response.status_code != 200:
             return HttpResponse("Failed to download PDF from S3.", status=404)
 
+        # Save PDF
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
             temp_pdf.write(response.content)
             temp_pdf_path = temp_pdf.name
 
-        # Create temp Word output path
-        temp_docx = tempfile.NamedTemporaryFile(suffix=".docx", delete=False)
-        temp_docx_path = temp_docx.name
-
-        # Convert PDF to Word
+        # Convert PDF → DOCX
+        temp_docx_path = os.path.join(tempfile.gettempdir(), "temp_file.docx")
         cv = Converter(temp_pdf_path)
         cv.convert(temp_docx_path, start=0, end=None)
         cv.close()
 
-        # Return .docx file
-        word_filename = report.pdf_file.name.replace(".pdf", ".docx").split('/')[-1]
-        return FileResponse(open(temp_docx_path, 'rb'), as_attachment=True, filename=word_filename)
+        if not os.path.exists(temp_docx_path) or os.path.getsize(temp_docx_path) == 0:
+            return HttpResponse("DOCX generation failed.", status=500)
+
+        # Convert DOCX → DOC
+        output_dir = tempfile.gettempdir()
+        result = subprocess.run(
+            ["soffice", "--headless", "--convert-to", "doc", "--outdir", output_dir, temp_docx_path],
+            capture_output=True,
+            text=True
+        )
+
+        if result.returncode != 0:
+            return HttpResponse(f"LibreOffice conversion failed: {result.stderr}", status=500)
+
+        converted_doc_path = os.path.join(output_dir, "temp_file.doc")
+        if not os.path.exists(converted_doc_path) or os.path.getsize(converted_doc_path) == 0:
+            return HttpResponse("DOC conversion failed: empty file.", status=500)
+
+        # Serve the DOC
+        word_filename = os.path.basename(report.pdf_file.name).replace(".pdf", ".doc")
+        return FileResponse(open(converted_doc_path, 'rb'), as_attachment=True, filename=word_filename)
 
     except XrayReport.DoesNotExist:
         return HttpResponse("Report not found.", status=404)
     except Exception as e:
         return HttpResponse(f"Error: {str(e)}", status=500)
-
     
 
 
@@ -6488,6 +6642,7 @@ def edit_dicom_data(request, pk):
             dicom_entry.email = request.POST.get('email', dicom_entry.email)
 
             dicom_entry.whatsapp_number = request.POST.get('whatsapp_number', dicom_entry.whatsapp_number)
+            dicom_entry.email = request.POST.get('email', dicom_entry.email)
             dicom_entry.save()
 
             # Handle history file uploads
@@ -6744,6 +6899,83 @@ def supercoordinator_view(request, client_id=None):
 
 
 
+@csrf_exempt
+def send_whatsapp(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid request method."}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        whatsapp_number = data.get('whatsapp_number')
+        patient_name = data.get('patient_name')
+        pdf_url = data.get('pdf_url')
+        patient_id = data.get('patient_id')
+
+        whatsapp_number = str(whatsapp_number)
+        if not whatsapp_number.startswith("91"):
+            whatsapp_number = "91" + whatsapp_number
+
+        
+        if not (whatsapp_number and patient_name and pdf_url):
+            return JsonResponse({"success": False, "message": "Missing required fields."}, status=400)
+
+        API_URL = "https://app2.cunnekt.com/v1/sendnotification"
+        API_KEY = "33c0c252d80b77bce62342b08a6902d7774e9a8f"
+        TEMPLATE_ID = "730036499641018"  
+
+        headers = {
+            "Content-Type": "application/json",
+            "API-KEY": API_KEY
+        }
+
+        payload = {
+            "templateid": TEMPLATE_ID,
+            "mobile": whatsapp_number,
+            "overridebot": "yes",
+            "template": {
+                "components": [
+                    {
+                        "type": "header",
+                        "parameters": [
+                            {
+                                "type": "document",
+                                "document": {
+                                    "link": pdf_url,
+                                    "filename": f"{patient_name}_Report.pdf"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "type": "body",
+                        "parameters": [
+                            {
+                                "type": "text",
+                                "text": patient_name
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+
+        print(f"Sending WhatsApp to {whatsapp_number} for patient {patient_name}")
+
+        response = requests.post(API_URL, headers=headers, json=payload)
+        print("Raw response:", response.text)
+
+        try:
+            res_json = response.json()
+        except Exception:
+            return JsonResponse({"success": False, "message": "Invalid response from Cunnekt"}, status=500)
+
+        if res_json.get("status") is True:
+            return JsonResponse({"success": True, "message": "WhatsApp message sent successfully."})
+        else:
+            return JsonResponse({"success": False, "message": res_json.get("message", "Failed to send message.")})
+
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
 
 @csrf_exempt
 def send_whatsapp(request):
@@ -7489,7 +7721,10 @@ def review_page(request):
         pdf_reports = XrayReport.objects.none()
         if all(query_params.values()):
             try:
-                pdf_reports = XrayReport.objects.filter(**query_params)
+                pdf_reports = XrayReport.objects.filter(
+                    name__iexact=storage_patient_name,
+                    patient_id__iexact=storage_patient_id,
+                    test_date=test_date_obj)
                 
                 # Cross-verify first match
                 if pdf_reports.exists():
@@ -8556,3 +8791,160 @@ def get_dicom_notes(request):
             return JsonResponse({'error': str(e)}, status=500)
     return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+
+
+@csrf_exempt
+def email_pdf_with_logo(request, patient_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        name = data.get('name')
+
+        if not email or not name:
+            return JsonResponse({'error': 'Name and email are required'}, status=400)
+
+        print(f"📩 Starting email process for patient_id={patient_id}, name={name}, email={email}")
+
+        try:
+            report = XrayReport.objects.get(patient_id=patient_id)
+            print(f"✅ Report found: {report.pdf_file.name}")
+        except XrayReport.DoesNotExist:
+            print(f"⚠️ Report not found for patient_id {patient_id}")
+            report = None
+
+        client = Client.objects.first()
+        # client = Client.objects.get(user=request.user)
+        if not client or not client.upload_header or not client.upload_footer:
+            print("⚠️ Client or header/footer missing")
+            client = None
+
+        final_output_path = None
+        should_attach = False
+
+        if report:
+            try:
+                pdf_url = presigned_url('u4rad-s3-reporting-bot', report.pdf_file.name)
+
+                response = requests.get(pdf_url)
+                if response.status_code != 200:
+                    raise ValueError("PDF download failed")
+
+                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
+                    temp_pdf.write(response.content)
+                    original_pdf_path = temp_pdf.name
+
+                def get_image_path(image_field):
+                    if hasattr(image_field, 'path') and os.path.exists(image_field.path):
+                        return image_field.path
+                    elif default_storage.exists(image_field.name):
+                        with default_storage.open(image_field.name, 'rb') as f:
+                            content = f.read()
+                            with tempfile.NamedTemporaryFile(suffix=os.path.splitext(image_field.name)[1], delete=False) as temp_img:
+                                temp_img.write(content)
+                                return temp_img.name
+                    return None
+
+                logo_path = get_image_path(client.upload_header)
+                footer_path = get_image_path(client.upload_footer)
+
+                if not logo_path or not footer_path:
+                    raise FileNotFoundError("Logo/footer file not found")
+
+                reader = PdfReader(original_pdf_path)
+                writer = PdfWriter()
+
+                for page in reader.pages:
+                    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
+                        c = canvas.Canvas(overlay_temp.name, pagesize=letter)
+                        page_width, page_height = letter
+                        c.drawImage(logo_path, x=0, y=page_height - 50, width=page_width, height=50)
+                        c.drawImage(footer_path, x=0, y=5, width=page_width, height=40)
+                        c.save()
+                        overlay_pdf_path = overlay_temp.name
+
+                    overlay = PdfReader(overlay_pdf_path)
+                    page.merge_page(overlay.pages[0])
+                    writer.add_page(page)
+                    os.unlink(overlay_pdf_path)
+
+                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as final_output:
+                    writer.write(final_output)
+                    final_output_path = final_output.name
+                    should_attach = True
+                print(f"✅ Modified PDF ready at {final_output_path}")
+
+            except Exception as e:
+                print(f"⚠️ Failed to process PDF: {e}")
+                should_attach = False
+
+        subject = f"Your Medical Report - {name}"
+        if should_attach:
+            body = f"Dear {name},\n\nPlease find your medical report attached.\n\nRegards,\nYour Clinic"
+        else:
+            body = f"Dear {name},\n\nWe could not attach your report, but it is being worked on. We'll send it shortly or contact your provider if needed.\n\nRegards,\nYour Clinic"
+
+        email_message = EmailMessage(subject, body, to=[email])
+        if should_attach:
+            print("📎 Attaching PDF to email")
+            email_message.attach_file(final_output_path)
+
+        email_message.send()
+        print(f"✅ Email sent to {email} (with{'out' if not should_attach else ''} attachment)")
+
+        if should_attach and final_output_path and os.path.exists(final_output_path):
+            os.unlink(final_output_path)
+
+        return JsonResponse({'message': f'Email sent to {email} ({"with" if should_attach else "without"} PDF)'})
+
+    except Exception as e:
+        print(f"❌ Fatal error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+
+
+def email_pdf_raw(request, patient_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        name = data.get('name')
+        pdf_url = data.get('pdf_url')
+
+        if not email or not name or not pdf_url:
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+        
+        if email is None:
+            return JsonResponse({'error': 'Email is required'}, status=400)
+
+        print(f"📩 Emailing raw PDF for patient_id={patient_id}, name={name}, email={email}")
+
+        # Download the PDF from the presigned URL
+        response = requests.get(pdf_url)
+        if response.status_code != 200:
+            raise ValueError("Failed to download PDF")
+
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
+            temp_pdf.write(response.content)
+            temp_pdf_path = temp_pdf.name
+
+        # Compose the email
+        subject = f"Your Medical Report - {name}"
+        body = f"Dear {name},\n\nPlease find your medical report attached.\n\nRegards,\nYour Clinic"
+        email_message = EmailMessage(subject, body, to=[email])
+        email_message.attach_file(temp_pdf_path)
+        email_message.send()
+        print(f"✅ Raw PDF emailed to {email}")
+
+        # Remove the temp file
+        os.unlink(temp_pdf_path)
+        return JsonResponse({'message': f'Raw PDF emailed to {email}'})
+    
+    except Exception as e:
+        print(f"❌ Fatal error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)

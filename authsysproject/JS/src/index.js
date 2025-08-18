@@ -1746,7 +1746,20 @@ slab(val, id) {
     );
     const patientName = patientNameElement?.innerHTML.trim(); // Trim extra spaces
     const PatientId = PatientIdElement?.innerHTML.trim(); // Trim extra spaces
-    const location = urlSearchParams.get("data-institution_name");
+    // const location = urlSearchParams.get("data-institution_name");
+    const rawLocation = urlSearchParams.get("data-institution_name");
+
+    // Sanitize institution name only
+    const sanitizeInstitution = (text) => {
+      if (!text) return "";
+      return text
+        .replace(/[:.,]/g, '')       // remove colons, commas, periods
+        .replace(/\s+/g, '_')        // replace spaces with underscores
+        .replace(/_+/g, '_')         // collapse multiple underscores
+        .trim();
+    };
+    
+    const location = sanitizeInstitution(rawLocation);
 
     let filename;
     if (!patientName || !PatientId) {
@@ -2090,125 +2103,417 @@ async getHeaderFooterImages(institutionName) {
       throw error;
   }
 }
+// extractContent(editor) {
+//   if (!editor) {
+//     return null;
+//   }
+
+//   try {
+//     const tempDiv = document.createElement('div');
+//     tempDiv.innerHTML = editor.innerHTML;
+
+//     const processNode = (node) => {
+//       // Handle text nodes
+//       if (node.nodeType === Node.TEXT_NODE) {
+//         return node.textContent;
+//       }
+
+//       // Handle element nodes 
+//       if (node.nodeType === Node.ELEMENT_NODE) {
+//         let text = '';
+//         const tag = node.tagName.toLowerCase();
+        
+//         switch (tag) {
+//           case 'p':
+//             // Skip the first table that contains patient info
+//             const firstTable = node.closest('figure.table');
+//             if (firstTable && firstTable === tempDiv.querySelector('figure.table')) {
+//               return '';
+//             }
+
+//             // Check if paragraph contains a list
+//             if (node.querySelector('ul, ol')) {
+//               return Array.from(node.childNodes)
+//                 .map(child => processNode(child))
+//                 .join('');
+//             }
+//             text = Array.from(node.childNodes)
+//               .map(child => processNode(child))
+//               .join('');
+//             return text + '\n';
+          
+//           case 'strong':
+//           case 'b':
+//             // Mark bold text with [BOLD] tags
+//             return `[BOLD]${node.textContent}[/BOLD]`;
+          
+//           case 'ul':
+//           case 'ol':
+//             // Process lists
+//             return Array.from(node.children)
+//               .map(li => `• ${processNode(li)}`)
+//               .join('\n') + '\n';
+          
+//           case 'li':
+//             return Array.from(node.childNodes)
+//               .map(child => processNode(child))
+//               .join('');
+          
+//           case 'table':
+//             // Skip the first table that contains patient info
+//             if (node === tempDiv.querySelector('table')) {
+//               return '';
+//             }
+//             return processTable(node);
+          
+//           case 'br':
+//             return '\n';
+          
+//           default:
+//             return Array.from(node.childNodes)
+//               .map(child => processNode(child))
+//               .join('');
+//         }
+//       }
+//       return '';
+//     };
+
+//     const processTable = (table) => {
+//       // Skip the first table that contains patient info
+//       if (table === tempDiv.querySelector('table')) {
+//         return '';
+//       }
+
+//       let tableContent = '';
+//       const rows = table.rows;
+      
+//       for (let i = 0; i < rows.length; i++) {
+//         const cells = rows[i].cells;
+//         let rowContent = [];
+        
+//         for (let j = 0; j < cells.length; j++) {
+//           const cellNode = cells[j];
+//           const cellText = Array.from(cellNode.childNodes)
+//             .map(child => processNode(child))
+//             .join('')
+//             .trim();
+//           rowContent.push(cellText);
+//         }
+        
+//         if (rowContent.length === 1) {
+//           tableContent += rowContent[0] + '\n';
+//         } else {
+//           tableContent += rowContent.join('\t') + '\n';
+//         }
+//       }
+      
+//       return tableContent + '\n';
+//     };
+
+//     const content = Array.from(tempDiv.childNodes)
+//       .map(node => processNode(node))
+//       .join('')
+//       .replace(/\n{3,}/g, '\n\n')
+//       .trim();
+
+//     return content;
+//   } catch (error) {
+//     console.error('Error extracting content:', error);
+//     return null;
+//   }
+// }
+
+// extractContent(editor) {
+//   if (!editor) {
+//     return null;
+//   }
+
+//   try {
+//     const tempDiv = document.createElement('div');
+//     tempDiv.innerHTML = editor.innerHTML;
+
+//     const processNode = (node) => {
+//       // Handle text nodes
+//       if (node.nodeType === Node.TEXT_NODE) {
+//         return node.textContent;
+//       }
+
+//       // Handle element nodes 
+//       if (node.nodeType === Node.ELEMENT_NODE) {
+//         let text = '';
+//         const tag = node.tagName.toLowerCase();
+        
+//         switch (tag) {
+//           case 'p':
+//             // Skip the first table that contains patient info
+//             const firstTable = node.closest('figure.table');
+//             if (firstTable && firstTable === tempDiv.querySelector('figure.table')) {
+//               return '';
+//             }
+
+//             // Check if paragraph contains a list
+//             if (node.querySelector('ul, ol')) {
+//               return Array.from(node.childNodes)
+//                 .map(child => processNode(child))
+//                 .join('');
+//             }
+//             text = Array.from(node.childNodes)
+//               .map(child => processNode(child))
+//               .join('');
+//             return text + '\n';
+          
+//           case 'strong':
+//           case 'b':
+//             // Mark bold text with [BOLD] tags
+//             return `[BOLD]${node.textContent}[/BOLD]`;
+          
+//           case 'ul':
+//           case 'ol':
+//             // Process lists
+//             return Array.from(node.children)
+//               .map(li => `• ${processNode(li)}`)
+//               .join('\n') + '\n';
+          
+//           case 'li':
+//             return Array.from(node.childNodes)
+//               .map(child => processNode(child))
+//               .join('');
+          
+//           case 'table':
+//             // Skip the first table that contains patient info
+//             if (node === tempDiv.querySelector('table')) {
+//               return '';
+//             }
+//             return processTable(node);
+          
+//           case 'br':
+//             return '\n';
+          
+//           default:
+//             return Array.from(node.childNodes)
+//               .map(child => processNode(child))
+//               .join('');
+//         }
+//       }
+//       return '';
+//     };
+
+//     const processTable = (table) => {
+//       // Skip the first table that contains patient info
+//       if (table === tempDiv.querySelector('table')) {
+//         return '';
+//       }
+
+//       let tableContent = '';
+//       const rows = table.rows;
+      
+//       for (let i = 0; i < rows.length; i++) {
+//         const cells = rows[i].cells;
+//         let rowContent = [];
+        
+//         for (let j = 0; j < cells.length; j++) {
+//           const cellNode = cells[j];
+//           const cellText = Array.from(cellNode.childNodes)
+//             .map(child => processNode(child))
+//             .join('')
+//             .trim();
+//           rowContent.push(cellText);
+//         }
+        
+//         if (rowContent.length === 1) {
+//           tableContent += rowContent[0] + '\n';
+//         } else {
+//           tableContent += rowContent.join('\t') + '\n';
+//         }
+//       }
+      
+//       return tableContent + '\n';
+//     };
+
+//     const content = Array.from(tempDiv.childNodes)
+//       .map(node => processNode(node))
+//       .join('')
+//       .replace(/\n{3,}/g, '\n\n')
+//       .trim();
+
+//     return content;
+//   } catch (error) {
+//     console.error('Error extracting content:', error);
+//     return null;
+//   }
+// }
+
+
+// extractContent(editor) {
+//   if (!editor) return null;
+
+//   try {
+//     const tempDiv = document.createElement('div');
+//     tempDiv.innerHTML = editor.innerHTML;
+//     const firstTable = tempDiv.querySelector('table');
+
+//     const processNode = (node) => {
+//       if (node.nodeType === Node.TEXT_NODE) {
+//         return node.textContent;
+//       }
+
+//       if (node.nodeType === Node.ELEMENT_NODE) {
+//         const tag = node.tagName.toLowerCase();
+//         switch (tag) {
+//           case 'p':
+//             if (node.closest('table') === firstTable) return '';
+//             return Array.from(node.childNodes).map(processNode).join('') + '\n';
+
+//           case 'strong':
+//           case 'b':
+//             return `[BOLD]${node.textContent}[/BOLD]`;
+
+//           case 'ul':
+//           case 'ol':
+//             return Array.from(node.children)
+//               .map(li => `• ${processNode(li)}`)
+//               .join('\n') + '\n';
+
+//           case 'li':
+//             return Array.from(node.childNodes).map(processNode).join('');
+
+//           case 'table':
+//             return processTable(node);
+
+//           case 'br':
+//             return '\n';
+
+//           default:
+//             return Array.from(node.childNodes).map(processNode).join('');
+//         }
+//       }
+//       return '';
+//     };
+
+//     const processTable = (table) => {
+//       if (table === firstTable) return '';
+
+//       let rowsData = [];
+//       for (let row of table.rows) {
+//         const rowContent = Array.from(row.cells)
+//           .map(cell => Array.from(cell.childNodes).map(processNode).join('').trim());
+//         rowsData.push(rowContent);
+//       }
+
+//       if (rowsData.length === 0) return '';
+
+//       // Calculate column widths
+//       let colWidths = [];
+//       rowsData.forEach(row => {
+//         row.forEach((cell, i) => {
+//           colWidths[i] = Math.max(colWidths[i] || 0, cell.length);
+//         });
+//       });
+
+//       const padCell = (cell, i) => cell.padEnd(colWidths[i], ' ');
+
+//       const createBorder = () =>
+//         '+' + colWidths.map(w => '-'.repeat(w + 2)).join('+') + '+\n';
+
+//       let output = createBorder();
+//       rowsData.forEach((row, idx) => {
+//         output += '| ' + row.map((cell, i) => padCell(cell, i)).join(' | ') + ' |\n';
+//         output += createBorder();
+//       });
+
+//       return output + '\n';
+//     };
+
+//     return Array.from(tempDiv.childNodes)
+//       .map(processNode)
+//       .join('')
+//       .replace(/\n{3,}/g, '\n\n')
+//       .trim();
+
+//   } catch (error) {
+//     console.error('Error extracting content:', error);
+//     return null;
+//   }
+// }
+
+
+
 extractContent(editor) {
-  if (!editor) {
-    return null;
-  }
+  if (!editor) return null;
 
   try {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = editor.innerHTML;
+    const firstTable = tempDiv.querySelector('table');
 
     const processNode = (node) => {
-      // Handle text nodes
       if (node.nodeType === Node.TEXT_NODE) {
         return node.textContent;
       }
 
-      // Handle element nodes 
       if (node.nodeType === Node.ELEMENT_NODE) {
-        let text = '';
         const tag = node.tagName.toLowerCase();
-        
         switch (tag) {
           case 'p':
-            // Skip the first table that contains patient info
-            const firstTable = node.closest('figure.table');
-            if (firstTable && firstTable === tempDiv.querySelector('figure.table')) {
-              return '';
-            }
+            if (node.closest('table') === firstTable) return '';
+            return Array.from(node.childNodes).map(processNode).join('') + '\n';
 
-            // Check if paragraph contains a list
-            if (node.querySelector('ul, ol')) {
-              return Array.from(node.childNodes)
-                .map(child => processNode(child))
-                .join('');
-            }
-            text = Array.from(node.childNodes)
-              .map(child => processNode(child))
-              .join('');
-            return text + '\n';
-          
           case 'strong':
           case 'b':
-            // Mark bold text with [BOLD] tags
             return `[BOLD]${node.textContent}[/BOLD]`;
-          
+
           case 'ul':
           case 'ol':
-            // Process lists
             return Array.from(node.children)
               .map(li => `• ${processNode(li)}`)
               .join('\n') + '\n';
-          
+
           case 'li':
-            return Array.from(node.childNodes)
-              .map(child => processNode(child))
-              .join('');
-          
+            return Array.from(node.childNodes).map(processNode).join('');
+
           case 'table':
-            // Skip the first table that contains patient info
-            if (node === tempDiv.querySelector('table')) {
-              return '';
-            }
             return processTable(node);
-          
+
           case 'br':
             return '\n';
-          
+
           default:
-            return Array.from(node.childNodes)
-              .map(child => processNode(child))
-              .join('');
+            return Array.from(node.childNodes).map(processNode).join('');
         }
       }
       return '';
     };
 
     const processTable = (table) => {
-      // Skip the first table that contains patient info
-      if (table === tempDiv.querySelector('table')) {
-        return '';
+      // Ignore the very first table
+      if (table === firstTable) return '';
+
+      let rowsData = [];
+      for (let row of table.rows) {
+        const rowContent = Array.from(row.cells)
+          .map(cell => `<td>${Array.from(cell.childNodes).map(processNode).join('').trim()}</td>`)
+          .join('');
+        rowsData.push(`<tr>${rowContent}</tr>`);
       }
 
-      let tableContent = '';
-      const rows = table.rows;
-      
-      for (let i = 0; i < rows.length; i++) {
-        const cells = rows[i].cells;
-        let rowContent = [];
-        
-        for (let j = 0; j < cells.length; j++) {
-          const cellNode = cells[j];
-          const cellText = Array.from(cellNode.childNodes)
-            .map(child => processNode(child))
-            .join('')
-            .trim();
-          rowContent.push(cellText);
-        }
-        
-        if (rowContent.length === 1) {
-          tableContent += rowContent[0] + '\n';
-        } else {
-          tableContent += rowContent.join('\t') + '\n';
-        }
-      }
-      
-      return tableContent + '\n';
+      if (rowsData.length === 0) return '';
+
+      // ✅ Return as real HTML table instead of ASCII table
+      return `<table border="1" style="border-collapse: collapse; width: 100%;">${rowsData.join('')}</table>\n`;
     };
 
-    const content = Array.from(tempDiv.childNodes)
-      .map(node => processNode(node))
+    return Array.from(tempDiv.childNodes)
+      .map(processNode)
       .join('')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
 
-    return content;
   } catch (error) {
     console.error('Error extracting content:', error);
     return null;
   }
 }
+
 
 
 GetDivContentOnPDFWithoutImage() {
@@ -3161,6 +3466,760 @@ pdf.autoTable({
     loadImageAndRenderPDF();
   };
   //***************************************///////////////////// upload split XRAY pdf to database (END) ///////////////**********************************************/
+// UploadDivContentOnPDFWithoutImage() {
+//   (async () => {
+//     try {
+//       this.showLoader();
+//       const filename = this.createFilename();
+//       const editorContent = document.getElementsByClassName("ck-editor__editable")[0];
+
+//       if (!editorContent) {
+//         throw new Error('CKEditor content not found');
+//       }
+
+//       const contentText = editorContent.textContent.toLowerCase();
+
+//       const { location, accession, institutionName } = this.extractDataFromURL();
+//       const tableData = this.extractTableData(editorContent);
+      
+
+
+//        const urlParams = new URLSearchParams(window.location.search);
+  
+
+//     // Extract body part from URL parameters
+//     const bodyPart = urlParams.get('data-bodypart');
+//     const modality = urlParams.get('data-Modality');
+//     const gender = urlParams.get('data-gender');
+
+//     // Track bypassed scenarios
+//     const bypassedScenarios = {};
+
+// // --------------- SCENARIO 1: Gender-Body Part Mismatch Check ----------------
+//       if (bodyPart?.toLowerCase() === 'abdomen' && !bypassedScenarios.scenario1) {
+//         const femaleAnatomyTerms = ['uterus', 'ovaries', 'ovary', 'fallopian', 'cervix', 'endometrium', 'vagina', 'vulva', 'corpus luteum'];
+//         const maleAnatomyTerms = ['prostate gland', 'prostate ', 'seminal vesicle', 'seminal vesicles', 'vas deferens', 'bulbourethral gland', 'cowper', 'testes', 'testis', 'epididymis', 'penile urethra'];
+
+//         const hasFemaleTerms = femaleAnatomyTerms.some(term => contentText.includes(term));
+//         const hasMaleTerms = maleAnatomyTerms.some(term => contentText.includes(term));
+
+//         let genderMismatch = false;
+//         let mismatchMessage = '';
+
+//         if (gender?.toLowerCase() === 'male' && hasFemaleTerms) {
+//           genderMismatch = true;
+//           mismatchMessage = "Gender mismatch detected: This report mentions female anatomy terms for a male patient.";
+//         }
+//         else if (gender?.toLowerCase() === 'female' && hasMaleTerms) {
+//           genderMismatch = true;
+//           mismatchMessage = "Gender mismatch detected: This report mentions male anatomy terms for a female patient.";
+//         }
+
+//         if (genderMismatch) {
+//           const userChoice = window.confirm(
+//             `${mismatchMessage}\n\nChoose:\nOK - To fix the issue\nCancel - To bypass and continue`
+//           );
+          
+//           if (!userChoice) {
+//             bypassedScenarios.scenario1 = true;
+//           } else {
+//             return this.hideLoader();
+//           }
+//         }
+//       }
+
+//       // --------------- SCENARIO 2: Tumor/Nodule Check ----------------
+//       if (modality && ['ct', 'mri'].includes(modality.toLowerCase()) && !bypassedScenarios.scenario2) {
+//         const tumorKeywords = ['nodule', 'cyst', 'lymphoma', 'carcinoma'];
+//         const mentionsTumor = tumorKeywords.some(term => contentText.includes(term));
+        
+//         if (mentionsTumor) {
+//           let issueDetected = false;
+//           let issueMessage = '';
+          
+//           const sizePattern = /\b\d+(\.\d+)?\s*(mm|cm)\b/i;
+//           const hasSize = sizePattern.test(contentText);
+          
+//           if (!hasSize) {
+//             issueDetected = true;
+//             issueMessage = "Alert: Tumor/Nodule size missing. Enter measurement in mm or cm.";
+//           } 
+//           else {
+//             const cmPattern = /\b\d+(\.\d+)?\s*cm\b/i;
+//             if (cmPattern.test(contentText)) {
+//               issueDetected = true;
+//               issueMessage = "Please confirm: Tumor/Nodule size is entered in centimetres (cm). Is this correct?";
+//             }
+//           }
+
+//           const statusTerms = ['benign', 'malignant', 'not confirmed'];
+//           const hasStatus = statusTerms.some(term => contentText.includes(term));
+          
+//           if (!hasStatus) {
+//             issueDetected = true;
+//             issueMessage = "Alert: Tumor/Nodule status (Benign/Malignant/Not Confirmed) not selected.";
+//           }
+
+//           if (issueDetected) {
+//             const userChoice = window.confirm(
+//               `${issueMessage}\n\nChoose:\nOK - To fix the issue\nCancel - To bypass and continue`
+//             );
+            
+//             if (!userChoice) {
+//               bypassedScenarios.scenario2 = true;
+//             } else {
+//               return this.hideLoader();
+//             }
+//           }
+//         }
+//       }
+
+//       // --------------- SCENARIO 3: Fracture Check ----------------
+//       if (bodyPart && ['extremity', 'spine', 'skull'].includes(bodyPart.toLowerCase()) && !bypassedScenarios.scenario3) {
+//         const fractureKeywords = ['fracture', 'broken', 'fx', 'break'];
+//         const mentionsFracture = fractureKeywords.some(term => contentText.includes(term));
+        
+//         if (mentionsFracture) {
+//           const locationPattern = /(proximal|mid|distal|shaft|epiphysis|metaphysis|diaphysis|head|neck|base|body)/i;
+//           const hasLocation = locationPattern.test(contentText);
+          
+//           if (!hasLocation) {
+//             const userChoice = window.confirm(
+//               "Fracture detected but location not specified (e.g., proximal, midshaft).\n\nChoose:\nOK - To add location\nCancel - To bypass and continue"
+//             );
+            
+//             if (!userChoice) {
+//               bypassedScenarios.scenario3 = true;
+//             } else {
+//               return this.hideLoader();
+//             }
+//           }
+//         }
+//       }
+
+//       // --------------- SCENARIO 4: Midline/Mediastinal Shift ----------------
+//       if (!bypassedScenarios.scenario4) {
+//         const shiftTerms = ['midline shift', 'mediastinal shift', 'tracheal deviation', 'organ displacement'];
+//         const mentionsShift = shiftTerms.some(term => contentText.includes(term));
+        
+//         if (mentionsShift) {
+//           const sizePattern = /\b\d+(\.\d+)?\s*(mm|cm)\b/;
+//           const directionPattern = /\b(leftward|rightward|superior|inferior)\b/;
+          
+//           if (!sizePattern.test(contentText) || !directionPattern.test(contentText)) {
+//             const userChoice = window.confirm(
+//               "Organ displacement/shift detected. Please specify measurement and direction.\n\nChoose:\nOK - To add details\nCancel - To bypass and continue"
+//             );
+            
+//             if (!userChoice) {
+//               bypassedScenarios.scenario4 = true;
+//             } else {
+//               return this.hideLoader();
+//             }
+//           }
+//         }
+//       }
+
+//       // --------------- SCENARIO 5: Laterality Check ----------------
+//       if (!bypassedScenarios.scenario5) {
+//         const lateralityBodyParts = [
+//           'brain', 'face', 'ear', 'ears', 'nose', 'eye', 'eyes', 'nostril', 'nostrils',
+//           'sinus', 'dentition', 'extremity', 'extremities', 'breast', 'breasts', 'heart',
+//           'lung', 'lungs', 'kidney', 'kidneys', 'ovary', 'ovaries', 'hip', 'hips',
+//           'testicle', 'testicles'
+//         ];
+
+//         // Check for bilateral mentions
+//         const isBilateralMentioned = /\b(bi-?lateral|both)\b/i.test(contentText);
+//         const missingLaterality = [];
+
+//         if (!isBilateralMentioned) {
+//           lateralityBodyParts.forEach(part => {
+//             const regex = new RegExp(`\\b(?:right|left)?\\s{0,2}\\b${part}\\b`, 'gi');
+//             const matches = [...contentText.matchAll(regex)];
+
+//             matches.forEach(match => {
+//               const matchedText = match[0].toLowerCase();
+//               if (!matchedText.includes('right') && !matchedText.includes('left')) {
+//                 if (!missingLaterality.includes(part)) {
+//                   missingLaterality.push(part);
+//                 }
+//               }
+//             });
+//           });
+
+//           if (missingLaterality.length > 0) {
+//             const list = missingLaterality.join(', ');
+//             const userChoice = window.confirm(
+//               `Warning: Laterality not specified for: ${list}.\n\nChoose:\nOK - To add laterality\nCancel - To bypass and continue`
+//             );
+            
+//             if (!userChoice) {
+//               bypassedScenarios.scenario5 = true;
+//             } else {
+//               return this.hideLoader();
+//             }
+//           }
+//         }
+//       }
+
+//       // --------------- SCENARIO 6: Final Common Confirmation (Mandatory) ----------------
+//       const runFinalCommonPopups = () => {
+//         const alertMessage = `
+// Please review the following checklist before submitting:
+
+// 1. Contrast used?
+// 2. Follow-up case? Previous findings compared?
+// 3. Imaging modality matches findings?
+// 4. X-Ray views specified (AP/Lateral/PA)?
+
+// Click OK to confirm all items are checked.`;
+        
+//         return window.confirm(alertMessage.trim());
+//       };
+
+// if (!runFinalCommonPopups()) return this.hideLoader();
+
+     
+//       // ---------- Remaining PDF generation logic continues here... ----------
+//       const images = editorContent.querySelectorAll("img");
+//       const signatureElement = images[1];
+//       const signatureUrl = signatureElement ? signatureElement.src : null;
+//       const remainingReportImages = Array.prototype.slice.call(images, 2);
+
+//       const pdf = new jsPDF({
+//         orientation: "p",
+//         unit: "pt",
+//         format: "a4",
+//         compress: true,
+//       });
+
+//       const topMargin = 140;
+//       const bottomMargin = 65;
+//       const pageHeight = pdf.internal.pageSize.height;
+//       let currentYPosition = topMargin;
+
+//       if (Object.keys(tableData).length > 0) {
+//         const { patientId, patientName, age, gender, testDate, reportDate, referralDr} = tableData;
+//         const  reportTime = new Date().toLocaleTimeString('en-GB', { hour12: false });
+//         const tableContent = [
+//           ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+//           ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+//           ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"],
+//           ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
+//         ];
+
+//         currentYPosition += 20;
+//         pdf.autoTable({
+//           startY: currentYPosition,
+//           body: tableContent,
+//           theme: "grid",
+//           styles: {
+//             cellPadding: 3,
+//             fontSize: 10,
+//             fontStyle: 'bold',         // Bold text
+//             textColor: [0, 0, 0],      // Black text (RGB)
+//             lineColor: [0, 0, 0], // <-- Border color (black)
+//             lineWidth: 0.2         // <-- Border thickness
+//           },
+//         });
+//         currentYPosition = pdf.previousAutoTable.finalY + 20;
+//       }
+
+//       const content = this.extractContent(editorContent);
+//       if (content) {
+//         const lines = content.split('\n');
+//         for (const line of lines) {
+//           if (line.trim()) {
+//             let text = line;
+//             let isBold = false;
+//             const boldMatches = text.match(/\[BOLD\](.*?)\[\/BOLD\]/g);
+//             if (boldMatches) {
+//               isBold = true;
+//               text = text.replace(/\[BOLD\](.*?)\[\/BOLD\]/g, '$1');
+//             }
+
+//             const isBullet = text.startsWith('•');
+//             if (isBullet) {
+//               text = text.substring(1).trim();
+//               currentYPosition += 5;
+//             }
+
+//             if (text.includes("Dr.") && signatureUrl) {
+//               currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+//             }
+
+//             pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+//             pdf.setFontSize(12);
+//             const splitText = pdf.splitTextToSize(text, pdf.internal.pageSize.width - (isBullet ? 100 : 80));
+
+//             if (currentYPosition + (splitText.length * 15) > pageHeight - bottomMargin) {
+//               pdf.addPage();
+//               currentYPosition = topMargin;
+//             }
+
+//             if (isBullet) {
+//               pdf.text('•', 60, currentYPosition);
+//               pdf.text(splitText, 80, currentYPosition);
+//             } else {
+//               pdf.text(splitText, 40, currentYPosition);
+//             }
+
+//             currentYPosition += splitText.length * 15;
+//           }
+//         }
+//       }
+
+//       for (const image of remainingReportImages) {
+//         const imageUrl = image ? image.src : null;
+//         if (imageUrl) {
+//           currentYPosition = await this.addReportImage(pdf, imageUrl, currentYPosition, topMargin, bottomMargin);
+//         }
+//       }
+
+//       const pdfBlob = pdf.output("blob", { compress: true });
+//       const csrfToken = await this.getCSRFToken();
+//       const formData = new FormData();
+//       formData.append("pdf", pdfBlob, filename ? filename + ".pdf" : "download.pdf");
+//       formData.append("patientId", tableData.patientId);
+//       formData.append("patientName", tableData.patientName);
+//       formData.append("age", tableData.age);
+//       formData.append("gender", tableData.gender);
+//       formData.append("testDate", tableData.testDate);
+//       formData.append("reportDate", tableData.reportDate);
+//       formData.append("location", location);
+//       formData.append("accession", accession);
+//       formData.append("institution_name", institutionName);
+
+//       await axios.post("/upload_xray_pdf/", formData, {
+//         headers: {
+//           "Content-Type": "multipart/form-data",
+//           "X-CSRFToken": csrfToken,
+//         },
+//       });
+
+//       const urlSearchParams = new URLSearchParams(window.location.search);
+//       const studyId = urlSearchParams.get("data-study-id");
+
+//       const updateResponse = await fetch(`/api/update_patient_done_status_xray/${studyId}/`, {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'application/json',
+//           'X-CSRFToken': csrfToken,
+//         },
+//         body: JSON.stringify({ isDone: true }),
+//       });
+
+//       if (updateResponse.ok) {
+//         this.setState({ isDone: true }, () => {
+//           this.handleClick();
+//         });
+//       } else {
+//         console.error('Failed to update isDone status');
+//       }
+
+//       this.showNotification("PDF successfully uploaded!");
+
+//       const currentURL = window.location.href;
+//       setTimeout(() => {
+//         window.location.href = document.referrer + "?nocache=" + Date.now();
+//       }, 200);
+
+//       window.addEventListener("popstate", () => {
+//         if (window.location.href !== currentURL) {
+//           setTimeout(() => {
+//             window.location.reload(true);
+//           }, 200);
+//         }
+//       });
+
+//     } catch (error) {
+//       console.error("Error generating PDF:", error);
+//       this.showNotification("Error uploading PDF. Please try again.");
+//     } finally {
+//       this.hideLoader();
+//     }
+//   })();
+// }
+
+// UploadDivContentOnPDFWithoutImage() {
+//   (async () => {
+//     try {
+//       this.showLoader();
+//       const filename = this.createFilename();
+//       const editorContent = document.getElementsByClassName("ck-editor__editable")[0];
+
+//       if (!editorContent) {
+//         throw new Error('CKEditor content not found');
+//       }
+
+//       const contentText = editorContent.textContent.toLowerCase();
+
+//       const { location, accession, institutionName } = this.extractDataFromURL();
+//       const tableData = this.extractTableData(editorContent);
+      
+
+
+//        const urlParams = new URLSearchParams(window.location.search);
+  
+
+//     // Extract body part from URL parameters
+//     const bodyPart = urlParams.get('data-bodypart');
+//     const modality = urlParams.get('data-Modality');
+//     const gender = urlParams.get('data-gender');
+
+//     // Track bypassed scenarios
+//     const bypassedScenarios = {};
+
+// // --------------- SCENARIO 1: Gender-Body Part Mismatch Check ----------------
+//       if (bodyPart?.toLowerCase() === 'abdomen' && !bypassedScenarios.scenario1) {
+//         const femaleAnatomyTerms = ['uterus', 'ovaries', 'ovary', 'fallopian', 'cervix', 'endometrium', 'vagina', 'vulva', 'corpus luteum'];
+//         const maleAnatomyTerms = ['prostate gland', 'prostate ', 'seminal vesicle', 'seminal vesicles', 'vas deferens', 'bulbourethral gland', 'cowper', 'testes', 'testis', 'epididymis', 'penile urethra'];
+
+//         const hasFemaleTerms = femaleAnatomyTerms.some(term => contentText.includes(term));
+//         const hasMaleTerms = maleAnatomyTerms.some(term => contentText.includes(term));
+
+//         let genderMismatch = false;
+//         let mismatchMessage = '';
+
+//         if (gender?.toLowerCase() === 'male' && hasFemaleTerms) {
+//           genderMismatch = true;
+//           mismatchMessage = "Gender mismatch detected: This report mentions female anatomy terms for a male patient.";
+//         }
+//         else if (gender?.toLowerCase() === 'female' && hasMaleTerms) {
+//           genderMismatch = true;
+//           mismatchMessage = "Gender mismatch detected: This report mentions male anatomy terms for a female patient.";
+//         }
+
+//         if (genderMismatch) {
+//           const userChoice = window.confirm(
+//             `${mismatchMessage}\n\nChoose:\nI agree  and make changes - To fix the issue\nCancel - To proceed without fixing`
+//           );
+          
+//           if (!userChoice) {
+//             bypassedScenarios.scenario1 = true;
+//           } else {
+//             return this.hideLoader();
+//           }
+//         }
+//       }
+
+//       // --------------- SCENARIO 2: Tumor/Nodule Check ----------------
+//       if (modality && ['ct', 'mri'].includes(modality.toLowerCase()) && !bypassedScenarios.scenario2) {
+//         const tumorKeywords = ['nodule', 'cyst', 'lymphoma', 'carcinoma'];
+//         const mentionsTumor = tumorKeywords.some(term => contentText.includes(term));
+        
+//         if (mentionsTumor) {
+//           let issueDetected = false;
+//           let issueMessage = '';
+          
+//           const sizePattern = /\b\d+(\.\d+)?\s*(mm|cm)\b/i;
+//           const hasSize = sizePattern.test(contentText);
+          
+//           if (!hasSize) {
+//             issueDetected = true;
+//             issueMessage = "Alert: Tumor/Nodule size missing. Enter measurement in mm or cm.";
+//           } 
+//           else {
+//             const cmPattern = /\b\d+(\.\d+)?\s*cm\b/i;
+//             if (cmPattern.test(contentText)) {
+//               issueDetected = true;
+//               issueMessage = "Please confirm: Tumor/Nodule size is entered in centimetres (cm). Is this correct?";
+//             }
+//           }
+
+//           const statusTerms = ['benign', 'malignant', 'not confirmed'];
+//           const hasStatus = statusTerms.some(term => contentText.includes(term));
+          
+//           if (!hasStatus) {
+//             issueDetected = true;
+//             issueMessage = "Alert: Tumor/Nodule status (Benign/Malignant/Not Confirmed) not selected.";
+//           }
+
+//           if (issueDetected) {
+//             const userChoice = window.confirm(
+//               `${issueMessage}\n\nChoose:\nOK - To fix the issue\nCancel - To proceed without fixing`
+//             );
+            
+//             if (!userChoice) {
+//               bypassedScenarios.scenario2 = true;
+//             } else {
+//               return this.hideLoader();
+//             }
+//           }
+//         }
+//       }
+
+//       // --------------- SCENARIO 3: Fracture Check ----------------
+//       if (bodyPart && ['extremity', 'spine', 'skull'].includes(bodyPart.toLowerCase()) && !bypassedScenarios.scenario3) {
+//         const fractureKeywords = ['fracture', 'broken', 'fx', 'break'];
+//         const mentionsFracture = fractureKeywords.some(term => contentText.includes(term));
+        
+//         if (mentionsFracture) {
+//           const locationPattern = /(proximal|mid|distal|shaft|epiphysis|metaphysis|diaphysis|head|neck|base|body)/i;
+//           const hasLocation = locationPattern.test(contentText);
+          
+//           if (!hasLocation) {
+//             const userChoice = window.confirm(
+//               "Fracture detected but location not specified (e.g., proximal, midshaft).\n\nChoose:\nOK - To add location\nCancel -  To proceed without fixing"
+//             );
+            
+//             if (!userChoice) {
+//               bypassedScenarios.scenario3 = true;
+//             } else {
+//               return this.hideLoader();
+//             }
+//           }
+//         }
+//       }
+
+//       // --------------- SCENARIO 4: Midline/Mediastinal Shift ----------------
+//       if (!bypassedScenarios.scenario4) {
+//         const shiftTerms = ['midline shift', 'mediastinal shift', 'tracheal deviation', 'organ displacement'];
+//         const mentionsShift = shiftTerms.some(term => contentText.includes(term));
+        
+//         if (mentionsShift) {
+//           const sizePattern = /\b\d+(\.\d+)?\s*(mm|cm)\b/;
+//           const directionPattern = /\b(leftward|rightward|superior|inferior)\b/;
+          
+//           if (!sizePattern.test(contentText) || !directionPattern.test(contentText)) {
+//             const userChoice = window.confirm(
+//               "Organ displacement/shift detected. Please specify measurement and direction.\n\nChoose:\nOK - To add details\nCancel - To proceed without fixing"
+//             );
+            
+//             if (!userChoice) {
+//               bypassedScenarios.scenario4 = true;
+//             } else {
+//               return this.hideLoader();
+//             }
+//           }
+//         }
+//       }
+
+//       // --------------- SCENARIO 5: Laterality Check ----------------
+//       if (!bypassedScenarios.scenario5) {
+//         const lateralityBodyParts = [
+//           'brain', 'face', 'ear', 'ears', 'nose', 'eye', 'eyes', 'nostril', 'nostrils',
+//           'sinus', 'dentition', 'extremity', 'extremities', 'breast', 'breasts', 'heart',
+//           'lung', 'lungs', 'kidney', 'kidneys', 'ovary', 'ovaries', 'hip', 'hips',
+//           'testicle', 'testicles'
+//         ];
+
+//         // Check for bilateral mentions
+//         const isBilateralMentioned = /\b(bi-?lateral|both)\b/i.test(contentText);
+//         const missingLaterality = [];
+
+//         if (!isBilateralMentioned) {
+//           lateralityBodyParts.forEach(part => {
+//             const regex = new RegExp(`\\b(?:right|left)?\\s{0,2}\\b${part}\\b`, 'gi');
+//             const matches = [...contentText.matchAll(regex)];
+
+//             matches.forEach(match => {
+//               const matchedText = match[0].toLowerCase();
+//               if (!matchedText.includes('right') && !matchedText.includes('left')) {
+//                 if (!missingLaterality.includes(part)) {
+//                   missingLaterality.push(part);
+//                 }
+//               }
+//             });
+//           });
+
+//           if (missingLaterality.length > 0) {
+//             const list = missingLaterality.join(', ');
+//             const userChoice = window.confirm(
+//               `Warning: Laterality not specified for: ${list}.\n\nChoose:\nOK - To add laterality\nCancel - To proceed without fixing`
+//             );
+            
+//             if (!userChoice) {
+//               bypassedScenarios.scenario5 = true;
+//             } else {
+//               return this.hideLoader();
+//             }
+//           }
+//         }
+//       }
+
+//       // --------------- SCENARIO 6: Final Common Confirmation (Mandatory) ----------------
+//       const runFinalCommonPopups = () => {
+//         const alertMessage = `
+// Please review the following checklist before submitting:
+
+// 1. Contrast used?
+// 2. Follow-up case? Previous findings compared?
+// 3. Imaging modality matches findings?
+// 4. X-Ray views specified (AP/Lateral/PA)?
+
+// Click OK to confirm all items are checked.`;
+        
+//         return window.confirm(alertMessage.trim());
+//       };
+
+// if (!runFinalCommonPopups()) return this.hideLoader();
+
+     
+//       // ---------- Remaining PDF generation logic continues here... ----------
+//       const images = editorContent.querySelectorAll("img");
+//       const signatureElement = images[1];
+//       const signatureUrl = signatureElement ? signatureElement.src : null;
+//       const remainingReportImages = Array.prototype.slice.call(images, 2);
+
+//       const pdf = new jsPDF({
+//         orientation: "p",
+//         unit: "pt",
+//         format: "a4",
+//         compress: true,
+//       });
+
+//       const topMargin = 140;
+//       const bottomMargin = 65;
+//       const pageHeight = pdf.internal.pageSize.height;
+//       let currentYPosition = topMargin;
+
+//       if (Object.keys(tableData).length > 0) {
+//         const { patientId, patientName, age, gender, testDate,referralDr} = tableData;
+//         const  reportTime = new Date().toLocaleTimeString('en-GB', { hour12: false });
+//       //  const reportDate = new Date().toISOString().split('T')[0];
+//       const reportDate = new Date().toISOString().split('T')[0].split('-').reverse().join('-');
+
+//         const tableContent = [
+//           ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+//           ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+//           ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"],
+//           ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
+//         ];
+
+//         currentYPosition += 20;
+//         pdf.autoTable({
+//           startY: currentYPosition,
+//           body: tableContent,
+//           theme: "grid",
+//           styles: {
+//             cellPadding: 3,
+//             fontSize: 10,
+//             fontStyle: 'bold',         // Bold text
+//             textColor: [0, 0, 0],      // Black text (RGB)
+//             lineColor: [0, 0, 0], // <-- Border color (black)
+//             lineWidth: 0.2         // <-- Border thickness
+//           },
+//         });
+//         currentYPosition = pdf.previousAutoTable.finalY + 20;
+//       }
+
+//       const content = this.extractContent(editorContent);
+//       if (content) {
+//         const lines = content.split('\n');
+//         for (const line of lines) {
+//           if (line.trim()) {
+//             let text = line;
+//             let isBold = false;
+//             const boldMatches = text.match(/\[BOLD\](.*?)\[\/BOLD\]/g);
+//             if (boldMatches) {
+//               isBold = true;
+//               text = text.replace(/\[BOLD\](.*?)\[\/BOLD\]/g, '$1');
+//             }
+
+//             const isBullet = text.startsWith('•');
+//             if (isBullet) {
+//               text = text.substring(1).trim();
+//               currentYPosition += 5;
+//             }
+
+//             if (text.includes("Dr.") && signatureUrl) {
+//               currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+//             }
+
+//             pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+//             pdf.setFontSize(12);
+//             const splitText = pdf.splitTextToSize(text, pdf.internal.pageSize.width - (isBullet ? 100 : 80));
+
+//             if (currentYPosition + (splitText.length * 15) > pageHeight - bottomMargin) {
+//               pdf.addPage();
+//               currentYPosition = topMargin;
+//             }
+
+//             if (isBullet) {
+//               pdf.text('•', 60, currentYPosition);
+//               pdf.text(splitText, 80, currentYPosition);
+//             } else {
+//               pdf.text(splitText, 40, currentYPosition);
+//             }
+
+//             currentYPosition += splitText.length * 15;
+//           }
+//         }
+//       }
+
+//       for (const image of remainingReportImages) {
+//         const imageUrl = image ? image.src : null;
+//         if (imageUrl) {
+//           currentYPosition = await this.addReportImage(pdf, imageUrl, currentYPosition, topMargin, bottomMargin);
+//         }
+//       }
+
+//       const pdfBlob = pdf.output("blob", { compress: true });
+//       const csrfToken = await this.getCSRFToken();
+//       const formData = new FormData();
+//       formData.append("pdf", pdfBlob, filename ? filename + ".pdf" : "download.pdf");
+//       formData.append("patientId", tableData.patientId);
+//       formData.append("patientName", tableData.patientName);
+//       formData.append("age", tableData.age);
+//       formData.append("gender", tableData.gender);
+//       formData.append("testDate", tableData.testDate);
+//       formData.append("reportDate", tableData.reportDate);
+//       formData.append("location", location);
+//       formData.append("accession", accession);
+//       formData.append("institution_name", institutionName);
+
+//       await axios.post("/upload_xray_pdf/", formData, {
+//         headers: {
+//           "Content-Type": "multipart/form-data",
+//           "X-CSRFToken": csrfToken,
+//         },
+//       });
+
+//       const urlSearchParams = new URLSearchParams(window.location.search);
+//       const studyId = urlSearchParams.get("data-study-id");
+
+//       const updateResponse = await fetch(`/api/update_patient_done_status_xray/${studyId}/`, {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'application/json',
+//           'X-CSRFToken': csrfToken,
+//         },
+//         body: JSON.stringify({ isDone: true }),
+//       });
+
+//       if (updateResponse.ok) {
+//         this.setState({ isDone: true }, () => {
+//           this.handleClick();
+//         });
+//       } else {
+//         console.error('Failed to update isDone status');
+//       }
+
+//       this.showNotification("PDF successfully uploaded!");
+
+//       const currentURL = window.location.href;
+//       setTimeout(() => {
+//         window.location.href = document.referrer + "?nocache=" + Date.now();
+//       }, 200);
+
+//       window.addEventListener("popstate", () => {
+//         if (window.location.href !== currentURL) {
+//           setTimeout(() => {
+//             window.location.reload(true);
+//           }, 200);
+//         }
+//       });
+
+//     } catch (error) {
+//       console.error("Error generating PDF:", error);
+//       this.showNotification("Error uploading PDF. Please try again.");
+//     } finally {
+//       this.hideLoader();
+//     }
+//   })();
+// }
 UploadDivContentOnPDFWithoutImage() {
   (async () => {
     try {
@@ -3212,7 +4271,7 @@ UploadDivContentOnPDFWithoutImage() {
 
         if (genderMismatch) {
           const userChoice = window.confirm(
-            `${mismatchMessage}\n\nChoose:\nOK - To fix the issue\nCancel - To bypass and continue`
+            `${mismatchMessage}\n\nChoose:\nI agree  and make changes - To fix the issue\nCancel - To proceed without fixing`
           );
           
           if (!userChoice) {
@@ -3257,7 +4316,7 @@ UploadDivContentOnPDFWithoutImage() {
 
           if (issueDetected) {
             const userChoice = window.confirm(
-              `${issueMessage}\n\nChoose:\nOK - To fix the issue\nCancel - To bypass and continue`
+              `${issueMessage}\n\nChoose:\nOK - To fix the issue\nCancel - To proceed without fixing`
             );
             
             if (!userChoice) {
@@ -3280,7 +4339,7 @@ UploadDivContentOnPDFWithoutImage() {
           
           if (!hasLocation) {
             const userChoice = window.confirm(
-              "Fracture detected but location not specified (e.g., proximal, midshaft).\n\nChoose:\nOK - To add location\nCancel - To bypass and continue"
+              "Fracture detected but location not specified (e.g., proximal, midshaft).\n\nChoose:\nOK - To add location\nCancel -  To proceed without fixing"
             );
             
             if (!userChoice) {
@@ -3303,7 +4362,7 @@ UploadDivContentOnPDFWithoutImage() {
           
           if (!sizePattern.test(contentText) || !directionPattern.test(contentText)) {
             const userChoice = window.confirm(
-              "Organ displacement/shift detected. Please specify measurement and direction.\n\nChoose:\nOK - To add details\nCancel - To bypass and continue"
+              "Organ displacement/shift detected. Please specify measurement and direction.\n\nChoose:\nOK - To add details\nCancel - To proceed without fixing"
             );
             
             if (!userChoice) {
@@ -3346,7 +4405,7 @@ UploadDivContentOnPDFWithoutImage() {
           if (missingLaterality.length > 0) {
             const list = missingLaterality.join(', ');
             const userChoice = window.confirm(
-              `Warning: Laterality not specified for: ${list}.\n\nChoose:\nOK - To add laterality\nCancel - To bypass and continue`
+              `Warning: Laterality not specified for: ${list}.\n\nChoose:\nOK - To add laterality\nCancel - To proceed without fixing`
             );
             
             if (!userChoice) {
@@ -3395,7 +4454,11 @@ if (!runFinalCommonPopups()) return this.hideLoader();
       let currentYPosition = topMargin;
 
       if (Object.keys(tableData).length > 0) {
-        const { patientId, patientName, age, gender, testDate, reportDate, referralDr, reportTime } = tableData;
+        const { patientId, patientName, age, gender, testDate,referralDr} = tableData;
+        const  reportTime = new Date().toLocaleTimeString('en-GB', { hour12: false });
+      //  const reportDate = new Date().toISOString().split('T')[0];
+      const reportDate = new Date().toISOString().split('T')[0].split('-').reverse().join('-');
+
         const tableContent = [
           ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
           ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
@@ -3420,49 +4483,121 @@ if (!runFinalCommonPopups()) return this.hideLoader();
         currentYPosition = pdf.previousAutoTable.finalY + 20;
       }
 
+      // const content = this.extractContent(editorContent);
+      // if (content) {
+      //   const lines = content.split('\n');
+      //   for (const line of lines) {
+      //     if (line.trim()) {
+      //       let text = line;
+      //       let isBold = false;
+      //       const boldMatches = text.match(/\[BOLD\](.*?)\[\/BOLD\]/g);
+      //       if (boldMatches) {
+      //         isBold = true;
+      //         text = text.replace(/\[BOLD\](.*?)\[\/BOLD\]/g, '$1');
+      //       }
+
+      //       const isBullet = text.startsWith('•');
+      //       if (isBullet) {
+      //         text = text.substring(1).trim();
+      //         currentYPosition += 5;
+      //       }
+
+      //       if (text.includes("Dr.") && signatureUrl) {
+      //         currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+      //       }
+
+      //       pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+      //       pdf.setFontSize(12);
+      //       const splitText = pdf.splitTextToSize(text, pdf.internal.pageSize.width - (isBullet ? 100 : 80));
+
+      //       if (currentYPosition + (splitText.length * 15) > pageHeight - bottomMargin) {
+      //         pdf.addPage();
+      //         currentYPosition = topMargin;
+      //       }
+
+      //       if (isBullet) {
+      //         pdf.text('•', 60, currentYPosition);
+      //         pdf.text(splitText, 80, currentYPosition);
+      //       } else {
+      //         pdf.text(splitText, 40, currentYPosition);
+      //       }
+
+      //       currentYPosition += splitText.length * 15;
+      //     }
+      //   }
+      // }
+
       const content = this.extractContent(editorContent);
-      if (content) {
-        const lines = content.split('\n');
-        for (const line of lines) {
-          if (line.trim()) {
-            let text = line;
-            let isBold = false;
-            const boldMatches = text.match(/\[BOLD\](.*?)\[\/BOLD\]/g);
-            if (boldMatches) {
-              isBold = true;
-              text = text.replace(/\[BOLD\](.*?)\[\/BOLD\]/g, '$1');
-            }
+if (content) {
+  const lines = content.split('\n');
+  for (const line of lines) {
+    if (line.trim()) {
 
-            const isBullet = text.startsWith('•');
-            if (isBullet) {
-              text = text.substring(1).trim();
-              currentYPosition += 5;
-            }
+      // ✅ Detect tables from extractContent output
+      if (line.trim().startsWith("<table")) {
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = line.trim();
+        const table = tempDiv.querySelector("table");
+        const rows = [...table.querySelectorAll("tr")].map(tr =>
+          [...tr.querySelectorAll("td, th")].map(td => td.innerText.trim())
+        );
 
-            if (text.includes("Dr.") && signatureUrl) {
-              currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
-            }
-
-            pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
-            pdf.setFontSize(12);
-            const splitText = pdf.splitTextToSize(text, pdf.internal.pageSize.width - (isBullet ? 100 : 80));
-
-            if (currentYPosition + (splitText.length * 15) > pageHeight - bottomMargin) {
-              pdf.addPage();
-              currentYPosition = topMargin;
-            }
-
-            if (isBullet) {
-              pdf.text('•', 60, currentYPosition);
-              pdf.text(splitText, 80, currentYPosition);
-            } else {
-              pdf.text(splitText, 40, currentYPosition);
-            }
-
-            currentYPosition += splitText.length * 15;
-          }
-        }
+        pdf.autoTable({
+          startY: currentYPosition,
+          head: [rows[0]],
+          body: rows.slice(1),
+          theme: "grid",
+          styles: {
+            fontSize: 10,
+            cellPadding: 3,
+            lineColor: [0, 0, 0],
+            lineWidth: 0.2
+          },
+        });
+        currentYPosition = pdf.previousAutoTable.finalY + 20;
+        continue;
       }
+
+      // Existing bold/bullet handling for plain text
+      let text = line;
+      let isBold = false;
+      const boldMatches = text.match(/\[BOLD\](.*?)\[\/BOLD\]/g);
+      if (boldMatches) {
+        isBold = true;
+        text = text.replace(/\[BOLD\](.*?)\[\/BOLD\]/g, '$1');
+      }
+
+      const isBullet = text.startsWith('•');
+      if (isBullet) {
+        text = text.substring(1).trim();
+        currentYPosition += 5;
+      }
+
+      if (text.includes("Dr.") && signatureUrl) {
+        currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
+      }
+
+      pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+      pdf.setFontSize(12);
+      const splitText = pdf.splitTextToSize(text, pdf.internal.pageSize.width - (isBullet ? 100 : 80));
+
+      if (currentYPosition + (splitText.length * 15) > pageHeight - bottomMargin) {
+        pdf.addPage();
+        currentYPosition = topMargin;
+      }
+
+      if (isBullet) {
+        pdf.text('•', 60, currentYPosition);
+        pdf.text(splitText, 80, currentYPosition);
+      } else {
+        pdf.text(splitText, 40, currentYPosition);
+      }
+
+      currentYPosition += splitText.length * 15;
+    }
+  }
+}
+
 
       for (const image of remainingReportImages) {
         const imageUrl = image ? image.src : null;
@@ -3535,6 +4670,7 @@ if (!runFinalCommonPopups()) return this.hideLoader();
     }
   })();
 }
+
 
 
   UploadDivContentOnPDF() {

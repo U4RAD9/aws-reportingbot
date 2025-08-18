@@ -16,6 +16,21 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 
   <style>
+    a.pdfButton {
+      display: inline-block;
+      padding: 3px 5px;
+      background-color: #4CAF50; /* Green color */
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      font-size: 14px;
+    }
+    
+    a.pdfButton:hover {
+      background-color: #45a049; /* Darker green */
+    }
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -840,6 +855,7 @@
                 <th>Mark As VIP</th>
                 <th>Mark for Review</th>
                 <th>Image</th>
+                <th>Report</th>
                 <!--THE UPDATE FROM ROHAN JANGID-->
                 <th>
                   <div class="filter-dropdown-container">
@@ -881,21 +897,53 @@
                     {% if not forloop.last %}, {% endif %}
                 {% endfor %}
             </td>
-            <td data-radiologist="{{ radiologist.user.id }}">
+            <!-- <td data-radiologist="{{ radiologist.user.id }}">
                 {% for radiologist in patient.radiologist.all %}
                     {{ radiologist.user.first_name }}
                     {% if not forloop.last %}, {% endif %}
                 {% endfor %}
+                {% if patient.radiologist_assigned_at %}
+                  <br>
+                  <small class="text-muted">
+                    Assigned: {{ patient.radiologist_assigned_at|date:"Y-m-d H:i" }}
+                  </small>
+                {% endif %}
+            </td> -->
+            <td data-radiologist="{% for radiologist in patient.radiologist.all %}{{ radiologist.user.first_name }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                {% for radiologist in patient.radiologist.all %}
+                    {{ radiologist.user.first_name }}
+                    {% if not forloop.last %}, {% endif %}
+                {% endfor %}
+                {% if patient.radiologist_assigned_at %}
+                    <br>
+                    <small class="text-muted">
+                        Assigned: {{ patient.radiologist_assigned_at|date:"Y-m-d H:i" }}
+                    </small>
+                {% endif %}
             </td>
-            <td>{{ patient.notes }}</td>
+            <td>
+              {{ patient.notes|linebreaksbr }}
+              {% if patient.notes_modified_at %}
+                <br>
+                <small class="text-muted">Last modified: {{ patient.notes_modified_at|date:"Y-m-d H:i" }}</small>
+              {% endif %}
+            </td>
 
             <td>
-              {% for file_url in patient.history_file_urls %}
-                <a class="imageButton" target="_blank" href="{{ file_url }}">
+              {% for file in patient.history_file_infos %}
+                <a class="imageButton" target="_blank" href="{{ file.url }}">
                   History Files {{ forloop.counter }}
                 </a>
+                {% if file.uploaded_at %}
+                  <br>
+                  <small class="text-muted">
+                    Uploaded: {{ file.uploaded_at|date:"Y-m-d H:i" }}
+                  </small>
+                {% endif %}
+                <br>
               {% endfor %}
             </td>
+
             <td>
               <input type="checkbox" class="urgent-checkbox" data-patient-id="{{ patient.patient_id }}" 
                   {% if patient.urgent %}checked{% endif %}>
@@ -927,6 +975,17 @@
                  data-accession="{{ patient.accession_number }}" onclick="changeButtonColor(this);">
                   View Image
               </a>
+            </td>
+            <!-- Add this cell in each patient row -->
+            <td>
+              {% for pdf_url in patient.presigned_pdf_urls %}
+                <a class="pdfButton" target="_blank" href="{{ pdf_url }}">
+                  View Report {{ forloop.counter }}
+                </a>
+                <br>
+              {% empty %}
+                No PDF
+              {% endfor %}
             </td>
             <td>
                 {% if patient.NonReportable %}
@@ -1466,8 +1525,9 @@
             var rowModality = ($(this).find('td:nth-child(10)').text() || "").trim().toLowerCase();
             var rowStudydescription = ($(this).find('td:nth-child(11)').text() || "").trim().toLowerCase();
             var rowCorporatecoordinator = ($(this).find('td:nth-child(12)').text() || "").trim().toLowerCase();
-            var rowAllocate = ($(this).find('td:nth-child(13)').text() || "").trim().toLowerCase();
-            var rowStatus = ($(this).find('td:nth-child(21)').text() || "").trim().toLowerCase();
+            var rowAllocate = $(this).find('td:nth-child(13)').data('radiologist') || "";
+            rowAllocate = rowAllocate.trim().toLowerCase();
+            var rowStatus = ($(this).find('td:nth-child(22)').text() || "").trim().toLowerCase();
 
             if ((selectedDate === '' || rowDate === selectedDate) 
                 && (selectedCorporatecoordinator === "" || rowCorporatecoordinator === selectedCorporatecoordinator) 
@@ -1498,46 +1558,32 @@
 
   <script>
     // Function to filter the table by status
-    function filterTableByStatus(status) {
-        // Show all rows initially
-        $("tbody tr").show();
-  
-        if (status) {
-            // Filter rows based on the selected status
-            $("tbody tr").filter(function() {
-                var rowStatus = $(this).find("td").eq(20).text().trim(); // Adjust column index if needed
-                return rowStatus.toLowerCase() !== status.toLowerCase(); // Case-insensitive comparison
-            }).hide();
-        }
-        console.log("Filtered Rows:", $("tbody tr:visible").length);
-    }
-  
-    // Function to apply filter and update URL
     function applyFilter() {
-        var selectedStatus = document.getElementById("filter-status-select").value;
-  
-        // Update URL without refreshing the page
-        var newUrl = window.location.pathname + (selectedStatus ? "?isdone=" + selectedStatus : "");
-        window.history.pushState({ path: newUrl }, "", newUrl);
-  
-        // Apply table filter
-        filterTableByStatus(selectedStatus);
+    var selectedStatus = document.getElementById("filter-status-select").value;
+    console.log("Selected Status:", selectedStatus);
+
+    // Update URL without refreshing the page
+    var newUrl = window.location.pathname + (selectedStatus ? "?isdone=" + selectedStatus : "");
+    window.history.pushState({ path: newUrl }, "", newUrl);
+
+    filterTable();
+}
+
+  $(document).ready(function () {
+    var urlParams = new URLSearchParams(window.location.search);
+    var statusFromUrl = urlParams.get("isdone");
+    if (statusFromUrl) {
+        $("#filter-status-select").val(statusFromUrl);
     }
-  
-    // Event handler for the "Status" dropdown filter
+
+    filterTable();
+});
+
     $(document).on("change", "#filter-status-select", function () {
-        applyFilter();
-    });
-  
-    // Apply filter on page load based on URL parameter
-    $(document).ready(function () {
-        var urlParams = new URLSearchParams(window.location.search);
-        var statusFromUrl = urlParams.get("isdone");
-        if (statusFromUrl) {
-            $("#filter-status-select").val(statusFromUrl);
-            filterTableByStatus(statusFromUrl);
-        }
-    });
+filterTable();   
+
+});
+    
   
 
         function refreshPage() {
