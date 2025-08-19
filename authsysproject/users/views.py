@@ -1725,7 +1725,7 @@ def allocation1(request):
     corporatecoordinator_objects = corporatecoordinator_group.user_set.all()
 
     # Set up pagination
-    paginator = Paginator(patients, 4)  # 400 patients per page
+    paginator = Paginator(patients, 400)  # 400 patients per page
     page_number = request.GET.get('page', 1)  # Get the page number from the request
     try:
         page_obj = paginator.get_page(page_number)
