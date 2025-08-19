@@ -703,6 +703,20 @@
     </div>
     <div class="card">
       <div class="card-body">
+        {% if messages %}
+          <div id="django-messages">
+            {% for message in messages %}
+              <div 
+                class="alert 
+                       {% if message.tags == 'error' %}alert-danger
+                       {% elif message.tags == 'success' %}alert-success
+                       {% else %}alert-info{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
         <form method="POST" action="{% url 'assign_radiologist' %}" id="radiologistForm">
           {% csrf_token %}
           <div class="form-container row">
@@ -1105,6 +1119,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
  
+
+  <script>
+    setTimeout(() => {
+      const messages = document.getElementById("django-messages");
+      if (messages) {
+        messages.style.display = "none";
+      }
+    }, 5000);
+  </script>
+
   <script>
     function openEditModal(id) {
         $("#dicomId").val(id);

@@ -57,6 +57,7 @@ from users.models.XrayPdfReport import XrayReport
 from users.models.StudyReport import StudyReport
 from users.models.dentalpatientdetails import DentalPatientInfo
 from users.models.doctorpatientdetails import DoctorPatientInfo
+from users.models.RadiologistInstitutionRestriction import RadiologistInstitutionRestriction
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from users.forms import DICOMDataForm
@@ -1724,7 +1725,7 @@ def allocation1(request):
     corporatecoordinator_objects = corporatecoordinator_group.user_set.all()
 
     # Set up pagination
-    paginator = Paginator(patients, 400)  # 400 patients per page
+    paginator = Paginator(patients, 4)  # 400 patients per page
     page_number = request.GET.get('page', 1)  # Get the page number from the request
     try:
         page_obj = paginator.get_page(page_number)
@@ -1821,6 +1822,69 @@ def allocation1(request):
         'search_query': search_query
     })
 
+# def assign_radiologist(request):
+#     print("I'm in assign radiologist")
+#     if request.method == "POST":
+#         action = request.POST.get('action')
+#         radiologist_id = request.POST.get('radiologist')
+#         corporatecoordinator_id = request.POST.get('corporatecoordinator')
+#         selected_patient_ids = request.POST.getlist('patients')
+
+#         # Check if any of the fields are missing
+#         if not selected_patient_ids:
+#             messages.error(request, "Please select at least one patient.")
+#             return redirect('xraycoordinator')
+
+#         patients = DICOMData.objects.filter(id__in=selected_patient_ids)
+#         if not patients.exists():
+#             messages.error(request, "No valid patients selected.")
+#             return redirect('xraycoordinator')
+
+#         # Radiologist Assignment Logic
+#         if action in ["assign", "replace"] and radiologist_id:
+#             try:
+#                 radiologist = PersonalInfoModel.objects.get(user_id=radiologist_id)
+#             except PersonalInfoModel.DoesNotExist:
+#                 messages.error(request, "Selected radiologist not found.")
+#                 return redirect('xraycoordinator')
+
+#             if action == "assign":
+#                 for patient in patients:
+#                     patient.radiologist.add(radiologist)
+#                 messages.success(request, f"Radiologist {radiologist} has been successfully assigned to the selected patients.")
+#             elif action == "replace":
+#                 for patient in patients:
+#                     patient.radiologist.clear()
+#                     patient.radiologist.add(radiologist)
+#                 messages.success(request, f"Radiologist {radiologist} has been successfully replaced for the selected patients.")
+
+#         # Corporate Coordinator Assignment Logic
+#         elif action in ["assign_corporate", "replace_corporate"] and corporatecoordinator_id:
+#             try:
+#                 corporatecoordinator = CorporateCoordinator.objects.get(user_id=corporatecoordinator_id)
+#             except CorporateCoordinator.DoesNotExist:
+#                 messages.error(request, "Selected corporate coordinator not found.")
+#                 return redirect('xraycoordinator')
+
+#             if action == "assign_corporate":
+#                 for patient in patients:
+#                     patient.corporatecoordinator.add(corporatecoordinator)
+#                 messages.success(request, f"Corporate Coordinator {corporatecoordinator} has been successfully assigned to the selected patients.")
+#             elif action == "replace_corporate":
+#                 for patient in patients:
+#                     patient.corporatecoordinator.clear()
+#                     patient.corporatecoordinator.add(corporatecoordinator)
+#                 messages.success(request, f"Corporate Coordinator {corporatecoordinator} has been successfully replaced for the selected patients.")
+#         else:
+#             messages.error(request, "Please select a valid action and coordinator.")
+#             return redirect('xraycoordinator')
+
+#         return redirect('xraycoordinator')
+
+#     # Handle case if the form is not submitted (GET method)
+#     return redirect('xraycoordinator')
+
+
 def assign_radiologist(request):
     print("I'm in assign radiologist")
     if request.method == "POST":
@@ -1847,6 +1911,22 @@ def assign_radiologist(request):
                 messages.error(request, "Selected radiologist not found.")
                 return redirect('xraycoordinator')
 
+            # 🚨 Restriction Check
+            for patient in patients:
+                restriction_exists = RadiologistInstitutionRestriction.objects.filter(
+                    radiologist=radiologist,  # radiologist is a PersonalInfo (FK → User)
+                    institutions__name=patient.institution_name
+                ).exists()
+
+                if restriction_exists:
+                    messages.error(
+                        request,
+                        f"Can't assign radiologist {radiologist.user.username} "
+                        f"to institution {patient.institution_name}."
+                    )
+                    return redirect('xraycoordinator')  # ❌ abort assignment
+
+            # ✅ If no restrictions found, proceed
             if action == "assign":
                 for patient in patients:
                     patient.radiologist.add(radiologist)
@@ -1882,6 +1962,8 @@ def assign_radiologist(request):
 
     # Handle case if the form is not submitted (GET method)
     return redirect('xraycoordinator')
+
+
 
 def assign_radiologist2(request):
     print("I'm in assign radiologist")

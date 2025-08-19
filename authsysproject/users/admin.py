@@ -34,6 +34,7 @@ from .models.VitalsPdfReport import VitalsReport
 from .models.AudiometryPdfReport import AudiometryReport
 from .models.DailyCount import SetCount
 from .models.DailyCountECG import ECGSetCount
+from .models.RadiologistInstitutionRestriction import RadiologistInstitutionRestriction
 
 from .models .StudyReport import StudyReport
 from .models .CKEditorTemplate import CKEditorTemplate
@@ -78,6 +79,7 @@ admin.site.register(StudyReport)
 admin.site.register(DentalPatientInfo)
 admin.site.register(DoctorPatientInfo)
 admin.site.register(CKEditorTemplate)
+admin.site.register(RadiologistInstitutionRestriction)
 
 # Register your models here.
 class DICOMFileInline(admin.TabularInline):
