@@ -28,6 +28,7 @@ from django.contrib.auth import login as ContribLogin
 from django.contrib.auth import logout as ContribLogout
 from django.middleware.csrf import get_token
 import httpx
+from authsysproject.users.models.faq import FAQ
 from users.models.CKEditorTemplate import CKEditorTemplate
 from users.models.AudiometryPdfReport import AudiometryReport
 from users.models.OptometryPdfReport import OptometryReport
