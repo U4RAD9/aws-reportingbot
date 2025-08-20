@@ -8387,11 +8387,18 @@ def delete_all_patients_doctor(request):
 
 
 def to_naive_local(dt):
-    """Convert UTC datetime to local timezone (IST) and drop tzinfo so Excel doesn't shift it back."""
+    """Convert datetime to local timezone (IST) and drop tzinfo so Excel doesn't shift it back."""
     if not dt:
         return None
-    local_dt = timezone.localtime(dt)   # convert aware → local timezone
-    return local_dt.replace(tzinfo=None)  # strip tzinfo → naive datetime
+
+    if timezone.is_naive(dt):
+        # assume the naive datetime is already in settings.TIME_ZONE (e.g., IST)
+        local_dt = dt
+    else:
+        # convert aware datetime to local timezone
+        local_dt = timezone.localtime(dt)
+
+    return local_dt.replace(tzinfo=None)
 
 def export_patient_data(patients):
     if not patients.exists():
