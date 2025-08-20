@@ -2460,7 +2460,14 @@ extractContent(editor) {
 
           case 'strong':
           case 'b':
-            return `[BOLD]${node.textContent}[/BOLD]`;
+             if (node.closest('table')) {
+    // ✅ Inside table → return real <b> tag
+    return `<b>${Array.from(node.childNodes).map(processNode).join('')}</b>`;
+  } else {
+    // ✅ Outside table → your placeholder
+    return `[BOLD]${node.textContent}[/BOLD]`;
+  }
+           
 
           case 'ul':
           case 'ol':
