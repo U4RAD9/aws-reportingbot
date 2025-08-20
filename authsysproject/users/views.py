@@ -9,7 +9,7 @@ from django.db.models.functions import Cast  # Add this import
 from urllib.parse import urlparse, parse_qs
 from tkinter import Tk, filedialog
 from PyPDF2 import PdfReader, PdfWriter
-from django.utils.timezone import localtime
+from django.utils import timezone
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from venv import logger
@@ -8381,9 +8381,17 @@ def delete_all_patients_doctor(request):
 
 
 
+# def to_naive_local(dt):
+#     """Convert UTC datetime to IST and drop tzinfo so Excel doesn't shift it back."""
+#     return time.localtime(dt).replace(tzinfo=None) if dt else None
+
+
 def to_naive_local(dt):
-    """Convert UTC datetime to IST and drop tzinfo so Excel doesn't shift it back."""
-    return time.localtime(dt).replace(tzinfo=None) if dt else None
+    """Convert UTC datetime to local timezone (IST) and drop tzinfo so Excel doesn't shift it back."""
+    if not dt:
+        return None
+    local_dt = timezone.localtime(dt)   # convert aware → local timezone
+    return local_dt.replace(tzinfo=None)  # strip tzinfo → naive datetime
 
 def export_patient_data(patients):
     if not patients.exists():
