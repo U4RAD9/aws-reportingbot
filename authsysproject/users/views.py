@@ -8332,50 +8332,122 @@ def delete_all_patients_doctor(request):
 ##################################################### Data Excel ###################################################
 
 
+# def export_patient_data(patients):
+#     if not patients.exists():
+#         return HttpResponse("No data available for export.", content_type="text/plain")
+
+#     # Define columns for the Excel file
+#     data = []
+#     for patient in patients:
+#         history_file = patient.history_files.first()  # Safely get the first history file
+#         data.append({
+#             "Patient Name": patient.patient_name,
+#             "Patient ID": patient.patient_id,
+#             "Age": patient.age,
+#             "Gender": patient.gender,
+#             "Study Date": patient.study_date,
+#             "Study Time": patient.study_time.strftime("%H:%M:%S") if patient.study_time else "",
+#             "Received on DB": patient.recived_on_db.strftime("%Y-%m-%d %H:%M:%S") if patient.recived_on_db else "",
+#             "Modality": patient.Modality,
+#             "Urgent": "Yes" if patient.urgent else "No",
+#             "Status": "Reported" if patient.isDone else "Unreported",
+#             "Location": patient.location,
+#             "Institution Name": patient.institution_name,
+#             "Radiologists": ", ".join([str(radiologist) for radiologist in patient.radiologist.all()]),
+#             "Studydescription":patient.study_description,
+#             "Notes modified at": patient.notes_modified_at.strftime("%Y-%m-%d %H:%M:%S") if patient.notes_modified_at else "",
+# "History Upload Time": history_file.uploaded_at.strftime("%Y-%m-%d %H:%M:%S") if history_file else "",
+
+           
+#             "Radiologist assigned at:": patient.radiologist_assigned_at.strftime("%Y-%m-%d %H:%M:%S") if patient.radiologist_assigned_at else "",
+#             "Report created at:": patient.marked_done_at.strftime("%Y-%m-%d %H:%M:%S") if patient.marked_done_at else "",
+
+#         })
+
+#     # Create a DataFrame using pandas
+#     df = pd.DataFrame(data)
+
+#     # Create an Excel file in memory
+#     excel_file = BytesIO()
+#     with pd.ExcelWriter(excel_file, engine="xlsxwriter") as writer:
+#         df.to_excel(writer, index=False, sheet_name="Patients")
+
+#     excel_file.seek(0)
+#     response = HttpResponse(excel_file.read(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+#     response["Content-Disposition"] = 'attachment; filename="patient_data.xlsx"'
+
+#     return response
+
+
+
+def to_naive_local(dt):
+    """Convert UTC datetime to IST and drop tzinfo so Excel doesn't shift it back."""
+    return time.localtime(dt).replace(tzinfo=None) if dt else None
+
 def export_patient_data(patients):
     if not patients.exists():
         return HttpResponse("No data available for export.", content_type="text/plain")
 
-    # Define columns for the Excel file
     data = []
     for patient in patients:
-        history_file = patient.history_files.first()  # Safely get the first history file
+        history_file = patient.history_files.first()  # Safely get first history file
+
+        # --- TAT Calculation ---
+        if patient.marked_done_at and patient.notes_modified_at:
+            tat_diff = patient.marked_done_at - patient.notes_modified_at
+            days = tat_diff.days
+            hours, remainder = divmod(tat_diff.seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            if days > 0:
+                tat_str = f"{days}d {hours}h {minutes}m"
+            else:
+                tat_str = f"{hours}h {minutes}m"
+        else:
+            tat_str = "N/A"
+
+        # --- Patient Data Row ---
         data.append({
             "Patient Name": patient.patient_name,
             "Patient ID": patient.patient_id,
             "Age": patient.age,
             "Gender": patient.gender,
-            "Study Date": patient.study_date,
-            "Study Time": patient.study_time.strftime("%H:%M:%S") if patient.study_time else "",
-            "Received on DB": patient.recived_on_db.strftime("%Y-%m-%d %H:%M:%S") if patient.recived_on_db else "",
+            "Study Date": patient.study_date,  # stays string (DD-MM-YYYY in your model)
+            "Study Time": to_naive_local(patient.study_time),
+            "Received on DB": to_naive_local(patient.recived_on_db),
             "Modality": patient.Modality,
             "Urgent": "Yes" if patient.urgent else "No",
             "Status": "Reported" if patient.isDone else "Unreported",
             "Location": patient.location,
             "Institution Name": patient.institution_name,
-            "Radiologists": ", ".join([str(radiologist) for radiologist in patient.radiologist.all()]),
-            "Studydescription":patient.study_description,
-            "Notes modified at": patient.notes_modified_at.strftime("%Y-%m-%d %H:%M:%S") if patient.notes_modified_at else "",
-"History Upload Time": history_file.uploaded_at.strftime("%Y-%m-%d %H:%M:%S") if history_file else "",
-
-           
-            "Radiologist assigned at:": patient.radiologist_assigned_at.strftime("%Y-%m-%d %H:%M:%S") if patient.radiologist_assigned_at else "",
-            "Report created at:": patient.marked_done_at.strftime("%Y-%m-%d %H:%M:%S") if patient.marked_done_at else "",
-
+            "Radiologists": ", ".join([str(r) for r in patient.radiologist.all()]),
+            "Study Description": patient.study_description,
+            "Notes modified at": to_naive_local(patient.notes_modified_at),
+            "History Upload Time": to_naive_local(history_file.uploaded_at) if history_file else None,
+            "Radiologist assigned at": to_naive_local(patient.radiologist_assigned_at),
+            "Report created at": to_naive_local(patient.marked_done_at),
+            "TAT Counter": tat_str,
         })
 
-    # Create a DataFrame using pandas
+    # --- Create DataFrame ---
     df = pd.DataFrame(data)
 
-    # Create an Excel file in memory
+    # --- Create Excel File ---
     excel_file = BytesIO()
-    with pd.ExcelWriter(excel_file, engine="xlsxwriter") as writer:
+    with pd.ExcelWriter(excel_file, engine="xlsxwriter", datetime_format='yyyy-mm-dd hh:mm:ss') as writer:
         df.to_excel(writer, index=False, sheet_name="Patients")
 
-    excel_file.seek(0)
-    response = HttpResponse(excel_file.read(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    response["Content-Disposition"] = 'attachment; filename="patient_data.xlsx"'
+        # Autofit column widths
+        worksheet = writer.sheets["Patients"]
+        for i, col in enumerate(df.columns):
+            col_width = max(df[col].astype(str).map(len).max(), len(col)) + 2
+            worksheet.set_column(i, i, col_width)
 
+    excel_file.seek(0)
+    response = HttpResponse(
+        excel_file.read(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="patient_data.xlsx"'
     return response
 
 
