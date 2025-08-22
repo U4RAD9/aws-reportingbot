@@ -21,6 +21,7 @@ user_chat_state = {}
 email_executor = ThreadPoolExecutor(max_workers=5)
 
 async def send_email_async(subject, message_body, recipient_list):
+    """Sends an email in a separate thread to avoid blocking the event loop."""
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(
         email_executor,
@@ -36,6 +37,7 @@ async def send_email_async(subject, message_body, recipient_list):
 
 @sync_to_async
 def get_user_role(user):
+    """Determines the user's role based on their group membership."""
     if user.groups.filter(name="xraycoordinator").exists():
         return "xraycoordinator"
     elif user.groups.filter(name="radiologist").exists():
@@ -44,13 +46,20 @@ def get_user_role(user):
         return "client"
 
 @sync_to_async
+def get_non_coordinator_room_users(room_id):
+    """Finds all users in a given room who are not coordinators."""
+    return list(User.objects.filter(
+        Q(message__room_id=room_id) & ~Q(groups__name="xraycoordinator")
+    ).distinct())
+
+
+@sync_to_async
 def search_faq(role, message):
     """Finds the most relevant FAQ by matching all FAQs and scoring them."""
     if role not in ["client", "radiologist"]:
         return None
     if not message:
         return None
-
 
     user_tokens = {t for t in re.split(r"\W+", message.lower()) if len(t) >= 3}
     if not user_tokens:
@@ -76,26 +85,23 @@ def search_faq(role, message):
     else:
         return None
 
-    
-
 @sync_to_async
 def fetch_faq_list(role):
+    """Fetches a list of all FAQs for a specific role."""
     if role not in ["client", "radiologist"]:
         return []
 
     faqs = FAQ.objects.filter(target_group=role).values("question", "answer")
-    return list(faqs)   # returns a list of dicts
-
+    return list(faqs)
 
 @sync_to_async 
 def has_any_messages(room_id):
+    """Checks if a chat room has any messages."""
     return Message.objects.filter(room_id=room_id).exists()
 
 @sync_to_async
 def fetch_recent_messages(room_id, limit=50, hide_bot=False):
-    """
-    Fetches recent messages and correctly converts their UTC timestamps to IST.
-    """
+    """Fetches recent messages and correctly converts their UTC timestamps to IST."""
     qs = Message.objects.filter(room_id=room_id)
     if hide_bot:
         qs = qs.exclude(sender__username="SystemBot")
@@ -117,6 +123,7 @@ def fetch_recent_messages(room_id, limit=50, hide_bot=False):
 
 @sync_to_async
 def save_bot_message(room_id, content):
+    """Saves a message from the SystemBot to the database."""
     try:
         room = ChatRoom.objects.get(id=room_id)
         bot_user, _ = User.objects.get_or_create(username="SystemBot", defaults={"email": "bot@example.com"})
@@ -148,33 +155,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
         has_any_messages_in_room = await has_any_messages(self.room_id)
         if not has_any_messages_in_room:
             role = await get_user_role(user)
-
             greet_msg = "Hi! I'm Echo. How can I help you today?"
             await self.send_bot_message_and_save(greet_msg)
 
-
             faqs = await fetch_faq_list(role)
-            print(">>> Sending FAQs:", faqs)  
-
-
+            print(">>> Sending FAQs:", faqs) 
 
             if faqs:
                 await self.send(text_data=json.dumps({
-        "type": "faq_list",
-        "faqs": faqs
-    }))
-
-
-
-       
-
+                    "type": "faq_list",
+                    "faqs": faqs
+                }))
 
         role = await get_user_role(user)
-
         hide_bot = (role == "xraycoordinator")
         recent_to_display = await fetch_recent_messages(self.room_id, limit=50, hide_bot=hide_bot)
         await self.send(text_data=json.dumps({"type": "history", "messages": recent_to_display}))
-
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
@@ -211,9 +207,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 await self.save_and_broadcast_message(username, message, tagged_username)
                 
                 if is_tagged:
-                    await self.send_tagged_coordinator_email(username, message, tagged_username)
+                    asyncio.create_task(self.send_tagged_coordinator_email(username, message, tagged_username))
                 elif role in ["client", "radiologist"]:
-                    await self.send_all_coordinator_email(username, message)
+                    asyncio.create_task(self.send_all_coordinator_email(username, message))
                 
                 return
 
@@ -233,7 +229,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     connect_msg = "Okay, connecting you to a coordinator..."
                     await self.send_bot_message_and_save(connect_msg)
                     user_chat_state[self.room_id]["awaiting_confirmation"] = False
-                    await self.send_all_coordinator_email(username, message)
+                    asyncio.create_task(self.send_all_coordinator_email(username, message))
                 else:
                     retry_msg = "Please reply with yes (close) or no (connect)."
                     await self.send_bot_message_and_save(retry_msg)
@@ -250,7 +246,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 await self.save_and_broadcast_message(username, message, tagged_username)
                 unsure_msg = "I’m not sure about that. Connecting you to a coordinator..."
                 await self.send_bot_message_and_save(unsure_msg)
-                await self.send_all_coordinator_email(username, message)
+                asyncio.create_task(self.send_all_coordinator_email(username, message))
             
         elif message_type == "close_chat":
             await self.mark_room_closed()
@@ -307,11 +303,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "timestamp": event["timestamp"],
         }))
 
+    async def coordinator_message_alert(self, event):
+        """Handler for alerts sent from coordinators to clients/radiologists."""
+        await self.send(text_data=json.dumps({
+            "type": "alert",
+            "room_id": event["room_id"],
+            "sender": event["sender"],
+            "message": event["message"],
+        }))
+
+
     async def send_bot_message_and_save(self, message):
         """Helper to consistently send a bot message and save it to all users with an IST timestamp."""
         await save_bot_message(self.room_id, message)
         
-        # Get the current UTC time and convert it to IST
         now_utc = timezone.now()
         now_ist = now_utc.astimezone(pytz.timezone('Asia/Kolkata'))
 
@@ -327,7 +332,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def save_and_broadcast_message(self, username, message, tagged_username):
-        """Saves a user message and broadcasts it to the group with an IST timestamp."""
+        """Saves a user message and broadcasts it to the group, including new alert logic."""
         await self.save_message(username, self.room_id, message, tagged_username)
         
         now_utc = timezone.now()
@@ -343,70 +348,85 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'tagged_username': tagged_username
             }
         )
-        print(f"Sending alert for room {self.room_id} by {username}")
 
-        await self.channel_layer.group_send(
-           "alerts",
-    {
-        "type": "new_message_alert",
-        "room_id": self.room_id,
-        "sender": username,
-        "message": message,
-    }
-)
+        user = self.scope["user"]
+        role = await get_user_role(user)
+
+        if role in ["client", "radiologist"]:
+            print(f"Sending alert to coordinators for room {self.room_id} by {username}")
+            await self.channel_layer.group_send(
+                "alerts",
+                {
+                    "type": "new_message_alert",
+                    "room_id": self.room_id,
+                    "sender": username,
+                    "message": message,
+                }
+            )
+
+        elif role == "xraycoordinator":
+            participant_users = await get_non_coordinator_room_users(self.room_id)
+            for p_user in participant_users:
+                print(f"Sending alert to {p_user.username} (client/radiologist)")
+                await self.channel_layer.group_send(
+                    f"user_{p_user.id}",
+                    {
+                        "type": "coordinator_message_alert",
+                        "room_id": self.room_id,
+                        "sender": username,
+                        "message": message,
+                    }
+                )
 
     async def send_tagged_coordinator_email(self, sender_username, message, tagged_username):
-            """Sends an email notification to a specific tagged coordinator, only once per room."""
-            try:
-                room = await self.get_room()
-                if room.email_sent:  # ✅ Already sent → skip
-                    return
+        """Sends an email notification to a specific tagged coordinator, only once per room."""
+        try:
+            room = await self.get_room()
+            if room.email_sent:
+                return
 
-                tagged_user = await self.get_user_by_username(tagged_username)
-                if tagged_user and tagged_user.email:
-                    subject = f"You were tagged in a chat by {sender_username}"
-                    message_body = f"You have been tagged in a new chat message by {sender_username}.\n\nMessage:\n{message}"
-                    asyncio.create_task(send_email_async(subject, message_body, [tagged_user.email]))
-
-                    room.email_sent = True
-                    await self.save_room(room)
-                else:
-                    print(f"❌ Tagged user {tagged_username} not found or has no email.")
-                    await self.send_all_coordinator_email(sender_username, message)
-
-            except Exception as e:
-                print(f"❌ Failed to send tagged email: {e}")
-
+            tagged_user = await self.get_user_by_username(tagged_username)
+            if tagged_user and tagged_user.email:
+                subject = f"You were tagged in a chat by {sender_username}"
+                message_body = f"You have been tagged in a new chat message by {sender_username}.\n\nMessage:\n{message}"
+                await send_email_async(subject, message_body, [tagged_user.email])
+                
+                room.email_sent = True
+                await self.save_room(room)
+            else:
+                print(f"❌ Tagged user {tagged_username} not found or has no email.")
+                await self.send_all_coordinator_email(sender_username, message)
+        except Exception as e:
+            print(f"❌ Failed to send tagged email: {e}")
 
     async def send_all_coordinator_email(self, username, message):
-            """Sends an email notification to all coordinators, only once per room."""
-            try:
-                room = await self.get_room()
-                if room.email_sent: 
-                    return
+        """Sends an email notification to all coordinators, only once per room."""
+        try:
+            room = await self.get_room()
+            if room.email_sent: 
+                return
 
-                coordinator_emails = await self.get_all_coordinator_emails()
-                if coordinator_emails:
-                    subject = "New Chat Message Requiring Assistance"
-                    message_body = f"A new message from {username} has been received and requires coordinator assistance.\n\nMessage:\n{message}"
-                    asyncio.create_task(send_email_async(subject, message_body, coordinator_emails))
+            coordinator_emails = await self.get_all_coordinator_emails()
+            if coordinator_emails:
+                subject = "New Chat Message Requiring Assistance"
 
-                    room.email_sent = True
-                    await self.save_room(room)
-            except Exception as e:
-                print(f"❌ Failed to send group email: {e}")
+                message_body = (
+                    f"Hi Coordinators,\n\n"
+                    f"A new message from {username} has been received and requires coordinator assistance.\n\n"
+                    f"Message:\n{message}\n\n"
+                    f"Thank You,\n"
+                    f"Sent by Echo\n"
+                    f"(created by Gautam)"
+                )
 
+                await send_email_async(subject, message_body, coordinator_emails)
+                
+                print("Email sent")
 
-    async def new_message_alert(self, event):
-        await self.send(text_data=json.dumps({
-            'type': 'alert',
-            'room_id': event['room_id'],
-            'sender': event['sender'],
-            'message': event['message'],
-        }))
-
-
-
+                room.email_sent = True
+                await self.save_room(room)
+        except Exception as e:
+            print(f"❌ Failed to send group email: {e}")
 
     @sync_to_async
     def get_room(self):
@@ -479,9 +499,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if room.participant2 and room.participant2.email:
             return room.participant2.email
         return None
-
-
-
 
 class AlertConsumer(AsyncWebsocketConsumer):
     async def connect(self):

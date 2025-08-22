@@ -490,6 +490,16 @@ minimizeButton.addEventListener("click", () => {
           return;
         }
 
+        let chatSocket = new WebSocket(
+    'ws://' + window.location.host +
+    '/ws/chat/' + data.room_id + '/'
+);
+
+        if (data.type === 'alert') {
+        console.log('New message alert:', data.message);
+        alert("🔔 New message from " + data.sender + " in room " + data.room_id + ": " + data.message);
+    }
+
 
         console.warn("Unhandled WS message:", data);
       };
