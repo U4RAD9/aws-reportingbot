@@ -2431,7 +2431,7 @@ def ecgallocation(request):
     for patient in page_obj.object_list:
         unique_dates.add(patient.date.date_field)
     sorted_unique_dates = sorted(unique_dates, reverse=False)
-    formatted_dates = [date.strftime('%Y-%m-%d') for date in sorted_unique_dates]
+    formatted_dates = [date.strftime('%d-%m-%Y') for date in sorted_unique_dates]
     unique_location = Location.objects.all()
 
 
@@ -3232,8 +3232,8 @@ def uploadcsvforaudio(request):
                     report_date = datetime.strptime(row['ReportDate'], '%d-%m-%Y').date()
 
                     # Convert datetime objects back to strings in the desired format
-                    test_date_formatted = test_date.strftime('%Y-%m-%d')
-                    report_date_formatted = report_date.strftime('%Y-%m-%d')
+                    test_date_formatted = test_date.strftime('%d-%m-%Y')
+                    report_date_formatted = report_date.strftime('%d-%m-%Y')
 
                     audioPatientDetails.objects.create(
                         PatientId=row['Patient ID'],
@@ -3939,8 +3939,8 @@ def upload_ecg_pdf(request):
             #         destination.write(chunk)
 
             # Convert report_date_str to a datetime object
-            test_date = datetime.strptime(test_date_str, "%Y-%m-%d").date()
-            report_date = datetime.strptime(report_date_str, "%Y-%m-%d").date()
+            test_date = datetime.strptime(test_date_str, "%d-%m-%Y").date()
+            report_date = datetime.strptime(report_date_str, "%d-%m-%Y").date()
 
             # Save the PDF file path and additional data to the database
             pdf_model_instance = EcgReport(
@@ -6789,6 +6789,7 @@ def edit_dicom_data_coordinator(request, pk):
             dicom_entry.age = request.POST.get('age', dicom_entry.age)
             dicom_entry.gender = request.POST.get('gender', dicom_entry.gender)
             dicom_entry.study_description = request.POST.get('study_description', dicom_entry.study_description)
+            dicom_entry.body_part_examined = request.POST.get('body_part_examined', dicom_entry.body_part_examined)
             dicom_entry.notes = request.POST.get('notes', dicom_entry.notes)
             dicom_entry.save()
 
