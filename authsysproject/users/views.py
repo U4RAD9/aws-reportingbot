@@ -1802,6 +1802,10 @@ def allocation1(request):
     unique_study_description = {patient.study_description for patient in page_obj.object_list if patient.study_description is not None}
     sorted_unique_study_description = sorted(unique_study_description, reverse=False)
 
+    # Study Description of patients
+    unique_body_part_examined = {patient.body_part_examined for patient in page_obj.object_list if patient.body_part_examined is not None}
+    sorted_unique_body_part_examined = sorted(unique_body_part_examined, reverse=False)
+
     # Modality
     unique_modality = {patient.Modality for patient in page_obj.object_list if patient.Modality is not None}
     sorted_unique_modality = sorted(unique_modality, reverse=False)
@@ -1815,6 +1819,7 @@ def allocation1(request):
         'Study_time' : sorted_unique_study_time,
         'Received_on_db': sorted_unique_recived_on_db,
         'Study_description': sorted_unique_study_description,
+        'body_part_examined': sorted_unique_body_part_examined,
         'radiologists': radiologist_objects,
         'corporatecoordinators': corporatecoordinator_objects,
         'status_options': status_options,  # Pass the status options dynamically
