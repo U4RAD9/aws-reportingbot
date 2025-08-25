@@ -564,7 +564,7 @@ def upload_ecg(request):
 
             unique_dates = set(patient.date.date_field for patient in page_obj.object_list)
             sorted_unique_dates = sorted(unique_dates, reverse=False)
-            formatted_dates = [date.strftime('%Y-%m-%d') for date in sorted_unique_dates]
+            formatted_dates = [date.strftime('%d-%m-%Y') for date in sorted_unique_dates]
 
             unique_cities = [f"{x.name}" for x in City.objects.all()]
             unique_locations = [f"{y.name}" for y in Location.objects.all()]
