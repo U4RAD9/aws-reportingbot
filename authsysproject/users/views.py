@@ -319,7 +319,7 @@ def extract_date(text):
             raw_date = str(text).split("Acquiredon:")[1][0:10].strip()
 
         if isinstance(raw_date, str):
-            return datetime.strptime(raw_date, '%d-%m-%Y').date()
+            return datetime.strptime(raw_date, '%Y-%m-%d').date()
         else:
             return raw_date  # If raw_date is already a datetime.date, return it as is
     except (IndexError, ValueError):
