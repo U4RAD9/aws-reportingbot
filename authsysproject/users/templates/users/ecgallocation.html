@@ -549,7 +549,7 @@
                 <td>{{ patient.gender }}</td>
                 <td>{{ patient.HeartRate }}</td>
                 <td class='hidden interval'>{{ patient.PRInterval }}</td>
-                <td>{{ patient.TestDate }}</td>
+                <td>{{ patient.TestDate|date:"d-m-Y" }}</td>
                 <td>{{ patient.date.location.name }}</td>
                 <td>
                    {% for patient_url in patient_urls %}
