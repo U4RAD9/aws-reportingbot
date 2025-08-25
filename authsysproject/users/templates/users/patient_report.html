@@ -710,8 +710,8 @@
                 return dateString; // Return original string if invalid date
             }
             
-            const options = { day: 'numeric', month: 'numeric', year: 'numeric'};
-            return date.toLocaleDateString('en-US', options);
+            const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+            return date.toLocaleDateString('en-IN', options); // Indian format
         }
         
         // Finalize report function - called when Done button is clicked
