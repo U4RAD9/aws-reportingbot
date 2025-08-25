@@ -701,7 +701,6 @@
             }
         }
         
-        // Format date for display (e.g., "Jan 21, 2025")
         function formatDateForDisplay(dateString) {
             if (!dateString) return '';
             
@@ -709,10 +708,14 @@
             if (isNaN(date.getTime())) {
                 return dateString; // Return original string if invalid date
             }
-            
-            const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
-            return date.toLocaleDateString('en-IN', options); // Indian format
+        
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+            const year = date.getFullYear();
+        
+            return `${day}-${month}-${year}`;
         }
+
         
         // Finalize report function - called when Done button is clicked
         function finalizeReport() {
