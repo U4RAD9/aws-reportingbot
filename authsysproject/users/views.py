@@ -3944,8 +3944,10 @@ def upload_ecg_pdf(request):
             #         destination.write(chunk)
 
             # Convert report_date_str to a datetime object
-            test_date = datetime.strptime(test_date_str, "%d-%m-%Y").date()
-            report_date = datetime.strptime(report_date_str, "%d-%m-%Y").date()
+            # test_date = datetime.strptime(test_date_str, "%d-%m-%Y").date()
+            # report_date = datetime.strptime(report_date_str, "%d-%m-%Y").date()
+            test_date = datetime.strptime(test_date_str, "%Y-%m-%d").date()
+            report_date = datetime.strptime(report_date_str, "%Y-%m-%d").date()
 
             # Save the PDF file path and additional data to the database
             pdf_model_instance = EcgReport(
