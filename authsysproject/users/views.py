@@ -441,7 +441,7 @@ def upload_ecg(request):
                         heart_rate = extract_heart_rate(first_page_text)
                         pr_interval = extract_pr_interval(first_page_text)
                         report_time = extract_report_time(first_page_text)
-                        formatted_date = extract_date(first_page_text)
+                        formatted_date = extract_date(first_page_text).strftime('%d-%m-%Y')
 
                         date, created = Date.objects.get_or_create(date_field=formatted_date, location_id=location.id)
 
