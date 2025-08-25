@@ -564,11 +564,11 @@
                    {% for patient_url in patient_urls %}
                      {% if patient_url.patient.id == patient.id %}
                        <a class="reportButton"
-                         href="ecgreporting?data-patientid={{ patient.PatientId }}&data-patientname={{ patient.PatientName }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-heartrate={{ patient.HeartRate }}&data-printerval={{patient.PRInterval}}&data-testdate={{ patient.TestDate }}&data-reportdate={% now 'd-m-Y' %}&data-reportimage={{ patient_url.url|urlencode }}&data-location={{ patient.date.location.name }}"
+                         href="ecgreporting?data-patientid={{ patient.PatientId }}&data-patientname={{ patient.PatientName }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-heartrate={{ patient.HeartRate }}&data-printerval={{patient.PRInterval}}&data-testdate={{ patient.TestDate }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.url|urlencode }}&data-location={{ patient.date.location.name }}"
                          data-patient-id="{{ patient.PatientId }}" data-patientname="{{ patient.PatientName }}"
                          data-age="{{ patient.age }}" data-gender="{{ patient.gender }}"
                          data-heartrate="{{ patient.HeartRate }}" data-printerval="{{ patient.PRInterval }}"
-                         data-testdate="{{ patient.TestDate|date:'d-m-Y' }}" data-reportdate="{% now 'd-m-Y' %}"
+                         data-testdate="{{ patient.TestDate }}" data-reportdate="{% now 'Y-m-d' %}"
                          data-reportimage="{{ patient_url.url|urlencode }}" data-location="{{ patient.date.location.name }}" data-is-done="{{ patient.isDone }}"
                          onclick="storeBase64Image(event, '{{ patient.PatientId }}', '{{ patient_url.url }}');">
                          {% if patient.isDone == False %}
