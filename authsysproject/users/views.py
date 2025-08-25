@@ -2436,7 +2436,7 @@ def ecgallocation(request):
     for patient in page_obj.object_list:
         unique_dates.add(patient.date.date_field)
     sorted_unique_dates = sorted(unique_dates, reverse=False)
-    formatted_dates = [date.strftime('%d-%m-%Y') for date in sorted_unique_dates]
+    formatted_dates = [date.strftime('%Y-%m-%d') for date in sorted_unique_dates]
     unique_location = Location.objects.all()
 
 
