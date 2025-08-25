@@ -542,10 +542,10 @@
         }
         
         
-        // Format date strings for DD-MM-YYYY
+        // Format date strings for HTML date inputs (YYYY-MM-DD)
         function formatDateForInput(dateString) {
-            // If dateString is already in DD-MM-YYYY format, return as is
-            if (/^\d{2}-\d{2}-\d{4}$/.test(dateString)) {
+            // If dateString is already in YYYY-MM-DD format, return as is
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
                 return dateString;
             }
             
@@ -555,11 +555,11 @@
                 return ''; // Return empty string if invalid date
             }
             
-            // Format as DD-MM-YYYY
+            // Format as YYYY-MM-DD
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
-            return `${day}-${month}-${year}`;
+            return `${year}-${month}-${day}`;
         }
         
         // Generate and update the report
@@ -701,7 +701,7 @@
             }
         }
         
-        // Format date for display (DD-MM-YYYY)
+        // Format date for display (e.g., "Jan 21, 2025")
         function formatDateForDisplay(dateString) {
             if (!dateString) return '';
             
@@ -710,11 +710,10 @@
                 return dateString; // Return original string if invalid date
             }
             
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${day}-${month}-${year}`;
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return date.toLocaleDateString('en-US', options);
         }
+        
         // Finalize report function - called when Done button is clicked
         function finalizeReport() {
             isReportFinalized = true;
