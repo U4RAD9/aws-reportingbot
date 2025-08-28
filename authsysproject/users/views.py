@@ -9079,48 +9079,48 @@ def email_pdf_with_logo(request, patient_id):
 
 
 
-def email_pdf_raw(request, patient_id):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+# def email_pdf_raw(request, patient_id):
+#     if request.method != 'POST':
+#         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-    try:
-        data = json.loads(request.body)
-        email = data.get('email')
-        name = data.get('name')
-        pdf_url = data.get('pdf_url')
+#     try:
+#         data = json.loads(request.body)
+#         email = data.get('email')
+#         name = data.get('name')
+#         pdf_url = data.get('pdf_url')
 
-        if not email or not name or not pdf_url:
-            return JsonResponse({'error': 'Missing required fields'}, status=400)
+#         if not email or not name or not pdf_url:
+#             return JsonResponse({'error': 'Missing required fields'}, status=400)
         
-        if email is None:
-            return JsonResponse({'error': 'Email is required'}, status=400)
+#         if email is None:
+#             return JsonResponse({'error': 'Email is required'}, status=400)
 
-        print(f"📩 Emailing raw PDF for patient_id={patient_id}, name={name}, email={email}")
+#         print(f"📩 Emailing raw PDF for patient_id={patient_id}, name={name}, email={email}")
 
-        # Download the PDF from the presigned URL
-        response = requests.get(pdf_url)
-        if response.status_code != 200:
-            raise ValueError("Failed to download PDF")
+#         # Download the PDF from the presigned URL
+#         response = requests.get(pdf_url)
+#         if response.status_code != 200:
+#             raise ValueError("Failed to download PDF")
 
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
-            temp_pdf.write(response.content)
-            temp_pdf_path = temp_pdf.name
+#         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
+#             temp_pdf.write(response.content)
+#             temp_pdf_path = temp_pdf.name
 
-        # Compose the email
-        subject = f"Your Medical Report - {name}"
-        body = f"Dear {name},\n\nPlease find your medical report attached.\n\nRegards,\nYour Clinic"
-        email_message = EmailMessage(subject, body, to=[email])
-        email_message.attach_file(temp_pdf_path)
-        email_message.send()
-        print(f"✅ Raw PDF emailed to {email}")
+#         # Compose the email
+#         subject = f"Your Medical Report - {name}"
+#         body = f"Dear {name},\n\nPlease find your medical report attached.\n\nRegards,\nYour Clinic"
+#         email_message = EmailMessage(subject, body, to=[email])
+#         email_message.attach_file(temp_pdf_path)
+#         email_message.send()
+#         print(f"✅ Raw PDF emailed to {email}")
 
-        # Remove the temp file
-        os.unlink(temp_pdf_path)
-        return JsonResponse({'message': f'Raw PDF emailed to {email}'})
+#         # Remove the temp file
+#         os.unlink(temp_pdf_path)
+#         return JsonResponse({'message': f'Raw PDF emailed to {email}'})
     
-    except Exception as e:
-        print(f"❌ Fatal error: {e}")
-        return JsonResponse({'error': str(e)}, status=500)
+#     except Exception as e:
+#         print(f"❌ Fatal error: {e}")
+#         return JsonResponse({'error': str(e)}, status=500)
 
 
 
