@@ -184,8 +184,8 @@ def login(request):
                 return redirect('optometrylist')
             elif group == 'reviewer':
                 return redirect('review_page')
-            elif group == 'corporatedoctor':
-                return redirect('corporate-doctor-dashboard/')
+            # elif group == 'corporatedoctor':
+            #     return redirect('corporate-doctor-dashboard/')
             elif group == 'supercoordinator':
                 return redirect('supercoordinator')
             elif group == 'ecgclient':
@@ -932,7 +932,7 @@ def email_pdf_raw(request, patient_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-    try:
+    try: 
         data = json.loads(request.body)
         email = data.get('email')
         name = data.get('name')
@@ -943,7 +943,12 @@ def email_pdf_raw(request, patient_id):
 
         print(f"Emailing raw PDF for patient_id={patient_id}, name={name}, email={email}")
 
+        #response = requests.get(pdf_url)
+
+        print("Fetching PDF from:", pdf_url)
         response = requests.get(pdf_url)
+        print("Response code:", response.status_code)
+
         if response.status_code != 200:
             raise ValueError("Failed to download PDF")
 
@@ -7868,52 +7873,52 @@ def review_page(request):
     return render(request, 'users/review_page.html', context)
 
 
-@login_required
-def corporate_doctor_dashboard(request):
-    corporate_doctor = get_object_or_404(CorporateDoctor, user=request.user)
-    dicom_data_objects = DICOMData.objects.filter(institution_name=corporate_doctor.institution_name)
+# @login_required
+# def corporate_doctor_dashboard(request):
+#     corporate_doctor = get_object_or_404(CorporateDoctor, user=request.user)
+#     dicom_data_objects = DICOMData.objects.filter(institution_name=corporate_doctor.institution_name)
 
-    filtered_data = []
-    bucket_name = 'u4rad-s3-reporting-bot'
+#     filtered_data = []
+#     bucket_name = 'u4rad-s3-reporting-bot'
 
-    for dicom_data in dicom_data_objects:
-        # Fetch related XrayReports (fix: get all matching reports instead of just one)
-        patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_")
-        pdf_reports = XrayReport.objects.filter(
-            name=patient_name_with_underscores, patient_id=dicom_data.patient_id
-        )
-        pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
+#     for dicom_data in dicom_data_objects:
+#         # Fetch related XrayReports (fix: get all matching reports instead of just one)
+#         patient_name_with_underscores = dicom_data.patient_name.replace(" ", "_")
+#         pdf_reports = XrayReport.objects.filter(
+#             name=patient_name_with_underscores, patient_id=dicom_data.patient_id
+#         )
+#         pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
 
-        # Fetch related JPEG files
-        jpeg_files = dicom_data.jpeg_files.all()
-        jpeg_urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
+#         # Fetch related JPEG files
+#         jpeg_files = dicom_data.jpeg_files.all()
+#         jpeg_urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
 
-        # ✅ **Fetch all history files**
-        history_files = dicom_data.history_files.all()
-        history_file_urls = [
-            presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
-        ] if history_files.exists() else []  # Ensure empty list if no history files exist
+#         # ✅ **Fetch all history files**
+#         history_files = dicom_data.history_files.all()
+#         history_file_urls = [
+#             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+#         ] if history_files.exists() else []  # Ensure empty list if no history files exist
 
-        # Collect data for rendering
-        filtered_data.append({
-            'dicom_data': dicom_data,
-            'jpeg_urls': jpeg_urls,
-            'pdf_urls': pdf_urls,  # ✅ Now includes all reports
-            'history_file_urls': history_file_urls,  # ✅ Now correctly handles multiple files or no file
-            'report_date': pdf_reports.first().report_date if pdf_reports.exists() else None,
-            'test_date': pdf_reports.first().test_date if pdf_reports.exists() else None,
-        })
+#         # Collect data for rendering
+#         filtered_data.append({
+#             'dicom_data': dicom_data,
+#             'jpeg_urls': jpeg_urls,
+#             'pdf_urls': pdf_urls,  # ✅ Now includes all reports
+#             'history_file_urls': history_file_urls,  # ✅ Now correctly handles multiple files or no file
+#             'report_date': pdf_reports.first().report_date if pdf_reports.exists() else None,
+#             'test_date': pdf_reports.first().test_date if pdf_reports.exists() else None,
+#         })
 
-    # Pagination
-    paginator = Paginator(filtered_data, 50)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+#     # Pagination
+#     paginator = Paginator(filtered_data, 50)
+#     page_number = request.GET.get('page')
+#     page_obj = paginator.get_page(page_number)
 
-    context = {
-        'filtered_data': page_obj,
-    }
+#     context = {
+#         'filtered_data': page_obj,
+#     }
 
-    return render(request, 'users/corporate_doctor_dashboard.html', context)
+#     return render(request, 'users/corporate_doctor_dashboard.html', context)
 
 
 # def update_twostepcheck(request, patient_id):
