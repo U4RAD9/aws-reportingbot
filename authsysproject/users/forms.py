@@ -6,6 +6,8 @@ from .models.XrayPdfReport import XrayReport
 from .models.personalinfo import PersonalInfo
 from django.contrib.auth.models import User
 from .models.Location import Location
+from .models.faq import FAQ
+from .models.patientdetails import PatientDetails
 
 class DICOMDataForm(forms.ModelForm):
     dicom_file = MultiFileField(min_num=1, max_num=10, max_file_size=1024 * 1024 * 25)
@@ -41,8 +43,7 @@ class ECGUploadForm(forms.Form):
 
 
 
-from django import forms
-from .models.faq import FAQ
+
 
 class FAQForm(forms.ModelForm):
     class Meta:
@@ -52,4 +53,16 @@ class FAQForm(forms.ModelForm):
             'question': forms.TextInput(attrs={'class': 'form-control'}),
             'answer': forms.Textarea(attrs={'class': 'form-control'}),
             'target_group': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+
+
+
+
+class PatientDetailsForm(forms.ModelForm):
+    class Meta:
+        model = PatientDetails
+        fields = ['PatientId', 'PatientName', 'age', 'gender', 'HeartRate', 'PRInterval', 'image']
+        widgets = {
+            'gender': forms.Select(choices=PatientDetails.GENDER_CHOICES),
         }

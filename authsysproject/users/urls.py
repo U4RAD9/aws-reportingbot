@@ -1,5 +1,6 @@
 from django.conf.urls.static import static
 from django.conf import settings
+from django.http import HttpResponse
 from django.urls import path
 from . import views
 from .views import save_template,get_template,get_client_header_footer
@@ -164,6 +165,8 @@ urlpatterns = [
 
     path('create-faq/', views.create_faq, name='create_faq'),
     path('view-faq/', views.view_faq, name='view_faq'),
+    path('upload-patient-ecg/', views.upload_patient_ecg, name="upload_patient"),
+    path('patient-success/', lambda r: HttpResponse("Patient uploaded successfully!"), name="patient_success"),
 
 
 ] 

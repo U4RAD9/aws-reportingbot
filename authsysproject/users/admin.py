@@ -36,8 +36,9 @@ from .models.DailyCount import SetCount
 from .models.DailyCountECG import ECGSetCount
 from .models.RadiologistInstitutionRestriction import RadiologistInstitutionRestriction
 
-from .models .StudyReport import StudyReport
-from .models .CKEditorTemplate import CKEditorTemplate
+from .models.StudyReport import StudyReport
+from .models.CKEditorTemplate import CKEditorTemplate
+from .models.ecgclient import ECGClient
 
 from .models.faq import FAQ
 
@@ -48,6 +49,7 @@ admin.site.register(CorporateDoctor)
 admin.site.register(WorkExp)
 admin.site.register(QualificationDetails)
 admin.site.register(BankingInfo)
+admin.site.register(ECGClient)
 admin.site.register(ReportingArea)
 admin.site.register(TimeAvailability)
 admin.site.register(InstPersonalInfo)

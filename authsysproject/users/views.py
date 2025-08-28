@@ -59,9 +59,11 @@ from users.models.StudyReport import StudyReport
 from users.models.dentalpatientdetails import DentalPatientInfo
 from users.models.doctorpatientdetails import DoctorPatientInfo
 from users.models.RadiologistInstitutionRestriction import RadiologistInstitutionRestriction
+from users.models.ecgclient import ECGClient
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from users.forms import DICOMDataForm
+from users.forms import PatientDetailsForm
 from users.forms import ECGUploadForm
 from users.models.DailyCount import SetCount
 from users.models.DailyCountECG import ECGSetCount
@@ -186,6 +188,8 @@ def login(request):
                 return redirect('corporate-doctor-dashboard/')
             elif group == 'supercoordinator':
                 return redirect('supercoordinator')
+            elif group == 'ecgclient':
+                return redirect('upload_patient')
             else:
                 return redirect('reportingbot')
         else:
@@ -921,6 +925,45 @@ Your Radiology Team
     
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
+
+
+
+def email_pdf_raw(request, patient_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        name = data.get('name')
+        pdf_url = data.get('pdf_url')
+
+        if not email or not name or not pdf_url:
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+
+        print(f"Emailing raw PDF for patient_id={patient_id}, name={name}, email={email}")
+
+        response = requests.get(pdf_url)
+        if response.status_code != 200:
+            raise ValueError("Failed to download PDF")
+
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
+            temp_pdf.write(response.content)
+            temp_pdf_path = temp_pdf.name
+
+        subject = f"Your Medical Report - {name}"
+        body = f"Dear {name},\n\nPlease find your medical report attached.\n\nRegards,\nYour Clinic"
+        email_message = EmailMessage(subject, body, to=[email])
+        email_message.attach_file(temp_pdf_path)
+        email_message.send()
+        print(f"✅ Raw PDF emailed to {email}")
+
+        os.unlink(temp_pdf_path)
+        return JsonResponse({'message': f'Raw PDF emailed to {email}'})
+    
+    except Exception as e:
+        print(f"Fatal error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 # def client_dashboard(request):
@@ -7038,8 +7081,9 @@ def send_whatsapp(request):
             return JsonResponse({"success": False, "message": "Missing required fields."}, status=400)
 
         API_URL = "https://app2.cunnekt.com/v1/sendnotification"
-        API_KEY = "74fcc289444d70ee119a00374a5e786cf908eddb"
-        TEMPLATE_ID = "3073529896143435"  
+         
+        API_KEY = "2cf92a4cd9d7741831313ef65de6af61209e56cf"
+        TEMPLATE_ID = "1093937049034083"
 
         headers = {
             "Content-Type": "application/json",
@@ -9116,3 +9160,133 @@ def create_faq(request):
         form = FAQForm()
 
     return render(request, 'users/create_faq.html', {'form': form})
+
+@user_type_required('ecgclient')
+def upload_patient_ecg(request):
+    query = request.GET.get("q", "")
+    try:
+        ecg_client = ECGClient.objects.get(user=request.user)
+        patients = PatientDetails.objects.filter(location=ecg_client.location)
+    except ECGClient.DoesNotExist:
+        patients = PatientDetails.objects.none()
+
+    # Apply search
+    if query:
+        patients = patients.filter(
+            Q(PatientId__icontains=query) | Q(PatientName__icontains=query)
+        )
+
+    patients = patients.order_by("-id")
+
+    # Paginate
+    paginator = Paginator(patients, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    # Handle upload form (from modal)
+    if request.method == "POST":
+        form = PatientDetailsForm(request.POST, request.FILES)
+        if form.is_valid():
+            patient = form.save(commit=False)
+            today_str = now().strftime("%d-%m-%Y")
+            patient.TestDate = today_str
+            patient.ReportDate = today_str
+
+            # Link ECGClient location
+            try:
+                ecg_client = ECGClient.objects.get(user=request.user)
+                patient.location = ecg_client.location
+            except ECGClient.DoesNotExist:
+                patient.location = None
+
+            # Link Date object
+            date_obj, created = Date.objects.get_or_create(date_field=now().date(),location=ecg_client.location)
+            patient.date = date_obj
+
+            patient.save()
+            return redirect("upload_patient")
+    else:
+        form = PatientDetailsForm()
+    return render(request, "users/upload_ecg.html", {"page_obj": page_obj, "form": form, "query": query})
+
+
+# views.py
+def ecg_client_dashboard(request):
+    try:
+        # Assuming you have an ECGClient model similar to Client
+        current_user_ecg_client = ECGClient.objects.get(user=request.user)
+    except ECGClient.DoesNotExist:
+        return HttpResponse("ECGClient object does not exist for this user.", status=404)
+
+    filtered_pdfs = []
+    test_dates_set = set()
+    report_dates_set = set()
+
+    # Fetch all institution names associated with the ECG client
+    institutions = current_user_ecg_client.institutions.all()
+    institution_names = [inst.name for inst in institutions]
+
+    # Get search query
+    search_query = request.GET.get('q', '')
+
+    if institution_names:
+        print("ECG Institutions:", institution_names)
+
+        # Get all ECG reports for the client's institutions
+        pdfs = EcgReport.objects.filter(
+            location__in=institution_names
+        ).order_by('-id')
+
+        # Apply search filter
+        if search_query:
+            pdfs = pdfs.filter(
+                Q(name__icontains=search_query) |
+                Q(name__iexact=search_query) |
+                Q(patient_id__icontains=search_query) |
+                Q(patient_id__iexact=search_query) |
+                Q(test_date__icontains=search_query) |
+                Q(report_date__icontains=search_query) |
+                Q(location__icontains=search_query)
+            )
+
+        for pdf in pdfs:
+            # For ECG reports, we might not have WhatsApp/email from DICOMData
+            # You might need to adjust this based on your data model
+            pdf.whatsapp_number = None  # Or get from another source if available
+            pdf.email = None  # Or get from another source if available
+            
+            filtered_pdfs.append(pdf)
+            test_dates_set.add(pdf.test_date)
+            report_dates_set.add(pdf.report_date)
+
+        # Pagination (50 PDFs per page)
+        paginator = Paginator(filtered_pdfs, 50)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        # Generate presigned URLs for PDFs
+        bucket_name = 'u4rad-s3-reporting-bot'  # Or a different bucket for ECG
+        for pdf in page_obj:
+            pdf.signed_url = presigned_url(bucket_name, pdf.pdf_file.name) if pdf.pdf_file else None
+            pdf.signed_url2 = presigned_url(bucket_name, pdf.pdf_file.name, inline=True) if pdf.pdf_file else None
+
+        # Get unique sorted dates for the current page
+        sorted_test_dates = sorted({pdf.test_date for pdf in page_obj.object_list})
+        sorted_report_dates = sorted(report_dates_set)
+
+        # Prepare context
+        context = {
+            'pdfs': page_obj,
+            'Test_Dates': sorted_test_dates,
+            'Report_Dates': sorted_report_dates,
+            'Location': ", ".join(institution_names),
+            'paginator': paginator,
+            'page_obj': page_obj,
+            'search_query': search_query,
+            'client': current_user_ecg_client,
+        }
+
+        return render(request, 'users/ecg_client.html', context)    
+
+
+
