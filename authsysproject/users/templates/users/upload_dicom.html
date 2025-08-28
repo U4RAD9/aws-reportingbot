@@ -319,7 +319,6 @@
 
 
             <th>WhatsApp</th>
-            <th>Email</th>
             <th>History</th>
 
             <th>Report</th>
@@ -365,7 +364,6 @@
             <td>{{ entry.email }}</td>
 
             <td>{{ entry.whatsapp_number }}</td>
-            <td>{{ entry.email }}</td>
             <td>
               {% for history_file in entry.history_files.all %}
                 <a class="imageButton" target="_blank" href="{{ history_file.history_file.url }}">
