@@ -1945,7 +1945,7 @@ def allocation1(request):
     corporatecoordinator_objects = Group.objects.get(name='corporatecoordinator').user_set.all()
 
     # Pagination
-    paginator = Paginator(patients, 100)
+    paginator = Paginator(patients, 200)
     page_number = request.GET.get('page', 1)
     try:
         page_obj = paginator.get_page(page_number)
