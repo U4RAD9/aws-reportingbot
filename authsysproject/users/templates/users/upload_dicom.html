@@ -508,10 +508,6 @@
               <input type="text" class="form-control" id="whatsapp_number" {% if not edit_permissions.whatsapp_number %} disabled {% endif %} />
             </div>
             <div class="mb-3">
-              <label for="email" class="form-label">Email ID:</label>
-              <input type="text" class="form-control" id="email" {% if not edit_permissions.email %} disabled {% endif %} />
-            </div>
-            <div class="mb-3">
               <label for="history_files" class="form-label">Patient History File:</label>
               <input type="file" name="history_files" id="history_files" multiple accept=".pdf, .jpeg, .jpg, .png">
             </div>
@@ -601,7 +597,6 @@
 
 
       $("#whatsapp_number").val(row.find("td:eq(10)").text());
-      $("#email").val(row.find("td:eq(11)").text());
       $('#editModal').modal('show');
     }
 
@@ -625,7 +620,6 @@
       formData.append('email', $("#email").val());
       
       formData.append('whatsapp_number', $("#whatsapp_number").val());
-      formData.append('email', $("#email").val());
       formData.append('csrfmiddlewaretoken', csrftoken);
   
       // Append selected files to the FormData object

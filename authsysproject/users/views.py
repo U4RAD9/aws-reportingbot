@@ -6807,7 +6807,6 @@ def edit_dicom_data(request, pk):
             dicom_entry.email = request.POST.get('email', dicom_entry.email)
 
             dicom_entry.whatsapp_number = request.POST.get('whatsapp_number', dicom_entry.whatsapp_number)
-            dicom_entry.email = request.POST.get('email', dicom_entry.email)
             dicom_entry.save()
 
             # Handle history file uploads
