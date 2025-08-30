@@ -22,6 +22,12 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('users.urls')),
     path('', include('JS.urls')),
-
-    path('', include('support_chat.urls'))
+    path('', include('support_chat.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Add Debug Toolbar URLs only in DEBUG mode
+if settings.DEBUG:
+    import debug_toolbar
+    urlpatterns += [
+        path('__debug__/', include(debug_toolbar.urls)),
+    ]
