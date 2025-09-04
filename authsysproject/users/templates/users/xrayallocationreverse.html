@@ -667,7 +667,7 @@
               {% for patient_url in patient_urls %}
                  {% if patient_url.patient.id == patient.id %}
                     <a class="reportButton"
-                    href="reporting-bot?data-patientid={{ patient.patient_id }}&data-patientname={{ patient.patient_name }}&data-bodypart={{ patient.body_part_examined }}&data-Modality={{ patient.Modality }}&data-study-id={{ patient.study_id }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-testdate={{ patient.study_date }}&data-reportdate={% now 'd-m-Y' %}&data-reportimage={{ patient_url.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ patient.dicom_file }}&data-location={{ patient.location }}&data-accession={{ patient.accession_number }}&data-institution_name={{ patient.institution_name }}&data-referringdoctor={{patient.referring_doctor_name}}&data-reporttime={% now 'H:i:s' %}&data-studydescription={{ patient.study_description }}"
+                    href="reporting-bot?data-patientid={{ patient.patient_id }}&data-patientname={{ patient.patient_name }}&data-bodypart={{ patient.body_part_examined }}&data-Modality={{ patient.Modality }}&data-study-id={{ patient.study_id }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-testdate={{ patient.study_date }}&data-reportdate={% now 'd-m-Y' %}&data-reportimage={{ patient_url.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ patient.dicom_file }}&data-location={{ patient.location }}&data-accession={{ patient.accession_number }}&data-institution_name={{ patient.institution_name }}&data-referringdoctor={{patient.referring_doctor_name}}&data-reporttime={% now 'H:i:s' %}&data-studydescription={{ patient.study_description }}&data-studyInstanceUID={{ patient.study_instance_uid }}"
                     data-patient-id="{{ patient.patient_id }}" data-patientname="{{ patient.patient_name }}"
                     data-age="{{ patient.age }}" data-gender="{{ patient.gender }}"
                     data-testdate="{{ patient.study_date }}" data-reportdate="{% now 'd-m-Y' %}"
@@ -681,6 +681,7 @@
                     data-reporttime={% now 'H:i:s' %}
                     data-referringdoctor="{{patient.referring_doctor_name}}"
                     data-studydescription="{{patient.study_description}}"
+                    data-studyInstanceUID="{{ patient.study_instance_uid }}"
                     data-institution_name="{{ patient.institution_name }}" onclick="changeButtonColor(this);">
                         {% if patient.isDone %}
                            Reported
