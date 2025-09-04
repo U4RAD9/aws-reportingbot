@@ -5879,10 +5879,10 @@ this.capture(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Capture</b
   
       // get StudyInstanceUID from URL (adjust key depending on how you're passing it)
       const studyInstanceUID =
-        urlParams.get('data-StudyInstanceUID') || urlParams.get('data-StudyInstanceUIDs');
+        urlParams.get('data-studyInstanceUID') || urlParams.get('data-studyInstanceUID');
   
       if (studyInstanceUID) {
-        const ohifUrl = `https://pacs.reportingbot.in/ohif/viewer?StudyInstanceUIDs=${studyInstanceUID}`;
+        const ohifUrl = `https://pacs.reportingbot.in/ohif/viewer?studyInstanceUID=${studyInstanceUID}`;
         window.open(ohifUrl, '_blank');
       } else {
         alert('StudyInstanceUID not found in URL.');
