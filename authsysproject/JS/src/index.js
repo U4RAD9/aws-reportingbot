@@ -5910,7 +5910,7 @@ this.capture(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Capture</b
       onClick={() => {
         const urlParams = new URLSearchParams(window.location.search);
         const studyInstanceUID =
-          urlParams.get("studyInstanceUID") || urlParams.get("StudyInstanceUIDs");
+          urlParams.get("data-studyInstanceUID") || urlParams.get("data-studyInstanceUID");
         if (studyInstanceUID) {
           const ohifUrl = `https://pacs.reportingbot.in/ohif/viewer?StudyInstanceUIDs=${studyInstanceUID}`;
           window.open(ohifUrl, "_blank");
@@ -5927,7 +5927,7 @@ this.capture(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Capture</b
       onClick={() => {
         const urlParams = new URLSearchParams(window.location.search);
         const studyInstanceUID =
-          urlParams.get("studyInstanceUID") || urlParams.get("StudyInstanceUIDs");
+          urlParams.get("data-studyInstanceUID") || urlParams.get("data-studyInstanceUID");
         if (studyInstanceUID) {
           const ohifUrl = `https://pacs.reportingbot.in/ohif/viewer?hangingprotocolId=mprAnd3DVolumeViewport&StudyInstanceUIDs=${studyInstanceUID}`;
           window.open(ohifUrl, "_blank");
