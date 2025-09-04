@@ -5829,7 +5829,7 @@ this.capture(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Capture</b
     marginTop: '20px',
   }}
 >
-  <button
+  {/* <button
     className="tool-button"
     style={{
       backgroundColor: '#007bff',
@@ -5853,6 +5853,39 @@ this.capture(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Capture</b
         window.open(ohifUrl, '_blank');
       } else {
         alert('Study ID not found in URL.');
+      }
+    }}
+  >
+    📷 <span style={{ fontWeight: 'bold' }}>Open in OHIFViewer</span>
+  </button> */}
+  <button
+    className="tool-button"
+    style={{
+      backgroundColor: '#007bff',
+      color: '#fff',
+      padding: '10px 20px',
+      border: 'none',
+      borderRadius: '12px',
+      fontWeight: 'bold',
+      fontSize: '16px',
+      cursor: 'pointer',
+      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+      transition: 'background-color 0.3s ease',
+    }}
+    onMouseOver={(e) => (e.target.style.backgroundColor = '#0056b3')}
+    onMouseOut={(e) => (e.target.style.backgroundColor = '#007bff')}
+    onClick={() => {
+      const urlParams = new URLSearchParams(window.location.search);
+  
+      // get StudyInstanceUID from URL (adjust key depending on how you're passing it)
+      const studyInstanceUID =
+        urlParams.get('data-StudyInstanceUID') || urlParams.get('data-StudyInstanceUIDs');
+  
+      if (studyInstanceUID) {
+        const ohifUrl = `https://pacs.reportingbot.in/ohif/viewer?StudyInstanceUIDs=${studyInstanceUID}`;
+        window.open(ohifUrl, '_blank');
+      } else {
+        alert('StudyInstanceUID not found in URL.');
       }
     }}
   >
