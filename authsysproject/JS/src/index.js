@@ -5821,7 +5821,7 @@ Undo/Reset icon */}Reset</button></div>
 {/*Button for capturing selected viewport */}
 <div className="button-container"><button className='tool-button' onClick={e =>
 this.capture(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Capture</button></div>
-<div
+{/* <div
   className="button-container"
   style={{
     display: 'flex',
@@ -5829,35 +5829,6 @@ this.capture(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Capture</b
     marginTop: '20px',
   }}
 >
-  {/* <button
-    className="tool-button"
-    style={{
-      backgroundColor: '#007bff',
-      color: '#fff',
-      padding: '10px 20px',
-      border: 'none',
-      borderRadius: '12px',
-      fontWeight: 'bold',
-      fontSize: '16px',
-      cursor: 'pointer',
-      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-      transition: 'background-color 0.3s ease',
-    }}
-    onMouseOver={(e) => (e.target.style.backgroundColor = '#0056b3')}
-    onMouseOut={(e) => (e.target.style.backgroundColor = '#007bff')}
-    onClick={() => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const currentStudyId = urlParams.get('data-study-id');
-      if (currentStudyId) {
-        const ohifUrl = `https://pacs.reportingbot.in/ohif/viewer?url=../studies/${currentStudyId}/ohif-dicom-json`;
-        window.open(ohifUrl, '_blank');
-      } else {
-        alert('Study ID not found in URL.');
-      }
-    }}
-  >
-    📷 <span style={{ fontWeight: 'bold' }}>Open in OHIFViewer</span>
-  </button> */}
   <button
     className="tool-button"
     style={{
@@ -5891,6 +5862,84 @@ this.capture(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Capture</b
   >
     📷 <span style={{ fontWeight: 'bold' }}>Open in OHIFViewer</span>
   </button>
+</div> */}
+
+<div style={{ position: "relative", display: "inline-block" }}>
+  <button
+    className="tool-button"
+    style={{
+      backgroundColor: '#007bff',
+      color: '#fff',
+      padding: '10px 20px',
+      border: 'none',
+      borderRadius: '12px',
+      fontWeight: 'bold',
+      fontSize: '16px',
+      cursor: 'pointer',
+      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+      transition: 'background-color 0.3s ease',
+    }}
+    onMouseOver={(e) => (e.target.style.backgroundColor = '#0056b3')}
+    onMouseOut={(e) => (e.target.style.backgroundColor = '#007bff')}
+    onClick={() => {
+      const dropdown = document.getElementById("ohif-dropdown");
+      dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+    }}
+  >
+    📷 <span style={{ fontWeight: 'bold' }}>Open in OHIFViewer ▾</span>
+  </button>
+
+  <div
+    id="ohif-dropdown"
+    style={{
+      display: "none",
+      position: "absolute",
+      top: "100%",
+      left: 0,
+      marginTop: "5px",
+      backgroundColor: "#fff",
+      border: "1px solid #ccc",
+      borderRadius: "8px",
+      boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+      minWidth: "220px",
+      zIndex: 1000,
+    }}
+  >
+    <div
+      style={{ padding: "10px", cursor: "pointer", fontWeight: "bold", color: "#007bff" }}
+      onClick={() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const studyInstanceUID =
+          urlParams.get("studyInstanceUID") || urlParams.get("StudyInstanceUIDs");
+        if (studyInstanceUID) {
+          const ohifUrl = `https://pacs.reportingbot.in/ohif/viewer?StudyInstanceUIDs=${studyInstanceUID}`;
+          window.open(ohifUrl, "_blank");
+        } else {
+          alert("StudyInstanceUID not found in URL.");
+        }
+        document.getElementById("ohif-dropdown").style.display = "none";
+      }}
+    >
+      🖥️ Basic Viewer
+    </div>
+    <div
+      style={{ padding: "10px", cursor: "pointer", fontWeight: "bold", color: "#28a745" }}
+      onClick={() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const studyInstanceUID =
+          urlParams.get("studyInstanceUID") || urlParams.get("StudyInstanceUIDs");
+        if (studyInstanceUID) {
+          const ohifUrl = `https://pacs.reportingbot.in/ohif/viewer?hangingprotocolId=mprAnd3DVolumeViewport&StudyInstanceUIDs=${studyInstanceUID}`;
+          window.open(ohifUrl, "_blank");
+        } else {
+          alert("StudyInstanceUID not found in URL.");
+        }
+        document.getElementById("ohif-dropdown").style.display = "none";
+      }}
+    >
+      🧩 Volume Rendering Viewer
+    </div>
+  </div>
 </div>
 
 <div className="button-container"><button className='tool-button' onClick={e =>
