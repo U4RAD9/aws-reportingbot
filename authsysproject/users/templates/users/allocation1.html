@@ -1008,7 +1008,7 @@
             </td>
             <td>
               <a class="reportButton"
-                 href="reporting-bot?data-patientid={{ patient.patient_id }}&data-patientname={{ patient.patient_name }}&data-study-id={{ patient.study_id }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-institution_name={{ patient.institution_name }}&data-testdate={{ patient.study_date }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ patient.dicom_file }}&data-location={{ patient.location }}&data-accession={{ patient.accession_number }} &data-studydescription={{ patient.study_description }}"
+                 href="reporting-bot?data-patientid={{ patient.patient_id }}&data-patientname={{ patient.patient_name }}&data-study-id={{ patient.study_id }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-institution_name={{ patient.institution_name }}&data-testdate={{ patient.study_date }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.urls.0|urlencode }}&data-dicom-file={% get_media_prefix %}{{ patient.dicom_file }}&data-location={{ patient.location }}&data-accession={{ patient.accession_number }} &data-studydescription={{ patient.study_description }}&data-studyInstanceUID={{ patient.studyInstanceUID }}"
                  data-patient-id="{{ patient.patient_id }}" data-patientname="{{ patient.patient_name }}"
                  data-age="{{ patient.age }}" data-gender="{{ patient.gender }}"
                  data-institution_name="{{ patient.institution_name }}"
@@ -1018,6 +1018,7 @@
                  data-location="{{ patient.location }}"
                  data-study-id="{{patient.study_id}}"
                  data-studydescription="{{patient.study_description}}"
+                 &data-studyInstanceUID="{{ patient.studyInstanceUID }}"
                  data-accession="{{ patient.accession_number }}" onclick="changeButtonColor(this);">
                   View Image
               </a>
