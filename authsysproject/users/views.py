@@ -6768,7 +6768,7 @@ def clientdata(request):
     is_done_count = dicom_data.filter(isDone=True).count()
 
     # Set up pagination (400 records per page)
-    paginator = Paginator(dicom_data, 400)
+    paginator = Paginator(dicom_data, 100)
     page_number = request.GET.get('page', 1)  # Get the requested page number
 
     try:
