@@ -5882,7 +5882,7 @@ this.capture(prev_selected_element)}> <FaCamera /> {/* Camera icon */}Capture</b
         urlParams.get('data-studyInstanceUID') || urlParams.get('data-studyInstanceUID');
   
       if (studyInstanceUID) {
-        const ohifUrl = `https://pacs.reportingbot.in/ohif/viewer?studyInstanceUID=${studyInstanceUID}`;
+        const ohifUrl = `https://pacs.reportingbot.in/ohif/viewer?studyInstanceUIDs=${studyInstanceUID}`;
         window.open(ohifUrl, '_blank');
       } else {
         alert('StudyInstanceUID not found in URL.');
