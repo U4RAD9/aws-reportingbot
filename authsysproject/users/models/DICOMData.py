@@ -42,7 +42,7 @@ class DICOMData(models.Model):
     radiologist_assigned_at = models.DateTimeField(null=True, blank=True)
     marked_done_at = models.DateTimeField(null=True, blank=True)
     notes_modified_at = models.DateTimeField(null=True, blank=True)
-    studyInstanceUID = models.CharField(max_length=100, blank=True, null=True)
+    study_instance_uid = models.CharField(max_length=100, blank=True, null=True)
 
     
     def save(self, *args, **kwargs):
