@@ -650,7 +650,7 @@
                 </td>
     
                 <td>
-                  {% for file_url in patient.history_file_infos %}
+                  {% for file_url in patient.history_file_urls %}
                     <a class="imageButton" target="_blank" href="{{ file_url }}">
                       History Files {{ forloop.counter }}
                     </a>
