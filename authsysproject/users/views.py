@@ -1252,11 +1252,11 @@ def email_pdf_raw(request, patient_id):
 #         return render(request, 'users/client.html', context)
 
 
-from django.db.models import Q
-from django.core.paginator import Paginator
-from django.shortcuts import render
-from django.http import HttpResponse
-from .models import Client, DICOMData, XrayReport
+# from django.db.models import Q
+# from django.core.paginator import Paginator
+# from django.shortcuts import render
+# from django.http import HttpResponse
+# from .models import Client, DICOMData, XrayReport
 from support_chat.models import ChatRoom
 
 
