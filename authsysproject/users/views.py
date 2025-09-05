@@ -1252,11 +1252,11 @@ def email_pdf_raw(request, patient_id):
 #         return render(request, 'users/client.html', context)
 
 
-# from django.db.models import Q
-# from django.core.paginator import Paginator
-# from django.shortcuts import render
-# from django.http import HttpResponse
-# from .models import Client, DICOMData, XrayReport
+from django.db.models import Q
+from django.core.paginator import Paginator
+from django.shortcuts import render
+from django.http import HttpResponse
+from .models import Client, DICOMData, XrayReport
 from support_chat.models import ChatRoom
 
 
@@ -1986,180 +1986,21 @@ from django.db.models.functions import TruncDate
 from django.contrib.auth.models import Group
 
 @user_type_required('xraycoordinator')
-# def allocation1(request):
-#     search_query = request.GET.get('q', '')
-    
-#     # Get base queryset for dropdown options (unfiltered)
-#     base_queryset = DICOMData.objects.all()
-    
-#     # Get filtered queryset for display
-#     patients = base_queryset.prefetch_related(
-#         'radiologist',
-#         'corporatecoordinator', 
-#         'jpeg_files',
-#         'history_files',
-#     ).order_by('NonReportable', 'isDone', '-id')
-
-#     # Apply search filter
-#     if search_query:
-#         patients = patients.filter(
-#             Q(patient_name__icontains=search_query) |
-#             Q(patient_id__icontains=search_query) |
-#             Q(age__icontains=search_query) |
-#             Q(gender__icontains=search_query) |
-#             Q(study_date__icontains=search_query) |
-#             Q(study_time__icontains=search_query) |
-#             Q(study_description__icontains=search_query) |
-#             Q(Modality__icontains=search_query) |
-#             Q(body_part_examined__icontains=search_query) |
-#             Q(referring_doctor_name__icontains=search_query) |
-#             Q(institution_name__icontains=search_query)
-#         )
-
-#     # Apply other filters
-#     radiologist_filter = request.GET.get('radiologist')
-#     if radiologist_filter:
-#         patients = patients.filter(radiologist__id=radiologist_filter)
-
-#     corporate_filter = request.GET.get('corporatecoordinator') 
-#     if corporate_filter:
-#         patients = patients.filter(corporatecoordinator__id=corporate_filter)
-
-#     status_filter = request.GET.get('status')
-#     if status_filter:
-#         if status_filter == 'reported':
-#             patients = patients.filter(isDone=True)
-#         elif status_filter == 'unreported':
-#             patients = patients.filter(isDone=False, NonReportable=False)
-#         elif status_filter == 'nonreported':
-#             patients = patients.filter(NonReportable=True)
-
-#     # Get counts from base queryset (not filtered)
-#     total_cases = base_queryset.aggregate(
-#         total_uploaded=Count('id'),
-#         current_reported=Count('id', filter=Q(isDone=True)),
-#         unreported_cases=Count('id', filter=Q(isDone=False, NonReportable=False)),
-#         unallocated_cases=Count('id', filter=Q(radiologist__isnull=True)),
-#         nonreported_cases=Count('id', filter=Q(NonReportable=True))
-#     )
-
-#     # Get radiologists and coordinators
-#     radiologist_objects = Group.objects.get(name='radiologist').user_set.filter(personalinfo__isnull=False)
-#     corporatecoordinator_objects = Group.objects.get(name='corporatecoordinator').user_set.all()
-
-#     # Pagination
-#     paginator = Paginator(patients, 200)
-#     page_number = request.GET.get('page', 1)
-#     try:
-#         page_obj = paginator.get_page(page_number)
-#     except (PageNotAnInteger, EmptyPage):
-#         page_obj = paginator.get_page(1)
-
-#     bucket_name = 'u4rad-s3-reporting-bot'
-
-#     # Generate URLs for current page patients
-#     for patient in page_obj:
-#         # JPEG URLs with caching
-#         jpeg_cache_key = f'jpeg_urls_{patient.id}'
-#         patient.presigned_jpeg_urls = cache.get(jpeg_cache_key)
-#         if not patient.presigned_jpeg_urls:
-#             patient.presigned_jpeg_urls = [
-#                 presigned_url(bucket_name, f.jpeg_file.name) for f in patient.jpeg_files.all()
-#             ]
-#             cache.set(jpeg_cache_key, patient.presigned_jpeg_urls, 300)
-
-#         # History file URLs
-#         history_cache_key = f'history_urls_{patient.id}' 
-#         patient.history_file_infos = cache.get(history_cache_key)
-#         if not patient.history_file_infos:
-#             patient.history_file_infos = [
-#                 {'url': presigned_url(bucket_name, f.history_file.name, inline=True),
-#                  'uploaded_at': f.uploaded_at} for f in patient.history_files.all()
-#             ]
-#             cache.set(history_cache_key, patient.history_file_infos, 300)
-
-#         # PDF URLs
-#         pdf_cache_key = f'pdf_urls_{patient.id}'
-#         patient.presigned_pdf_urls = cache.get(pdf_cache_key)
-#         if not patient.presigned_pdf_urls:
-#             patient_id_norm = patient.patient_id.replace(" ", "_")
-#             patient_name_norm = patient.patient_name.replace(" ", "_")
-#             pdf_reports = XrayReport.objects.filter(
-#                 patient_id__in=[patient.patient_id, patient_id_norm],
-#                 name=patient_name_norm
-#             )
-#             patient.presigned_pdf_urls = [
-#                 presigned_url(bucket_name, pdf.pdf_file.name, inline=True) for pdf in pdf_reports
-#             ]
-#             cache.set(pdf_cache_key, patient.presigned_pdf_urls, 300)
-
-#     # Get dropdown options from base queryset (for consistent options)
-#     def get_cached_options(field_name, cache_key):
-#         values = cache.get(cache_key)
-#         if not values:
-#             values = list(base_queryset.values_list(field_name, flat=True).distinct())
-#             cache.set(cache_key, values, 300)
-#         return values
-
-#     # Get all dropdown options
-#     sorted_unique_institution_name = get_cached_options('institution_name', 'all_institutions')
-#     sorted_unique_modality = get_cached_options('Modality', 'all_modalities')
-#     sorted_unique_dates = get_cached_options('study_date', 'all_dates')
-#     sorted_unique_study_description = get_cached_options('study_description', 'all_study_desc')
-#     sorted_unique_body_part_examined = get_cached_options('body_part_examined', 'all_body_parts')
-    
-#     # Get received dates (with annotation)
-#     received_dates_cache_key = 'all_received_dates'
-#     sorted_unique_recived_on_db = cache.get(received_dates_cache_key)
-#     if not sorted_unique_recived_on_db:
-#         sorted_unique_recived_on_db = list(
-#             base_queryset.annotate(received_date=TruncDate('recived_on_db'))
-#             .values_list('received_date', flat=True).distinct()
-#         )
-#         cache.set(received_dates_cache_key, sorted_unique_recived_on_db, 300)
-
-#     # Study times (small dataset, no caching needed)
-#     sorted_unique_study_time = sorted(set(
-#         base_queryset.exclude(study_time__isnull=True).values_list('study_time', flat=True)
-#     ))
-
-#     return render(request, 'users/allocation1.html', {
-#         'user': request.user,  # Add this
-#         'Institution': sorted_unique_institution_name,
-#         'Modalities': sorted_unique_modality,
-#         'total': total_cases,
-#         'patients': page_obj,  # This is the paginated object
-#         'Date': sorted_unique_dates,
-#         'Study_time': sorted_unique_study_time,
-#         'Received_on_db': sorted_unique_recived_on_db,
-#         'Study_description': sorted_unique_study_description,
-#         'body_part_examined': sorted_unique_body_part_examined,
-#         'radiologists': radiologist_objects,
-#         'corporatecoordinators': corporatecoordinator_objects,
-#         'page_obj': page_obj,
-#         'status_filter': status_filter,
-#         'search_query': search_query,
-#     })
-
 def allocation1(request):
-    search_query = request.GET.get('q', '').strip()
+    search_query = request.GET.get('q', '')
+    
+    # Get base queryset for dropdown options (unfiltered)
+    base_queryset = DICOMData.objects.all()
+    
+    # Get filtered queryset for display
+    patients = base_queryset.prefetch_related(
+        'radiologist',
+        'corporatecoordinator', 
+        'jpeg_files',
+        'history_files',
+    ).order_by('NonReportable', 'isDone', '-id')
 
-    # 🔹 Base queryset (used for dropdown + counts)
-    base_queryset = DICOMData.objects.only(
-        "id", "patient_name", "patient_id", "age", "gender",
-        "study_date", "study_time", "study_description",
-        "Modality", "body_part_examined", "referring_doctor_name",
-        "institution_name", "NonReportable", "isDone", "recived_on_db"
-    )
-
-    # 🔹 Display queryset (filters applied, relations prefetched)
-    patients = base_queryset.select_related(
-        "radiologist", "corporatecoordinator"
-    ).prefetch_related(
-        "jpeg_files", "history_files"
-    ).order_by("NonReportable", "isDone", "-id")
-
-    # Apply search (only if provided)
+    # Apply search filter
     if search_query:
         patients = patients.filter(
             Q(patient_name__icontains=search_query) |
@@ -2175,125 +2016,129 @@ def allocation1(request):
             Q(institution_name__icontains=search_query)
         )
 
-    # Apply dropdown filters
-    if radiologist_filter := request.GET.get('radiologist'):
+    # Apply other filters
+    radiologist_filter = request.GET.get('radiologist')
+    if radiologist_filter:
         patients = patients.filter(radiologist__id=radiologist_filter)
 
-    if corporate_filter := request.GET.get('corporatecoordinator'):
+    corporate_filter = request.GET.get('corporatecoordinator') 
+    if corporate_filter:
         patients = patients.filter(corporatecoordinator__id=corporate_filter)
 
-    if status_filter := request.GET.get('status'):
+    status_filter = request.GET.get('status')
+    if status_filter:
         if status_filter == 'reported':
             patients = patients.filter(isDone=True)
         elif status_filter == 'unreported':
             patients = patients.filter(isDone=False, NonReportable=False)
         elif status_filter == 'nonreported':
             patients = patients.filter(NonReportable=True)
-    else:
-        status_filter = None
 
-    # 🔹 Counts (from base queryset, no filters)
+    # Get counts from base queryset (not filtered)
     total_cases = base_queryset.aggregate(
-        total_uploaded=Count("id"),
-        current_reported=Count("id", filter=Q(isDone=True)),
-        unreported_cases=Count("id", filter=Q(isDone=False, NonReportable=False)),
-        unallocated_cases=Count("id", filter=Q(radiologist__isnull=True)),
-        nonreported_cases=Count("id", filter=Q(NonReportable=True)),
+        total_uploaded=Count('id'),
+        current_reported=Count('id', filter=Q(isDone=True)),
+        unreported_cases=Count('id', filter=Q(isDone=False, NonReportable=False)),
+        unallocated_cases=Count('id', filter=Q(radiologist__isnull=True)),
+        nonreported_cases=Count('id', filter=Q(NonReportable=True))
     )
 
-    # 🔹 Radiologists & coordinators
-    radiologist_objects = Group.objects.get(name="radiologist").user_set.filter(
-        personalinfo__isnull=False
-    )
-    corporatecoordinator_objects = Group.objects.get(name="corporatecoordinator").user_set.all()
+    # Get radiologists and coordinators
+    radiologist_objects = Group.objects.get(name='radiologist').user_set.filter(personalinfo__isnull=False)
+    corporatecoordinator_objects = Group.objects.get(name='corporatecoordinator').user_set.all()
 
-    # 🔹 Pagination
+    # Pagination
     paginator = Paginator(patients, 200)
-    page_number = request.GET.get("page", 1)
+    page_number = request.GET.get('page', 1)
     try:
         page_obj = paginator.get_page(page_number)
     except (PageNotAnInteger, EmptyPage):
         page_obj = paginator.get_page(1)
 
-    bucket_name = "u4rad-s3-reporting-bot"
+    bucket_name = 'u4rad-s3-reporting-bot'
 
-    # 🔹 Enrich patients only for current page
+    # Generate URLs for current page patients
     for patient in page_obj:
-        # JPEG URLs
-        jpeg_cache_key = f"jpeg_urls_{patient.id}"
-        if not (jpeg_urls := cache.get(jpeg_cache_key)):
-            jpeg_urls = [presigned_url(bucket_name, f.jpeg_file.name) for f in patient.jpeg_files.all()]
-            cache.set(jpeg_cache_key, jpeg_urls, 300)
-        patient.presigned_jpeg_urls = jpeg_urls
+        # JPEG URLs with caching
+        jpeg_cache_key = f'jpeg_urls_{patient.id}'
+        patient.presigned_jpeg_urls = cache.get(jpeg_cache_key)
+        if not patient.presigned_jpeg_urls:
+            patient.presigned_jpeg_urls = [
+                presigned_url(bucket_name, f.jpeg_file.name) for f in patient.jpeg_files.all()
+            ]
+            cache.set(jpeg_cache_key, patient.presigned_jpeg_urls, 300)
 
         # History file URLs
-        history_cache_key = f"history_urls_{patient.id}"
-        if not (history_infos := cache.get(history_cache_key)):
-            history_infos = [
-                {
-                    "url": presigned_url(bucket_name, f.history_file.name, inline=True),
-                    "uploaded_at": f.uploaded_at,
-                }
-                for f in patient.history_files.all()
+        history_cache_key = f'history_urls_{patient.id}' 
+        patient.history_file_infos = cache.get(history_cache_key)
+        if not patient.history_file_infos:
+            patient.history_file_infos = [
+                {'url': presigned_url(bucket_name, f.history_file.name, inline=True),
+                 'uploaded_at': f.uploaded_at} for f in patient.history_files.all()
             ]
-            cache.set(history_cache_key, history_infos, 300)
-        patient.history_file_infos = history_infos
+            cache.set(history_cache_key, patient.history_file_infos, 300)
 
-        # PDF URLs (normalize once)
-        pdf_cache_key = f"pdf_urls_{patient.id}"
-        if not (pdf_urls := cache.get(pdf_cache_key)):
-            pid_norm = patient.patient_id.replace(" ", "_")
-            pname_norm = patient.patient_name.replace(" ", "_")
-            pdfs = XrayReport.objects.filter(
-                patient_id__in=[patient.patient_id, pid_norm],
-                name=pname_norm
-            ).only("pdf_file")
-            pdf_urls = [presigned_url(bucket_name, pdf.pdf_file.name, inline=True) for pdf in pdfs if pdf.pdf_file]
-            cache.set(pdf_cache_key, pdf_urls, 300)
-        patient.presigned_pdf_urls = pdf_urls
+        # PDF URLs
+        pdf_cache_key = f'pdf_urls_{patient.id}'
+        patient.presigned_pdf_urls = cache.get(pdf_cache_key)
+        if not patient.presigned_pdf_urls:
+            patient_id_norm = patient.patient_id.replace(" ", "_")
+            patient_name_norm = patient.patient_name.replace(" ", "_")
+            pdf_reports = XrayReport.objects.filter(
+                patient_id__in=[patient.patient_id, patient_id_norm],
+                name=patient_name_norm
+            )
+            patient.presigned_pdf_urls = [
+                presigned_url(bucket_name, pdf.pdf_file.name, inline=True) for pdf in pdf_reports
+            ]
+            cache.set(pdf_cache_key, patient.presigned_pdf_urls, 300)
 
-    # 🔹 Cached dropdowns
+    # Get dropdown options from base queryset (for consistent options)
     def get_cached_options(field_name, cache_key):
-        if not (values := cache.get(cache_key)):
+        values = cache.get(cache_key)
+        if not values:
             values = list(base_queryset.values_list(field_name, flat=True).distinct())
-            cache.set(cache_key, values, 600)
+            cache.set(cache_key, values, 300)
         return values
 
-    sorted_unique_institution_name = get_cached_options("institution_name", "all_institutions")
-    sorted_unique_modality = get_cached_options("Modality", "all_modalities")
-    sorted_unique_dates = get_cached_options("study_date", "all_dates")
-    sorted_unique_study_description = get_cached_options("study_description", "all_study_desc")
-    sorted_unique_body_part_examined = get_cached_options("body_part_examined", "all_body_parts")
-
-    # 🔹 Received dates (cached)
-    if not (sorted_unique_recived_on_db := cache.get("all_received_dates")):
+    # Get all dropdown options
+    sorted_unique_institution_name = get_cached_options('institution_name', 'all_institutions')
+    sorted_unique_modality = get_cached_options('Modality', 'all_modalities')
+    sorted_unique_dates = get_cached_options('study_date', 'all_dates')
+    sorted_unique_study_description = get_cached_options('study_description', 'all_study_desc')
+    sorted_unique_body_part_examined = get_cached_options('body_part_examined', 'all_body_parts')
+    
+    # Get received dates (with annotation)
+    received_dates_cache_key = 'all_received_dates'
+    sorted_unique_recived_on_db = cache.get(received_dates_cache_key)
+    if not sorted_unique_recived_on_db:
         sorted_unique_recived_on_db = list(
-            base_queryset.annotate(received_date=TruncDate("recived_on_db"))
-            .values_list("received_date", flat=True).distinct()
+            base_queryset.annotate(received_date=TruncDate('recived_on_db'))
+            .values_list('received_date', flat=True).distinct()
         )
-        cache.set("all_received_dates", sorted_unique_recived_on_db, 600)
+        cache.set(received_dates_cache_key, sorted_unique_recived_on_db, 300)
 
-    # 🔹 Study times (skip cache if small)
-    sorted_unique_study_time = sorted(
-        base_queryset.exclude(study_time__isnull=True).values_list("study_time", flat=True).distinct()
-    )
+    # Study times (small dataset, no caching needed)
+    sorted_unique_study_time = sorted(set(
+        base_queryset.exclude(study_time__isnull=True).values_list('study_time', flat=True)
+    ))
 
-    return render(request, "users/allocation1.html", {
-        "user": request.user,
-        "Institution": sorted_unique_institution_name,
-        "Modalities": sorted_unique_modality,
-        "total": total_cases,
-        "patients": page_obj,
-        "Date": sorted_unique_dates,
-        "Study_time": sorted_unique_study_time,
-        "Received_on_db": sorted_unique_recived_on_db,
-        "Study_description": sorted_unique_study_description,
-        "body_part_examined": sorted_unique_body_part_examined,
-        "radiologists": radiologist_objects,
-        "corporatecoordinators": corporatecoordinator_objects,
-        "page_obj": page_obj,
-        "status_filter": status_filter,
-        "search_query": search_query,
+    return render(request, 'users/allocation1.html', {
+        'user': request.user,  # Add this
+        'Institution': sorted_unique_institution_name,
+        'Modalities': sorted_unique_modality,
+        'total': total_cases,
+        'patients': page_obj,  # This is the paginated object
+        'Date': sorted_unique_dates,
+        'Study_time': sorted_unique_study_time,
+        'Received_on_db': sorted_unique_recived_on_db,
+        'Study_description': sorted_unique_study_description,
+        'body_part_examined': sorted_unique_body_part_examined,
+        'radiologists': radiologist_objects,
+        'corporatecoordinators': corporatecoordinator_objects,
+        'page_obj': page_obj,
+        'status_filter': status_filter,
+        'search_query': search_query,
     })
 
 # def assign_radiologist(request):
