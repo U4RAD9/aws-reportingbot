@@ -3016,8 +3016,16 @@ def xrayallocation(request):
             presigned_url(bucket_name, f.jpeg_file.name) for f in patient.jpeg_files.all()
         ]
 
-        history_urls = [
-            presigned_url(bucket_name, f.history_file.name, inline=True) for f in patient.history_files.all()
+        # history_urls = [
+        #     presigned_url(bucket_name, f.history_file.name, inline=True) for f in patient.history_files.all()
+        # ]
+
+        history_file_infos = [
+            {
+                "url": presigned_url(bucket_name, f.history_file.name, inline=True),
+                "uploaded_at": f.uploaded_at
+            }
+            for f in patient.history_files.all()
         ]
 
         pdf_key = (patient.patient_id.replace(" ", "_"), patient.patient_name.replace(" ", "_"))
@@ -3027,7 +3035,7 @@ def xrayallocation(request):
             "patient": patient,
             "urls": jpeg_urls,
             "pdf_urls": pdf_urls,
-            "history_urls": history_urls,
+            "history_urls": history_file_infos,
         })
 
     # Unique dropdowns (optimized)
