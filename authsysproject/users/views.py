@@ -2827,44 +2827,151 @@ def presigned_url(bucket_name, object_name, operation='get_object', inline=False
 
 
 @user_type_required('radiologist')
+# def xrayallocation(request):
+#     radiologist_group = Group.objects.get(name='radiologist')
+
+#     # Fetch the corresponding PersonalInfo instance for the current user
+#     current_user_personal_info = PersonalInfoModel.objects.get(user=request.user)
+#     # Fetch profile picture dynamically
+#     profile_picture = None
+#     if current_user_personal_info.uploadpicture:
+#         profile_picture = current_user_personal_info.uploadpicture.url  # Get uploaded image URL
+#     else:
+#         profile_picture = settings.STATIC_URL + "profile_pictures/default.jpg"  # Default picture
+
+#     total_reported = current_user_personal_info.total_reported
+#     today = now().date()
+#     yesterday = today - timedelta(days=1)
+
+#     allocated = DICOMData.objects.filter(radiologist=current_user_personal_info)
+
+#     # Count total assigned cases
+#     total_assigned_cases = allocated.count()
+
+#     # Count total reported cases (isDone = True)
+#     total_reported_cases = allocated.filter(isDone=True).count()
+
+#     # Count total pending cases (total assigned cases - total reported cases)
+#     total_pending_cases = total_assigned_cases - total_reported_cases
+
+#     # Filter cases that are not yet reported (isDone = False)
+#     pending_cases = allocated.filter(isDone=False).order_by('-vip', '-urgent', '-Mlc', '-id')
+
+#     # Get search query
+#     search_query = request.GET.get('q', '')
+
+#     allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=False).order_by('-vip', '-urgent', '-Mlc', '-id')
+
+#     # Apply search filter
+#     if search_query:
+#         allocated_to_current_user = allocated_to_current_user.filter(
+#             Q(patient_name__icontains=search_query) |
+#             Q(patient_id__icontains=search_query) |
+#             Q(age__icontains=search_query) |
+#             Q(gender__icontains=search_query) |
+#             Q(study_date__icontains=search_query) |
+#             Q(study_time__icontains=search_query) |
+#             Q(study_description__icontains=search_query) |
+#             Q(Modality__icontains=search_query) |
+#             Q(body_part_examined__icontains=search_query) |
+#             Q(referring_doctor_name__icontains=search_query) |
+#             Q(institution_name__icontains=search_query)
+#         )
+
+    
+
+#     # Set up pagination
+#     paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
+#     page_number = request.GET.get('page', 1)  # Get the page number from the request
+#     page_obj = paginator.get_page(page_number)
+    
+   
+#     # Generate presigned URLs for JPEG files in S3
+#     bucket_name = 'u4rad-s3-reporting-bot'
+#     patient_urls = []
+#     for patient in page_obj:
+#         jpeg_files = patient.jpeg_files.all()
+#         urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
+        
+#         # Fetch PDFs for the patient
+#         patient_name_with_underscores = patient.patient_name.replace(" ", "_")
+#         patient_id_with_underscores = patient.patient_id.replace(" ", "_")
+#         pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient_id_with_underscores)
+        
+#         pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
+#         # Get history files
+#         history_files = patient.history_files.all()
+#         patient.history_file_urls = [
+#             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+#         ]
+#         patient_urls.append({
+#            'patient': patient,
+#            'urls': urls,
+#            'pdf_urls': pdf_urls  # Add PDFs URLs to the patient data
+#         })
+#         print(jpeg_files)
+
+#     location = XLocation.objects.all()
+
+#     # Extract only the *date* from recived_on_db
+#     # unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None}
+#     unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None} #28-05-2025 by Rohan jangid
+#     sorted_unique_recived_on_db = sorted(unique_recived_on_db, reverse=False)
+
+#     # Get unique dates from the patients on the current page
+#     unique_dates = set(patient.study_date for patient in page_obj.object_list)
+#     sorted_unique_dates = sorted(unique_dates, reverse=False)
+
+#     # unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
+#     unique_institution_name = {patient.institution_name for patient in page_obj.object_list if patient.institution_name is not None}
+#     sorted_unique_institution_name = sorted(unique_institution_name, reverse=False)
+
+#     #Study Description of patent from dicom data
+#     unique_study_description = {patient.study_description for patient in page_obj.object_list if patient.study_description is not None}
+#     sorted_unique_study_description = sorted(unique_study_description, reverse=False)
+
+#     # Modality
+#     unique_modality = {patient.Modality for patient in page_obj.object_list if patient.Modality is not None}
+#     sorted_unique_modality = sorted(unique_modality, reverse=False)
+
+#     return render(request, 'users/xrayallocation.html', {
+#         'profile_picture': profile_picture,
+#         'Modalities': sorted_unique_modality,
+#         'Study_description': sorted_unique_study_description,
+#         'Institution': sorted_unique_institution_name,
+#         'reported': total_reported,
+#         'patients': page_obj,
+#         'Received_on_db': sorted_unique_recived_on_db,
+#         'Date': sorted_unique_dates,
+#         'locations': location,
+#         'total_assigned_cases': total_assigned_cases,
+#         'total_reported_cases': total_reported_cases,
+#         'total_pending_cases': total_pending_cases,
+#         'page_obj': page_obj,
+#         'patient_urls': patient_urls,
+#         'search_query': search_query
+#     })
+
+
 def xrayallocation(request):
-    radiologist_group = Group.objects.get(name='radiologist')
+    current_user_personal_info = PersonalInfoModel.objects.select_related("user").get(user=request.user)
 
-    # Fetch the corresponding PersonalInfo instance for the current user
-    current_user_personal_info = PersonalInfoModel.objects.get(user=request.user)
-    # Fetch profile picture dynamically
-    profile_picture = None
-    if current_user_personal_info.uploadpicture:
-        profile_picture = current_user_personal_info.uploadpicture.url  # Get uploaded image URL
-    else:
-        profile_picture = settings.STATIC_URL + "profile_pictures/default.jpg"  # Default picture
+    # Profile picture
+    profile_picture = current_user_personal_info.uploadpicture.url if current_user_personal_info.uploadpicture \
+                      else settings.STATIC_URL + "profile_pictures/default.jpg"
 
-    total_reported = current_user_personal_info.total_reported
-    today = now().date()
-    yesterday = today - timedelta(days=1)
-
-    allocated = DICOMData.objects.filter(radiologist=current_user_personal_info)
-
-    # Count total assigned cases
-    total_assigned_cases = allocated.count()
-
-    # Count total reported cases (isDone = True)
-    total_reported_cases = allocated.filter(isDone=True).count()
-
-    # Count total pending cases (total assigned cases - total reported cases)
-    total_pending_cases = total_assigned_cases - total_reported_cases
-
-    # Filter cases that are not yet reported (isDone = False)
-    pending_cases = allocated.filter(isDone=False).order_by('-vip', '-urgent', '-Mlc', '-id')
-
-    # Get search query
-    search_query = request.GET.get('q', '')
-
-    allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=False).order_by('-vip', '-urgent', '-Mlc', '-id')
+    # Base queryset for allocated patients
+    allocated_qs = (
+        DICOMData.objects
+        .filter(radiologist=current_user_personal_info, isDone=False)
+        .prefetch_related("jpeg_files", "history_files")   # ✅ Prefetch
+        .order_by("-vip", "-urgent", "-Mlc", "-id")
+    )
 
     # Apply search filter
+    search_query = request.GET.get("q", "")
     if search_query:
-        allocated_to_current_user = allocated_to_current_user.filter(
+        allocated_qs = allocated_qs.filter(
             Q(patient_name__icontains=search_query) |
             Q(patient_id__icontains=search_query) |
             Q(age__icontains=search_query) |
@@ -2878,117 +2985,216 @@ def xrayallocation(request):
             Q(institution_name__icontains=search_query)
         )
 
-    
-
-    # Set up pagination
-    paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
-    page_number = request.GET.get('page', 1)  # Get the page number from the request
+    # Pagination
+    paginator = Paginator(allocated_qs, 200)
+    page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
-    
-   
-    # Generate presigned URLs for JPEG files in S3
-    bucket_name = 'u4rad-s3-reporting-bot'
+
+    bucket_name = "u4rad-s3-reporting-bot"
     patient_urls = []
+
+    # Collect patient_ids for one-shot query for PDFs
+    patient_ids = [p.patient_id.replace(" ", "_") for p in page_obj]
+    patient_names = [p.patient_name.replace(" ", "_") for p in page_obj]
+
+    pdf_reports = (
+        XrayReport.objects.filter(patient_id__in=patient_ids, name__in=patient_names)
+        .only("pdf_file", "patient_id", "name")
+    )
+
+    pdf_map = {}
+    for report in pdf_reports:
+        key = (report.patient_id, report.name)
+        pdf_map.setdefault(key, []).append(
+            presigned_url(bucket_name, report.pdf_file.name, inline=True)
+        )
+
+    # Process patients
     for patient in page_obj:
-        jpeg_files = patient.jpeg_files.all()
-        urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
-        
-        # Fetch PDFs for the patient
-        patient_name_with_underscores = patient.patient_name.replace(" ", "_")
-        patient_id_with_underscores = patient.patient_id.replace(" ", "_")
-        pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient_id_with_underscores)
-        
-        pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
-        # Get history files
-        history_files = patient.history_files.all()
-        patient.history_file_urls = [
-            presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+        jpeg_urls = [
+            presigned_url(bucket_name, f.jpeg_file.name) for f in patient.jpeg_files.all()
         ]
+
+        history_urls = [
+            presigned_url(bucket_name, f.history_file.name, inline=True) for f in patient.history_files.all()
+        ]
+
+        pdf_key = (patient.patient_id.replace(" ", "_"), patient.patient_name.replace(" ", "_"))
+        pdf_urls = pdf_map.get(pdf_key, [])
+
         patient_urls.append({
-           'patient': patient,
-           'urls': urls,
-           'pdf_urls': pdf_urls  # Add PDFs URLs to the patient data
+            "patient": patient,
+            "urls": jpeg_urls,
+            "pdf_urls": pdf_urls,
+            "history_urls": history_urls,
         })
-        print(jpeg_files)
 
-    location = XLocation.objects.all()
+    # Unique dropdowns (optimized)
+    unique_institution_name = sorted({p.institution_name for p in page_obj if p.institution_name})
+    unique_study_description = sorted({p.study_description for p in page_obj if p.study_description})
+    unique_modality = sorted({p.Modality for p in page_obj if p.Modality})
+    unique_dates = sorted({p.study_date for p in page_obj if p.study_date})
+    unique_recived_on_db = sorted({p.recived_on_db for p in page_obj if p.recived_on_db})
 
-    # Extract only the *date* from recived_on_db
-    # unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None}
-    unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None} #28-05-2025 by Rohan jangid
-    sorted_unique_recived_on_db = sorted(unique_recived_on_db, reverse=False)
-
-    # Get unique dates from the patients on the current page
-    unique_dates = set(patient.study_date for patient in page_obj.object_list)
-    sorted_unique_dates = sorted(unique_dates, reverse=False)
-
-    # unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
-    unique_institution_name = {patient.institution_name for patient in page_obj.object_list if patient.institution_name is not None}
-    sorted_unique_institution_name = sorted(unique_institution_name, reverse=False)
-
-    #Study Description of patent from dicom data
-    unique_study_description = {patient.study_description for patient in page_obj.object_list if patient.study_description is not None}
-    sorted_unique_study_description = sorted(unique_study_description, reverse=False)
-
-    # Modality
-    unique_modality = {patient.Modality for patient in page_obj.object_list if patient.Modality is not None}
-    sorted_unique_modality = sorted(unique_modality, reverse=False)
-
-    return render(request, 'users/xrayallocation.html', {
-        'profile_picture': profile_picture,
-        'Modalities': sorted_unique_modality,
-        'Study_description': sorted_unique_study_description,
-        'Institution': sorted_unique_institution_name,
-        'reported': total_reported,
-        'patients': page_obj,
-        'Received_on_db': sorted_unique_recived_on_db,
-        'Date': sorted_unique_dates,
-        'locations': location,
-        'total_assigned_cases': total_assigned_cases,
-        'total_reported_cases': total_reported_cases,
-        'total_pending_cases': total_pending_cases,
-        'page_obj': page_obj,
-        'patient_urls': patient_urls,
-        'search_query': search_query
+    return render(request, "users/xrayallocation.html", {
+        "profile_picture": profile_picture,
+        "Modalities": unique_modality,
+        "Study_description": unique_study_description,
+        "Institution": unique_institution_name,
+        "reported": current_user_personal_info.total_reported,
+        "patients": page_obj,
+        "Received_on_db": unique_recived_on_db,
+        "Date": unique_dates,
+        "locations": XLocation.objects.all(),
+        "total_assigned_cases": allocated_qs.count(),
+        "total_reported_cases": allocated_qs.filter(isDone=True).count(),
+        "total_pending_cases": allocated_qs.filter(isDone=False).count(),
+        "page_obj": page_obj,
+        "patient_urls": patient_urls,
+        "search_query": search_query,
     })
 
 
 @user_type_required('radiologist')
+# def xrayallocationreverse(request):
+#     radiologist_group = Group.objects.get(name='radiologist')
+
+#     # Fetch the corresponding PersonalInfo instance for the current user
+#     current_user_personal_info = PersonalInfoModel.objects.get(user=request.user)
+#     # Fetch profile picture dynamically
+#     profile_picture = None
+#     if current_user_personal_info.uploadpicture:
+#         profile_picture = current_user_personal_info.uploadpicture.url  # Get uploaded image URL
+#     else:
+#         profile_picture = settings.STATIC_URL + "profile_pictures/default.jpg"  # Default picture
+
+#     total_reported = current_user_personal_info.total_reported
+#     today = now().date()
+#     yesterday = today - timedelta(days=1)
+
+#     allocated = DICOMData.objects.filter(radiologist=current_user_personal_info)
+
+#     # Count total assigned cases
+#     total_assigned_cases = allocated.count()
+
+#     # Count total reported cases (isDone = True)
+#     total_reported_cases = allocated.filter(isDone=True).count()
+
+#     # Count total pending cases (total assigned cases - total reported cases)
+#     total_pending_cases = total_assigned_cases - total_reported_cases
+
+#     # Get search query
+#     search_query = request.GET.get('q', '')
+
+#     allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=True).order_by('-id')
+
+#     # Apply search filter
+#     if search_query:
+#         allocated_to_current_user = allocated_to_current_user.filter(
+#             Q(patient_name__icontains=search_query) |
+#             Q(patient_id__icontains=search_query) |
+#             Q(age__icontains=search_query) |
+#             Q(gender__icontains=search_query) |
+#             Q(study_date__icontains=search_query) |
+#             Q(study_time__icontains=search_query) |
+#             Q(study_description__icontains=search_query) |
+#             Q(Modality__icontains=search_query) |
+#             Q(body_part_examined__icontains=search_query) |
+#             Q(referring_doctor_name__icontains=search_query) |
+#             Q(institution_name__icontains=search_query)
+#         )
+
+#     # Set up pagination
+#     paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
+#     page_number = request.GET.get('page', 1)  # Get the page number from the request
+#     page_obj = paginator.get_page(page_number)
+    
+   
+#     # Generate presigned URLs for JPEG files in S3
+#     bucket_name = 'u4rad-s3-reporting-bot'
+#     patient_urls = []
+#     for patient in page_obj:
+#         jpeg_files = patient.jpeg_files.all()
+#         urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
+
+#         # Fetch PDFs for the patient
+#         patient_name_with_underscores = patient.patient_name.replace(" ", "_")
+#         patient_id_with_underscores = patient.patient_id.replace(" ", "_")
+#         pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient_id_with_underscores)
+        
+#         pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
+
+#         # Get history files
+#         history_files = patient.history_files.all()
+#         patient.history_file_urls = [
+#             presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+#         ]
+
+#         patient_urls.append({
+#            'patient': patient,
+#            'urls': urls,
+#            'pdf_urls': pdf_urls  # Add PDFs URLs to the patient data
+#         })
+#         print(jpeg_files)
+
+#     location = XLocation.objects.all()
+
+#     # Extract only the *date* from recived_on_db
+#     # unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None}
+#     unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None} #28-05-2025 by Rohan jangid
+#     sorted_unique_recived_on_db = sorted(unique_recived_on_db, reverse=False)
+
+#     # Get unique dates from the patients on the current page
+#     unique_dates = set(patient.study_date for patient in page_obj.object_list)
+#     sorted_unique_dates = sorted(unique_dates, reverse=False)
+
+#     # unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
+#     unique_institution_name = {patient.institution_name for patient in page_obj.object_list if patient.institution_name is not None}
+#     sorted_unique_institution_name = sorted(unique_institution_name, reverse=False)
+
+#     #Study Description of patent from dicom data
+#     unique_study_description = {patient.study_description for patient in page_obj.object_list if patient.study_description is not None}
+#     sorted_unique_study_description = sorted(unique_study_description, reverse=False)
+
+#     # Modality
+#     unique_modality = {patient.Modality for patient in page_obj.object_list if patient.Modality is not None}
+#     sorted_unique_modality = sorted(unique_modality, reverse=False)
+
+#     return render(request, 'users/xrayallocationreverse.html', {
+#         'profile_picture': profile_picture,
+#         'reported': total_reported,
+#         'patients': page_obj,
+#         'Received_on_db': sorted_unique_recived_on_db,
+#         'Modalities': sorted_unique_modality,
+#         'Study_description': sorted_unique_study_description,
+#         'Date': sorted_unique_dates,
+#         'locations': location,
+#         'page_obj': page_obj,
+#         'total_assigned_cases': total_assigned_cases,
+#         'total_reported_cases': total_reported_cases,
+#         'total_pending_cases': total_pending_cases,
+#         'patient_urls': patient_urls,
+#         'search_query': search_query})
+
 def xrayallocationreverse(request):
-    radiologist_group = Group.objects.get(name='radiologist')
+    current_user_personal_info = PersonalInfoModel.objects.select_related("user").get(user=request.user)
 
-    # Fetch the corresponding PersonalInfo instance for the current user
-    current_user_personal_info = PersonalInfoModel.objects.get(user=request.user)
-    # Fetch profile picture dynamically
-    profile_picture = None
-    if current_user_personal_info.uploadpicture:
-        profile_picture = current_user_personal_info.uploadpicture.url  # Get uploaded image URL
-    else:
-        profile_picture = settings.STATIC_URL + "profile_pictures/default.jpg"  # Default picture
+    # Profile picture
+    profile_picture = current_user_personal_info.uploadpicture.url if current_user_personal_info.uploadpicture \
+                      else settings.STATIC_URL + "profile_pictures/default.jpg"
 
-    total_reported = current_user_personal_info.total_reported
-    today = now().date()
-    yesterday = today - timedelta(days=1)
-
-    allocated = DICOMData.objects.filter(radiologist=current_user_personal_info)
-
-    # Count total assigned cases
-    total_assigned_cases = allocated.count()
-
-    # Count total reported cases (isDone = True)
-    total_reported_cases = allocated.filter(isDone=True).count()
-
-    # Count total pending cases (total assigned cases - total reported cases)
-    total_pending_cases = total_assigned_cases - total_reported_cases
-
-    # Get search query
-    search_query = request.GET.get('q', '')
-
-    allocated_to_current_user = DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=True).order_by('-id')
+    # Base queryset for reported patients
+    reported_qs = (
+        DICOMData.objects
+        .filter(radiologist=current_user_personal_info, isDone=True)
+        .prefetch_related("jpeg_files", "history_files")   # ✅ Prefetch
+        .order_by("-id")
+    )
 
     # Apply search filter
+    search_query = request.GET.get("q", "")
     if search_query:
-        allocated_to_current_user = allocated_to_current_user.filter(
+        reported_qs = reported_qs.filter(
             Q(patient_name__icontains=search_query) |
             Q(patient_id__icontains=search_query) |
             Q(age__icontains=search_query) |
@@ -3002,77 +3208,74 @@ def xrayallocationreverse(request):
             Q(institution_name__icontains=search_query)
         )
 
-    # Set up pagination
-    paginator = Paginator(allocated_to_current_user, 200)  # 200 patients per page
-    page_number = request.GET.get('page', 1)  # Get the page number from the request
+    # Pagination
+    paginator = Paginator(reported_qs, 200)
+    page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
-    
-   
-    # Generate presigned URLs for JPEG files in S3
-    bucket_name = 'u4rad-s3-reporting-bot'
+
+    bucket_name = "u4rad-s3-reporting-bot"
     patient_urls = []
+
+    # Collect patient_ids for one-shot query for PDFs
+    patient_ids = [p.patient_id.replace(" ", "_") for p in page_obj]
+    patient_names = [p.patient_name.replace(" ", "_") for p in page_obj]
+
+    pdf_reports = (
+        XrayReport.objects.filter(patient_id__in=patient_ids, name__in=patient_names)
+        .only("pdf_file", "patient_id", "name")
+    )
+
+    pdf_map = {}
+    for report in pdf_reports:
+        key = (report.patient_id, report.name)
+        pdf_map.setdefault(key, []).append(
+            presigned_url(bucket_name, report.pdf_file.name, inline=True)
+        )
+
+    # Process patients
     for patient in page_obj:
-        jpeg_files = patient.jpeg_files.all()
-        urls = [presigned_url(bucket_name, jpeg_file.jpeg_file.name) for jpeg_file in jpeg_files]
-
-        # Fetch PDFs for the patient
-        patient_name_with_underscores = patient.patient_name.replace(" ", "_")
-        patient_id_with_underscores = patient.patient_id.replace(" ", "_")
-        pdf_reports = XrayReport.objects.filter(name=patient_name_with_underscores, patient_id=patient_id_with_underscores)
-        
-        pdf_urls = [presigned_url(bucket_name, pdf_report.pdf_file.name, inline=True) for pdf_report in pdf_reports]
-
-        # Get history files
-        history_files = patient.history_files.all()
-        patient.history_file_urls = [
-            presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
+        jpeg_urls = [
+            presigned_url(bucket_name, f.jpeg_file.name) for f in patient.jpeg_files.all()
         ]
 
+        history_urls = [
+            presigned_url(bucket_name, f.history_file.name, inline=True) for f in patient.history_files.all()
+        ]
+
+        pdf_key = (patient.patient_id.replace(" ", "_"), patient.patient_name.replace(" ", "_"))
+        pdf_urls = pdf_map.get(pdf_key, [])
+
         patient_urls.append({
-           'patient': patient,
-           'urls': urls,
-           'pdf_urls': pdf_urls  # Add PDFs URLs to the patient data
+            "patient": patient,
+            "urls": jpeg_urls,
+            "pdf_urls": pdf_urls,
+            "history_urls": history_urls,
         })
-        print(jpeg_files)
 
-    location = XLocation.objects.all()
+    # Unique dropdowns (optimized)
+    unique_institution_name = sorted({p.institution_name for p in page_obj if p.institution_name})
+    unique_study_description = sorted({p.study_description for p in page_obj if p.study_description})
+    unique_modality = sorted({p.Modality for p in page_obj if p.Modality})
+    unique_dates = sorted({p.study_date for p in page_obj if p.study_date})
+    unique_recived_on_db = sorted({p.recived_on_db for p in page_obj if p.recived_on_db})
 
-    # Extract only the *date* from recived_on_db
-    # unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None}
-    unique_recived_on_db = {patient.recived_on_db for patient in page_obj.object_list if patient.recived_on_db is not None} #28-05-2025 by Rohan jangid
-    sorted_unique_recived_on_db = sorted(unique_recived_on_db, reverse=False)
-
-    # Get unique dates from the patients on the current page
-    unique_dates = set(patient.study_date for patient in page_obj.object_list)
-    sorted_unique_dates = sorted(unique_dates, reverse=False)
-
-    # unique_locations = [f"{y.name}" for y in XLocation.objects.all()]
-    unique_institution_name = {patient.institution_name for patient in page_obj.object_list if patient.institution_name is not None}
-    sorted_unique_institution_name = sorted(unique_institution_name, reverse=False)
-
-    #Study Description of patent from dicom data
-    unique_study_description = {patient.study_description for patient in page_obj.object_list if patient.study_description is not None}
-    sorted_unique_study_description = sorted(unique_study_description, reverse=False)
-
-    # Modality
-    unique_modality = {patient.Modality for patient in page_obj.object_list if patient.Modality is not None}
-    sorted_unique_modality = sorted(unique_modality, reverse=False)
-
-    return render(request, 'users/xrayallocationreverse.html', {
-        'profile_picture': profile_picture,
-        'reported': total_reported,
-        'patients': page_obj,
-        'Received_on_db': sorted_unique_recived_on_db,
-        'Modalities': sorted_unique_modality,
-        'Study_description': sorted_unique_study_description,
-        'Date': sorted_unique_dates,
-        'locations': location,
-        'page_obj': page_obj,
-        'total_assigned_cases': total_assigned_cases,
-        'total_reported_cases': total_reported_cases,
-        'total_pending_cases': total_pending_cases,
-        'patient_urls': patient_urls,
-        'search_query': search_query})
+    return render(request, "users/xrayallocationreverse.html", {
+        "profile_picture": profile_picture,
+        "Modalities": unique_modality,
+        "Study_description": unique_study_description,
+        "Institution": unique_institution_name,
+        "reported": current_user_personal_info.total_reported,
+        "patients": page_obj,
+        "Received_on_db": unique_recived_on_db,
+        "Date": unique_dates,
+        "locations": XLocation.objects.all(),
+        "total_assigned_cases": reported_qs.count(),
+        "total_reported_cases": reported_qs.count(),   # all are reported here
+        "total_pending_cases": 0,                      # none pending in this view
+        "page_obj": page_obj,
+        "patient_urls": patient_urls,
+        "search_query": search_query,
+    })
 
 user_type_required('audiometrist')
 def audiometry(request):
