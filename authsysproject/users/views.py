@@ -2954,7 +2954,7 @@ def presigned_url(bucket_name, object_name, operation='get_object', inline=False
 #         'search_query': search_query
 #     })
 
-
+@user_type_required("radiologist")
 def xrayallocation(request):
     current_user_personal_info = PersonalInfoModel.objects.select_related("user").get(user=request.user)
 
@@ -2965,23 +2965,11 @@ def xrayallocation(request):
         else settings.STATIC_URL + "profile_pictures/default.jpg"
     )
 
-    # Prefetch JPEG + History files (with only file fields)
-    jpeg_prefetch = Prefetch(
-        "jpeg_files",
-        queryset=JPEGFile.objects.only("id", "jpeg_file"),
-        to_attr="prefetched_jpeg_files"
-    )
-    history_prefetch = Prefetch(
-        "history_files",
-        queryset=PatientHistoryFile.objects.only("id", "history_file"),
-        to_attr="prefetched_history_files"
-    )
-
     # Base queryset for allocated patients
     allocated_qs = (
         DICOMData.objects
         .filter(radiologist=current_user_personal_info, isDone=False)
-        .prefetch_related(jpeg_prefetch, history_prefetch)
+        .prefetch_related("jpeg_files", "history_files")  # ✅ Prefetch
         .order_by("-vip", "-urgent", "-Mlc", "-id")
     )
 
@@ -3010,14 +2998,12 @@ def xrayallocation(request):
     bucket_name = "u4rad-s3-reporting-bot"
     patient_urls = []
 
-    # Collect patient_ids and names
+    # Collect patient_ids for one-shot query for PDFs
     patient_ids = [p.patient_id.replace(" ", "_") for p in page_obj]
     patient_names = [p.patient_name.replace(" ", "_") for p in page_obj]
 
-    # Fetch PDF reports in one shot
     pdf_reports = (
-        XrayReport.objects
-        .filter(patient_id__in=patient_ids, name__in=patient_names)
+        XrayReport.objects.filter(patient_id__in=patient_ids, name__in=patient_names)
         .only("pdf_file", "patient_id", "name")
     )
 
@@ -3031,15 +3017,16 @@ def xrayallocation(request):
     # Process patients
     for patient in page_obj:
         jpeg_urls = [
-            presigned_url(bucket_name, f.jpeg_file.name)
-            for f in getattr(patient, "prefetched_jpeg_files", [])
-            if f.jpeg_file
+            presigned_url(bucket_name, f.jpeg_file.name) for f in patient.jpeg_files.all()
         ]
 
-        history_urls = [
-            presigned_url(bucket_name, f.history_file.name, inline=True)
-            for f in getattr(patient, "prefetched_history_files", [])
-            if f.history_file
+        # ✅ History with uploaded_at
+        history_file_infos = [
+            {
+                "url": presigned_url(bucket_name, f.history_file.name, inline=True),
+                "uploaded_at": f.uploaded_at,
+            }
+            for f in patient.history_files.all()
         ]
 
         pdf_key = (patient.patient_id.replace(" ", "_"), patient.patient_name.replace(" ", "_"))
@@ -3049,10 +3036,10 @@ def xrayallocation(request):
             "patient": patient,
             "urls": jpeg_urls,
             "pdf_urls": pdf_urls,
-            "history_urls": history_urls,
+            "history_urls": history_file_infos,  # ✅ Now includes uploaded_at
         })
 
-    # Unique dropdowns
+    # Unique dropdowns (optimized, only from current page to keep it fast)
     unique_institution_name = sorted({p.institution_name for p in page_obj if p.institution_name})
     unique_study_description = sorted({p.study_description for p in page_obj if p.study_description})
     unique_modality = sorted({p.Modality for p in page_obj if p.Modality})
@@ -3076,8 +3063,6 @@ def xrayallocation(request):
         "patient_urls": patient_urls,
         "search_query": search_query,
     })
-
-
 
 
 
