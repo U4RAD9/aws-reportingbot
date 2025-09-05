@@ -1252,11 +1252,11 @@ def email_pdf_raw(request, patient_id):
 #         return render(request, 'users/client.html', context)
 
 
-from django.db.models import Q
-from django.core.paginator import Paginator
-from django.shortcuts import render
-from django.http import HttpResponse
-from .models import Client, DICOMData, XrayReport
+# from django.db.models import Q
+# from django.core.paginator import Paginator
+# from django.shortcuts import render
+# from django.http import HttpResponse
+# from .models import Client, DICOMData, XrayReport
 from support_chat.models import ChatRoom
 
 
@@ -1979,11 +1979,11 @@ def update_non_reportable_status(request, patient_id):
 #         'search_query': search_query
 #     })
 
-from django.core.cache import cache
-from django.db.models import Q, Count, Prefetch
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models.functions import TruncDate
-from django.contrib.auth.models import Group
+# from django.core.cache import cache
+# from django.db.models import Q, Count, Prefetch
+# from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+# from django.db.models.functions import TruncDate
+# from django.contrib.auth.models import Group
 
 @user_type_required('xraycoordinator')
 def allocation1(request):
