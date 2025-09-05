@@ -2965,6 +2965,7 @@ def xrayallocation(request):
     allocated_qs = (
         DICOMData.objects
         .filter(radiologist=current_user_personal_info, isDone=False)
+        .prefetch_related("jpeg_files", "history_files")   # ✅ Prefetch
         .order_by("-vip", "-urgent", "-Mlc", "-id")
     )
 
@@ -2991,84 +2992,42 @@ def xrayallocation(request):
     page_obj = paginator.get_page(page_number)
 
     bucket_name = "u4rad-s3-reporting-bot"
-    # patient_urls = []
-
-    # # Collect patient_ids for one-shot query for PDFs
-    # patient_ids = [p.patient_id.replace(" ", "_") for p in page_obj]
-    # patient_names = [p.patient_name.replace(" ", "_") for p in page_obj]
-
-    # pdf_reports = (
-    #     XrayReport.objects.filter(patient_id__in=patient_ids, name__in=patient_names)
-    #     .only("pdf_file", "patient_id", "name")
-    # )
-
-    # pdf_map = {}
-    # for report in pdf_reports:
-    #     key = (report.patient_id, report.name)
-    #     pdf_map.setdefault(key, []).append(
-    #         presigned_url(bucket_name, report.pdf_file.name, inline=True)
-    #     )
-
-    # # Process patients
-    # for patient in page_obj:
-    #     jpeg_urls = [
-    #         presigned_url(bucket_name, f.jpeg_file.name) for f in patient.jpeg_files.all()
-    #     ]
-
-    #     # history_urls = [
-    #     #     presigned_url(bucket_name, f.history_file.name, inline=True) for f in patient.history_files.all()
-    #     # ]
-    #     history_cache_key = f'history_urls_{patient.id}' 
-    #     patient.history_file_infos = cache.get(history_cache_key)
-    #     history_file_infos = [
-    #         {"url": presigned_url(bucket_name, f.history_file.name, inline=True),
-    #          "uploaded_at": f.uploaded_at} for f in patient.history_files.all()
-    #     ]
-
-    #     pdf_key = (patient.patient_id.replace(" ", "_"), patient.patient_name.replace(" ", "_"))
-    #     pdf_urls = pdf_map.get(pdf_key, [])
-
-    #     patient_urls.append({
-    #         "patient": patient,
-    #         "urls": jpeg_urls,
-    #         "pdf_urls": pdf_urls,
-    #         "history_urls": history_file_infos,
-    #     })
-
-    # Collect patient IDs for this page
-    patient_ids = [p.id for p in page_obj]
-
-    # Fetch history files in one query for all patients on this page
-    history_files_map = {}
-    for f in PatientHistoryFile.objects.filter(dicom_data__id__in=patient_ids):
-        history_files_map.setdefault(f.dicom_data_id, []).append({
-            'url': presigned_url(bucket_name, f.history_file.name, inline=True),
-            'uploaded_at': f.uploaded_at
-        })
-
-    # Prepare patient data with history files
     patient_urls = []
-    for patient in page_obj:
-        # JPEG files
-        jpeg_urls = [presigned_url(bucket_name, f.jpeg_file.name) for f in patient.jpeg_files.all()]
 
-        # History files from the pre-fetched map
-        history_file_infos = history_files_map.get(patient.id, [])
+    # Collect patient_ids for one-shot query for PDFs
+    patient_ids = [p.patient_id.replace(" ", "_") for p in page_obj]
+    patient_names = [p.patient_name.replace(" ", "_") for p in page_obj]
 
-        # PDF files
-        patient_id_norm = patient.patient_id.replace(" ", "_")
-        patient_name_norm = patient.patient_name.replace(" ", "_")
-        pdf_reports = XrayReport.objects.filter(
-            patient_id__in=[patient.patient_id, patient_id_norm],
-            name=patient_name_norm
+    pdf_reports = (
+        XrayReport.objects.filter(patient_id__in=patient_ids, name__in=patient_names)
+        .only("pdf_file", "patient_id", "name")
+    )
+
+    pdf_map = {}
+    for report in pdf_reports:
+        key = (report.patient_id, report.name)
+        pdf_map.setdefault(key, []).append(
+            presigned_url(bucket_name, report.pdf_file.name, inline=True)
         )
-        pdf_urls = [presigned_url(bucket_name, pdf.pdf_file.name, inline=True) for pdf in pdf_reports]
+
+    # Process patients
+    for patient in page_obj:
+        jpeg_urls = [
+            presigned_url(bucket_name, f.jpeg_file.name) for f in patient.jpeg_files.all()
+        ]
+
+        history_urls = [
+            presigned_url(bucket_name, f.history_file.name, inline=True) for f in patient.history_files.all()
+        ]
+
+        pdf_key = (patient.patient_id.replace(" ", "_"), patient.patient_name.replace(" ", "_"))
+        pdf_urls = pdf_map.get(pdf_key, [])
 
         patient_urls.append({
             "patient": patient,
-            "jpeg_urls": jpeg_urls,
-            "history_file_infos": history_file_infos,
+            "urls": jpeg_urls,
             "pdf_urls": pdf_urls,
+            "history_urls": history_urls,
         })
 
     # Unique dropdowns (optimized)
