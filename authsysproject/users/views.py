@@ -3015,6 +3015,7 @@ def xrayallocation(request):
         jpeg_urls = [
             presigned_url(bucket_name, f.jpeg_file.name) for f in patient.jpeg_files.all()
         ]
+        history_files = patient.history_files.all()
 
         history_urls = [
             {
