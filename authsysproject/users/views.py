@@ -2103,7 +2103,8 @@ def allocation1(request):
         return values
 
     # Get all dropdown options
-    sorted_unique_institution_name = get_cached_options('institution_name', 'all_institutions')
+    #sorted_unique_institution_name = get_cached_options('institution_name', 'all_institutions')
+    sorted_unique_institution_name = sorted(get_cached_options('institution_name', 'all_institutions'))
     sorted_unique_modality = get_cached_options('Modality', 'all_modalities')
     sorted_unique_dates = get_cached_options('study_date', 'all_dates')
     sorted_unique_study_description = get_cached_options('study_description', 'all_study_desc')
@@ -3016,7 +3017,11 @@ def xrayallocation(request):
         ]
 
         history_urls = [
-            presigned_url(bucket_name, f.history_file.name, inline=True) for f in patient.history_files.all()
+            {
+                "url": presigned_url(bucket_name, f.history_file.name, inline=True),
+                "uploaded_at": f.uploaded_at
+            }
+            for f in patient.history_files.all()
         ]
 
         pdf_key = (patient.patient_id.replace(" ", "_"), patient.patient_name.replace(" ", "_"))
@@ -3053,6 +3058,10 @@ def xrayallocation(request):
         "patient_urls": patient_urls,
         "search_query": search_query,
     })
+
+
+
+
 
 
 @user_type_required('radiologist')
