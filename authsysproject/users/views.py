@@ -2954,127 +2954,17 @@ def presigned_url(bucket_name, object_name, operation='get_object', inline=False
 #     })
 
 
-# def xrayallocation(request):
-#     current_user_personal_info = PersonalInfoModel.objects.select_related("user").get(user=request.user)
-
-#     # Profile picture
-#     profile_picture = current_user_personal_info.uploadpicture.url if current_user_personal_info.uploadpicture \
-#                       else settings.STATIC_URL + "profile_pictures/default.jpg"
-
-#     # Base queryset for allocated patients
-#     allocated_qs = (
-#         DICOMData.objects
-#         .filter(radiologist=current_user_personal_info, isDone=False)
-#         .prefetch_related("jpeg_files", "history_files")   # ✅ Prefetch
-#         .order_by("-vip", "-urgent", "-Mlc", "-id")
-#     )
-
-#     # Apply search filter
-#     search_query = request.GET.get("q", "")
-#     if search_query:
-#         allocated_qs = allocated_qs.filter(
-#             Q(patient_name__icontains=search_query) |
-#             Q(patient_id__icontains=search_query) |
-#             Q(age__icontains=search_query) |
-#             Q(gender__icontains=search_query) |
-#             Q(study_date__icontains=search_query) |
-#             Q(study_time__icontains=search_query) |
-#             Q(study_description__icontains=search_query) |
-#             Q(Modality__icontains=search_query) |
-#             Q(body_part_examined__icontains=search_query) |
-#             Q(referring_doctor_name__icontains=search_query) |
-#             Q(institution_name__icontains=search_query)
-#         )
-
-#     # Pagination
-#     paginator = Paginator(allocated_qs, 200)
-#     page_number = request.GET.get("page", 1)
-#     page_obj = paginator.get_page(page_number)
-
-#     bucket_name = "u4rad-s3-reporting-bot"
-#     patient_urls = []
-
-#     # Collect patient_ids for one-shot query for PDFs
-#     patient_ids = [p.patient_id.replace(" ", "_") for p in page_obj]
-#     patient_names = [p.patient_name.replace(" ", "_") for p in page_obj]
-
-#     pdf_reports = (
-#         XrayReport.objects.filter(patient_id__in=patient_ids, name__in=patient_names)
-#         .only("pdf_file", "patient_id", "name")
-#     )
-
-#     pdf_map = {}
-#     for report in pdf_reports:
-#         key = (report.patient_id, report.name)
-#         pdf_map.setdefault(key, []).append(
-#             presigned_url(bucket_name, report.pdf_file.name, inline=True)
-#         )
-
-#     # Process patients
-#     for patient in page_obj:
-#         jpeg_urls = [
-#             presigned_url(bucket_name, f.jpeg_file.name) for f in patient.jpeg_files.all()
-#         ]
-
-#         # history_urls = [
-#         #     presigned_url(bucket_name, f.history_file.name, inline=True) for f in patient.history_files.all()
-#         # ]
-#         history_cache_key = f'history_urls_{patient.id}' 
-#         patient.history_file_infos = cache.get(history_cache_key)
-#         history_file_infos = [
-#             {"url": presigned_url(bucket_name, f.history_file.name, inline=True),
-#              "uploaded_at": f.uploaded_at} for f in patient.history_files.all()
-#         ]
-
-#         pdf_key = (patient.patient_id.replace(" ", "_"), patient.patient_name.replace(" ", "_"))
-#         pdf_urls = pdf_map.get(pdf_key, [])
-
-#         patient_urls.append({
-#             "patient": patient,
-#             "urls": jpeg_urls,
-#             "pdf_urls": pdf_urls,
-#             "history_urls": history_file_infos,
-#         })
-
-#     # Unique dropdowns (optimized)
-#     unique_institution_name = sorted({p.institution_name for p in page_obj if p.institution_name})
-#     unique_study_description = sorted({p.study_description for p in page_obj if p.study_description})
-#     unique_modality = sorted({p.Modality for p in page_obj if p.Modality})
-#     unique_dates = sorted({p.study_date for p in page_obj if p.study_date})
-#     unique_recived_on_db = sorted({p.recived_on_db for p in page_obj if p.recived_on_db})
-
-#     return render(request, "users/xrayallocation.html", {
-#         "profile_picture": profile_picture,
-#         "Modalities": unique_modality,
-#         "Study_description": unique_study_description,
-#         "Institution": unique_institution_name,
-#         "reported": current_user_personal_info.total_reported,
-#         "patients": page_obj,
-#         "Received_on_db": unique_recived_on_db,
-#         "Date": unique_dates,
-#         "locations": XLocation.objects.all(),
-#         "total_assigned_cases": allocated_qs.count(),
-#         "total_reported_cases": allocated_qs.filter(isDone=True).count(),
-#         "total_pending_cases": allocated_qs.filter(isDone=False).count(),
-#         "page_obj": page_obj,
-#         "patient_urls": patient_urls,
-#         "search_query": search_query,
-#     })
-
 def xrayallocation(request):
     current_user_personal_info = PersonalInfoModel.objects.select_related("user").get(user=request.user)
 
     # Profile picture
-    profile_picture = (
-        current_user_personal_info.uploadpicture.url
-        if current_user_personal_info.uploadpicture
-        else settings.STATIC_URL + "profile_pictures/default.jpg"
-    )
+    profile_picture = current_user_personal_info.uploadpicture.url if current_user_personal_info.uploadpicture \
+                      else settings.STATIC_URL + "profile_pictures/default.jpg"
 
     # Base queryset for allocated patients
     allocated_qs = (
-        DICOMData.objects.filter(radiologist=current_user_personal_info, isDone=False)
-        .prefetch_related("jpeg_files", "history_files")
+        DICOMData.objects
+        .filter(radiologist=current_user_personal_info, isDone=False)
         .order_by("-vip", "-urgent", "-Mlc", "-id")
     )
 
@@ -3082,17 +2972,17 @@ def xrayallocation(request):
     search_query = request.GET.get("q", "")
     if search_query:
         allocated_qs = allocated_qs.filter(
-            Q(patient_name__icontains=search_query)
-            | Q(patient_id__icontains=search_query)
-            | Q(age__icontains=search_query)
-            | Q(gender__icontains=search_query)
-            | Q(study_date__icontains=search_query)
-            | Q(study_time__icontains=search_query)
-            | Q(study_description__icontains=search_query)
-            | Q(Modality__icontains=search_query)
-            | Q(body_part_examined__icontains=search_query)
-            | Q(referring_doctor_name__icontains=search_query)
-            | Q(institution_name__icontains=search_query)
+            Q(patient_name__icontains=search_query) |
+            Q(patient_id__icontains=search_query) |
+            Q(age__icontains=search_query) |
+            Q(gender__icontains=search_query) |
+            Q(study_date__icontains=search_query) |
+            Q(study_time__icontains=search_query) |
+            Q(study_description__icontains=search_query) |
+            Q(Modality__icontains=search_query) |
+            Q(body_part_examined__icontains=search_query) |
+            Q(referring_doctor_name__icontains=search_query) |
+            Q(institution_name__icontains=search_query)
         )
 
     # Pagination
@@ -3101,14 +2991,16 @@ def xrayallocation(request):
     page_obj = paginator.get_page(page_number)
 
     bucket_name = "u4rad-s3-reporting-bot"
+    patient_urls = []
 
     # Collect patient_ids for one-shot query for PDFs
     patient_ids = [p.patient_id.replace(" ", "_") for p in page_obj]
     patient_names = [p.patient_name.replace(" ", "_") for p in page_obj]
 
-    pdf_reports = XrayReport.objects.filter(
-        patient_id__in=patient_ids, name__in=patient_names
-    ).only("pdf_file", "patient_id", "name")
+    pdf_reports = (
+        XrayReport.objects.filter(patient_id__in=patient_ids, name__in=patient_names)
+        .only("pdf_file", "patient_id", "name")
+    )
 
     pdf_map = {}
     for report in pdf_reports:
@@ -3117,40 +3009,32 @@ def xrayallocation(request):
             presigned_url(bucket_name, report.pdf_file.name, inline=True)
         )
 
-    # Process patients (add cached urls)
+    # Process patients
     for patient in page_obj:
-        # JPEG URLs (with cache)
-        jpeg_cache_key = f"jpeg_urls_{patient.id}"
-        patient.presigned_jpeg_urls = cache.get(jpeg_cache_key)
-        if not patient.presigned_jpeg_urls:
-            patient.presigned_jpeg_urls = [
-                presigned_url(bucket_name, f.jpeg_file.name) for f in patient.jpeg_files.all()
-            ]
-            cache.set(jpeg_cache_key, patient.presigned_jpeg_urls, 300)
+        # Fetch JPEG files
+        jpeg_urls = [
+            presigned_url(bucket_name, f.jpeg_file.name) 
+            for f in patient.jpeg_files.all()
+        ]
 
-        # History file URLs (with cache)
-        history_cache_key = f"history_urls_{patient.id}"
-        patient.history_file_infos = cache.get(history_cache_key)
-        if not patient.history_file_infos:
-            patient.history_file_infos = [
-                {
-                    "url": presigned_url(bucket_name, f.history_file.name, inline=True),
-                    "uploaded_at": f.uploaded_at,
-                }
-                for f in patient.history_files.all()
-            ]
-            cache.set(history_cache_key, patient.history_file_infos, 300)
+        # Fetch history files
+        history_file_infos = [
+            {
+                "url": presigned_url(bucket_name, f.history_file.name, inline=True),
+                "uploaded_at": f.uploaded_at
+            }
+            for f in patient.history_files.all()
+        ]
 
-        # PDF URLs (with cache)
-        pdf_cache_key = f"pdf_urls_{patient.id}"
-        patient.presigned_pdf_urls = cache.get(pdf_cache_key)
-        if not patient.presigned_pdf_urls:
-            pdf_key = (
-                patient.patient_id.replace(" ", "_"),
-                patient.patient_name.replace(" ", "_"),
-            )
-            patient.presigned_pdf_urls = pdf_map.get(pdf_key, [])
-            cache.set(pdf_cache_key, patient.presigned_pdf_urls, 300)
+        pdf_key = (patient.patient_id.replace(" ", "_"), patient.patient_name.replace(" ", "_"))
+        pdf_urls = pdf_map.get(pdf_key, [])
+
+        patient_urls.append({
+            "patient": patient,
+            "urls": jpeg_urls,
+            "pdf_urls": pdf_urls,
+            "history_urls": history_file_infos,
+        })
 
     # Unique dropdowns (optimized)
     unique_institution_name = sorted({p.institution_name for p in page_obj if p.institution_name})
@@ -3159,26 +3043,23 @@ def xrayallocation(request):
     unique_dates = sorted({p.study_date for p in page_obj if p.study_date})
     unique_recived_on_db = sorted({p.recived_on_db for p in page_obj if p.recived_on_db})
 
-    return render(
-        request,
-        "users/xrayallocation.html",
-        {
-            "profile_picture": profile_picture,
-            "Modalities": unique_modality,
-            "Study_description": unique_study_description,
-            "Institution": unique_institution_name,
-            "reported": current_user_personal_info.total_reported,
-            "patients": page_obj,
-            "Received_on_db": unique_recived_on_db,
-            "Date": unique_dates,
-            "locations": XLocation.objects.all(),
-            "total_assigned_cases": allocated_qs.count(),
-            "total_reported_cases": allocated_qs.filter(isDone=True).count(),
-            "total_pending_cases": allocated_qs.filter(isDone=False).count(),
-            "page_obj": page_obj,
-            "search_query": search_query,
-        },
-    )
+    return render(request, "users/xrayallocation.html", {
+        "profile_picture": profile_picture,
+        "Modalities": unique_modality,
+        "Study_description": unique_study_description,
+        "Institution": unique_institution_name,
+        "reported": current_user_personal_info.total_reported,
+        "patients": page_obj,
+        "Received_on_db": unique_recived_on_db,
+        "Date": unique_dates,
+        "locations": XLocation.objects.all(),
+        "total_assigned_cases": allocated_qs.count(),
+        "total_reported_cases": allocated_qs.filter(isDone=True).count(),
+        "total_pending_cases": allocated_qs.filter(isDone=False).count(),
+        "page_obj": page_obj,
+        "patient_urls": patient_urls,
+        "search_query": search_query,
+    })
 
 
 @user_type_required('radiologist')
