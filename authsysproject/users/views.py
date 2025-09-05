@@ -30,7 +30,6 @@ from django.contrib.auth import login as ContribLogin
 from django.contrib.auth import logout as ContribLogout
 from django.middleware.csrf import get_token
 import httpx
-from django.db.models import Prefetch
 from users.models.faq import FAQ
 from users.models.CKEditorTemplate import CKEditorTemplate
 from users.models.AudiometryPdfReport import AudiometryReport
@@ -2828,7 +2827,7 @@ def presigned_url(bucket_name, object_name, operation='get_object', inline=False
 
 
 
-# @user_type_required('radiologist')
+@user_type_required('radiologist')
 # def xrayallocation(request):
 #     radiologist_group = Group.objects.get(name='radiologist')
 
@@ -2954,6 +2953,7 @@ def presigned_url(bucket_name, object_name, operation='get_object', inline=False
 #         'search_query': search_query
 #     })
 
+
 def xrayallocation(request):
     current_user_personal_info = PersonalInfoModel.objects.select_related("user").get(user=request.user)
 
@@ -3054,10 +3054,6 @@ def xrayallocation(request):
         "patient_urls": patient_urls,
         "search_query": search_query,
     })
-
-
-
-
 
 
 @user_type_required('radiologist')
