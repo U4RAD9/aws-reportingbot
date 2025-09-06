@@ -3,7 +3,6 @@ from django.core.cache import cache
 import math
 import base64
 import subprocess
-from django.utils.dateparse import parse_date
 # Corrected imports
 from django.db.models import Q, F, Value, CharField  # Core model fields/functions
 from django.db.models.functions import Substr, Concat, Cast  # Database functions
@@ -2112,25 +2111,18 @@ def allocation1(request):
     sorted_unique_body_part_examined = get_cached_options('body_part_examined', 'all_body_parts')
     
     # Get received dates (with annotation)
-    # received_dates_cache_key = 'all_received_dates'
-    # sorted_unique_recived_on_db = cache.get(received_dates_cache_key)
-    # if not sorted_unique_recived_on_db:
-    #     sorted_unique_recived_on_db = list(
-    #         base_queryset.annotate(received_date=TruncDate('recived_on_db'))
-    #         .values_list('received_date', flat=True).distinct()
-    #     )
-    #     cache.set(received_dates_cache_key, sorted_unique_recived_on_db, 300)
-
-    # Get received date filter (single date)
-    # Get received date filter (single date)
-    received_date_filter = request.GET.get('received_date')
-    if received_date_filter:
-        try:
-            # Handle string like '2025-09-04'
-            date_obj = datetime.strptime(received_date_filter, "%Y-%m-%d").date()
-            patients = patients.filter(recived_on_db__date=date_obj)
-        except ValueError:
-            pass  # invalid date format, ignore filter
+    received_dates_cache_key = 'all_received_dates'
+    sorted_unique_received_on_db = cache.get(received_dates_cache_key)
+    
+    if not sorted_unique_received_on_db:
+        sorted_unique_received_on_db = list(
+            base_queryset
+            .annotate(received_date=TruncDate('recived_on_db'))
+            .values_list('received_date', flat=True)
+            .distinct()
+            .order_by('-received_date')  # ensures newest date first
+        )
+        cache.set(received_dates_cache_key, sorted_unique_received_on_db, 300)
 
     # Study times (small dataset, no caching needed)
     sorted_unique_study_time = sorted(set(
@@ -2145,7 +2137,7 @@ def allocation1(request):
         'patients': page_obj,  # This is the paginated object
         'Date': sorted_unique_dates,
         'Study_time': sorted_unique_study_time,
-        'Received_on_db': received_date_filter,
+        'Received_on_db': sorted_unique_recived_on_db,
         'Study_description': sorted_unique_study_description,
         'body_part_examined': sorted_unique_body_part_examined,
         'radiologists': radiologist_objects,
