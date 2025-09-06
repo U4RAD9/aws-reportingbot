@@ -817,7 +817,7 @@
                   <div>
                     <input type="date" id="filter-received-date" name="received_date" 
                            class="form-control"
-                           value="{{ received_date }}">
+                           value="{{ request.GET.received_date|default:'' }}">
                   </div>
                 </div>
               </th>
@@ -1243,6 +1243,23 @@
         alert("Reported successfully!"); 
     }
   </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const dateInput = document.getElementById("filter-received-date");
+      if (dateInput) {
+        dateInput.addEventListener("change", function () {
+          const params = new URLSearchParams(window.location.search);
+          if (this.value) {
+            params.set("received_date", this.value);
+          } else {
+            params.delete("received_date");
+          }
+          window.location.search = params.toString();
+        });
+      }
+    });
+  </script>
+
   <script>
    
     document.addEventListener("DOMContentLoaded", function() {
