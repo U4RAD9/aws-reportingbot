@@ -3,6 +3,7 @@ from django.core.cache import cache
 import math
 import base64
 import subprocess
+from django.utils.dateparse import parse_date
 # Corrected imports
 from django.db.models import Q, F, Value, CharField  # Core model fields/functions
 from django.db.models.functions import Substr, Concat, Cast  # Database functions
@@ -2111,14 +2112,21 @@ def allocation1(request):
     sorted_unique_body_part_examined = get_cached_options('body_part_examined', 'all_body_parts')
     
     # Get received dates (with annotation)
-    received_dates_cache_key = 'all_received_dates'
-    sorted_unique_recived_on_db = cache.get(received_dates_cache_key)
-    if not sorted_unique_recived_on_db:
-        sorted_unique_recived_on_db = list(
-            base_queryset.annotate(received_date=TruncDate('recived_on_db'))
-            .values_list('received_date', flat=True).distinct()
-        )
-        cache.set(received_dates_cache_key, sorted_unique_recived_on_db, 300)
+    # received_dates_cache_key = 'all_received_dates'
+    # sorted_unique_recived_on_db = cache.get(received_dates_cache_key)
+    # if not sorted_unique_recived_on_db:
+    #     sorted_unique_recived_on_db = list(
+    #         base_queryset.annotate(received_date=TruncDate('recived_on_db'))
+    #         .values_list('received_date', flat=True).distinct()
+    #     )
+    #     cache.set(received_dates_cache_key, sorted_unique_recived_on_db, 300)
+
+    # Get received date filter (single date)
+    received_date_filter = request.GET.get('received_date')
+    if received_date_filter:
+        date_obj = parse_date(received_date_filter)
+        if date_obj:
+            patients = patients.filter(recived_on_db__date=date_obj)
 
     # Study times (small dataset, no caching needed)
     sorted_unique_study_time = sorted(set(
@@ -2133,7 +2141,7 @@ def allocation1(request):
         'patients': page_obj,  # This is the paginated object
         'Date': sorted_unique_dates,
         'Study_time': sorted_unique_study_time,
-        'Received_on_db': sorted_unique_recived_on_db,
+        'Received_on_db': received_date_filter,
         'Study_description': sorted_unique_study_description,
         'body_part_examined': sorted_unique_body_part_examined,
         'radiologists': radiologist_objects,
@@ -3188,7 +3196,6 @@ def xrayallocationreverse(request):
     reported_qs = (
         DICOMData.objects
         .filter(radiologist=current_user_personal_info, isDone=True)
-        .prefetch_related("jpeg_files", "history_files")   # ✅ Prefetch
         .order_by("-id")
     )
 
@@ -3239,8 +3246,10 @@ def xrayallocationreverse(request):
             presigned_url(bucket_name, f.jpeg_file.name) for f in patient.jpeg_files.all()
         ]
 
-        history_urls = [
-            presigned_url(bucket_name, f.history_file.name, inline=True) for f in patient.history_files.all()
+        # Get history files
+        history_files = patient.history_files.all()
+        patient.history_file_urls = [
+            presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
         ]
 
         pdf_key = (patient.patient_id.replace(" ", "_"), patient.patient_name.replace(" ", "_"))
@@ -3250,7 +3259,6 @@ def xrayallocationreverse(request):
             "patient": patient,
             "urls": jpeg_urls,
             "pdf_urls": pdf_urls,
-            "history_urls": history_urls,
         })
 
     # Unique dropdowns (optimized)

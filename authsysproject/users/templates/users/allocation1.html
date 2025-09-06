@@ -798,7 +798,7 @@
                     </div>
                 </th>
                 <!--28-05-2025-->
-                <th>
+                <!-- <th>
                   <div class="filter-dropdown-container">
                       <div>Received Date</div>
                       <div class="dropdown-select1" id="filter-Received-dropdown">
@@ -810,7 +810,18 @@
                           </select>
                       </div>
                   </div>
+              </th> -->
+              <th>
+                <div class="filter-dropdown-container">
+                  <div>Received Date</div>
+                  <div>
+                    <input type="date" id="filter-received-date" name="received_date" 
+                           class="form-control"
+                           value="{{ received_date }}">
+                  </div>
+                </div>
               </th>
+
               <!--update by rohan jangid -->
                 <th>
                   <div class="filter-dropdown-container">
