@@ -2137,7 +2137,7 @@ def allocation1(request):
         'patients': page_obj,  # This is the paginated object
         'Date': sorted_unique_dates,
         'Study_time': sorted_unique_study_time,
-        'Received_on_db': sorted_unique_recived_on_db,
+        'Received_on_db': sorted_unique_received_on_db,
         'Study_description': sorted_unique_study_description,
         'body_part_examined': sorted_unique_body_part_examined,
         'radiologists': radiologist_objects,
