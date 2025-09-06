@@ -2117,7 +2117,7 @@ def allocation1(request):
     if not sorted_unique_dates:
         sorted_unique_dates = list(
             base_queryset
-            .annotate(study_date_cast=Cast('study_date', DateField()))
+            .annotate(study_date_cast=Cast('study_date', output_field=models.DateField()))
             .values_list('study_date_cast', flat=True)
             .distinct()
             .order_by('-study_date_cast')   # newest first
