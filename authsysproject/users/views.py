@@ -2106,25 +2106,10 @@ def allocation1(request):
     #sorted_unique_institution_name = get_cached_options('institution_name', 'all_institutions')
     sorted_unique_institution_name = sorted(get_cached_options('institution_name', 'all_institutions'))
     sorted_unique_modality = get_cached_options('Modality', 'all_modalities')
-    # sorted_unique_dates = get_cached_options('study_date', 'all_dates')
+    sorted_unique_dates = get_cached_options('study_date', 'all_dates')
     sorted_unique_study_description = get_cached_options('study_description', 'all_study_desc')
     sorted_unique_body_part_examined = get_cached_options('body_part_examined', 'all_body_parts')
     
-    # Study date dropdown
-    study_dates_cache_key = 'all_study_dates'
-    sorted_unique_dates = cache.get(study_dates_cache_key)
-    
-    if not sorted_unique_dates:
-        sorted_unique_dates = list(
-            base_queryset
-            .annotate(study_date_cast=ToDate(F('study_date')))
-            .values_list('study_date_cast', flat=True)
-            .distinct()
-            .order_by('-study_date_cast')
-        )
-        cache.set(study_dates_cache_key, sorted_unique_dates, 300)
-
-
     # Get received dates (with annotation)
     received_dates_cache_key = 'all_received_dates'
     sorted_unique_received_on_db = cache.get(received_dates_cache_key)

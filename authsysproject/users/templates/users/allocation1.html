@@ -1059,6 +1059,7 @@
             <td>
               <button type="button" class="btn btn-sm btn-custom" onclick="openEditModal({{ patient.id }})">Edit</button>
             </td>
+            <td>{{ patient.recived_on_db|time:'H:i' }}
           </tr>
           {% endfor %}
         </tbody>
