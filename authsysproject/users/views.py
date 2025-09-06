@@ -2122,11 +2122,15 @@ def allocation1(request):
     #     cache.set(received_dates_cache_key, sorted_unique_recived_on_db, 300)
 
     # Get received date filter (single date)
+    # Get received date filter (single date)
     received_date_filter = request.GET.get('received_date')
     if received_date_filter:
-        date_obj = parse_date(received_date_filter)
-        if date_obj:
+        try:
+            # Handle string like '2025-09-04'
+            date_obj = datetime.strptime(received_date_filter, "%Y-%m-%d").date()
             patients = patients.filter(recived_on_db__date=date_obj)
+        except ValueError:
+            pass  # invalid date format, ignore filter
 
     # Study times (small dataset, no caching needed)
     sorted_unique_study_time = sorted(set(
