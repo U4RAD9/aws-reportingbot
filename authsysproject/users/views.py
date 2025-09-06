@@ -2965,7 +2965,6 @@ def xrayallocation(request):
     allocated_qs = (
         DICOMData.objects
         .filter(radiologist=current_user_personal_info, isDone=False)
-        .prefetch_related("jpeg_files", "history_files")   # ✅ Prefetch
         .order_by("-vip", "-urgent", "-Mlc", "-id")
     )
 
@@ -3016,8 +3015,10 @@ def xrayallocation(request):
             presigned_url(bucket_name, f.jpeg_file.name) for f in patient.jpeg_files.all()
         ]
 
-        history_urls = [
-            presigned_url(bucket_name, f.history_file.name, inline=True) for f in patient.history_files.all()
+        # Get history files
+        history_files = patient.history_files.all()
+        patient.history_file_urls = [
+            presigned_url(bucket_name, history_file.history_file.name, inline=True) for history_file in history_files
         ]
 
         pdf_key = (patient.patient_id.replace(" ", "_"), patient.patient_name.replace(" ", "_"))
@@ -3027,7 +3028,6 @@ def xrayallocation(request):
             "patient": patient,
             "urls": jpeg_urls,
             "pdf_urls": pdf_urls,
-            "history_urls": history_urls,
         })
 
     # Unique dropdowns (optimized)
