@@ -811,6 +811,7 @@
                       </div>
                   </div>
               </th>
+              <th>Received Time</th>
               <!--update by rohan jangid -->
                 <th>
                   <div class="filter-dropdown-container">
@@ -932,7 +933,8 @@
             <td>{{ patient.gender }}</td>
             <td>{{ patient.study_date }}</td>
             <td>{{ patient.study_time }}</td>
-            <td>{{ patient.recived_on_db|date:'Y-m-d' }}</td> <!--28-05-2025 update by rohan jangid-->
+            <td>{{ patient.recived_on_db|date:'Y-m-d' }}</td>
+            <td>{{ patient.recived_on_db|time:"h:i A" }}</td>
             <td>{{ patient.institution_name }}</td>
             <td>{{ patient.Modality }}</td>
             <td>{{ patient.study_description }}</td>
@@ -1059,7 +1061,7 @@
             <td>
               <button type="button" class="btn btn-sm btn-custom" onclick="openEditModal({{ patient.id }})">Edit</button>
             </td>
-            <td>{{ patient.recived_on_db|time:'H:i' }}
+           
           </tr>
           {% endfor %}
         </tbody>
@@ -1157,9 +1159,9 @@
         $("#patient_name").val(row.find("td:eq(2)").text());
         $("#age").val(row.find("td:eq(3)").text());
         $("#gender").val(row.find("td:eq(4)").text());
-        $("#study_description").val(row.find("td:eq(10)").text());
-        $("#bodypart").val(row.find("td:eq(11)").text());
-        $("#notes").val(row.find("td:eq(14)").text());
+        $("#study_description").val(row.find("td:eq(11)").text());
+        $("#bodypart").val(row.find("td:eq(12)").text());
+        $("#notes").val(row.find("td:eq(13)").text());
         $('#editModal').modal('show');
       }
 
@@ -1586,14 +1588,14 @@
             var rowStudytime = ($(this).find('td:nth-child(7)').text() || "").trim().toLowerCase();
             var rowReceivedText = ($(this).find('td:nth-child(8)').text() || "").trim(); // Get raw text
             var rowReceivedFormatted = extractDate(rowReceivedText); // Convert to YYYY-MM-DD
-            var rowInstitution_name = ($(this).find('td:nth-child(9)').text() || "").trim().toLowerCase();
-            var rowModality = ($(this).find('td:nth-child(10)').text() || "").trim().toLowerCase();
-            var rowStudydescription = ($(this).find('td:nth-child(11)').text() || "").trim().toLowerCase();
-            var rowBodypart = ($(this).find('td:nth-child(12)').text() || "").trim().toLowerCase();
-            var rowCorporatecoordinator = ($(this).find('td:nth-child(13)').text() || "").trim().toLowerCase();
-            var rowAllocate = $(this).find('td:nth-child(14)').data('radiologist') || "";
+            var rowInstitution_name = ($(this).find('td:nth-child(10)').text() || "").trim().toLowerCase();
+            var rowModality = ($(this).find('td:nth-child(11)').text() || "").trim().toLowerCase();
+            var rowStudydescription = ($(this).find('td:nth-child(12)').text() || "").trim().toLowerCase();
+            var rowBodypart = ($(this).find('td:nth-child(13)').text() || "").trim().toLowerCase();
+            var rowCorporatecoordinator = ($(this).find('td:nth-child(14)').text() || "").trim().toLowerCase();
+            var rowAllocate = $(this).find('td:nth-child(15)').data('radiologist') || "";
             rowAllocate = rowAllocate.trim().toLowerCase();
-            var rowStatus = ($(this).find('td:nth-child(23)').text() || "").trim().toLowerCase();
+            var rowStatus = ($(this).find('td:nth-child(24)').text() || "").trim().toLowerCase();
 
             if ((selectedDate === '' || rowDate === selectedDate) 
                 && (selectedCorporatecoordinator === "" || rowCorporatecoordinator === selectedCorporatecoordinator) 
