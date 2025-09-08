@@ -1736,45 +1736,97 @@ slab(val, id) {
   };
 
   // This is the function/method with standard syntax which creates the filename as id_name
+  // createFilename() {
+  //   const urlSearchParams = new URLSearchParams(window.location.search);
+  //   const patientNameElement = document.querySelector(
+  //     "#root > div > div > div > div.document-editor__editable-container > div > figure.table.ck-widget.ck-widget_with-selection-handle > table > tbody > tr:nth-child(1) > td:nth-child(1) > span > strong"
+  //   );
+  //   const PatientIdElement = document.querySelector(
+  //     "#root > div > div > div > div.document-editor__editable-container > div > figure.table.ck-widget.ck-widget_with-selection-handle > table > tbody > tr:nth-child(1) > td:nth-child(2) > span > strong"
+  //   );
+  //   const patientName = patientNameElement?.innerHTML.trim(); // Trim extra spaces
+  //   const PatientId = PatientIdElement?.innerHTML.trim(); // Trim extra spaces
+  //   // const location = urlSearchParams.get("data-institution_name");
+  //   const rawLocation = urlSearchParams.get("data-institution_name");
+
+  //   // Sanitize institution name only
+  //   const sanitizeInstitution = (text) => {
+  //     if (!text) return "";
+  //     return text
+  //       .replace(/[:.,]/g, '')       // remove colons, commas, periods
+  //       .replace(/\s+/g, '_')        // replace spaces with underscores
+  //       .replace(/_+/g, '_')         // collapse multiple underscores
+  //       .trim();
+  //   };
+    
+  //   const location = sanitizeInstitution(rawLocation);
+
+  //   let filename;
+  //   if (!patientName || !PatientId) {
+  //     filename = ["Patient", "0"];
+  //   } else {
+  //     filename = [
+  //       PatientId.replace("Patient ID:", "").replace(" ", "_"),
+  //       patientName.replace("Name:", "").trim(), // Trim extra spaces
+  //       location,
+  //     ];
+  //   }
+
+  //   // Rest of your code
+  //   filename = filename.filter(Boolean).join("_").toUpperCase();
+  //   filename = filename.replace(/^_/, ""); // Remove leading underscore if present
+  //   return filename;
+  // }
+
   createFilename() {
     const urlSearchParams = new URLSearchParams(window.location.search);
+  
     const patientNameElement = document.querySelector(
       "#root > div > div > div > div.document-editor__editable-container > div > figure.table.ck-widget.ck-widget_with-selection-handle > table > tbody > tr:nth-child(1) > td:nth-child(1) > span > strong"
     );
     const PatientIdElement = document.querySelector(
       "#root > div > div > div > div.document-editor__editable-container > div > figure.table.ck-widget.ck-widget_with-selection-handle > table > tbody > tr:nth-child(1) > td:nth-child(2) > span > strong"
     );
-    const patientName = patientNameElement?.innerHTML.trim(); // Trim extra spaces
-    const PatientId = PatientIdElement?.innerHTML.trim(); // Trim extra spaces
-    // const location = urlSearchParams.get("data-institution_name");
+  
+    const patientName = patientNameElement?.innerHTML.trim();
+    const PatientId = PatientIdElement?.innerHTML.trim();
     const rawLocation = urlSearchParams.get("data-institution_name");
-
+  
     // Sanitize institution name only
     const sanitizeInstitution = (text) => {
       if (!text) return "";
       return text
-        .replace(/[:.,]/g, '')       // remove colons, commas, periods
-        .replace(/\s+/g, '_')        // replace spaces with underscores
-        .replace(/_+/g, '_')         // collapse multiple underscores
+        .replace(/[:.,]/g, "") // remove colons, commas, periods
+        .replace(/\s+/g, "_") // replace spaces with underscores
+        .replace(/_+/g, "_") // collapse multiple underscores
         .trim();
     };
-    
+  
     const location = sanitizeInstitution(rawLocation);
-
-    let filename;
+  
+    let filenameParts;
     if (!patientName || !PatientId) {
-      filename = ["Patient", "0"];
+      filenameParts = ["PATIENT", "0"];
     } else {
-      filename = [
-        PatientId.replace("Patient ID:", "").replace(" ", "_"),
-        patientName.replace("Name:", "").trim(), // Trim extra spaces
+      filenameParts = [
+        PatientId.replace("Patient ID:", "").replace(/\s+/g, "_"),
+        patientName.replace("Name:", "").trim(),
         location,
       ];
     }
-
-    // Rest of your code
-    filename = filename.filter(Boolean).join("_").toUpperCase();
-    filename = filename.replace(/^_/, ""); // Remove leading underscore if present
+  
+    // Base filename
+    let baseFilename = filenameParts.filter(Boolean).join("_").toUpperCase();
+    baseFilename = baseFilename.replace(/^_/, ""); // remove leading underscore
+  
+    // Use localStorage to track counters per patient
+    const counterKey = `REPORT_COUNTER_${baseFilename}`;
+    let counter = parseInt(localStorage.getItem(counterKey) || "0", 10) + 1;
+    localStorage.setItem(counterKey, counter);
+  
+    // Final filename with counter
+    const filename = `${baseFilename}_R${counter}`;
+  
     return filename;
   }
 
