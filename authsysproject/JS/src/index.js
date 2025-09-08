@@ -6403,6 +6403,55 @@ saveTemplateButton.onclick = async () => {
     }
 
     // Fetch Initial Content
+    // const fetchEditorContent = async () => {
+    //   try {
+    //     const response = await fetch(`/get-editor-content/${currentStudyId}/`);
+    //     const data = await response.json();
+    //     if (data.editor_content) {
+    //       editor.setData(data.editor_content);
+    //     }
+    //   } catch (error) {
+    //     console.error('Error fetching editor content:', error);
+    //   }
+    // };
+
+    // fetchEditorContent();
+
+    // // Save Content on Change
+    // editor.model.document.on('change:data', async () => {
+    //   try {
+    //     const content = editor.getData();
+    //     await fetch('/save-editor-content/', {
+    //       method: 'POST',
+    //       headers: { 'Content-Type': 'application/json' },
+    //       body: JSON.stringify({ study_id: currentStudyId, editor_content: content }),
+    //     });
+    //   } catch (error) {
+    //     console.error('Error saving editor content:', error);
+    //   }
+    // });
+       // Debounced Auto-Save Function
+    const attachAutoSave = (editor, studyId) => {
+      let saveTimeout;
+      editor.model.document.on('change:data', () => {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(async () => {
+          const content = editor.getData();
+          if (!content.trim()) return; // skip empty saves
+          try {
+            await fetch('/save-editor-content/', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ study_id: studyId, editor_content: content }),
+            });
+          } catch (error) {
+            console.error('Error saving editor content:', error);
+          }
+        }, 1000); // 1-second debounce
+      });
+    };
+
+    // Fetch Initial Content
     const fetchEditorContent = async () => {
       try {
         const response = await fetch(`/get-editor-content/${currentStudyId}/`);
@@ -6410,26 +6459,14 @@ saveTemplateButton.onclick = async () => {
         if (data.editor_content) {
           editor.setData(data.editor_content);
         }
+        // Attach auto-save AFTER initial content is loaded
+        attachAutoSave(editor, currentStudyId);
       } catch (error) {
         console.error('Error fetching editor content:', error);
       }
     };
 
     fetchEditorContent();
-
-    // Save Content on Change
-    editor.model.document.on('change:data', async () => {
-      try {
-        const content = editor.getData();
-        await fetch('/save-editor-content/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ study_id: currentStudyId, editor_content: content }),
-        });
-      } catch (error) {
-        console.error('Error saving editor content:', error);
-      }
-    });
 
     const toolbarContainer = document.querySelector('.document-editor__toolbar');
 
