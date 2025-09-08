@@ -2252,15 +2252,36 @@ def assign_radiologist(request):
                     return redirect('xraycoordinator')  # ❌ abort assignment
 
             # ✅ If no restrictions found, proceed
+            blocked_patients = []
+            updated_patients = []
             if action == "assign":
                 for patient in patients:
                     patient.radiologist.add(radiologist)
                 messages.success(request, f"Radiologist {radiologist} has been successfully assigned to the selected patients.")
             elif action == "replace":
+                # for patient in patients:
+                #     patient.radiologist.clear()
+                #     patient.radiologist.add(radiologist)
+                # messages.success(request, f"Radiologist {radiologist} has been successfully replaced for the selected patients.")
                 for patient in patients:
-                    patient.radiologist.clear()
-                    patient.radiologist.add(radiologist)
-                messages.success(request, f"Radiologist {radiologist} has been successfully replaced for the selected patients.")
+                    if patient.isDone:  # Reported
+                        blocked_patients.append(f"{patient.patient_id} - {patient.patient_name}")
+                    else:  # Unreported
+                        patient.radiologist.clear()
+                        patient.radiologist.add(radiologist)
+                        updated_patients.append(patient.patient_id)
+
+                if updated_patients:
+                    messages.success(
+                        request,
+                        f"Radiologist {radiologist} replaced for patients: {', '.join(updated_patients)}"
+                    )
+                if blocked_patients:
+                    messages.warning(
+                        request,
+                        f"Cannot replace radiologist for reported patients: {', '.join(blocked_patients)}. "
+                        "You may assign instead."
+                    )
 
         # Corporate Coordinator Assignment Logic
         elif action in ["assign_corporate", "replace_corporate"] and corporatecoordinator_id:
