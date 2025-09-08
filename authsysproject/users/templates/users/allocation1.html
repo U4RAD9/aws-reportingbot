@@ -733,7 +733,13 @@
 
               <div class="button-group">
                 <button type="submit" name="action" value="assign">Assign Radiologist</button>
-                <button type="submit" name="action" value="replace">Replace Radiologist</button>
+                <!-- <button type="submit" name="action" value="replace">Replace Radiologist</button> -->
+                <button 
+                  class="btn btn-warning"
+                  {% if entry.status|lower == "reported" %}disabled{% endif %}
+                >
+                  Replace Radiologist
+                </button>
               </div>
             </div>
             <div class="form-group col">
