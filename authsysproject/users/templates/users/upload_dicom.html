@@ -490,10 +490,40 @@
               <label for="notes" class="form-label">Notes:</label>
               <input type="text" class="form-control" id="notes" {% if not edit_permissions.notes %} disabled {% endif %} />
             </div>
-            <div class="mb-3">
+            <!-- <div class="mb-3">
               <label for="body_part_examined" class="form-label">Body Part Examined:</label>
               <input type="text" class="form-control" id="body_part_examined" {% if not edit_permissions.body_part_examined %} disabled {% endif %} />
+            </div> -->
+            <div class="mb-3">
+              <label for="body_part_examined" class="form-label">Body Part Examined:</label>
+              <select class="form-control selectpicker" 
+                      id="body_part_examined" 
+                      data-live-search="true"
+                      {% if not edit_permissions.body_part_examined %} disabled {% endif %}>
+                <option value="">-- Select Body Part --</option>
+                <option value="XRAY">XRAY</option>
+                <option value="Brain">Brain</option>
+                <option value="W.Abdomen">W.Abdomen</option>
+                <option value="Chest">Chest</option>
+                <option value="MSK">MSK</option>
+                <option value="Spine">Spine</option>
+                <option value="Brain+Face">Brain+Face</option>
+                <option value="Abdomen">Abdomen</option>
+                <option value="Kub">Kub</option>
+                <option value="Face">Face</option>
+                <option value="TP Bone">TP Bone</option>
+                <option value="Spine+WSS">Spine+WSS</option>
+                <option value="Neck">Neck</option>
+                <option value="Pelvis">Pelvis</option>
+                <option value="PNS">PNS</option>
+                <option value="Chest+Abdomen">Chest+Abdomen</option>
+                <option value="Brain+Orbit">Brain+Orbit</option>
+                <option value="WS">WS</option>
+                <option value="Brain+Spine">Brain+Spine</option>
+                <option value="Uro">Uro</option>
+              </select>
             </div>
+
             <div class="mb-3">
               <label for="referring_doctor_name" class="form-label">Referring Doctor Name:</label>
               <input type="text" class="form-control" id="referring_doctor_name" {% if not edit_permissions.referring_doctor_name %} disabled {% endif %} />
@@ -528,6 +558,11 @@
   
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $('.selectpicker').selectpicker();
+    });
+  </script>
 
   <script>
     document.addEventListener("DOMContentLoaded", function() {

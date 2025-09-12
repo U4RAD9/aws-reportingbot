@@ -1111,9 +1111,38 @@
                 <label for="study_description" class="form-label">Study Description:</label>
                 <input type="text" class="form-control" id="study_description"/>
               </div>
-              <div class="mb-3">
+              <!-- <div class="mb-3">
                 <label for="bodypart" class="form-label">Body Part:</label>
                 <input type="text" class="form-control" id="bodypart"/>
+              </div> -->
+              <div class="mb-3">
+                <label for="body_part_examined" class="form-label">Body Part Examined:</label>
+                <select class="form-control selectpicker" 
+                        id="body_part_examined" 
+                        data-live-search="true"
+                        {% if not edit_permissions.body_part_examined %} disabled {% endif %}>
+                  <option value="">-- Select Body Part --</option>
+                  <option value="XRAY">XRAY</option>
+                  <option value="Brain">Brain</option>
+                  <option value="W.Abdomen">W.Abdomen</option>
+                  <option value="Chest">Chest</option>
+                  <option value="MSK">MSK</option>
+                  <option value="Spine">Spine</option>
+                  <option value="Brain+Face">Brain+Face</option>
+                  <option value="Abdomen">Abdomen</option>
+                  <option value="Kub">Kub</option>
+                  <option value="Face">Face</option>
+                  <option value="TP Bone">TP Bone</option>
+                  <option value="Spine+WSS">Spine+WSS</option>
+                  <option value="Neck">Neck</option>
+                  <option value="Pelvis">Pelvis</option>
+                  <option value="PNS">PNS</option>
+                  <option value="Chest+Abdomen">Chest+Abdomen</option>
+                  <option value="Brain+Orbit">Brain+Orbit</option>
+                  <option value="WS">WS</option>
+                  <option value="Brain+Spine">Brain+Spine</option>
+                  <option value="Uro">Uro</option>
+                </select>
               </div>
               <div class="mb-3">
                 <label for="notes" class="form-label">clinical history:</label>
@@ -1141,6 +1170,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
  
+
+  <script>
+    $(document).ready(function () {
+      $('.selectpicker').selectpicker();
+    });
+  </script>
 
   <script>
     setTimeout(() => {
