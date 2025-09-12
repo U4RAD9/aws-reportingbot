@@ -4477,21 +4477,21 @@ UploadDivContentOnPDFWithoutImage() {
       }
 
       // --------------- SCENARIO 6: Final Common Confirmation (Mandatory) ----------------
-      const runFinalCommonPopups = () => {
-        const alertMessage = `
-Please review the following checklist before submitting:
+//       const runFinalCommonPopups = () => {
+//         const alertMessage = `
+// Please review the following checklist before submitting:
 
-1. Contrast used?
-2. Follow-up case? Previous findings compared?
-3. Imaging modality matches findings?
-4. X-Ray views specified (AP/Lateral/PA)?
+// 1. Contrast used?
+// 2. Follow-up case? Previous findings compared?
+// 3. Imaging modality matches findings?
+// 4. X-Ray views specified (AP/Lateral/PA)?
 
-Click OK to confirm all items are checked.`;
+// Click OK to confirm all items are checked.`;
         
-        return window.confirm(alertMessage.trim());
-      };
+//         return window.confirm(alertMessage.trim());
+//       };
 
-if (!runFinalCommonPopups()) return this.hideLoader();
+// if (!runFinalCommonPopups()) return this.hideLoader();
 
      
       // ---------- Remaining PDF generation logic continues here... ----------
