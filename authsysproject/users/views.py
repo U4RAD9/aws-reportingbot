@@ -639,7 +639,7 @@ def patient_report(request):
         # If no session data, redirect back to patient list
         return redirect('ecgallocation')  # change 'patient_list' to your actual list view
 
-    return render(request, 'patient_report.html', {'patient': data})
+    return render(request, 'users/patient_report.html', {'patient': data})
 
 
 def upload_files(request):
