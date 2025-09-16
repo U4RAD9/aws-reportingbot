@@ -459,83 +459,92 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        console.log("🚀 DOM fully loaded");
-    
-        // Fetch patient data from sessionStorage
-        const patientDataJSON = sessionStorage.getItem('patient_data');
-        if (!patientDataJSON) {
-            console.warn("⚠️ No patient data found in sessionStorage.");
-            return;
-        }
-    
-        const patientData = JSON.parse(patientDataJSON);
-        console.log("📋 Patient data from sessionStorage:", patientData);
-    
-        // Update images
-        const baseImage = document.getElementById("baseImage");
-        if (baseImage && patientData.reportImage) baseImage.src = patientData.reportImage;
-    
-        const ecgImage = document.getElementById("ecgImage");
-        if (ecgImage && patientData.image) ecgImage.src = patientData.image;
-    
-        const reportImage = document.getElementById("reportImage");
-        if (reportImage && patientData.reportImage) reportImage.src = patientData.reportImage;
-    
-        // Update Camp ECG form inputs
-        const mapping = {
-            campPatientName: 'patientName',
-            campPatientId: 'patientId',
-            campAge: 'age',
-            campHeartRate: 'heartRate',
-            campTestDate: 'testDate',
-            campReportDate: 'reportDate'
-        };
-        for (const [id, key] of Object.entries(mapping)) {
-            const el = document.getElementById(id);
-            if (!el || !patientData[key]) continue;
-            el.value = el.type === 'date' ? formatDateForInput(patientData[key]) : patientData[key];
-        }
-    
-        // Gender radio
-        if (patientData.gender) {
-            const genderRadio = document.querySelector(`input[name="gender"][value="${patientData.gender.toLowerCase()}"]`);
-            if (genderRadio) genderRadio.checked = true;
-        }
-    
-        // Optionally generate report
-        if (typeof generateReport === "function") generateReport();
-    });
-    
-    // Format date string for <input type="date">
-    function formatDateForInput(dateStr) {
-        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return '';
-        return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-    }
-
+        document.addEventListener("DOMContentLoaded", function() {
+            console.log("🚀 DOM fully loaded and parsed.");
+        
+            // Fetch patient data from session storage
+            const patientDataJSON = sessionStorage.getItem('patient_data');
+            let patientData = null;
+        
+            if (patientDataJSON) {
+                patientData = JSON.parse(patientDataJSON);
+                console.log("📋 Patient data from sessionStorage:", patientData);
+            } else {
+                console.warn("⚠️ No patient data found in sessionStorage.");
+                // fallback: get from hidden div
+                const div = document.getElementById("patient-data");
+                if (div) {
+                    patientData = {
+                        patientId: div.dataset.patientid,
+                        patientName: div.dataset.patientname,
+                        age: div.dataset.age,
+                        gender: div.dataset.gender,
+                        heartRate: div.dataset.heartrate,
+                        prInterval: div.dataset.printerval,
+                        testDate: div.dataset.testdate,
+                        reportDate: div.dataset.reportdate,
+                        reportImage: div.dataset.reportimage,
+                        image: div.dataset.image, 
+                        location: div.dataset.location
+                    };
+                    console.log("📋 Patient data from hidden div:", patientData);
+                    // optionally save to sessionStorage
+                    sessionStorage.setItem('patient_data', JSON.stringify(patientData));
+                }
+            }
+        
+            // Update the page
+            if (patientData) {
+                // Set base image if exists
+                const baseImage = document.getElementById("baseImage");
+                if (baseImage && patientData.reportImage) {
+                    baseImage.src = patientData.reportImage;
+                } else {
+                    console.warn("⚠️ No report image found in patient data.");
+                }
+        
+                // Update Camp ECG form inputs
+                const mapping = {
+                    campPatientName: 'patientName',
+                    campPatientId: 'patientId',
+                    campAge: 'age',
+                    campHeartRate: 'heartRate',
+                    campTestDate: 'testDate',
+                    campReportDate: 'reportDate'
+                };
+        
+                for (const [inputId, key] of Object.entries(mapping)) {
+                    const el = document.getElementById(inputId);
+                    if (el && patientData[key]) {
+                        if (el.type === 'date') {
+                            el.value = formatDateForInput(patientData[key]);
+                        } else {
+                            el.value = patientData[key];
+                        }
+                    }
+                }
+        
+                // Set gender radio button
+                if (patientData.gender) {
+                    const genderRadio = document.querySelector(`input[name="gender"][value="${patientData.gender.toLowerCase()}"]`);
+                    if (genderRadio) genderRadio.checked = true;
+                }
+        
+                // Set ECG image
+                const ecgImage = document.getElementById("ecgImage");
+                if (ecgImage && patientData.image) {        // ✅ use patientData.image
+                    ecgImage.src = patientData.image;
+                }
+                // Report Image
+                const reportImage = document.getElementById("reportImage");
+                if (reportImage && patientData.reportImage) {
+                    reportImage.src = patientData.reportImage;
+                }
+            }
+        });
 
     </script>
-    <script>
-        // // Get URL parameters
-        // function getQueryParams() {
-        //     const params = new URLSearchParams(window.location.search);
-            
-        //     return {
-        //         patientId: params.get('data-patientid') || '',
-        //         patientName: decodeURIComponent(params.get('data-patientname') || ''),
-        //         age: params.get('data-age') || '',
-        //         gender: params.get('data-gender') || '',
-        //         heartRate: params.get('data-heartrate') || '',
-        //         prInterval: params.get('data-printerval') || '',
-        //         testDate: params.get('data-testdate') || '',
-        //         reportDate: params.get('data-reportdate') || '',
-        //         reportImage: decodeURIComponent(params.get('data-reportimage') || ''),
-        //         location: decodeURIComponent(params.get('data-location') || '')
-        //     };
-        // }
-        
+    <script>        
         // Initialize form data object
         let formData = {
             normalECG: false,
