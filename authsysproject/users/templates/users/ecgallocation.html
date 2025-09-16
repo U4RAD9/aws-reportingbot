@@ -603,6 +603,14 @@
 
 
   <script>
+
+    // Save preview image in sessionStorage
+    if (base64Image) {
+        sessionStorage.setItem("base64_" + patientId, base64Image);
+        console.log("✅ Saved Base64 for patient:", patientId);
+    }
+  
+
     function storeBase64Image(event, patientId, imageUrl) {
         event.preventDefault(); // Prevent immediate navigation
         console.log(`🚀 Initiating Base64 conversion for Patient ID: ${patientId}`);

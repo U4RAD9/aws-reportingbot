@@ -628,11 +628,11 @@ def open_ecg_report(request, pk):
         'location': str(patient.location) if patient.location else ''  # ✅ FIXED
     }
 
-    return redirect('ecg_reporting')
+    return redirect('patient_report')
 
 
 
-def ecg_reporting(request):
+def patient_report(request):
     data = request.session.get('patient_data')
 
     if not data:
@@ -9388,8 +9388,8 @@ def all_tb_data(request):
     }
     return render(request, 'users/all_tb_data.html', context)
 
-def patient_report(request):
-     return render(request, 'users/patient_report.html')
+# def patient_report(request):
+#      return render(request, 'users/patient_report.html')
 
     
 
