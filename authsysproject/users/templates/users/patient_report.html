@@ -536,92 +536,92 @@
         //     };
         // }
         
-        // // Initialize form data object
-        // let formData = {
-        //     normalECG: false,
-        //     sinusRhythmRBBB: false,
-        //     sinusTachycardiaRBBB: false,
-        //     sinusBradycardiaRBBB: false,
-        //     sinusBradycardia: false,
-        //     sinusTachycardia: false,
-        //     tInversion: false,
-        //     additionalFindings: ''
-        // };
+        // Initialize form data object
+        let formData = {
+            normalECG: false,
+            sinusRhythmRBBB: false,
+            sinusTachycardiaRBBB: false,
+            sinusBradycardiaRBBB: false,
+            sinusBradycardia: false,
+            sinusTachycardia: false,
+            tInversion: false,
+            additionalFindings: ''
+        };
         
-        // // Flag to track if report is finalized
-        // let isReportFinalized = true;
+        // Flag to track if report is finalized
+        let isReportFinalized = true;
         
-        // function updateReportingBotView() {
-        //     const data = getPatientDataFromSession();
-        //     if (!data) return;
+        function updateReportingBotView() {
+            const data = getPatientDataFromSession();
+            if (!data) return;
         
-        //     const patientImage = document.getElementById('baseImage');
-        //     if (patientImage && data.reportimage) {
-        //         patientImage.src = data.reportimage;
-        //     }
-        // }
+            const patientImage = document.getElementById('baseImage');
+            if (patientImage && data.reportimage) {
+                patientImage.src = data.reportimage;
+            }
+        }
 
-        // // Helper: fetch patient data from sessionStorage
-        // function getPatientDataFromSession() {
-        //     const data = sessionStorage.getItem('patient_data');
-        //     return data ? JSON.parse(data) : null;
-        // }
+        // Helper: fetch patient data from sessionStorage
+        function getPatientDataFromSession() {
+            const data = sessionStorage.getItem('patient_data');
+            return data ? JSON.parse(data) : null;
+        }
         
-        // // Update Camp ECG View
-        // function updateCampEcgView() {
-        //     const data = getPatientDataFromSession();
-        //     if (!data) return;
+        // Update Camp ECG View
+        function updateCampEcgView() {
+            const data = getPatientDataFromSession();
+            if (!data) return;
             
-        //     // Update camp-ecg form inputs
-        //     document.getElementById('campPatientName').value = data.patientName;
-        //     document.getElementById('campPatientId').value = data.patientId;
-        //     document.getElementById('campAge').value = data.age;
-        //     document.getElementById('campHeartRate').value = data.heartRate;
+            // Update camp-ecg form inputs
+            document.getElementById('campPatientName').value = data.patientName;
+            document.getElementById('campPatientId').value = data.patientId;
+            document.getElementById('campAge').value = data.age;
+            document.getElementById('campHeartRate').value = data.heartRate;
             
-        //     // Set test and report dates
-        //     if (data.testDate) {
-        //         document.getElementById('campTestDate').value = formatDateForInput(data.testDate);
-        //     }
+            // Set test and report dates
+            if (data.testDate) {
+                document.getElementById('campTestDate').value = formatDateForInput(data.testDate);
+            }
             
-        //     if (data.reportDate) {
-        //         document.getElementById('campReportDate').value = formatDateForInput(data.reportDate);
-        //     }
+            if (data.reportDate) {
+                document.getElementById('campReportDate').value = formatDateForInput(data.reportDate);
+            }
             
-        //     // Set gender radio buttons
-        //     if (data.gender) {
-        //         const genderRadio = document.querySelector(`input[name="gender"][value="${data.gender.toLowerCase()}"]`);
-        //         if (genderRadio) {
-        //             genderRadio.checked = true;
-        //         }
-        //     }
+            // Set gender radio buttons
+            if (data.gender) {
+                const genderRadio = document.querySelector(`input[name="gender"][value="${data.gender.toLowerCase()}"]`);
+                if (genderRadio) {
+                    genderRadio.checked = true;
+                }
+            }
             
-        //     // Set ECG image
-        //     document.getElementById('ecgImage').src = data.reportImage;
+            // Set ECG image
+            document.getElementById('ecgImage').src = data.reportImage;
             
-        //     // Generate initial report
-        //     generateReport();
-        // }
+            // Generate initial report
+            generateReport();
+        }
         
         
-        // // Format date strings for HTML date inputs (YYYY-MM-DD)
-        // function formatDateForInput(dateString) {
-        //     // If dateString is already in YYYY-MM-DD format, return as is
-        //     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        //         return dateString;
-        //     }
+        // Format date strings for HTML date inputs (YYYY-MM-DD)
+        function formatDateForInput(dateString) {
+            // If dateString is already in YYYY-MM-DD format, return as is
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+                return dateString;
+            }
             
-        //     // Try to parse the date
-        //     const date = new Date(dateString);
-        //     if (isNaN(date.getTime())) {
-        //         return ''; // Return empty string if invalid date
-        //     }
+            // Try to parse the date
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                return ''; // Return empty string if invalid date
+            }
             
-        //     // Format as YYYY-MM-DD
-        //     const year = date.getFullYear();
-        //     const month = String(date.getMonth() + 1).padStart(2, '0');
-        //     const day = String(date.getDate()).padStart(2, '0');
-        //     return `${year}-${month}-${day}`;
-        // }
+            // Format as YYYY-MM-DD
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
         
         // Generate and update the report
         
