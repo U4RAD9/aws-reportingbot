@@ -457,120 +457,83 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <script>
-        // Get patient data from the hidden div
-        function getPatientData() {
-            const dataElement = document.getElementById('patient-data');
-            return {
-                patientId: dataElement.getAttribute('data-patientid'),
-                patientName: dataElement.getAttribute('data-patientname'),
-                age: dataElement.getAttribute('data-age'),
-                gender: dataElement.getAttribute('data-gender'),
-                heartRate: dataElement.getAttribute('data-heartrate'),
-                prInterval: dataElement.getAttribute('data-printerval'),
-                testDate: dataElement.getAttribute('data-testdate'),
-                reportDate: dataElement.getAttribute('data-reportdate'),
-                reportImage: dataElement.getAttribute('data-reportimage'),
-                location: dataElement.getAttribute('data-location')
-            };
-        }
-
         document.addEventListener("DOMContentLoaded", function() {
             console.log("🚀 DOM fully loaded and parsed.");
-            
-            const patientData = getPatientData();
-            console.log("📋 Patient data:", patientData);
-            
-            // Set the base image
-            if (patientData.reportImage) {
-                console.log("✅ Setting base image:", patientData.reportImage);
-                document.getElementById("baseImage").src = patientData.reportImage;
-                document.getElementById("ecgImage").src = patientData.reportImage;
+        
+            // Fetch patient data from session storage
+            const patientDataJSON = sessionStorage.getItem('patient_data');
+            let patientData = null;
+        
+            if (patientDataJSON) {
+                patientData = JSON.parse(patientDataJSON);
+                console.log("📋 Patient data from sessionStorage:", patientData);
             } else {
-                console.warn("⚠️ No report image found in patient data.");
-            }
-            
-            // Initialize the rest of the application
-            initializeApplication(patientData);
-        });
-
-        function initializeApplication(patientData) {
-            // Store patient data in a global variable for easy access
-            window.patientData = patientData;
-            
-            // Update form fields with patient data
-            document.getElementById('campPatientName').value = patientData.patientName;
-            document.getElementById('campPatientId').value = patientData.patientId;
-            document.getElementById('campAge').value = patientData.age;
-            document.getElementById('campHeartRate').value = patientData.heartRate;
-            
-            // Format dates for input fields (YYYY-MM-DD)
-            if (patientData.testDate) {
-                const testDate = new Date(patientData.testDate);
-                document.getElementById('campTestDate').value = testDate.toISOString().split('T')[0];
-            }
-            
-            if (patientData.reportDate) {
-                const reportDate = new Date(patientData.reportDate);
-                document.getElementById('campReportDate').value = reportDate.toISOString().split('T')[0];
-            }
-            
-            // Set gender radio buttons
-            if (patientData.gender) {
-                const genderRadio = document.querySelector(`input[name="gender"][value="${patientData.gender.toLowerCase()}"]`);
-                if (genderRadio) {
-                    genderRadio.checked = true;
+                console.warn("⚠️ No patient data found in sessionStorage.");
+                // fallback: get from hidden div
+                const div = document.getElementById("patient-data");
+                if (div) {
+                    patientData = {
+                        patientId: div.dataset.patientid,
+                        patientName: div.dataset.patientname,
+                        age: div.dataset.age,
+                        gender: div.dataset.gender,
+                        heartRate: div.dataset.heartrate,
+                        prInterval: div.dataset.printerval,
+                        testDate: div.dataset.testdate,
+                        reportDate: div.dataset.reportdate,
+                        reportImage: div.dataset.reportimage,
+                        location: div.dataset.location
+                    };
+                    console.log("📋 Patient data from hidden div:", patientData);
+                    // optionally save to sessionStorage
+                    sessionStorage.setItem('patient_data', JSON.stringify(patientData));
                 }
             }
-            
-            // Initialize the rest of your JavaScript functionality here
-            initializeEventListeners();
-            generateReport();
-        }
-
-        // The rest of your JavaScript code (initializeEventListeners, generateReport, etc.)
-        // should be updated to use window.patientData instead of trying to get data from URL parameters
         
-        // For example, update your generateReport function to use window.patientData:
-        function generateReport() {
-            if (!window.patientData) {
-                console.error("No patient data available");
-                return;
-            }
-            
-            // Use window.patientData.patientName, window.patientData.patientId, etc.
-            // instead of getting values from URL parameters
-            const name = window.patientData.patientName;
-            const patientId = window.patientData.patientId;
-            // ... rest of your generateReport code
-        }
-
-        // Similarly update all other functions that were using getQueryParams()
-        // to use window.patientData instead
-
-        // ... rest of your JavaScript code
-
-    </script>
-    <!-- <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            console.log("🚀 DOM fully loaded and parsed.");
-        
-            let urlParams = new URLSearchParams(window.location.search);
-            let patientId = urlParams.get("data-patientid");
-        
-            console.log("🔍 Extracted Patient ID from URL:", patientId);
-        
-            if (patientId) {
-                let base64Image = sessionStorage.getItem("base64_" + patientId);
-        
-                if (base64Image) {
-                    console.log("✅ Base64 Image found in sessionStorage!");
-                    document.getElementById("baseImage").src = base64Image;
+            // Update the page
+            if (patientData) {
+                // Set base image if exists
+                const baseImage = document.getElementById("baseImage");
+                if (baseImage && patientData.reportImage) {
+                    baseImage.src = patientData.reportImage;
                 } else {
-                    console.warn("⚠️ No Base64 image found for Patient ID:", patientId);
+                    console.warn("⚠️ No report image found in patient data.");
                 }
-            } else {
-                console.warn("⚠️ No Patient ID found in URL parameters.");
+        
+                // Update Camp ECG form inputs
+                const mapping = {
+                    campPatientName: 'patientName',
+                    campPatientId: 'patientId',
+                    campAge: 'age',
+                    campHeartRate: 'heartRate',
+                    campTestDate: 'testDate',
+                    campReportDate: 'reportDate'
+                };
+        
+                for (const [inputId, key] of Object.entries(mapping)) {
+                    const el = document.getElementById(inputId);
+                    if (el && patientData[key]) {
+                        if (el.type === 'date') {
+                            el.value = formatDateForInput(patientData[key]);
+                        } else {
+                            el.value = patientData[key];
+                        }
+                    }
+                }
+        
+                // Set gender radio button
+                if (patientData.gender) {
+                    const genderRadio = document.querySelector(`input[name="gender"][value="${patientData.gender.toLowerCase()}"]`);
+                    if (genderRadio) genderRadio.checked = true;
+                }
+        
+                // Set ECG image
+                const ecgImage = document.getElementById("ecgImage");
+                if (ecgImage && patientData.reportImage) {
+                    ecgImage.src = patientData.reportImage;
+                }
             }
         });
 
@@ -1440,6 +1403,6 @@
             switchView();
         };
 
-    </script> -->
+    </script>
 </body>
 </html>
