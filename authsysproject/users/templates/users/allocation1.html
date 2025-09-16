@@ -859,8 +859,8 @@
                       <div class="dropdown-select1" id="filter-bodypart-dropdown-bodypart">
                           <select id="filter-bodypart-select-bodypart" class="form-control">
                               <option value="">All</option>
-                              {% for bodypart in body_part_examined %}
-                                  <option value="{{ bodypart }}">{{ bodypart }}</option>
+                              {% for body_part_examined in body_part_examined %}
+                                  <option value="{{ body_part_examined }}">{{ body_part_examined }}</option>
                               {% endfor %}
                           </select>
                       </div>
