@@ -1,648 +1,933 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+{% load tz %} {% load static %}
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XRAi Reporting Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --light-color: #ecf0f1;
-            --success-color: #27ae60;
-            --warning-color: #f39c12;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8f9fa;
-            color: #333;
-        }
-        
-        .navbar {
-            background-color: var(--primary-color);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .navbar-brand {
-            font-weight: 700;
-            color: white !important;
-        }
-        
-        .card {
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-            transition: transform 0.3s ease;
-            border: none;
-            margin-bottom: 20px;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .card-header {
-            background-color: white;
-            border-bottom: 1px solid #eaeaea;
-            font-weight: 600;
-            padding: 15px 20px;
-            border-radius: 10px 10px 0 0 !important;
-        }
-        
-        .count-container {
-            background: linear-gradient(135deg, #3498db, #2c3e50);
-            color: white;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .count-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-        }
-        
-        .patient-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-        
-        .patient-table th {
-            background-color: #f8f9fa;
-            position: sticky;
-            top: 0;
-            padding: 12px 15px;
-            font-weight: 600;
-            color: var(--primary-color);
-            border-bottom: 2px solid #dee2e6;
-        }
-        
-        .patient-table td {
-            padding: 12px 15px;
-            vertical-align: middle;
-            border-bottom: 1px solid #eaeaea;
-        }
-        
-        .patient-table tr {
-            transition: background-color 0.2s;
-        }
-        
-        .patient-table tr:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .urgent-row {
-            background-color: #ffebee !important;
-            border-left: 4px solid var(--accent-color);
-        }
-        
-        .urgent-label {
-            background-color: var(--accent-color);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-left: 5px;
-        }
-        
-        .btn-report {
-            background-color: var(--secondary-color);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            transition: all 0.3s;
-        }
-        
-        .btn-report:hover {
-            background-color: #2980b9;
-            transform: translateY(-2px);
-        }
-        
-        .btn-reported {
-            background-color: var(--success-color);
-            color: white;
-        }
-        
-        .btn-rejected {
-            background-color: var(--accent-color);
-            color: white;
-        }
-        
-        .search-box {
-            position: relative;
-            max-width: 300px;
-        }
-        
-        .search-box input {
-            border-radius: 50px;
-            padding-left: 40px;
-        }
-        
-        .search-box i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #6c757d;
-        }
-        
-        .profile-section {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .profile-img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid white;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        
-        .greeting-text {
-            font-weight: 500;
-            color: var(--primary-color);
-        }
-        
-        .filter-section {
-            background-color: white;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        }
-        
-        .pagination {
-            margin: 20px 0;
-        }
-        
-        .page-info {
-            font-weight: 500;
-            color: var(--primary-color);
-        }
-        
-        /* Modal Styles */
-        .modal-content {
-            border-radius: 15px;
-            border: none;
-            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
-        }
-        
-        .modal-header {
-            background-color: var(--primary-color);
-            color: white;
-            border-radius: 15px 15px 0 0;
-            padding: 15px 20px;
-        }
-        
-        .modal-body {
-            padding: 0;
-        }
-        
-        .modal-footer {
-            border-top: 1px solid #eaeaea;
-            padding: 15px 20px;
-        }
-        
-        .reporting-iframe {
-            width: 100%;
-            height: 70vh;
-            border: none;
-            border-radius: 0 0 15px 15px;
-        }
-        
-        .footer {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 15px 0;
-            margin-top: 40px;
-        }
-        
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        
-        .status-pending {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        
-        .status-completed {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        
-        .status-urgent {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        
-        @media (max-width: 768px) {
-            .count-container {
-                margin-bottom: 15px;
-            }
-            
-            .patient-table {
-                font-size: 0.9rem;
-            }
-            
-            .patient-table td, .patient-table th {
-                padding: 8px 10px;
-            }
-        }
-    </style>
+  <title>XRAi Reporting</title>
+  <link rel="stylesheet" href="{% static 'resource/css/main.css' %}" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <style>
+    .profile-section {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .profile-pic {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #fff;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      min-height: 100vh;
+      flex-direction: column;
+    }
+
+    .container {
+      margin: 0 auto;
+      width: 100%;
+      max-width: 100%;
+      padding-left: 5px;
+      padding-right: 5px;
+    }
+
+    .card {
+      border: none;
+      border-radius: 7px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 3px;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background-color: #fff;
+    }
+
+    .card-body {
+      padding: 10px;
+    }
+
+    #count1 {
+      padding: 10px;
+      font-size: 25px;
+      color: black;
+    }
+
+    #count2 {
+      padding: 10px;
+      font-size: 25px;
+      color: black;
+    }
+
+    #totalRowCount {
+      color: orange;
+    }
+
+    #reportedRowCount {
+      color: green;
+    }
+
+    .header {
+      margin-bottom: 5px;
+      background-color: #fff;
+      z-index: 10;
+      position: sticky;
+      top: 60px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #ccc;
+    }
+
+    th,
+    td {
+      padding: 5px;
+      text-align: center;
+      border-bottom: 1px solid #ccc;
+    }
+
+    th:last-child,
+    td:last-child {
+      border-right: none;
+    }
+
+    th:first-child,
+    td:first-child {
+      position: sticky;
+      left: 0;
+      background-color: #fff;
+      z-index: 1;
+    }
+
+    td:first-child {
+      z-index: 2;
+    }
+
+    .table-container {
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .dropdown-select {
+      position: relative;
+    }
+
+    .dropdown-select select {
+      width: 100%;
+      padding: 5px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .dropdown-select select:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 5px #007bff;
+    }
+
+    .dropdown-select1 {
+      position: relative;
+    }
+
+    .dropdown-select1 select {
+      width: 70%;
+      padding: 5px;
+      font-size: 12px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .dropdown-select1 select:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 5px #007bff;
+    }
+
+    .greeting {
+      margin-top: 18px;
+      text-align: right;
+      font-weight: bold;
+      float: right;
+      color: black;
+    }
+
+    .search-container {
+      margin-top: 7px;
+      margin-right: 270px;
+      font-weight: bold;
+      float: right;
+      position: sticky;
+      display: flex;
+      justify-content: center;
+    }
+
+    .footer {
+      background-color: #f7f7f7;
+      padding: 10px 0;
+      text-align: center;
+      margin-top: auto;
+    }
+
+    .filter-dropdown-container {
+      display: flex;
+      align-items: center;
+    }
+
+    .reportButton {
+      color: white;
+      background-color: #ffa500;
+      /* Blue color for the button */
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      /* Adjust padding for button size */
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .hidden-row {
+      display: none;
+    }
+
+    .btn-custom-sm {
+      padding: 5px;
+      font-size: 11px;
+      border-radius: 4px;
+      background-color: #ff0000;
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+    }
+
+    .scroll-to-top {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      display: none;
+    }
+
+    .scroll-to-top a {
+      display: block;
+      width: 40px;
+      height: 40px;
+      background-color: green;
+      border-radius: 50%;
+      color: #ffffff;
+      font-size: 20px;
+      text-align: center;
+      line-height: 40px;
+      text-decoration: none;
+    }
+
+    .refresh {
+      background-color: blue;
+      color: white;
+      padding: 3px 7px;
+      border: none;
+      border-radius: 5px;
+      font-size: 12px;
+    }
+
+    .popup {
+      display: none;
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background-color: orange;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 5px;
+      z-index: 1000;
+    }
+
+    .popup-content {
+      font-size: 14px;
+    }
+
+    #patientTable {
+      width: 100vw;
+      background-color: white;
+      color: black;
+    }
+
+    #myInput {
+      padding: 5px;
+      font-size: 15px;
+      width: 230px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .dropdown-select {
+      position: relative;
+    }
+
+    .dropdown-select select {
+      width: 100%;
+      padding: 5px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .dropdown-select select:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 5px #007bff;
+    }
+
+    .dropdown-select1 {
+      position: relative;
+    }
+
+    .dropdown-select1 select {
+      width: 70%;
+      padding: 5px;
+      font-size: 12px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .dropdown-select1 select:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 5px #007bff;
+    }
+
+    .filter-dropdown-container {
+      display: flex;
+      align-items: center;
+    }
+
+    .filter-dropdown-container>div {
+      margin-right: 3px;
+      /* Adjust this value to control the space between the "Date" header and the dropdown */
+    }
+
+    .row-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .count-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      background-color: skyblue;
+      border-radius: 10px;
+      font-family: 'Arial', sans-serif;
+    }
+
+    #count1,
+    #count2,
+    .greeting {
+      margin-right: 10px;
+      margin-left: 10px;
+      padding: 4px;
+      font-size: 16px;
+    }
+
+    #totalRowCount,
+    #reportedRowCount {
+      color: black;
+    }
+
+    #myInput {
+      padding: 8px;
+      font-size: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 250px;
+    }
+
+    a.imageButton {
+      display: inline-block;
+      padding: 3px 5px;
+      background-color: brown;
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    a.imageButton:hover {
+      background-color: #8B4513;
+      /* Change to the desired darker brown color */
+      color: #ffffff;
+      text-decoration: none;
+    }
+
+    a.reportButton {
+      color: white;
+      background-color: #ffa500;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      font-size: 15px;
+      cursor: pointer;
+      text-decoration: none;
+      /* Add this line to remove underline */
+      transition: background-color 0.3s;
+    }
+
+    a.reportButton:hover {
+      background-color: #ff8c00;
+      /* Change to the desired darker orange color on hover */
+      text-decoration: none;
+    }
+    /* css for the urgent button - Himanshu.*/
+    .urgent {
+        background-color: #ffcccc; /* Light red background */
+        border-left: 5px solid #ff0000; /* Red left border */
+    }
+
+    .urgent-label {
+      display: inline-block;
+      background-color: #ff0000; /* Red background */
+      color: #fff; /* White text */
+      padding: 2px 6px; /* Padding for the label */
+      border-radius: 3px; /* Rounded corners */
+      font-size: 0.8em; /* Smaller font size */
+      margin-left: 5px; /* Space between Patient ID and label */
+      vertical-align: middle; /* Align with text */
+    }
+  </style>
 </head>
+
 <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-heartbeat me-2"></i>XRAi ECG Reporting
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">XRAi Reporting</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarContent">
-                <ul class="navbar-nav ms-auto">
+            <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+                <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-home me-1"></i> Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-history me-1"></i> History</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-cog me-1"></i> Settings</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-sign-out-alt me-1"></i> Logout</a>
+                        <a href="/logout" class="nav-link">
+                            <button class="logout-button btn btn-sm btn-danger"><strong>Logout</strong></button>
+                        </a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
-
-    <!-- Main Content -->
-    <div class="container py-4">
-        <!-- Page Header -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <h2 class="mb-0">ECG Reporting Dashboard</h2>
-                <p class="text-muted">Manage and review patient ECG reports</p>
-            </div>
-            <div class="col-md-6 text-end">
-                <div class="profile-section justify-content-end">
-                    <img src="https://ui-avatars.com/api/?name=Doctor+Name&background=3498db&color=fff" class="profile-img" alt="Profile">
-                    <div>
-                        <div class="greeting-text">Good afternoon, <strong>Dr. Smith</strong></div>
-                        <div class="text-muted small">Cardiologist</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Stats Cards -->
-        <div class="row">
-            <div class="col-md-4">
-                <div class="count-container text-center">
-                    <i class="fas fa-users fa-2x mb-2"></i>
-                    <h5 class="mb-1">Total Patients</h5>
-                    <div class="count-value">142</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="count-container text-center">
-                    <i class="fas fa-file-medical fa-2x mb-2"></i>
-                    <h5 class="mb-1">Reports Completed</h5>
-                    <div class="count-value">98</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="count-container text-center">
-                    <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
-                    <h5 class="mb-1">Pending Reports</h5>
-                    <div class="count-value">24</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filters and Search -->
-        <div class="filter-section mt-4">
-            <div class="row">
-                <div class="col-md-8">
-                    <div class="row">
-                        <div class="col-md-4 mb-2">
-                            <label class="form-label">Date Filter</label>
-                            <select class="form-select">
-                                <option>All Dates</option>
-                                <option>Today</option>
-                                <option>This Week</option>
-                                <option>This Month</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <label class="form-label">Status</label>
-                            <select class="form-select">
-                                <option>All Statuses</option>
-                                <option>Pending</option>
-                                <option>Completed</option>
-                                <option>Urgent</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <label class="form-label">Location</label>
-                            <select class="form-select">
-                                <option>All Locations</option>
-                                <option>Main Hospital</option>
-                                <option>Clinic A</option>
-                                <option>Clinic B</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" class="form-control" placeholder="Search patients...">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Patients Table -->
+  <div class="container">
+    <div id="popup-message" class="popup">
+      <span class="popup-content">Searching for updates...</span>
+    </div>
+    <div class="row">
+      <div class="col-lg-12">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Patient Reports</span>
-                <div class="page-info">Page 1 of 5</div>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="patient-table">
-                        <thead>
-                            <tr>
-                                <th>Patient ID</th>
-                                <th>Name</th>
-                                <th>Age</th>
-                                <th>Gender</th>
-                                <th>Test Date</th>
-                                <th>Location</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>PID-1001</td>
-                                <td>John Williamson</td>
-                                <td>52</td>
-                                <td>Male</td>
-                                <td>Oct 12, 2023</td>
-                                <td>Main Hospital</td>
-                                <td><span class="status-badge status-completed">Completed</span></td>
-                                <td>
-                                    <button class="btn btn-sm btn-reported">View Report</button>
-                                </td>
-                            </tr>
-                            <tr class="urgent-row">
-                                <td>PID-1002 <span class="urgent-label">URGENT</span></td>
-                                <td>Sarah Johnson</td>
-                                <td>64</td>
-                                <td>Female</td>
-                                <td>Oct 13, 2023</td>
-                                <td>Clinic A</td>
-                                <td><span class="status-badge status-urgent">Pending</span></td>
-                                <td>
-                                    <button class="btn btn-sm btn-report" data-bs-toggle="modal" data-bs-target="#reportModal">Generate Report</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>PID-1003</td>
-                                <td>Robert Davis</td>
-                                <td>48</td>
-                                <td>Male</td>
-                                <td>Oct 13, 2023</td>
-                                <td>Main Hospital</td>
-                                <td><span class="status-badge status-completed">Completed</span></td>
-                                <td>
-                                    <button class="btn btn-sm btn-reported">View Report</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>PID-1004</td>
-                                <td>Emily Thompson</td>
-                                <td>37</td>
-                                <td>Female</td>
-                                <td>Oct 14, 2023</td>
-                                <td>Clinic B</td>
-                                <td><span class="status-badge status-pending">Pending</span></td>
-                                <td>
-                                    <button class="btn btn-sm btn-report" data-bs-toggle="modal" data-bs-target="#reportModal">Generate Report</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>PID-1005</td>
-                                <td>Michael Brown</td>
-                                <td>59</td>
-                                <td>Male</td>
-                                <td>Oct 14, 2023</td>
-                                <td>Main Hospital</td>
-                                <td><span class="status-badge status-completed">Completed</span></td>
-                                <td>
-                                    <button class="btn btn-sm btn-reported">View Report</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+          <div class="card-body">
+            <h1 class="header">
+                <div class="row-container">
+                  <div class="count-container">
+                    <span id="count1"><strong>Total Reported:</strong> <span>{{reported}}</span></span>
+                    <span id="count1"><strong>Current Allocated:</strong> <span id="totalRowCount">0</span></span>
+                    <span id="count2"><strong>Current Reported:</strong> <span id="reportedRowCount">0</span></span>
 
-                <!-- Pagination -->
-                <nav class="d-flex justify-content-between align-items-center mt-3">
-                    <div>Showing 1 to 5 of 25 entries</div>
-                    <ul class="pagination mb-0">
-                        <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><a class="page-link" href="#">3</a></li>
-                        <li class="page-item"><a class="page-link" href="#">Next</a></li>
-                    </ul>
-                </nav>
-            </div>
-        </div>
-    </div>
+                  </div>
+                  <div class='search-google'>
+                    <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names/IDs/Test Date"
+                      title="Type in a name">
+                  </div>
 
-    <!-- Report Modal -->
-    <div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">ECG Report Generator</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="container-fluid">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    You are generating a report for <strong>Sarah Johnson (PID-1002)</strong>. This ECG was recorded on <strong>Oct 13, 2023</strong> at <strong>Clinic A</strong>.
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">ECG Image</h6>
-                                    </div>
-                                    <div class="card-body text-center">
-                                        <img src="https://static.vecteezy.com/system/resources/previews/002/268/323/non_2x/ecg-of-normal-heart-rate-free-vector.jpg" class="img-fluid" alt="ECG Image" style="max-height: 300px;">
-                                        <div class="mt-3">
-                                            <button class="btn btn-outline-primary btn-sm me-2"><i class="fas fa-download me-1"></i> Download</button>
-                                            <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-expand me-1"></i> Enlarge</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">Patient Information</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row mb-3">
-                                            <div class="col-md-6">
-                                                <label class="form-label">Patient ID</label>
-                                                <input type="text" class="form-control" value="PID-1002" readonly>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Name</label>
-                                                <input type="text" class="form-control" value="Sarah Johnson" readonly>
-                                            </div>
-                                        </div>
-                                        <div class="row mb-3">
-                                            <div class="col-md-4">
-                                                <label class="form-label">Age</label>
-                                                <input type="text" class="form-control" value="64" readonly>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label">Gender</label>
-                                                <input type="text" class="form-control" value="Female" readonly>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label">Heart Rate</label>
-                                                <input type="text" class="form-control" value="72 bpm" readonly>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <label class="form-label">Test Date</label>
-                                                <input type="text" class="form-control" value="Oct 13, 2023" readonly>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Location</label>
-                                                <input type="text" class="form-control" value="Clinic A" readonly>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="card mt-3">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">ECG Findings</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <label class="form-label">Primary Findings</label>
-                                            <select class="form-select">
-                                                <option selected>Normal ECG</option>
-                                                <option>Sinus rhythm with incomplete RBBB</option>
-                                                <option>Sinus Tachycardia with incomplete RBBB</option>
-                                                <option>Sinus Bradycardia with incomplete RBBB</option>
-                                                <option>Sinus Bradycardia</option>
-                                                <option>Sinus Tachycardia</option>
-                                                <option>Normal sinus rhythm with t inversion in lead III</option>
-                                            </select>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Additional Notes</label>
-                                            <textarea class="form-control" rows="3" placeholder="Enter any additional findings or notes..."></textarea>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                  <div class="greeting" id="greeting">
+                    {% if user %}
+                    <div class="profile-section">
+                      {% if user.personalinfo.uploadpicture %}
+                      <img src="{{ user.personalinfo.uploadpicture.name }}" 
+                           alt="Profile Picture" 
+                           class="profile-pic">
+                      {% else %}
+                      <img src="{% static 'default-profile.jpeg' %}" 
+                           alt="Default Profile Picture" 
+                           class="profile-pic">
+                      {% endif %}
+                      <h6>
+                        <strong>{{ user.first_name }}</strong>,
+                        <span id="greeting-text"></span>
+                      </h6>
                     </div>
+                    {% endif %}
+                  </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger">Reject</button>
-                    <button type="button" class="btn btn-success">Save as Draft</button>
-                    <button type="button" class="btn btn-primary">Complete Report</button>
-                </div>
-            </div>
+            </h1>
+          </div>
         </div>
+      </div>
+      
     </div>
+    <div class="card">
+      <div class="card-body">
+        <div>
+          <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+          <div>
+            {% if page_obj.has_previous %}
+                <a href="?page=1">First</a>
+                <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            {% endif %}
 
-    <!-- Footer -->
-    <footer class="footer text-center">
-        <div class="container">
-            <p class="mb-0">&copy; 2019-2024 XRAi Digital. All rights reserved.</p>
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">Next</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+            {% endif %}
+          </div>
+        </div> 
+        <div class="table-container">
+          <table id="patientTable">
+            <thead>
+              <tr>
+                <th>Patient ID</th>
+                <th>Patient Name</th>
+                <th>Age</th>
+                <th>Gender</th>
+                <th>Heart Rate</th>
+                <th class='hidden interval'>PR Interval</th>
+                <th>
+                  <div class="filter-dropdown-container">
+                    <div>Test Date</div>
+                    <div class="dropdown-select1" id="filter-date-dropdown-date">
+                      <select id="filter-date-select-date" class="form-control">
+                        <option value="">All</option>
+                        {% for date in Date %}
+                        <option value="{{ date }}">{{ date }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                  </div>
+                </th>
+                <th>
+                  <div class="filter-dropdown-container">
+                    <div>Location</div>
+                    <div class="dropdown-select1" id="filter-location-dropdown">
+                      <select id="filter-location-select-location" class="form-control">
+                        <option value="">All</option>
+                        {% for location in Location %}
+                        <option value="{{ location }}" data-city="{{ location.name }}">{{ location }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                </th>
+
+                <th class='hidden report'>Report Date</th>
+                <th>Image</th>
+                <th>Actions</th>
+                <!-- Add a column for the "Report" button -->
+              </tr>
+            </thead>
+            <tbody>
+              {% for patient in patients %}
+              <tr class="patientRow {% if patient.urgent %}urgent{% endif %}" id="{{ patient.PatientId }}">
+                <td>
+                  {{ patient.PatientId }}
+                  {% if patient.urgent %}
+                      <span class="urgent-label">Urgent</span>
+                  {% endif %}
+                </td>
+                <!-- <td>{{ patient.PatientId }}</td> -->
+                <td>{{ patient.PatientName }}</td>
+                <td>{{ patient.age }}</td>
+                <td>{{ patient.gender }}</td>
+                <td>{{ patient.HeartRate }}</td>
+                <td class='hidden interval'>{{ patient.PRInterval }}</td>
+                <td>{{ patient.TestDate }}</td>
+                <td>{{ patient.date.location.name }}</td>
+                <td>
+                   {% for patient_url in patient_urls %}
+                     {% if patient_url.patient.id == patient.id %}
+                         <a class="imageButton" target="_blank" href="{{ patient_url.url }}">
+                          Image
+                         </a>
+                       {% endif %}
+                   {% endfor %} 
+                </td>
+                <td>
+                   {% for patient_url in patient_urls %}
+                     {% if patient_url.patient.id == patient.id %}
+                       <a class="reportButton"
+                         href="ecgreporting?data-patientid={{ patient.PatientId }}&data-patientname={{ patient.PatientName }}&data-age={{ patient.age }}&data-gender={{ patient.gender }}&data-heartrate={{ patient.HeartRate }}&data-printerval={{patient.PRInterval}}&data-testdate={{ patient.TestDate }}&data-reportdate={% now 'Y-m-d' %}&data-reportimage={{ patient_url.url|urlencode }}&data-location={{ patient.date.location.name }}"
+                         data-patient-id="{{ patient.PatientId }}" data-patientname="{{ patient.PatientName }}"
+                         data-age="{{ patient.age }}" data-gender="{{ patient.gender }}"
+                         data-heartrate="{{ patient.HeartRate }}" data-printerval="{{ patient.PRInterval }}"
+                         data-testdate="{{ patient.TestDate }}" data-reportdate="{% now 'Y-m-d' %}"
+                         data-reportimage="{{ patient_url.url|urlencode }}" data-location="{{ patient.date.location.name }}" data-is-done="{{ patient.isDone }}"
+                         onclick="storeBase64Image(event, '{{ patient.PatientId }}', '{{ patient_url.url }}');">
+                         {% if patient.isDone == False %}
+                           {% if patient.status == True %}
+                             Rejected
+                           {% else %}
+                             Report
+                           {% endif %}
+                         {% else %}
+                           Reported
+                         {% endif %}
+                       </a>
+                     {% endif %}
+                   {% endfor %}
+
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
-    </footer>
+        <div id="reportingBotContainer"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Simulate loading of data
-            console.log("Page loaded successfully");
-            
-            // Add event listeners to report buttons
-            const reportButtons = document.querySelectorAll('.btn-report');
-            reportButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    // In a real application, you would load patient data here
-                    console.log("Opening report modal for patient");
-                });
-            });
-            
-            // Search functionality
-            const searchInput = document.querySelector('.search-box input');
-            searchInput.addEventListener('keyup', function() {
-                const searchText = this.value.toLowerCase();
-                const rows = document.querySelectorAll('.patient-table tbody tr');
-                
-                rows.forEach(row => {
-                    const patientName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-                    const patientId = row.querySelector('td:first-child').textContent.toLowerCase();
+        <div class="scroll-to-top">
+          <a href="#top"><i class="fa fa-arrow-up"></i></a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
+  <script>
+    function storeBase64Image(event, patientId, imageUrl) {
+        event.preventDefault(); // Prevent immediate navigation
+        console.log(`🚀 Initiating Base64 conversion for Patient ID: ${patientId}`);
+        console.log(`📸 Fetching image from URL: ${imageUrl}`);
+    
+        fetch(imageUrl)
+            .then(response => {
+                console.log("✅ Image fetch response received:", response);
+                return response.blob();  // Convert to Blob
+            })
+            .then(blob => {
+                console.log("🔄 Converting Blob to Base64...");
+                const reader = new FileReader();
+                reader.onloadend = function () {
+                    console.log("📥 Base64 conversion complete! Storing in sessionStorage...");
+                    sessionStorage.setItem("base64_" + patientId, reader.result); // Store Base64
                     
-                    if (patientName.includes(searchText) || patientId.includes(searchText)) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
+                    console.log(`🔗 Navigating to: ${event.target.href}`);
+                    window.location.href = event.target.href; // Navigate after storing
+                };
+                reader.readAsDataURL(blob);  // Convert Blob to Base64
+            })
+            .catch(error => {
+                console.error("❌ Error converting image to Base64:", error);
+                console.log(`🔗 Navigating to: ${event.target.href} (Fallback)`);
+                window.location.href = event.target.href; // Fallback to normal navigation
             });
-            
-            // Filter functionality
-            const filterSelects = document.querySelectorAll('.filter-section select');
-            filterSelects.forEach(select => {
-                select.addEventListener('change', function() {
-                    console.log("Filtering table by: " + this.value);
-                    // In a real application, you would filter the table here
-                });
-            });
-        });
-    </script>
+    }
+
+  </script>
+    
+    
+
+
+  <script>
+      document.addEventListener("DOMContentLoaded", function () {
+          document.querySelectorAll("img[data-url]").forEach(img => {
+              let url = img.getAttribute("data-url");
+  
+              fetch(url)
+                  .then(response => response.blob())
+                  .then(blob => {
+                      let reader = new FileReader();
+                      reader.onloadend = function () {
+                          img.src = reader.result; // Set Base64 data as image src
+                      };
+                      reader.readAsDataURL(blob);
+                  })
+                  .catch(error => console.error("Error loading image:", error));
+          });
+      });
+  </script>
+
+
+  <script>
+    // Function to update the counts of rows with 'Report' and 'Reported' button states
+    // function updateRowCounts() {
+    //   const totalRowCount = $("#patientTable tbody tr").length;
+    //   const reportedRowCount = $(
+    //     '#patientTable tbody tr .reportButton:contains("Reported")'
+    //   ).length;
+
+    //   // Update the counts on the web page
+    //   $("#totalRowCount").text(totalRowCount);
+    //   $("#reportedRowCount").text(reportedRowCount);
+    // }
+
+    // // Call the updateRowCounts function when the document is ready
+    // $(document).ready(function () {
+    //   updateRowCounts();
+    // });
+
+    function updateRowCounts() {
+      const tableBody = $("#patientTable tbody");
+
+      // Sort the rows based on the "Reported" and "Rejected" buttons state
+      const rows = tableBody.find("tr").toArray().sort(function (a, b) {
+        const isReportedA = $(a).find('.reportButton').text().trim() === 'Reported';
+        const isRejectedA = $(a).find('.reportButton').text().trim() === 'Rejected';
+        const isReportedB = $(b).find('.reportButton').text().trim() === 'Reported';
+        const isRejectedB = $(b).find('.reportButton').text().trim() === 'Rejected';
+
+        // Compare rows based on the "Reported" and "Rejected" button state
+        if (isReportedA && !isReportedB) {
+          return 1;
+        } else if (isRejectedA && !isRejectedB) {
+          return 1;
+        } else if (!isReportedA && isReportedB) {
+          return -1;
+        } else if (!isRejectedA && isRejectedB) {
+          return -1;
+        } else {
+          return 0;
+        }
+      });
+
+      // Append the sorted rows back to the table body
+      tableBody.html(rows);
+
+      // Update the counts on the web page
+      $("#totalRowCount").text(rows.length);
+
+      const reportedRowCount = tableBody.find('.reportButton:contains("Reported")').length;
+      $("#reportedRowCount").text(reportedRowCount);
+    }
+
+    // Call the updateRowCounts function when the document is ready
+    $(document).ready(function () {
+      updateRowCounts();
+    });
+  </script>
+
+  <script>
+
+    function changeButtonColor(anchor) {
+      const button = $(anchor); // Convert the anchor to a jQuery object
+      const PatientId = String(button.data("patient-id")).trim(); // Remove leading and trailing spaces
+      const patientName = String(button.data("patientname")).trim();
+      const age = String(button.data("age")).trim();
+      const gender = String(button.data("gender")).trim();
+      const heartRate = String(button.data("heartrate")).trim();
+      const PRInterval = String(button.data("printerval")).trim();
+      const testDate = String(button.data("testdate")).trim();
+      const reportDate = String(button.data("reportdate")).trim();
+      const reportImage = String(button.data("reportimage")).trim();
+      const location = String(button.data("patient.data.location.name")).trim();
+
+      // Check the isDone status
+      if (isDone) {
+        // If isDone is true, the button should already be in 'reported' state
+        return;
+      }
+
+      // If the button is not in 'reported' state, change its style
+      button.addClass("reported");
+      // Change the button text
+      button.text("Reported");
+
+      // Construct the URL with query parameters
+      const redirectURL = `reporting - bot ? data - patientid=${ PatientId }& data - patientname=${ patientName }& data - age=${ age }& data - gender=${ gender }& data - heartrate=${ heartRate }& data - printerval=${ PRInterval }& data - testdate=${ testDate }& data - reportdate=${ reportDate }& data - reportimage=${ reportImage }& data-location=${location}`;
+
+      // Redirect to the desired URL
+      window.location.href = redirectURL;
+    }
+  </script>
+
+
+  <script>
+    function myFunction() {
+      var input, filter, table, tr, td, i, txtValue;
+      input = document.getElementById("myInput");
+      filter = input.value.toUpperCase();
+      table = document.getElementById("patientTable");
+      tr = table.getElementsByTagName("tr");
+
+      for (i = 1; i < tr.length; i++) {
+        var found = false;
+        var columns = tr[i].getElementsByTagName("td");
+        for (var j = 0; j < columns.length - 1; j++) { // Exclude the last column (Actions)
+          td = columns[j];
+          if (td) {
+            txtValue = td.textContent || td.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+              found = true;
+              break;
+            }
+          }
+        }
+        if (found) {
+          tr[i].style.display = "";
+        } else {
+          tr[i].style.display = "none";
+        }
+      }
+    }
+  </script>
+
+
+  <script>
+
+    // Function to show/hide the scroll-to-top button based on the scroll position
+    function toggleScrollToTopButton() {
+      var scrollToTopButton = $(".scroll-to-top");
+      if ($(window).scrollTop() > 100) {
+        scrollToTopButton.fadeIn();
+      } else {
+        scrollToTopButton.fadeOut();
+      }
+    }
+
+    // Event handler for the scroll-to-top button click
+    $(".scroll-to-top a").click(function (e) {
+      e.preventDefault();
+      $("html, body").animate({ scrollTop: 0 }, "fast");
+    });
+
+    // Event handler for the window scroll event
+    $(window).scroll(function () {
+      toggleScrollToTopButton();
+    });
+
+    toggleScrollToTopButton();
+
+    function getGreeting() {
+      var currentTime = new Date();
+      var currentHour = currentTime.getUTCHours() + 6; //get Indian time
+      var greetingText = document.getElementById("greeting-text");
+      console.log(currentHour);
+      if (currentHour >= 0 && currentHour < 12) {
+        greetingText.textContent = "Good morning";
+        console.log(greetingText.textContent);
+      } else if (currentHour >= 12 && currentHour < 16) {
+        greetingText.textContent = "Good afternoon";
+        console.log(greetingText.textContent);
+      } else {
+        greetingText.textContent = "Good evening";
+        console.log(greetingText.textContent);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      getGreeting();
+    });
+
+    function formatDate(dateString) {
+      // Convert date string from "yyyy-mm-dd" to "dd-mm-yyyy"
+      var dateParts = dateString.split("-");
+      return dateParts[2] + "-" + dateParts[1] + "-" + dateParts[0];
+    }
+
+    $(document).ready(function () {
+      function filterTableByDate(date) {
+        // Show all rows initially
+        $("tbody tr").show();
+
+        if (date) {
+          // Convert the selected date to the format "dd-mm-yyyy"
+          var selectedDateFormatted = formatDate(date);
+
+          // Hide rows that do not match the selected date
+          $("tbody tr").each(function () {
+            var rowDate = $(this).find("td:nth-child(7)").text();
+            if (formatDate(rowDate) !== selectedDateFormatted) {
+              $(this).hide();
+            }
+          });
+        }
+      }
+
+      // Function to filter the table by cardiologist
+      function filterTableByCardiologist(cardiologist) {
+        // Show all rows initially
+        $("tbody tr").show();
+
+        if (cardiologist) {
+          // Filter rows based on the selected cardiologist
+          $("tbody tr").each(function () {
+            var rowCardiologistFirst = $(this).data("cardiologist-first");
+            var rowCardiologistLast = $(this).data("cardiologist-last");
+            var rowCardiologist =
+              rowCardiologistFirst + " " + rowCardiologistLast;
+            if (rowCardiologist !== cardiologist) {
+              $(this).hide();
+            }
+          });
+        }
+      }
+
+      function filterTableByLocation(location) {
+        // Show all rows initially
+        $("tbody tr").show();
+
+        if (location) {
+          // Filter rows based on the selected location
+          $("tbody tr").each(function () {
+            var rowCity = $(this).find("td:nth-child(8)").text().trim();
+            var rowLocation = $(this).find("td:nth-child(9)").text().trim();
+            if (rowCity !== location && rowLocation !== location) {
+              $(this).hide();
+            }
+          });
+        }
+      }
+
+      // Event handler for the "Date" dropdown filter
+      $("#filter-date-select-date").change(function () {
+        var selectedDate = $(this).val();
+        filterTableByDate(selectedDate);
+      });
+
+      // Event handler for the "Allocate" dropdown filter
+      $(document).on(
+        "change",
+        "#filter-allocate-select-allocate",
+        function () {
+          var selectedCardiologist = $(this).val();
+          filterTableByCardiologist(selectedCardiologist);
+        }
+      );
+
+      // Event handler for the "City/Location" dropdown filter
+      $(document).on("change", "#filter-city-select-city", function () {
+        var selectedCity = $(this).val();
+        filterTableByLocation(selectedCity);
+      });
+
+      $(document).on(
+        "change",
+        "#filter-location-select-location",
+        function () {
+          var selectedLocation = $(this).val();
+          filterTableByLocation(selectedLocation);
+          updateLocationOptions(selectedLocation);
+        }
+      );
+
+      // Call the filter functions on page load to initialize the table
+      filterTableByDate($("#filter-date-select-date").val());
+      filterTableByCardiologist($("#filter-allocate-select-allocate").val());
+      filterTableByLocation($("#filter-city-select-city").val());
+    });
+  </script>
+
+  <div class="footer">
+    <p>&copy; 2019-2024 XRAi Digital. All rights reserved.</p>
+  </div>
 </body>
+
 </html>
