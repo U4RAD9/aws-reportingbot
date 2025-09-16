@@ -447,7 +447,7 @@
         data-printerval="{{ patient.PRInterval }}"
         data-testdate="{{ patient.TestDate }}"
         data-reportdate="{{ patient.ReportDate }}"
-        data-reportimage="{{ patient.reportimage }}"
+        data-reportimage="{{ patient.image }}"
         data-location="{{ patient.location }}">
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.4/jspdf.min.js"></script>
@@ -544,7 +544,25 @@
         });
 
     </script>
-    <script>        
+    <script>
+        // Get URL parameters
+        function getQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            
+            return {
+                patientId: params.get('data-patientid') || '',
+                patientName: decodeURIComponent(params.get('data-patientname') || ''),
+                age: params.get('data-age') || '',
+                gender: params.get('data-gender') || '',
+                heartRate: params.get('data-heartrate') || '',
+                prInterval: params.get('data-printerval') || '',
+                testDate: params.get('data-testdate') || '',
+                reportDate: params.get('data-reportdate') || '',
+                reportImage: decodeURIComponent(params.get('data-reportimage') || ''),
+                location: decodeURIComponent(params.get('data-location') || '')
+            };
+        }
+        
         // Initialize form data object
         let formData = {
             normalECG: false,
