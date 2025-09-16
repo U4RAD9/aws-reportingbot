@@ -585,7 +585,7 @@
                    {% endfor %}
 
                 </td> -->
-                <td><a href="{% url 'open_report' patient.PatientId %}" class="btn btn-primary">Report</a></td>
+                <td><a href="{% url 'open_report' patient.pk %}" class="btn btn-primary">Report</a></td>
               </tr>
               {% endfor %}
             </tbody>
