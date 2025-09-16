@@ -611,8 +611,8 @@ def upload_ecg(request):
     return redirect('ecgcoordinator')
 
 
-def open_ecg_report(request, patient_id):
-    patient = get_object_or_404(PatientDetails, PatientId=patient_id)
+def open_ecg_report(request, pk):
+    patient = get_object_or_404(PatientDetails, pk=pk)
 
     # store patient info in session
     request.session['patient_data'] = {
