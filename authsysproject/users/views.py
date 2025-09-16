@@ -611,6 +611,35 @@ def upload_ecg(request):
     return redirect('ecgcoordinator')
 
 
+def open_ecg_report(request, patient_id):
+    patient = get_object_or_404(PatientDetails, PatientId=patient_id)
+
+    # store patient info in session
+    request.session['patient_data'] = {
+        'PatientId': patient.PatientId,
+        'PatientName': patient.PatientName,
+        'age': patient.age,
+        'gender': patient.gender,
+        'HeartRate': patient.HeartRate,
+        'PRInterval': patient.PRInterval,
+        'TestDate': str(patient.TestDate),
+        'ReportDate': str(patient.ReportDate),
+        'reportimage': patient.reportimage.url if patient.reportimage else '',
+        'location': patient.location if patient.location else ''
+    }
+
+    return redirect('ecg_reporting')
+
+
+def ecg_reporting(request):
+    data = request.session.get('patient_data')
+
+    if not data:
+        # If no session data, redirect back to patient list
+        return redirect('ecgallocation')  # change 'patient_list' to your actual list view
+
+    return render(request, 'patient_report.html', {'patient': data})
+
 
 def upload_files(request):
     if request.method == 'POST':
