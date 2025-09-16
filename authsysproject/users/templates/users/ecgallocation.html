@@ -585,15 +585,7 @@
                    {% endfor %}
 
                 </td> -->
-                <td>{% for patient_url in patient_urls %}
-                    {% if patient_url.patient.id == patient.id %}
-                      <a href="{% url 'open_report' patient.pk %}?report_image={{ patient_url.url|urlencode }}"
-                         class="btn btn-primary">
-                        Report
-                      </a>
-                    {% endif %}
-                  {% endfor %}
-                </td>
+                <td><a href="{% url 'open_report' patient.pk %}" class="btn btn-primary">Report</a></td>
               </tr>
               {% endfor %}
             </tbody>
