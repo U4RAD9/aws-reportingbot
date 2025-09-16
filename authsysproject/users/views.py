@@ -614,7 +614,7 @@ def upload_ecg(request):
 def open_ecg_report(request, pk):
     patient = get_object_or_404(PatientDetails, pk=pk)
 
-    # store patient info in session
+    # store patient info in session (only serializable types)
     request.session['patient_data'] = {
         'PatientId': patient.PatientId,
         'PatientName': patient.PatientName,
@@ -625,10 +625,11 @@ def open_ecg_report(request, pk):
         'TestDate': str(patient.TestDate),
         'ReportDate': str(patient.ReportDate),
         'reportimage': patient.reportimage.url if patient.reportimage else '',
-        'location': patient.location if patient.location else ''
+        'location': str(patient.location) if patient.location else ''  # ✅ FIXED
     }
 
     return redirect('ecg_reporting')
+
 
 
 def ecg_reporting(request):
