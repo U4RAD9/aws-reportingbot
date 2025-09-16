@@ -625,6 +625,7 @@ def open_ecg_report(request, pk):
         'TestDate': str(patient.TestDate),
         'ReportDate': str(patient.ReportDate),
         'reportimage': patient.reportimage.url if patient.reportimage else '',
+        'reportimage': patient.reportimage.url if patient.reportimage else '',
         'location': str(patient.location) if patient.location else ''  # ✅ FIXED
     }
 

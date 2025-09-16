@@ -378,11 +378,11 @@
         <div class="form-row">
             <div class="input-container">
                 <label for="campTestDate">Test Date:</label>
-                <input type="date" id="campTestDate" class="input">
+                <input type="date" id="campTestDate" value="{{ patient.TestDate }}" class="input">
             </div>
             <div class="input-container">
                 <label for="campReportDate">Report Date:</label>
-                <input type="date" id="campReportDate" class="input">
+                <input type="date" id="campReportDate" value="{{ patient.ReportDate }}" class="input">
             </div>
             <div class="input-container">
                 <label for="campHeartRate">Heart Rate:</label>
@@ -484,6 +484,7 @@
                         testDate: div.dataset.testdate,
                         reportDate: div.dataset.reportdate,
                         reportImage: div.dataset.reportimage,
+                        image: div.dataset.image, 
                         location: div.dataset.location
                     };
                     console.log("📋 Patient data from hidden div:", patientData);
@@ -531,8 +532,13 @@
         
                 // Set ECG image
                 const ecgImage = document.getElementById("ecgImage");
-                if (ecgImage && patientData.reportImage) {
-                    ecgImage.src = patientData.reportImage;
+                if (ecgImage && patientData.image) {        // ✅ use patientData.image
+                    ecgImage.src = patientData.image;
+                }
+                // Report Image
+                const reportImage = document.getElementById("reportImage");
+                if (reportImage && patientData.reportImage) {
+                    reportImage.src = patientData.reportImage;
                 }
             }
         });
