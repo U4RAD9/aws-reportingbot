@@ -1179,25 +1179,48 @@
 
   <script>
 
-    // Search functionality for dropdown
-    document.getElementById('searchBox').addEventListener('keyup', function() {
-      let filter = this.value.toLowerCase();
-      let options = document.querySelectorAll('#body_part_examined option');
-      options.forEach(opt => {
-        let text = opt.textContent.toLowerCase();
-        opt.style.display = text.includes(filter) ? '' : 'none';
-      });
-    });
+    // run after DOM ready (if you already wrap with $(document).ready, put inside that)
+    $(function() {
   
-    // Show text field when "Others" is selected
-    document.getElementById('body_part_examined').addEventListener('change', function() {
-      let otherDiv = document.getElementById('otherBodyPartDiv');
-      if (this.value === "Others") {
-        otherDiv.style.display = "block";
-      } else {
-        otherDiv.style.display = "none";
-      }
-    });
+      // When dropdown changes: if user chooses a normal option -> hide/clear textbox.
+      // If user chooses "Others" -> show textbox and focus it.
+      $("#body_part_examined").on("change", function() {
+        const val = $(this).val();
+        if (val && val !== "Others" && val !== "") {
+          // user chose a predefined item -> clear textbox and hide it
+          $("#otherBodyPart").val("");
+          $("#otherBodyPartDiv").hide();
+        } else if (val === "Others") {
+          // user chose Others -> show textbox
+          $("#otherBodyPartDiv").show();
+          $("#otherBodyPart").focus();
+        } else {
+          // none selected
+          $("#otherBodyPart").val("");
+          $("#otherBodyPartDiv").hide();
+        }
+  
+        // If using bootstrap-select, refresh UI
+        if ($.fn.selectpicker) {
+          $("#body_part_examined").selectpicker('refresh');
+        }
+      });
+  
+      // When user types in custom field, set dropdown to Others (so intent is clear)
+      $("#otherBodyPart").on("input", function() {
+        const txt = $(this).val().trim();
+        if (txt) {
+          $("#body_part_examined").val("Others");
+        } else {
+          // if textbox cleared, also clear dropdown selection (optional)
+          $("#body_part_examined").val("");
+        }
+        if ($.fn.selectpicker) {
+          $("#body_part_examined").selectpicker('refresh');
+        }
+      });
+  
+    }); // end DOM ready
     $(document).ready(function () {
       $('.selectpicker').selectpicker();
     });
@@ -1223,15 +1246,19 @@
         $("#study_description").val(row.find("td:eq(11)").text());
         let bodyPartText = row.find("td:eq(12)").text().trim();
 
-        // always clear
+        // Clear dropdown & textbox first
         $("#body_part_examined").val("");
+        if ($.fn.selectpicker) { $("#body_part_examined").selectpicker('refresh'); }
         $("#otherBodyPart").val("");
         $("#otherBodyPartDiv").hide();
-        
-        // just put whatever is in table directly into textbox if not blank
+    
+        // Always show the existing DB text in the textbox (so nothing is "lost")
         if (bodyPartText) {
-            $("#otherBodyPartDiv").show();
-            $("#otherBodyPart").val(bodyPartText);
+          $("#otherBodyPartDiv").show();
+          $("#otherBodyPart").val(bodyPartText);
+          // mark dropdown as Others to reflect "custom" (optional)
+          $("#body_part_examined").val("Others");
+          if ($.fn.selectpicker) { $("#body_part_examined").selectpicker('refresh'); }
         }
         $("#notes").val(row.find("td:eq(13)").text());
         $('#editModal').modal('show');
@@ -1250,14 +1277,23 @@
         formData.append('gender', $("#gender").val());
         formData.append('study_description', $("#study_description").val());
         // ✅ Always take textbox if it has value, otherwise dropdown
-        let bodyPart = $("#otherBodyPart").val().trim();
-        if (!bodyPart) {
-            bodyPart = $("#body_part_examined").val();
+        // ---------- body part logic ----------
+        let other = ($("#otherBodyPart").val() || "").trim();
+        let selVal = $("#body_part_examined").val();
+        // if .val() is empty, try option:selected text (covers cases where value is empty)
+        if (!selVal) {
+          selVal = ($("#body_part_examined option:selected").text() || "").trim();
+          if (selVal === "-- Select Body Part --") selVal = "";
         }
-        // if still empty, set default instead of undefined
-        if (!bodyPart) {
-            bodyPart = "";
-        }
+    
+        // final choice: prefer typed custom text, otherwise dropdown selection/text
+        let bodyPart = other !== "" ? other : (selVal || "");
+        // ensure string and never undefined
+        if (!bodyPart) bodyPart = "";
+    
+        // DEBUG: log what we're about to send (remove after you verify)
+        console.log("DEBUG body part:", { other, selVal, bodyPart });
+    
         formData.append('body_part_examined', bodyPart);
         formData.append('notes', $("#notes").val());
         formData.append('csrfmiddlewaretoken', csrftoken);
