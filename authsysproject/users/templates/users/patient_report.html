@@ -545,22 +545,22 @@
     </script>
     <script>
         // Get URL parameters
-        // function getQueryParams() {
-        //     const params = new URLSearchParams(window.location.search);
+        function getQueryParams() {
+            const params = new URLSearchParams(window.location.search);
             
-        //     return {
-        //         patientId: params.get('data-patientid') || '',
-        //         patientName: decodeURIComponent(params.get('data-patientname') || ''),
-        //         age: params.get('data-age') || '',
-        //         gender: params.get('data-gender') || '',
-        //         heartRate: params.get('data-heartrate') || '',
-        //         prInterval: params.get('data-printerval') || '',
-        //         testDate: params.get('data-testdate') || '',
-        //         reportDate: params.get('data-reportdate') || '',
-        //         image: decodeURIComponent(params.get('data-image') || ''),
-        //         location: decodeURIComponent(params.get('data-location') || '')
-        //     };
-        // }
+            return {
+                patientId: params.get('data-patientid') || '',
+                patientName: decodeURIComponent(params.get('data-patientname') || ''),
+                age: params.get('data-age') || '',
+                gender: params.get('data-gender') || '',
+                heartRate: params.get('data-heartrate') || '',
+                prInterval: params.get('data-printerval') || '',
+                testDate: params.get('data-testdate') || '',
+                reportDate: params.get('data-reportdate') || '',
+                image: decodeURIComponent(params.get('data-image') || ''),
+                location: decodeURIComponent(params.get('data-location') || '')
+            };
+        }
         
         // Initialize form data object
         let formData = {
