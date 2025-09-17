@@ -497,8 +497,8 @@
             if (patientData) {
                 // Set base image if exists
                 const baseImage = document.getElementById("baseImage");
-                if (baseImage && patientData.reportImage) {
-                    baseImage.src = patientData.reportImage;
+                if (baseImage && patientData.reportimage) {
+                    baseImage.src = patientData.reportimage;
                 } else {
                     console.warn("⚠️ No report image found in patient data.");
                 }
