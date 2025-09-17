@@ -615,10 +615,10 @@ def upload_ecg(request):
 def open_ecg_report(request, pk):
     patient = get_object_or_404(PatientDetails, pk=pk)
 
-    # generate presigned url if patient has an image
     report_image_url = ''
     if patient.reportimage:
-        report_image_url = generate_presigned_url(patient.image.name)
+        bucket_name = "u4rad-s3-reporting-bot"
+        report_image_url = presigned_url(bucket_name, patient.reportimage.name)
 
     # store patient info in session (only serializable types)
     request.session['patient_data'] = {
