@@ -618,7 +618,7 @@ def open_ecg_report(request, pk):
     report_image_url = ''
     if patient.reportimage:
         bucket_name = "u4rad-s3-reporting-bot"
-        report_image_url = presigned_url(bucket_name, patient.reportimage.name)
+        report_image_url = presigned_url(bucket_name, patient.image.name)
 
     # store patient info in session (only serializable types)
     request.session['patient_data'] = {
