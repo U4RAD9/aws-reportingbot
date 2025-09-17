@@ -429,7 +429,10 @@
             <input type="text" id="finding" class="input">
         </div>
         
-        <img id="ecgImage" src="{{ patient.image }}" alt="ECG Graph">
+        <div class="ecg-image-container">
+            <img id="ecgImage" src="{{ patient.image }}" alt="ECG Graph">
+        </div>
+
         
         <!-- Generated Report Preview -->
         <div id="report-container" class="report-container">
@@ -760,13 +763,12 @@
                     </div>
             `;
             // Display ECG image
-            if (document.getElementById('ecgImage').src) {
+            const ecgImage = document.getElementById('ecgImage');
+            if (ecgImage && ecgImage.src) {
                 reportHTML += `
-                      <div id="ecgImage" class="ecg-image-container">
-                          <img src="${document.getElementById('ecgImage').src}" alt="ECG Graph">
-                      </div>
-                    </div>  
-                      
+                    <div class="ecg-image-container">
+                        <img src="${ecgImage.src}" alt="ECG Graph">
+                    </div>
                 `;
             }
             
