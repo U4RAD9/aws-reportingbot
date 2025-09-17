@@ -764,12 +764,16 @@
             `;
             // Display ECG image
             const ecgImage = document.getElementById('ecgImage');
-            if (ecgImage && ecgImage.src) {
+            const ecgSrc = ecgImage ? ecgImage.getAttribute("src") : null;
+            
+            if (ecgSrc) {
                 reportHTML += `
                     <div class="ecg-image-container">
-                        <img src="${ecgImage.src}" alt="ECG Graph">
+                        <img src="${ecgSrc}" alt="ECG Graph">
                     </div>
                 `;
+            } else {
+                console.warn("⚠️ No ECG image found.");
             }
             
             // Update report container
