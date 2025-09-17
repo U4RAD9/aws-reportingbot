@@ -496,6 +496,8 @@
             </div> -->
             <div class="mb-3">
               <label for="body_part_examined" class="form-label">Body Part Examined:</label>
+              <!-- Search Box Above -->
+              <input type="text" id="searchBox" class="form-control mb-2" placeholder="Search body part...">
               <select class="form-control selectpicker" 
                       id="body_part_examined" 
                       data-live-search="true"
@@ -523,6 +525,11 @@
                 <option value="Uro">Uro</option>
                 <option value="Others">Others</option>
               </select>
+            </div>
+
+            <!-- Hidden text field for "Others" -->
+            <div id="otherBodyPartDiv" class="mt-2" style="display: none;">
+              <input type="text" id="otherBodyPart" class="form-control" placeholder="Enter body part">
             </div>
 
             <div class="mb-3">
@@ -560,6 +567,27 @@
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   <script>
+
+     // Search functionality for dropdown
+    document.getElementById('searchBox').addEventListener('keyup', function() {
+      let filter = this.value.toLowerCase();
+      let options = document.querySelectorAll('#body_part_examined option');
+      options.forEach(opt => {
+        let text = opt.textContent.toLowerCase();
+        opt.style.display = text.includes(filter) ? '' : 'none';
+      });
+    });
+  
+    // Show text field when "Others" is selected
+    document.getElementById('body_part_examined').addEventListener('change', function() {
+      let otherDiv = document.getElementById('otherBodyPartDiv');
+      if (this.value === "Others") {
+        otherDiv.style.display = "block";
+      } else {
+        otherDiv.style.display = "none";
+      }
+    });
+
     $(document).ready(function () {
       $('.selectpicker').selectpicker();
     });
