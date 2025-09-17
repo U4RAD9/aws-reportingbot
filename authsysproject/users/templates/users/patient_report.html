@@ -457,956 +457,234 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
+    <script>        
+        document.addEventListener("DOMContentLoaded", function () {
             console.log("🚀 DOM fully loaded and parsed.");
-        
-            // Fetch patient data from session storage
-            const patientDataJSON = sessionStorage.getItem('patient_data');
-            let patientData = null;
-        
-            if (patientDataJSON) {
-                patientData = JSON.parse(patientDataJSON);
-                console.log("📋 Patient data from sessionStorage:", patientData);
-            } else {
-                console.warn("⚠️ No patient data found in sessionStorage.");
-                // fallback: get from hidden div
-                const div = document.getElementById("patient-data");
-                if (div) {
-                    patientData = {
-                        patientId: div.dataset.patientid,
-                        patientName: div.dataset.patientname,
-                        age: div.dataset.age,
-                        gender: div.dataset.gender,
-                        heartRate: div.dataset.heartrate,
-                        prInterval: div.dataset.printerval,
-                        testDate: div.dataset.testdate,
-                        reportDate: div.dataset.reportdate,
-                        image: div.dataset.image,
-                        location: div.dataset.location
-                    };
-                    console.log("📋 Patient data from hidden div:", patientData);
-                    // optionally save to sessionStorage
-                    sessionStorage.setItem('patient_data', JSON.stringify(patientData));
-                }
-            }
-        
-            // Update the page
-            if (patientData) {
-                // Set base image if exists
-                const baseImage = document.getElementById("baseImage");
-                if (baseImage && patientData.image) {
-                    baseImage.src = patientData.image;
-                } else {
-                    console.warn("⚠️ No report image found in patient data.");
-                }
-        
-                // Update Camp ECG form inputs
-                const mapping = {
-                    campPatientName: 'patientName',
-                    campPatientId: 'patientId',
-                    campAge: 'age',
-                    campHeartRate: 'heartRate',
-                    campTestDate: 'testDate',
-                    campReportDate: 'reportDate'
-                };
-        
-                for (const [inputId, key] of Object.entries(mapping)) {
-                    const el = document.getElementById(inputId);
-                    if (el && patientData[key]) {
-                        if (el.type === 'date') {
-                            el.value = formatDateForInput(patientData[key]);
-                        } else {
-                            el.value = patientData[key];
-                        }
-                    }
-                }
-        
-                // Set gender radio button
-                if (patientData.gender) {
-                    const genderRadio = document.querySelector(`input[name="gender"][value="${patientData.gender.toLowerCase()}"]`);
-                    if (genderRadio) genderRadio.checked = true;
-                }
-        
-                // Set ECG image
-                const ecgImage = document.getElementById("ecgImage");
-                if (ecgImage && patientData.image) {        // ✅ use patientData.image
-                    ecgImage.src = patientData.image;
-                }
-                // Report Image
-                const image = document.getElementById("image");
-                if (image && patientData.image) {
-                    image.src = patientData.image;
-                }
-            }
+            init();
         });
-
-    </script>
-    <script>
-        // Get URL parameters
+        
+        /* ------------------ Patient Data Helpers ------------------ */
+        function getPatientData() {
+            const sessionData = sessionStorage.getItem("patient_data");
+            if (sessionData) {
+                return JSON.parse(sessionData);
+            }
+        
+            const div = document.getElementById("patient-data");
+            if (div) {
+                const data = {
+                    patientId: div.dataset.patientid,
+                    patientName: div.dataset.patientname,
+                    age: div.dataset.age,
+                    gender: div.dataset.gender,
+                    heartRate: div.dataset.heartrate,
+                    prInterval: div.dataset.printerval,
+                    testDate: div.dataset.testdate,
+                    reportDate: div.dataset.reportdate,
+                    reportImage: div.dataset.image, // ✅ aligned key
+                    location: div.dataset.location,
+                };
+                sessionStorage.setItem("patient_data", JSON.stringify(data));
+                return data;
+            }
+        
+            return getQueryParams(); // fallback
+        }
+        
         function getQueryParams() {
             const params = new URLSearchParams(window.location.search);
-            
             return {
-                patientId: params.get('data-patientid') || '',
-                patientName: decodeURIComponent(params.get('data-patientname') || ''),
-                age: params.get('data-age') || '',
-                gender: params.get('data-gender') || '',
-                heartRate: params.get('data-heartrate') || '',
-                prInterval: params.get('data-printerval') || '',
-                testDate: params.get('data-testdate') || '',
-                reportDate: params.get('data-reportdate') || '',
-                image: decodeURIComponent(params.get('data-image') || ''),
-                location: decodeURIComponent(params.get('data-location') || '')
+                patientId: params.get("data-patientid"),
+                patientName: params.get("data-patientname"),
+                age: params.get("data-age"),
+                gender: params.get("data-gender"),
+                heartRate: params.get("data-heartrate"),
+                prInterval: params.get("data-printerval"),
+                testDate: params.get("data-testdate"),
+                reportDate: params.get("data-reportdate"),
+                reportImage: params.get("data-reportimage"),
+                location: params.get("data-location"),
             };
         }
         
-        // Initialize form data object
-        let formData = {
-            normalECG: false,
-            sinusRhythmRBBB: false,
-            sinusTachycardiaRBBB: false,
-            sinusBradycardiaRBBB: false,
-            sinusBradycardia: false,
-            sinusTachycardia: false,
-            tInversion: false,
-            additionalFindings: ''
-        };
-        
-        // Flag to track if report is finalized
-        let isReportFinalized = true;
-        
-        function updateReportingBotView() {
-            const data = getPatientDataFromSession();
-            if (!data) return;
-        
-            const patientImage = document.getElementById('baseImage');
-            if (patientImage && data.image) {
-                patientImage.src = data.image;
-            }
-        }
-
-        // Helper: fetch patient data from sessionStorage
-        function getPatientDataFromSession() {
-            const data = sessionStorage.getItem('patient_data');
-            return data ? JSON.parse(data) : null;
-        }
-        
-        // Update Camp ECG View
-        function updateCampEcgView() {
-            const data = getPatientDataFromSession();
-            if (!data) return;
-            
-            // Update camp-ecg form inputs
-            document.getElementById('campPatientName').value = data.patientName;
-            document.getElementById('campPatientId').value = data.patientId;
-            document.getElementById('campAge').value = data.age;
-            document.getElementById('campHeartRate').value = data.heartRate;
-            
-            // Set test and report dates
-            if (data.testDate) {
-                document.getElementById('campTestDate').value = formatDateForInput(data.testDate);
-            }
-            
-            if (data.reportDate) {
-                document.getElementById('campReportDate').value = formatDateForInput(data.reportDate);
-            }
-            
-            // Set gender radio buttons
-            if (data.gender) {
-                const genderRadio = document.querySelector(`input[name="gender"][value="${data.gender.toLowerCase()}"]`);
-                if (genderRadio) {
-                    genderRadio.checked = true;
+        /* ------------------ UI Helpers ------------------ */
+        function populateFormFields(data, mapping) {
+            for (const [id, key] of Object.entries(mapping)) {
+                const el = document.getElementById(id);
+                if (el && data[key]) {
+                    if (el.type === "date") {
+                        el.value = formatDateForInput(data[key]);
+                    } else if (el.type === "radio") {
+                        const radio = document.querySelector(
+                            `input[name="${el.name}"][value="${data[key].toLowerCase()}"]`
+                        );
+                        if (radio) radio.checked = true;
+                    } else {
+                        el.value = data[key];
+                    }
                 }
             }
-            
-            // Set ECG image
-            document.getElementById('ecgImage').src = data.image;
-            
-            // Generate initial report
+        }
+        
+        function formatDateForInput(dateString) {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return "";
+            return date.toISOString().split("T")[0];
+        }
+        
+        function setPatientImage(url) {
+            if (!url) {
+                console.warn("⚠️ No report image found in patient data.");
+                return;
+            }
+            ["baseImage", "ecgImage", "image"].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.src = url;
+            });
+        }
+        
+        /* ------------------ Main View Switching ------------------ */
+        function switchView() {
+            const viewSelect = document.getElementById("viewSelect");
+            if (!viewSelect) return;
+        
+            const view = viewSelect.value;
+            document.getElementById("reportingBot").style.display =
+                view === "reporting-bot" ? "block" : "none";
+            document.getElementById("campEcg").style.display =
+                view === "camp-ecg" ? "block" : "none";
+        
+            const patientData = getPatientData();
+            if (view === "reporting-bot") {
+                updateReportingBotView(patientData);
+            } else if (view === "camp-ecg") {
+                updateCampEcgView(patientData);
+            }
+        }
+        
+        function updateReportingBotView(patientData) {
+            if (!patientData) return;
+        
+            populateFormFields(patientData, {
+                patientName: "patientName",
+                patientId: "patientId",
+                age: "age",
+                heartRate: "heartRate",
+                testDate: "testDate",
+                reportDate: "reportDate",
+            });
+        
+            // gender radio
+            if (patientData.gender) {
+                const gender = patientData.gender.toLowerCase();
+                const radio = document.querySelector(`input[name="gender"][value="${gender}"]`);
+                if (radio) radio.checked = true;
+            }
+        
+            setPatientImage(patientData.reportImage);
+        }
+        
+        function updateCampEcgView(patientData) {
+            if (!patientData) return;
+        
+            populateFormFields(patientData, {
+                campPatientName: "patientName",
+                campPatientId: "patientId",
+                campAge: "age",
+                campHeartRate: "heartRate",
+                campTestDate: "testDate",
+                campReportDate: "reportDate",
+            });
+        
+            if (patientData.gender) {
+                const gender = patientData.gender.toLowerCase();
+                const radio = document.querySelector(
+                    `input[name="campGender"][value="${gender}"]`
+                );
+                if (radio) radio.checked = true;
+            }
+        
+            setPatientImage(patientData.reportImage);
+        }
+        
+        /* ------------------ Report Generation ------------------ */
+        function generateReport() {
+            const btn = document.getElementById("generateReport");
+            if (!btn) return;
+        
+            btn.addEventListener("click", () => {
+                const patientData = getPatientData();
+                console.log("📋 Patient data from sessionStorage:", patientData);
+        
+                const reportContent = document.getElementById("reportContent");
+                if (!reportContent) return;
+        
+                reportContent.innerHTML = `
+                    <h2>ECG Report</h2>
+                    <p><strong>Patient ID:</strong> ${patientData.patientId || ""}</p>
+                    <p><strong>Name:</strong> ${patientData.patientName || ""}</p>
+                    <p><strong>Age:</strong> ${patientData.age || ""}</p>
+                    <p><strong>Gender:</strong> ${patientData.gender || ""}</p>
+                    <p><strong>Heart Rate:</strong> ${patientData.heartRate || ""}</p>
+                    <p><strong>PR Interval:</strong> ${patientData.prInterval || ""}</p>
+                    <p><strong>Test Date:</strong> ${patientData.testDate || ""}</p>
+                    <p><strong>Report Date:</strong> ${patientData.reportDate || ""}</p>
+                    <p><strong>Location:</strong> ${patientData.location || ""}</p>
+                    ${
+                        patientData.reportImage
+                            ? `<img src="${patientData.reportImage}" style="max-width:400px;"/>`
+                            : "<p>No Image Available</p>"
+                    }
+                `;
+            });
+        }
+        
+        /* ------------------ PDF Export ------------------ */
+        async function downloadPDF() {
+            const reportContent = document.getElementById("reportContent");
+            if (!reportContent) {
+                alert("No report content found!");
+                return;
+            }
+        
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+        
+            pdf.html(reportContent, {
+                callback: function (doc) {
+                    const filename = `ECG_Report_${Date.now()}.pdf`;
+                    doc.save(filename);
+                },
+                x: 10,
+                y: 10,
+            });
+        
+            // If you need to upload to server, uncomment:
+            /*
+            const pdfBlob = pdf.output("blob");
+            const formData = new FormData();
+            formData.append("pdf_file", pdfBlob, filename);
+        
+            const response = await fetch("/upload-endpoint/", {
+                method: "POST",
+                body: formData
+            });
+        
+            if (!response.ok) {
+                console.error("❌ Failed to upload PDF:", response.statusText);
+            }
+            */
+        }
+        
+        /* ------------------ Init ------------------ */
+        function init() {
+            const viewSelect = document.getElementById("viewSelect");
+            if (viewSelect) {
+                viewSelect.addEventListener("change", switchView);
+            }
+            switchView(); // set default view
             generateReport();
         }
-        
-        
-        // Format date strings for HTML date inputs (YYYY-MM-DD)
-        function formatDateForInput(dateString) {
-            // If dateString is already in YYYY-MM-DD format, return as is
-            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-                return dateString;
-            }
-            
-            // Try to parse the date
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) {
-                return ''; // Return empty string if invalid date
-            }
-            
-            // Format as YYYY-MM-DD
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-        
-        // Generate and update the report
-        
-        function generateReport() {
-            // Get current form values
-            const name = document.getElementById('campPatientName').value;
-            const patientId = document.getElementById('campPatientId').value;
-            const age = document.getElementById('campAge').value;
-            const gender = document.querySelector('input[name="gender"]:checked')?.value || 'Male';
-            const testDate = document.getElementById('campTestDate').value;
-            const reportDate = document.getElementById('campReportDate').value;
-            const heartRate = document.getElementById('campHeartRate').value;
-            
-            // Get checkbox values
-            formData.normalECG = document.getElementById('normalECG').checked;
-            formData.sinusRhythmRBBB = document.getElementById('sinusRhythmRBBB').checked;
-            formData.sinusTachycardiaRBBB = document.getElementById('sinusTachycardiaRBBB').checked;
-            formData.sinusBradycardiaRBBB = document.getElementById('sinusBradycardiaRBBB').checked;
-            formData.sinusBradycardia = document.getElementById('sinusBradycardia').checked;
-            formData.sinusTachycardia = document.getElementById('sinusTachycardia').checked;
-            formData.tInversion = document.getElementById('tInversion').checked;
-            formData.additionalFindings = document.getElementById('finding').value;
-            
-            // Format dates for display
-            const displayTestDate = formatDateForDisplay(testDate);
-            const displayReportDate = formatDateForDisplay(reportDate);
-            
-
-            let reportHTML = `
-                <div id="editable-report" class="a4-size" contenteditable="true">
-                    <div id="show">
-                        <table id="table" class="table">
-                            <tr>
-                                <td><strong>Name:</strong> <strong>${name}</strong></td>
-                                <td><strong>Patient ID:</strong> <strong>${patientId}</strong></td>
-                                <td><strong>Age:</strong> <strong>${age}</strong></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Gender:</strong> <strong>${gender}</strong></td>
-                                <td><strong>Test Date:</strong> <strong>${displayTestDate}</strong></td>
-                                <td><strong>Report Date:</strong> <strong>${displayReportDate}</strong></td>
-                            </tr>
-                        </table>
-                        <div class="observation">
-                            <h2><u><strong>ECG</strong></u></h2>
-                            <h2><u><strong>Observation:</u></strong></h2>
-                            <ul>
-                                <li><strong>Heart rate is ${heartRate} BPM.</strong></li><br>
-            `;
-            // Add findings with bold formatting
-            if (formData.normalECG) {
-                reportHTML += `<li><strong>Normal Sinus Rhythm.</strong></li><br><li><strong>No significant ST-T changes seen.</strong></li>`;
-            } else {
-                if (formData.sinusRhythmRBBB) {
-                    reportHTML += `<li><strong>Sinus rhythm with incomplete RBBB.</strong></li><br><li><strong>No significant ST-T changes seen.</strong></li>`;
-                }
-                if (formData.sinusTachycardiaRBBB) {
-                    reportHTML += `<li><strong>Sinus Tachycardia with incomplete RBBB.</strong></li><br><li><strong>No significant ST-T changes seen.</strong></li>`;
-                }
-                if (formData.sinusBradycardiaRBBB) {
-                    reportHTML += `<li><strong>Sinus Bradycardia with incomplete RBBB.</strong></li><br><li><strong>No significant ST-T changes seen.</strong></li>`;
-                }
-                if (formData.sinusBradycardia) {
-                    reportHTML += `<li><strong>Sinus Bradycardia.</strong></li><br><li><strong>No significant ST-T changes seen.</strong></li>`;
-                }
-                if (formData.sinusTachycardia) {
-                    reportHTML += `<li><strong>Sinus Tachycardia.</strong></li><br><li><strong>No significant ST-T changes seen.</strong></li>`;
-                }
-                if(formData.tInversion) {
-                    reportHTML += `<li><strong>Normal sinus rhythm with t inversion in lead III.</strong></li>`;
-                }
-            }
-            
-            // Add additional findings in bold
-            if (formData.additionalFindings) {
-                reportHTML += `<li><strong>${formData.additionalFindings}</strong></li>`;
-            }
-            
-            // Add default finding if nothing is selected
-            if (!formData.normalECG &&
-                !formData.sinusRhythmRBBB &&
-                !formData.sinusTachycardiaRBBB &&
-                !formData.sinusBradycardiaRBBB &&
-                !formData.sinusBradycardia &&
-                !formData.sinusTachycardia &&
-                !formData.additionalFindings &&
-                !formData.tInversion) {
-                reportHTML += `<li><strong>Normal Sinus Rhythm.</strong></li><br>`;
-                reportHTML += `<li><strong>No significant ST-T changes seen.</strong></li>`;
-            }
-            
-            reportHTML += `
-                            </ul>
-                        </div>
-                        <div class="doctor-signature">
-                            <div class="doctor">
-                                <img src="{% static 'image/Signature1.png' %}" alt="Signature 1">
-                                <p><strong>Dr. Arvind Dass</strong></p>
-                                <p><strong>Principal Director</strong></p>
-                                <p><strong>DM Cardiology</strong></p>
-                            </div>
-                            <div></div>
-                            <div class="doctor">
-                                <img src="{% static 'image/Signature2.png' %}" alt="Signature 2">
-                                <p><strong>Dr. Nalin Singhal</strong></p>
-                                <p><strong>Consultant</strong></p>
-                                <p><strong>Non Invasive Cardiology</strong></p>
-                            </div>  
-                        </div>
-                    </div>
-            `;
-            // Display ECG image
-            if (document.getElementById('ecgImage').src) {
-                reportHTML += `
-                      <div id="ecgImage" class="ecg-image-container">
-                          <img src="${document.getElementById('ecgImage').src}" alt="ECG Graph">
-                      </div>
-                    </div>  
-                      
-                `;
-            }
-            
-            // Update report container
-            document.getElementById('report-container').innerHTML = reportHTML;
-            
-            // Also update patient info in reporting-bot view
-            document.getElementById('patientName').textContent = name;
-            document.getElementById('patientId').textContent = patientId;
-            document.getElementById('patientAge').textContent = age;
-            document.getElementById('patientGender').textContent = gender;
-            document.getElementById('patientHeartRate').textContent = heartRate;
-            document.getElementById('patientTestDate').textContent = displayTestDate;
-            document.getElementById('patientReportDate').textContent = displayReportDate;
-            
-            // If report is finalized, update final report as well
-            if (isReportFinalized) {
-                document.getElementById('finalReport').innerHTML = reportHTML;
-            }
-        }
-        
-        function formatDateForDisplay(dateString) {
-            if (!dateString) return '';
-            
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) {
-                return dateString; // Return original string if invalid date
-            }
-        
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-            const year = date.getFullYear();
-        
-            return `${day}-${month}-${year}`;
-        }
-
-        
-        // Finalize report function - called when Done button is clicked
-        function finalizeReport() {
-            isReportFinalized = true;
-            
-            // Copy the current report to the final report container
-            const reportHTML = document.getElementById('report-container').innerHTML;
-            const finalReportContainer = document.getElementById('finalReport');
-            //handleDone().catch(console.error);
-            
-            finalReportContainer.innerHTML = reportHTML;
-            finalReportContainer.classList.remove('hidden');
-            
-            // Show final report in reporting-bot view
-            document.getElementById('viewSelect').value = 'reporting-bot';
-            document.getElementById('reporting-bot').style.display = 'block';
-            document.getElementById('camp-ecg').style.display = 'none';
-        }
-
-
-        // Showing the notification on the browser.
-        showNotification = (message) => {
-            const notification = document.getElementById("notification");
-            const notificationText = document.getElementById("notification-text");
-      
-            if (notification && notificationText) {
-                notificationText.innerText = message;
-                notification.style.display = "block";
-      
-                setTimeout(() => {
-                    notification.style.display = "none";
-                }, 1500);
-            }
-        };
-
-
-        // Add this at the top level of your script
-        function getCSRFToken() {
-            const cookieValue = document.cookie
-                .split('; ')
-                .find(row => row.startsWith('csrftoken='))
-                ?.split('=')[1];
-            return cookieValue || '';
-        }
-
-        async function fetchImageAsBase64(imageUrl) {
-            try {
-                const response = await fetch(imageUrl, { mode: "cors" });
-                const blob = await response.blob();
-                return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.readAsDataURL(blob);
-                });
-            } catch (error) {
-                console.error("❌ Error fetching image:", error);
-                return null;
-            }
-        }
-
-
-        showLoader = () => {
-          console.log("Showing loader");
-          const loader = document.querySelector(".loader");
-          if (loader) {
-              loader.style.display = "block";
-          }
-        };
-      
-        // This will hide the loader after report generation and doing respective task.
-        hideLoader = () => {
-          console.log("Hiding loader");
-          const loader = document.querySelector(".loader");
-          if (loader) {
-              loader.style.display = "none";
-          }
-        };
-
-        
-        async function downloadPDF() {
-            const element = document.getElementById("show");
-            if (!element) {
-                console.error("Element with ID 'finalReport' not found.");
-                alert("Report not found. Please check if the report is visible.");
-                return;
-            }
-
-
-            // Extract parameters from the URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const patientId = urlParams.get("data-patientid");
-            console.log(patientId);
-            console.log(typeof(patientId));
-            const patientName = urlParams.get("data-patientname");
-        
-            // Fetch the baseImage from the DOM
-            const baseImageElement = document.getElementById("baseImage");
-            if (!baseImageElement || !baseImageElement.src) {
-                console.error("❌ Base image not found in DOM.");
-                alert("Base image is missing.");
-                return;
-            }
-            const base64Image = baseImageElement.src;
-            console.log("✅ Using baseImage:", base64Image);
-        
-            try {
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: "portrait",
-                    unit: "px",
-                    format: "a4"
-                });
-        
-                const pageWidth = pdf.internal.pageSize.width;
-                const pageHeight = pdf.internal.pageSize.height;
-        
-                // Load the image
-                const img = new Image();
-                img.src = base64Image;
-        
-                await new Promise((resolve) => (img.onload = resolve));
-        
-                // Create a canvas to rotate the image
-                const canvas = document.createElement("canvas");
-                const ctx = canvas.getContext("2d");
-        
-                // Swap width and height for rotation
-                canvas.width = img.height;
-                canvas.height = img.width;
-        
-                // Rotate the image by 90 degrees
-                ctx.translate(canvas.width / 2, canvas.height / 2);
-                ctx.rotate(90 * Math.PI / 180);
-                ctx.drawImage(img, -img.width / 2, -img.height / 2);
-        
-                // Convert rotated image to Base64
-                const rotatedImage = canvas.toDataURL("image/png");
-                
-                console.log("✅ Rotated image generated!");
-        
-                // Ensure the image fits properly within the PDF page
-                let newWidth = pageWidth ; // Leave some margin
-                let newHeight = (img.height / img.width) * newWidth*1.75;
-        
-                if (newHeight > pageHeight - 40) {
-                    newHeight = pageHeight ;
-                    newWidth = (img.width / img.height) * newHeight;
-                }
-        
-                // Center the image
-                const xPos = (pageWidth - newWidth) / 2;
-                const yPos = (pageHeight - newHeight) / 2;
-        
-                pdf.addImage(rotatedImage, "PNG", xPos, yPos, newWidth, newHeight);
-        
-                console.log("✅ Image added to PDF!");
-        
-                // Generate the second page with the final report
-                element.style.display = "block"; // Ensure visibility
-                setTimeout(() => {
-                    html2canvas(element, { scale: 2, useCORS: true, allowTaint: true 
-                    }).then(canvas => {
-                            const imgData = canvas.toDataURL("image/jpeg", 0.98);
-                            pdf.addPage();
-
-                        //used for copy the text
-                        const textContent = element.innerText || element.textContent;
-        
-                        if (!textContent.trim()) {
-                            console.warn("⚠️ No text found in 'show' element.");
-                        }
-                
-                        // Set font to monospaced (prevents structure distortion)
-                        pdf.setFont("courier", "normal"); // Use 'courier' for fixed-width font
-                        pdf.setFontSize(12);
-                
-                        const margin = 5;
-                        const maxWidth = pageWidth - 1 * margin;
-                        const textLines = pdf.splitTextToSize(textContent, maxWidth);
-                        pdf.setTextColor(255, 255, 255); // Set text color to white (invisible on white background)
-                        pdf.text(textLines, margin, margin + 10);
-
-                        //end of copy text
-
-                        pdf.addImage(imgData, "JPEG", 10, 120, pageWidth - 20, pageHeight - 300);
-
-                        // Generate the filename in the format: patientID_patientName.pdf
-                        const fileName = `${patientId.replace(/\s+/g, "_")}_${patientName.replace(/\s+/g, "_")}.pdf`;
-    
-                        pdf.save(fileName);
-                        handleDone().catch(console.error);
-                        if (response.ok) {
-                            console.log("✅ PDF successfully sent to backend.");
-                            showNotification("PDF successfully uploaded!");
-                            setTimeout(() => {
-                                window.location.href = document.referrer + "?nocache=" + Date.now();
-                            }, 2000);
-                        } else {
-                            console.error("❌ Failed to upload PDF.");
-                            showNotification("Error uploading PDF. Please try again.");
-                        }
-                        console.log("✅ PDF saved successfully!");
-                    });
-                }, 500);
-        
-                // img.onerror = function () {
-                //     console.error("❌ Failed to load the image.");
-                //     alert("Error loading the report image.");
-                // };
-        
-            } catch (error) {
-                console.error("❌ Error generating PDF:", error);
-                alert("Failed to generate the report. Please try again.");
-            }
-        }
-
-        
-        // Handle action select change
-        function handleAction(action) {
-            if (action === 'get-pdf') {
-                downloadPDF();
-            } else if (action === 'export') {
-                handleAction();
-            } else if (action === 'upload-pdf') {
-                uploadEcgPDF();
-            }
-            
-            // Reset select to default
-            document.getElementById('actionSelect').value = '';
-        }
-
-        // Switch between views
-        function switchView() {
-            const reportingBot = document.getElementById('reporting-bot');
-            const campEcg = document.getElementById('camp-ecg');
-            const viewSelect = document.getElementById('viewSelect');
-            
-            if (viewSelect.value === 'reporting-bot') {
-                reportingBot.style.display = 'block';
-                campEcg.style.display = 'none';
-                updateReportingBotView();
-            } else {
-                reportingBot.style.display = 'none';
-                campEcg.style.display = 'block';
-                updateCampEcgView();
-            }
-        }
-        
-        // Initialize event listeners
-        function initializeEventListeners() {
-            // View selector
-            document.getElementById('viewSelect').addEventListener('change', switchView);
-            
-            // Form inputs
-            document.querySelectorAll('#camp-ecg input').forEach(input => {
-                input.addEventListener('change', generateReport);
-                input.addEventListener('input', generateReport);
-            });
-            
-            // ECG Findings checkboxes special handling - sync with form data
-            document.querySelectorAll('input[name="ecgFindings"]').forEach(checkbox => {
-                checkbox.addEventListener('change', generateReport);
-            });
-            
-            // Button handlers
-            document.getElementById('doneButton').addEventListener('click', finalizeReport);
-            
-            document.getElementById('rejectButton').addEventListener('click', function() {
-                handleReject().catch(console.error);
-                // Here you would typically handle the rejection logic
-            });
-            
-            document.getElementById('backButton').addEventListener('click', function() {
-                document.getElementById('viewSelect').value = 'reporting-bot';
-                switchView();
-            });
-        }
-
-        async function handleReject(event) {
-            if (event) event.preventDefault(); // Prevent unintended redirection if event exists
-        
-            const urlSearchParams = new URLSearchParams(window.location.search);
-            const patientId = urlSearchParams.get("data-patientid");
-        
-            if (!patientId) {
-                console.error("Patient ID not found in URL.");
-                return;
-            }
-        
-            console.log("Rejecting patient with ID:", patientId);
-        
-            function getCSRFToken() {
-                const match = document.cookie.match(/csrftoken=([\w-]+)/);
-                return match ? match[1] : null;
-            }
-        
-            const csrftoken = getCSRFToken();
-            if (!csrftoken) {
-                console.error("CSRF token not found.");
-                return;
-            }
-        
-            try {
-                const response = await fetch(`/api/reject_patient_status/${patientId}/`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": csrftoken,
-                    },
-                    body: JSON.stringify({ status: true }),
-                });
-        
-                if (response.ok) {
-                    console.log("Patient report rejected successfully.");
-        
-                    // Remove the rejected report from the dashboard
-                    const reportElement = document.querySelector(`[data-patientid="${patientId}"]`);
-                    if (reportElement) {
-                        reportElement.remove();
-                    }
-        
-                    // Delay redirection slightly to ensure the removal is visible
-                    setTimeout(() => {
-                        window.location.href = "/ecgallocation";
-                    }, 500);
-                } else {
-                    console.error("Failed to update patient status.");
-                }
-            } catch (error) {
-                console.error("Error:", error);
-            }
-        }
-        async function handleDone() {
-            // Get the patient ID from URL parameters
-            const urlSearchParams = new URLSearchParams(window.location.search);
-            const patientId = urlSearchParams.get("data-patientid");
-        
-            if (!patientId) {
-                console.error("Patient ID not found in URL.");
-                return;
-            }
-        
-            // Get the CSRF token from cookies
-            function getCSRFToken() {
-                const match = document.cookie.match(/csrftoken=([\w-]+)/);
-                return match ? match[1] : null;
-            }
-        
-            const csrftoken = getCSRFToken();
-            if (!csrftoken) {
-                console.error("CSRF token not found.");
-                return;
-            }
-        
-            try {
-                const response = await fetch(`/api/update_patient_done_status/${patientId}/`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": csrftoken,
-                    },
-                    body: JSON.stringify({ isDone: true }),
-                });
-                console.log("Response:", response);
-        
-                /*if (response.ok) {
-                    // Navigate back to refresh data
-                    window.location.href = document.referrer + "?nocache=" + Date.now();
-                } else {
-                    console.error("Failed to update isDone status");
-                }*/
-            } catch (error) {
-                console.error("Error:", error);
-            }
-        }
-        
-        
-        async function uploadEcgPDF() {
-            // Show loader
-            function showLoader() {
-                console.log("Showing loader");
-                const loader = document.querySelector(".loader");
-                if (loader) loader.style.display = "block";
-            }
-        
-            // Hide loader
-            function hideLoader() {
-                console.log("Hiding loader");
-                const loader = document.querySelector(".loader");
-                if (loader) loader.style.display = "none";
-            }
-        
-            // Extract patient data from URL
-            function extractDataFromURL() {
-                const urlParams = new URLSearchParams(window.location.search);
-                const params = getQueryParams();
-                let reportImag = params.image;
-                return {
-                    patientId: urlParams.get("data-patientid"),
-                    patientName: urlParams.get("data-patientname"),
-                    testDate: urlParams.get("data-testdate"),
-                    reportDate: urlParams.get("data-reportdate"),
-                    location: urlParams.get("data-location"),
-                    // reportImage: reportImag // Extract image URL
-                    //reportImage: decodeURIComponent(urlParams.get("data-reportimage"))
-                };
-            }
-        
-            // Show notification message
-            function showNotification(message) {
-                const notification = document.getElementById("notification");
-                const notificationText = document.getElementById("notification-text");
-                if (notification && notificationText) {
-                    notificationText.innerText = message;
-                    notification.style.display = "block";
-                    setTimeout(() => {
-                        notification.style.display = "none";
-                    }, 1000);
-                }
-            }
-        
-            // Fetch CSRF token from cookies
-            function getCSRFToken() {
-                const match = document.cookie.match(/csrftoken=([\w-]+)/);
-                return match ? match[1] : null;
-            }
-        
-            showLoader();
-            // Extract data from URL
-            const { patientId, patientName, testDate, reportDate, location } = extractDataFromURL();
-            const filename = `${patientId.replace(/\s+/g, "_")}_${patientName.replace(/\s+/g, "_")}.pdf`;
-            
-            // Get baseImage from the DOM instead of the URL
-            const baseImageElement = document.getElementById("baseImage");
-            if (!baseImageElement || !baseImageElement.src) {
-                console.error("❌ Base image not found in DOM.");
-                alert("Base image is missing.");
-                hideLoader();
-                return;
-            }
-            const image = baseImageElement.src;
-            console.log("✅ Using baseImage:", image);
-
-            const data = document.getElementById("show");
-        
-            if (!data) {
-                console.error("Editor content not found.");
-                hideLoader();
-                showNotification("Error: No data found.");
-                return;
-            }
-        
-            const table = data.querySelector("table");
-            data.classList.add("ck-blurred");
-            data.classList.remove("ck-focused");
-        
-        
-            async function loadImageAndRenderPDF() {
-                try {
-                    const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: "a4" });
-        
-                    const pageWidth = pdf.internal.pageSize.width;
-                    const pageHeight = pdf.internal.pageSize.height;
-        
-                    // Load and rotate the image
-                    const img = new Image();
-                    img.src = image;
-                    img.crossOrigin = "Anonymous";
-        
-                    await new Promise((resolve, reject) => {
-                        img.onload = resolve;
-                        img.onerror = reject;
-                    });
-        
-                    console.log("✅ Image loaded successfully!");
-        
-                    // Create a canvas to rotate the image
-                    const canvas = document.createElement("canvas");
-                    const ctx = canvas.getContext("2d");
-        
-                    canvas.width = img.height;
-                    canvas.height = img.width;
-        
-                    ctx.translate(canvas.width / 2, canvas.height / 2);
-                    ctx.rotate(90 * Math.PI / 180);
-                    ctx.drawImage(img, -img.width / 2, -img.height / 2);
-        
-                    const rotatedImage = canvas.toDataURL("image/png");
-                    console.log("✅ Rotated image generated!");
-        
-                    // Adjust image size for the PDF
-                    let newWidth = pageWidth;
-                    let newHeight = (img.height / img.width) * newWidth * 1.75;
-        
-                    if (newHeight > pageHeight) {
-                        newHeight = pageHeight;
-                        newWidth = (img.width / img.height) * newHeight;
-                    }
-        
-                    // Center the image
-                    const xPos = (pageWidth - newWidth) / 2;
-                    const yPos = (pageHeight - newHeight) / 2;
-        
-                    pdf.addImage(rotatedImage, "PNG", xPos, yPos, newWidth, newHeight);
-                    console.log("✅ Image added to PDF!");
-        
-                    // Add second page with the report
-                    pdf.addPage();
-                    const canvasReport = await html2canvas(data, { scale: 2, useCORS: true });
-                    const reportImgData = canvasReport.toDataURL("image/jpeg", 0.98);
-                    //used for copy the text
-                           
-                    const textContent = data.innerText || data.textContent;
-    
-                    if (!textContent.trim()) {
-                        console.warn("⚠️ No text found in 'show' element.");
-                    }
-        
-                    // Set font to monospaced (prevents structure distortion)
-                    pdf.setFont("courier", "normal"); // Use 'courier' for fixed-width font
-                    pdf.setFontSize(12);
-        
-                    const margin = 5;
-                    const maxWidth = pageWidth - 1 * margin;
-                    const textLines = pdf.splitTextToSize(textContent, maxWidth);
-                    pdf.setTextColor(255, 255, 255); // Set text color to white (invisible on white background)
-                    pdf.text(textLines, margin, margin + 10);
-                    //end of copy text
-                    pdf.addImage(reportImgData, "JPEG", 10, 120, pageWidth - 20, pageHeight - 300);
-        
-                    console.log("✅ Report added to second page!");
-        
-                    // Convert PDF to Blob
-                    const pdfBlob = pdf.output("blob");
-        
-                    if (!patientId) {
-                        console.error("Patient ID not found in URL.");
-                        hideLoader();
-                        showNotification("Error: Missing patient ID.");
-                        return;
-                    }
-        
-                    const csrfToken = getCSRFToken();
-                    if (!csrfToken) {
-                        console.error("CSRF token not found.");
-                        hideLoader();
-                        showNotification("Error: Authentication failed.");
-                        return;
-                    }
-        
-                    // Prepare form data
-                    const formData = new FormData();
-                    formData.append("pdf", pdfBlob, filename);
-                    formData.append("patientId", patientId);
-                    formData.append("patientName", patientName);
-                    formData.append("testDate", testDate);
-                    formData.append("reportDate", reportDate);
-                    formData.append("location", location);
-        
-                    // Upload PDF via API
-                    const response = await fetch("/upload_ecg_pdf/", {
-                        method: "POST",
-                        headers: {
-                            "X-CSRFToken": csrfToken,
-                        },
-                        body: formData,
-                    });
-                    handleDone().catch(console.error);
-                    if (response.ok) {
-                        console.log("✅ PDF successfully sent to backend.");
-                        showNotification("PDF successfully uploaded!");
-                        setTimeout(() => {
-                            window.location.href = document.referrer + "?nocache=" + Date.now();
-                        }, 2000);
-                    } else {
-                        console.error("❌ Failed to upload PDF.");
-                        showNotification("Error uploading PDF. Please try again.");
-                    }
-                } catch (error) {
-                    console.error("❌ Error generating PDF:", error);
-                    showNotification("Error processing PDF.");
-                } finally {
-                    hideLoader();
-                }
-            }
-        
-            loadImageAndRenderPDF();
-        }
-
-        // Initialize page
-        window.onload = function() {
-            const data = getQueryParams();
-
-            // Initially display Reporting Bot View
-            document.getElementById('viewSelect').value = 'reporting-bot';
-            updateReportingBotView();
-
-            // Set ECG image in both views
-            
-            document.getElementById('ecgImage').src = data.image;
-            initializeEventListeners();
-            switchView();
-        };
 
     </script>
 </body>
