@@ -1203,26 +1203,58 @@
             }
         
             // Extract patient data from URL
-            function extractDataFromURL() {
-                const urlParams = sessionStorage.getItem("patient_data");
-                if (!urlParams) {
-                    console.error("❌ No patient data in sessionStorage.");
-                    hideLoader();
-                    showNotification("Error: Patient data missing.");
-                    return;
-                }
-                patientData = JSON.parse(urlParams);
-                return {
+            // function extractDataFromURL() {
+            //     const urlParams = sessionStorage.getItem("patient_data");
+            //     if (!urlParams) {
+            //         console.error("❌ No patient data in sessionStorage.");
+            //         hideLoader();
+            //         showNotification("Error: Patient data missing.");
+            //         return;
+            //     }
+            //     patientData = JSON.parse(urlParams);
+            //     return {
                     
-                    patientId : patientData.PatientId,
-                    patientName : patientData.PatientName,
-                    testDate : patientData.TestDate,
-                    reportDate : patientData.ReportDate,
-                    location : patientData.location,
-                    // reportImage: reportImag // Extract image URL
-                    //reportImage: decodeURIComponent(urlParams.get("data-reportimage"))
+            //         patientId : patientData.PatientId,
+            //         patientName : patientData.PatientName,
+            //         testDate : patientData.TestDate,
+            //         reportDate : patientData.ReportDate,
+            //         location : patientData.location,
+            //         // reportImage: reportImag // Extract image URL
+            //         //reportImage: decodeURIComponent(urlParams.get("data-reportimage"))
+            //     };
+            // }
+
+            // Extract patient data from sessionStorage
+            function extractPatientDataFromSession() {
+                const patientDataJSON = sessionStorage.getItem("patient_data");
+                if (!patientDataJSON) {
+                    console.error("❌ No patient data in sessionStorage.");
+                    showNotification("Error: Patient data missing.");
+                    hideLoader();
+                    return null;
+                }
+            
+                let patientData;
+                try {
+                    patientData = JSON.parse(patientDataJSON);
+                } catch (err) {
+                    console.error("❌ Failed to parse patient data:", err);
+                    showNotification("Error: Invalid patient data.");
+                    hideLoader();
+                    return null;
+                }
+            
+                // Ensure required fields exist to avoid .replace() errors
+                return {
+                    patientId: patientData.patientId || patientData.PatientId || "unknown_id",
+                    patientName: patientData.patientName || patientData.PatientName || "unknown_name",
+                    testDate: patientData.testDate || patientData.TestDate || "",
+                    reportDate: patientData.reportDate || patientData.ReportDate || "",
+                    location: patientData.location || "Unknown",
+                    reportImage: patientData.reportImage || ""
                 };
             }
+
         
             // Show notification message
             function showNotification(message) {
@@ -1244,8 +1276,16 @@
             }
         
             showLoader();
-            // Extract data from URL
-            const { patientId, patientName, testDate, reportDate, location } = extractDataFromURL();
+            // // Extract data from URL
+            // const { patientId, patientName, testDate, reportDate, location } = extractDataFromURL();
+            // const filename = `${patientId.replace(/\s+/g, "_")}_${patientName.replace(/\s+/g, "_")}.pdf`;
+
+            const patientInfo = extractPatientDataFromSession();
+            if (!patientInfo) return; // Stop if session data is missing
+            
+            const { patientId, patientName, testDate, reportDate, location, reportImage } = patientInfo;
+            
+            // Safe filename
             const filename = `${patientId.replace(/\s+/g, "_")}_${patientName.replace(/\s+/g, "_")}.pdf`;
             
             // Get baseImage from the DOM instead of the URL
