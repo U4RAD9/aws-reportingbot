@@ -763,8 +763,8 @@
                     </div>
             `;
             // Display ECG image
-            const ecgImage = document.getElementById('ecgImage');
-            const ecgSrc = ecgImage ? ecgImage.getAttribute("src") : null;
+            const baseImage = document.getElementById('baseImage');
+            const ecgSrc = baseImage ? baseImage.getAttribute("src") : null;
             
             if (ecgSrc) {
                 reportHTML += `
@@ -773,8 +773,9 @@
                     </div>
                 `;
             } else {
-                console.warn("⚠️ No ECG image found.");
+                console.warn("⚠️ Base ECG image not found.");
             }
+
             
             // Update report container
             document.getElementById('report-container').innerHTML = reportHTML;
