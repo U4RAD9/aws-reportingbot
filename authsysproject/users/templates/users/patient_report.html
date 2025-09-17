@@ -1211,7 +1211,7 @@
                     showNotification("Error: Patient data missing.");
                     return;
                 }
-                patientData : JSON.parse(urlParams);
+                patientData = JSON.parse(urlParams);
                 return {
                     
                     patientId : patientData.PatientId,
