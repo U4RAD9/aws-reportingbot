@@ -4518,14 +4518,14 @@ UploadDivContentOnPDFWithoutImage() {
       //  const reportDate = new Date().toISOString().split('T')[0];
       const reportDate = new Date().toISOString().split('T')[0].split('-').reverse().join('-');
 
-        const tableContent = [
-          ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
-          ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
-          ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"],
-          ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
-        ];
+      //   const tableContent = [
+      //     ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+      //     ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+      //     ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"],
+      //     ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
+      //   ];
 
-        currentYPosition += 20;
+      //   currentYPosition += 20;
       //   pdf.autoTable({
       //     startY: currentYPosition,
       //     body: tableContent,
@@ -4542,82 +4542,48 @@ UploadDivContentOnPDFWithoutImage() {
       //   currentYPosition = pdf.previousAutoTable.finalY + 20;
       // }
 
-      // const content = this.extractContent(editorContent);
-      // if (content) {
-      //   const lines = content.split('\n');
-      //   for (const line of lines) {
-      //     if (line.trim()) {
-      //       let text = line;
-      //       let isBold = false;
-      //       const boldMatches = text.match(/\[BOLD\](.*?)\[\/BOLD\]/g);
-      //       if (boldMatches) {
-      //         isBold = true;
-      //         text = text.replace(/\[BOLD\](.*?)\[\/BOLD\]/g, '$1');
-      //       }
+      
+const tableContent = [
+    ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
+    ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
+    ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"],
+    ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
+  ];
 
-      //       const isBullet = text.startsWith('•');
-      //       if (isBullet) {
-      //         text = text.substring(1).trim();
-      //         currentYPosition += 5;
-      //       }
-
-      //       if (text.includes("Dr.") && signatureUrl) {
-      //         currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
-      //       }
-
-      //       pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
-      //       pdf.setFontSize(12);
-      //       const splitText = pdf.splitTextToSize(text, pdf.internal.pageSize.width - (isBullet ? 100 : 80));
-
-      //       if (currentYPosition + (splitText.length * 15) > pageHeight - bottomMargin) {
-      //         pdf.addPage();
-      //         currentYPosition = topMargin;
-      //       }
-
-      //       if (isBullet) {
-      //         pdf.text('•', 60, currentYPosition);
-      //         pdf.text(splitText, 80, currentYPosition);
-      //       } else {
-      //         pdf.text(splitText, 40, currentYPosition);
-      //       }
-
-      //       currentYPosition += splitText.length * 15;
-      //     }
-      //   }
-      // }
+  pdf.autoTable({
+    startY: 40,   // fixed at top
+    body: tableContent,
+    theme: "grid",
+    styles: {
+      cellPadding: 3,
+      fontSize: 10,
+      fontStyle: "bold",
+      textColor: [0, 0, 0],
+      lineColor: [0, 0, 0],
+      lineWidth: 0.2
+    },
+    didDrawPage: function (data) {
+      // ✅ redraw demographics each page
       pdf.autoTable({
-  body: tableContent,
-  startY: 40,   // always at top of page
-  theme: "grid",
-  styles: {
-    cellPadding: 3,
-    fontSize: 10,
-    fontStyle: "bold",
-    textColor: [0, 0, 0],
-    lineColor: [0, 0, 0],
-    lineWidth: 0.2
-  },
-  didDrawPage: function (data) {
-    // ✅ redraw table at top of every page
-    pdf.autoTable({
-      body: tableContent,
-      startY: 40,
-      theme: "grid",
-      styles: {
-        cellPadding: 3,
-        fontSize: 10,
-        fontStyle: "bold",
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.2
-      }
-    });
-  }
-});
-        currentYPosition = pdf.previousAutoTable.finalY + 20;
-      }
+        startY: 40,
+        body: tableContent,
+        theme: "grid",
+        styles: {
+          cellPadding: 3,
+          fontSize: 10,
+          fontStyle: "bold",
+          textColor: [0, 0, 0],
+          lineColor: [0, 0, 0],
+          lineWidth: 0.2
+        },
+        didDrawPage: null // prevent recursion
+      });
+    }
+  });
 
-
+  // always start content BELOW demographics
+  currentYPosition = pdf.previousAutoTable.finalY + 20;
+}
       const content = this.extractContent(editorContent);
 if (content) {
   const lines = content.split('\n');
