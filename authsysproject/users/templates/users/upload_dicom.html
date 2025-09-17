@@ -690,7 +690,16 @@
       formData.append('study_date', $("#study_date").val());
       formData.append('study_description', $("#study_description").val());
       formData.append('notes', $("#notes").val());
-      formData.append('body_part_examined', $("#body_part_examined").val());
+      // ✅ Always take textbox if it has value, otherwise dropdown
+      let bodyPart = $("#otherBodyPart").val().trim();
+      if (!bodyPart) {
+          bodyPart = $("#body_part_examined").val();
+      }
+      // if still empty, set default instead of undefined
+      if (!bodyPart) {
+          bodyPart = "";
+      }
+      formData.append('body_part_examined', bodyPart);
       formData.append('referring_doctor_name', $("#referring_doctor_name").val());
 
       formData.append('email', $("#email").val());
