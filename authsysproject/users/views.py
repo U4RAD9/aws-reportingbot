@@ -32,6 +32,7 @@ from django.middleware.csrf import get_token
 import httpx
 from users.models.faq import FAQ
 from users.models.CKEditorTemplate import CKEditorTemplate
+from users.models.rsnatemplate import RSNATemplate
 from users.models.AudiometryPdfReport import AudiometryReport
 from users.models.OptometryPdfReport import OptometryReport
 from users.models.VitalsPdfReport import VitalsReport
@@ -9814,6 +9815,48 @@ def ecg_client_dashboard(request):
         }
 
         return render(request, 'users/ecg_client.html', context)    
+
+
+
+
+
+        
+@csrf_exempt
+def save_rsnatemplate(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            name = data.get('name')
+            content = data.get('content')
+
+            if not name or not content:
+                return JsonResponse({'error': 'Name and content are required'}, status=400)
+
+            # Create a template (no user field needed)
+            RSNATemplate.objects.create(name=name, content=content)
+            return JsonResponse({'message': 'RSNA template saved successfully'}, status=201)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    elif request.method == 'GET':
+        # Fetch all RSNA templates
+        templates = RSNATemplate.objects.all().values('id', 'name', 'content')
+        return JsonResponse({'templates': list(templates)}, status=200)
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@csrf_exempt
+def get_rsnatemplate(request, template_id):
+    try:
+        template = RSNATemplate.objects.get(id=template_id)
+        return JsonResponse({'template_content': template.content}, status=200)
+    except RSNATemplate.DoesNotExist:
+        return JsonResponse({'error': 'Template not found'}, status=404)
 
 
 

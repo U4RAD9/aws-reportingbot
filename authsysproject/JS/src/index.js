@@ -6402,34 +6402,6 @@ saveTemplateButton.onclick = async () => {
       return;
     }
 
-    // Fetch Initial Content
-    // const fetchEditorContent = async () => {
-    //   try {
-    //     const response = await fetch(`/get-editor-content/${currentStudyId}/`);
-    //     const data = await response.json();
-    //     if (data.editor_content) {
-    //       editor.setData(data.editor_content);
-    //     }
-    //   } catch (error) {
-    //     console.error('Error fetching editor content:', error);
-    //   }
-    // };
-
-    // fetchEditorContent();
-
-    // // Save Content on Change
-    // editor.model.document.on('change:data', async () => {
-    //   try {
-    //     const content = editor.getData();
-    //     await fetch('/save-editor-content/', {
-    //       method: 'POST',
-    //       headers: { 'Content-Type': 'application/json' },
-    //       body: JSON.stringify({ study_id: currentStudyId, editor_content: content }),
-    //     });
-    //   } catch (error) {
-    //     console.error('Error saving editor content:', error);
-    //   }
-    // });
        // Debounced Auto-Save Function
     const attachAutoSave = (editor, studyId) => {
       let saveTimeout;
@@ -6543,25 +6515,7 @@ saveTemplateButton.onclick = async () => {
       saveTemplateButton.style.border = 'none';
       saveTemplateButton.style.borderRadius = '5px';
 
-      // // Handle Save Template Click
-      // saveTemplateButton.onclick = async () => {
-      //   const templateName = prompt('Enter template name:');
-      //   if (templateName) {
-      //     try {
-      //       const content = editor.getData();
-      //       await fetch('/save-template/', {
-      //         method: 'POST',
-      //         headers: { 'Content-Type': 'application/json' },
-      //         body: JSON.stringify({ name: templateName, content }),
-      //       });
-      //       alert('Template saved successfully!');
-      //       loadTemplates(); // Refresh dropdown
-      //     } catch (error) {
-      //       console.error('Error saving template:', error);
-      //     }
-      //   }
-      // };
-      // Handle Save Template Click
+      
 saveTemplateButton.onclick = async () => {
   const templateName = prompt('Enter template name:');
   if (templateName) {
@@ -6602,6 +6556,90 @@ saveTemplateButton.onclick = async () => {
     }
   }
 };
+
+
+
+      const rsnaDropdown = document.createElement('select');
+      rsnaDropdown.classList.add('rsna-template-dropdown');
+      rsnaDropdown.innerHTML = `<option value="">Select RSNA Template</option>`;
+      customToolbar.appendChild(rsnaDropdown);
+
+      // Load RSNA Templates
+      const loadRSNATemplates = async () => {
+        try {
+          const response = await fetch('/save_rsnatemplate/', { method: 'GET' });
+          const data = await response.json();
+          if (data.templates) {
+            rsnaDropdown.innerHTML = `<option value="">Select RSNA Template</option>`;
+            data.templates.forEach((tpl) => {
+              const option = document.createElement('option');
+              option.value = tpl.id;
+              option.textContent = tpl.name;
+              rsnaDropdown.appendChild(option);
+            });
+          }
+        } catch (error) {
+          console.error('Error loading RSNA templates:', error);
+        }
+      };
+
+      // Initial load
+      loadRSNATemplates();
+
+      // Handle Template Change
+      rsnaDropdown.onchange = async (e) => {
+        const templateId = e.target.value;
+        if (templateId) {
+          try {
+            const response = await fetch(`/get_rsnatemplate/${templateId}/`);
+            const data = await response.json();
+            if (data.template_content) {
+              editor.setData(data.template_content);
+            }
+          } catch (error) {
+            console.error('Error fetching RSNA template content:', error);
+          }
+        }
+      };
+
+      /** -----------------------
+       * Save as RSNA Template
+       * ----------------------- */
+      const saveRSNAButton = document.createElement('button');
+      saveRSNAButton.innerText = 'Save as RSNA Template';
+      saveRSNAButton.classList.add('save-rsna-template-button');
+      saveRSNAButton.style.padding = '5px 10px';
+      saveRSNAButton.style.cursor = 'pointer';
+      saveRSNAButton.style.backgroundColor = '#2196F3';
+      saveRSNAButton.style.color = 'white';
+      saveRSNAButton.style.border = 'none';
+      saveRSNAButton.style.borderRadius = '5px';
+
+      saveRSNAButton.onclick = async () => {
+        const templateName = prompt('Enter RSNA template name:');
+        if (templateName) {
+          try {
+            const content = editor.getData();
+            const response = await fetch('/save_rsnatemplate/', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: templateName, content }),
+            });
+            const data = await response.json();
+            if (response.ok) {
+              alert('RSNA template saved successfully!');
+              loadRSNATemplates(); // reload dropdown
+            } else {
+              alert(data.error || 'Failed to save RSNA template');
+            }
+          } catch (error) {
+            console.error('Error saving RSNA template:', error);
+          }
+        }
+      };
+
+      customToolbar.appendChild(saveRSNAButton);
+
 
 
       // Append Save Button to Custom Toolbar

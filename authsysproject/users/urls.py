@@ -6,6 +6,7 @@ from . import views
 from .views import save_template,get_template,get_client_header_footer
 from .views import convert_pdf_to_word # by rohan jangid 14-04-2025
 from .views import update_non_reportable_status,get_dicom_notes
+from .views import save_rsnatemplate,get_rsnatemplate
 
 
 # from django.contrib.auth import views
@@ -169,6 +170,11 @@ urlpatterns = [
     path('patient-success/', lambda r: HttpResponse("Patient uploaded successfully!"), name="patient_success"),
     path('open-report/<int:pk>/', views.open_ecg_report, name='open_report'),
     # path('ecgreporting/', views.ecg_reporting, name='ecg_reporting'),
+
+    
+
+  path('save_rsnatemplate/', save_rsnatemplate, name='save_rsnatemplate'),
+  path('get_rsnatemplate/<int:template_id>/',views.get_rsnatemplate, name='get_rsnatemplat'),
 
 
 ] 
