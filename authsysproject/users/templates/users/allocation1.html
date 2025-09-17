@@ -1222,17 +1222,16 @@
         $("#gender").val(row.find("td:eq(4)").text());
         $("#study_description").val(row.find("td:eq(11)").text());
         let bodyPartText = row.find("td:eq(12)").text().trim();
-        let dropdown = $("#body_part_examined");
-      
-        // Check if dropdown has this value
-        if (dropdown.find("option[value='" + bodyPartText + "']").length > 0) {
-            dropdown.val(bodyPartText);              // Select it
-            $("#otherBodyPartDiv").hide();
-            $("#otherBodyPart").val("");
-        } else if (bodyPartText) {
-            dropdown.val("Others");                  // Select "Others"
+
+        // always clear
+        $("#body_part_examined").val("");
+        $("#otherBodyPart").val("");
+        $("#otherBodyPartDiv").hide();
+        
+        // just put whatever is in table directly into textbox if not blank
+        if (bodyPartText) {
             $("#otherBodyPartDiv").show();
-            $("#otherBodyPart").val(bodyPartText);   // Fill custom text
+            $("#otherBodyPart").val(bodyPartText);
         }
         $("#notes").val(row.find("td:eq(13)").text());
         $('#editModal').modal('show');
