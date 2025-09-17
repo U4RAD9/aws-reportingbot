@@ -1186,7 +1186,28 @@
             }
         }
         
+        // Utility: Convert image URL to Base64
+        function getBase64FromImage(imgElement) {
+            return new Promise((resolve, reject) => {
+                const imageUrl = imgElement.src;
+                if (!imageUrl) {
+                    reject("Image source not found.");
+                    return;
+                }
         
+                fetch(imageUrl, { mode: 'cors' })
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result); // base64 string
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    })
+                    .catch(err => reject(err));
+            });
+        }
+
+
         async function uploadEcgPDF() {
             // Show loader
             function showLoader() {
@@ -1321,72 +1342,58 @@
                     const pageWidth = pdf.internal.pageSize.width;
                     const pageHeight = pdf.internal.pageSize.height;
         
-                    // Load and rotate the image
-                    const img = new Image();
-                    img.src = image;
-                    img.crossOrigin = "Anonymous";
-        
-                    await new Promise((resolve, reject) => {
-                        img.onload = resolve;
-                        img.onerror = reject;
-                    });
-        
-                    console.log("✅ Image loaded successfully!");
-        
-                    // Create a canvas to rotate the image
+                    // ✅ Instead of loading from S3, take the <img id="baseImage"> already in DOM
+                    const img = document.getElementById("baseImage");
+                    if (!img || !img.complete) {
+                        console.error("❌ Base image not fully loaded yet.");
+                        alert("ECG Image not loaded. Please wait and try again.");
+                        hideLoader();
+                        return;
+                    }
+            
+                    // ✅ Convert DOM image into base64 using canvas
                     const canvas = document.createElement("canvas");
                     const ctx = canvas.getContext("2d");
-        
-                    canvas.width = img.height;
-                    canvas.height = img.width;
-        
+            
+                    // Rotate 90 degrees
+                    canvas.width = img.naturalHeight;
+                    canvas.height = img.naturalWidth;
                     ctx.translate(canvas.width / 2, canvas.height / 2);
                     ctx.rotate(90 * Math.PI / 180);
-                    ctx.drawImage(img, -img.width / 2, -img.height / 2);
-        
-                    const rotatedImage = canvas.toDataURL("image/png");
-                    console.log("✅ Rotated image generated!");
-        
+                    ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+            
+                    const rotatedImage = canvas.toDataURL("image/png"); // base64 ✅
+            
                     // Adjust image size for the PDF
                     let newWidth = pageWidth;
-                    let newHeight = (img.height / img.width) * newWidth * 1.75;
-        
+                    let newHeight = (img.naturalHeight / img.naturalWidth) * newWidth * 1.75;
+            
                     if (newHeight > pageHeight) {
                         newHeight = pageHeight;
-                        newWidth = (img.width / img.height) * newHeight;
+                        newWidth = (img.naturalWidth / img.naturalHeight) * newHeight;
                     }
-        
-                    // Center the image
-                    const xPos = (pageWidth - newWidth) / 2;
-                    const yPos = (pageHeight - newHeight) / 2;
-        
-                    pdf.addImage(rotatedImage, "PNG", xPos, yPos, newWidth, newHeight);
-                    console.log("✅ Image added to PDF!");
-        
-                    // Add second page with the report
+            
+                    // Add base64 image into PDF
+                    pdf.addImage(rotatedImage, "PNG", (pageWidth - newWidth) / 2, (pageHeight - newHeight) / 2, newWidth, newHeight);
+                    console.log("✅ Base64 image added to PDF!");
+            
+                    // Second page with report
                     pdf.addPage();
-                    const canvasReport = await html2canvas(data, { scale: 2, useCORS: true });
+                    const canvasReport = await html2canvas(document.getElementById("show"), { scale: 2, useCORS: true });
                     const reportImgData = canvasReport.toDataURL("image/jpeg", 0.98);
-                    //used for copy the text
-                           
-                    const textContent = data.innerText || data.textContent;
-    
-                    if (!textContent.trim()) {
-                        console.warn("⚠️ No text found in 'show' element.");
+            
+                    const textContent = document.getElementById("show").innerText || "";
+                    if (textContent.trim()) {
+                        pdf.setFont("courier", "normal");
+                        pdf.setFontSize(12);
+                        const margin = 5;
+                        const maxWidth = pageWidth - 2 * margin;
+                        const textLines = pdf.splitTextToSize(textContent, maxWidth);
+                        pdf.setTextColor(255, 255, 255);
+                        pdf.text(textLines, margin, margin + 10);
                     }
-        
-                    // Set font to monospaced (prevents structure distortion)
-                    pdf.setFont("courier", "normal"); // Use 'courier' for fixed-width font
-                    pdf.setFontSize(12);
-        
-                    const margin = 5;
-                    const maxWidth = pageWidth - 1 * margin;
-                    const textLines = pdf.splitTextToSize(textContent, maxWidth);
-                    pdf.setTextColor(255, 255, 255); // Set text color to white (invisible on white background)
-                    pdf.text(textLines, margin, margin + 10);
-                    //end of copy text
+            
                     pdf.addImage(reportImgData, "JPEG", 10, 120, pageWidth - 20, pageHeight - 300);
-        
                     console.log("✅ Report added to second page!");
         
                     // Convert PDF to Blob
