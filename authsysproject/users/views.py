@@ -616,7 +616,7 @@ def open_ecg_report(request, pk):
     patient = get_object_or_404(PatientDetails, pk=pk)
 
     report_image_url = ''
-    if patient.reportimage:
+    if patient.image:
         bucket_name = "u4rad-s3-reporting-bot"
         report_image_url = presigned_url(bucket_name, patient.image.name)
 
