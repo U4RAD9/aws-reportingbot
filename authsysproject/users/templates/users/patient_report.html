@@ -447,7 +447,7 @@
         data-printerval="{{ patient.PRInterval }}"
         data-testdate="{{ patient.TestDate }}"
         data-reportdate="{{ patient.ReportDate }}"
-        data-reportimage="{{ patient.image }}"
+        data-image="{{ patient.image }}"
         data-location="{{ patient.location }}">
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.4/jspdf.min.js"></script>
@@ -483,7 +483,7 @@
                         prInterval: div.dataset.printerval,
                         testDate: div.dataset.testdate,
                         reportDate: div.dataset.reportdate,
-                        reportimage: div.dataset.image,
+                        image: div.dataset.image,
                         location: div.dataset.location
                     };
                     console.log("📋 Patient data from hidden div:", patientData);
@@ -496,8 +496,8 @@
             if (patientData) {
                 // Set base image if exists
                 const baseImage = document.getElementById("baseImage");
-                if (baseImage && patientData.reportimage) {
-                    baseImage.src = patientData.reportimage;
+                if (baseImage && patientData.image) {
+                    baseImage.src = patientData.image;
                 } else {
                     console.warn("⚠️ No report image found in patient data.");
                 }
@@ -535,9 +535,9 @@
                     ecgImage.src = patientData.image;
                 }
                 // Report Image
-                const reportImage = document.getElementById("reportImage");
-                if (reportImage && patientData.reportImage) {
-                    reportImage.src = patientData.reportImage;
+                const image = document.getElementById("image");
+                if (image && patientData.image) {
+                    image.src = patientData.image;
                 }
             }
         });
@@ -557,7 +557,7 @@
                 prInterval: params.get('data-printerval') || '',
                 testDate: params.get('data-testdate') || '',
                 reportDate: params.get('data-reportdate') || '',
-                reportImage: decodeURIComponent(params.get('data-reportimage') || ''),
+                image: decodeURIComponent(params.get('data-image') || ''),
                 location: decodeURIComponent(params.get('data-location') || '')
             };
         }
@@ -582,8 +582,8 @@
             if (!data) return;
         
             const patientImage = document.getElementById('baseImage');
-            if (patientImage && data.reportimage) {
-                patientImage.src = data.reportimage;
+            if (patientImage && data.image) {
+                patientImage.src = data.image;
             }
         }
 
@@ -622,7 +622,7 @@
             }
             
             // Set ECG image
-            document.getElementById('ecgImage').src = data.reportImage;
+            document.getElementById('ecgImage').src = data.image;
             
             // Generate initial report
             generateReport();
@@ -1199,7 +1199,7 @@
             function extractDataFromURL() {
                 const urlParams = new URLSearchParams(window.location.search);
                 const params = getQueryParams();
-                let reportImag = params.reportImage;
+                let reportImag = params.image;
                 return {
                     patientId: urlParams.get("data-patientid"),
                     patientName: urlParams.get("data-patientname"),
@@ -1243,8 +1243,8 @@
                 hideLoader();
                 return;
             }
-            const reportImage = baseImageElement.src;
-            console.log("✅ Using baseImage:", reportImage);
+            const image = baseImageElement.src;
+            console.log("✅ Using baseImage:", image);
 
             const data = document.getElementById("show");
         
@@ -1270,7 +1270,7 @@
         
                     // Load and rotate the image
                     const img = new Image();
-                    img.src = reportImage;
+                    img.src = image;
                     img.crossOrigin = "Anonymous";
         
                     await new Promise((resolve, reject) => {
@@ -1403,7 +1403,7 @@
 
             // Set ECG image in both views
             
-            document.getElementById('ecgImage').src = data.reportImage;
+            document.getElementById('ecgImage').src = data.image;
             initializeEventListeners();
             switchView();
         };
