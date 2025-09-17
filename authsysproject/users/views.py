@@ -2,6 +2,7 @@ from collections import defaultdict
 from django.core.cache import cache
 import math
 import base64
+from urllib.parse import unquote
 import subprocess
 # Corrected imports
 from django.db.models import Q, F, Value, CharField  # Core model fields/functions
@@ -615,10 +616,10 @@ def upload_ecg(request):
 def open_ecg_report(request, pk):
     patient = get_object_or_404(PatientDetails, pk=pk)
 
-    report_image_url = ''
-    if patient.image:
-        bucket_name = "u4rad-s3-reporting-bot"
-        report_image_url = presigned_url(bucket_name, patient.image.name)
+    # Get presigned URL from query param
+    report_image_url = request.GET.get("img", "")
+    if report_image_url:
+        report_image_url = unquote(report_image_url)  # decode 
 
     # store patient info in session (only serializable types)
     request.session['patient_data'] = {
