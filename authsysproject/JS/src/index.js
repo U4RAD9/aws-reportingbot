@@ -4526,21 +4526,21 @@ UploadDivContentOnPDFWithoutImage() {
         ];
 
         currentYPosition += 20;
-        pdf.autoTable({
-          startY: currentYPosition,
-          body: tableContent,
-          theme: "grid",
-          styles: {
-            cellPadding: 3,
-            fontSize: 10,
-            fontStyle: 'bold',         // Bold text
-            textColor: [0, 0, 0],      // Black text (RGB)
-            lineColor: [0, 0, 0], // <-- Border color (black)
-            lineWidth: 0.2         // <-- Border thickness
-          },
-        });
-        currentYPosition = pdf.previousAutoTable.finalY + 20;
-      }
+      //   pdf.autoTable({
+      //     startY: currentYPosition,
+      //     body: tableContent,
+      //     theme: "grid",
+      //     styles: {
+      //       cellPadding: 3,
+      //       fontSize: 10,
+      //       fontStyle: 'bold',         // Bold text
+      //       textColor: [0, 0, 0],      // Black text (RGB)
+      //       lineColor: [0, 0, 0], // <-- Border color (black)
+      //       lineWidth: 0.2         // <-- Border thickness
+      //     },
+      //   });
+      //   currentYPosition = pdf.previousAutoTable.finalY + 20;
+      // }
 
       // const content = this.extractContent(editorContent);
       // if (content) {
@@ -4585,6 +4585,38 @@ UploadDivContentOnPDFWithoutImage() {
       //     }
       //   }
       // }
+      pdf.autoTable({
+  body: tableContent,
+  startY: 40,   // always at top of page
+  theme: "grid",
+  styles: {
+    cellPadding: 3,
+    fontSize: 10,
+    fontStyle: "bold",
+    textColor: [0, 0, 0],
+    lineColor: [0, 0, 0],
+    lineWidth: 0.2
+  },
+  didDrawPage: function (data) {
+    // ✅ redraw table at top of every page
+    pdf.autoTable({
+      body: tableContent,
+      startY: 40,
+      theme: "grid",
+      styles: {
+        cellPadding: 3,
+        fontSize: 10,
+        fontStyle: "bold",
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.2
+      }
+    });
+  }
+});
+        currentYPosition = pdf.previousAutoTable.finalY + 20;
+      }
+
 
       const content = this.extractContent(editorContent);
 if (content) {
