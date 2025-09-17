@@ -2265,6 +2265,20 @@ def assign_radiologist(request):
             messages.error(request, "No valid patients selected.")
             return redirect('xraycoordinator')
 
+
+        # 🚨 Restrict assignment if body_part_examined is missing
+        invalid_patients = [
+            f"{p.patient_id} - {p.patient_name}"
+            for p in patients
+            if not p.body_part_examined or p.body_part_examined.strip() == ""
+        ]
+        if invalid_patients:
+            messages.error(
+                request,
+                f"Cannot assign radiologist because body part is missing for: {', '.join(invalid_patients)}"
+            )
+            return redirect('xraycoordinator')    
+
         # Radiologist Assignment Logic
         if action in ["assign", "replace"] and radiologist_id:
             try:
