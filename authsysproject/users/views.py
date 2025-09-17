@@ -615,6 +615,11 @@ def upload_ecg(request):
 def open_ecg_report(request, pk):
     patient = get_object_or_404(PatientDetails, pk=pk)
 
+    # generate presigned url if patient has an image
+    report_image_url = ''
+    if patient.reportimage:
+        report_image_url = generate_presigned_url(patient.image.name)
+
     # store patient info in session (only serializable types)
     request.session['patient_data'] = {
         'PatientId': patient.PatientId,
@@ -625,8 +630,7 @@ def open_ecg_report(request, pk):
         'PRInterval': patient.PRInterval,
         'TestDate': str(patient.TestDate),
         'ReportDate': str(patient.ReportDate),
-        'reportimage': patient.reportimage.url if patient.reportimage else '',
-        'reportimage': patient.reportimage.url if patient.reportimage else '',
+        'reportimage': report_image_url,
         'location': str(patient.location) if patient.location else ''  # ✅ FIXED
     }
 
