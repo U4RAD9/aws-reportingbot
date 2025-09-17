@@ -340,7 +340,7 @@
         </div>
         <div><h2>Patient Report</h2>
             
-            <img id="baseImage" src="{{ patient.image }}" alt="ECG Report Image" />
+            <img id="baseImage" alt="ECG Report Image" />
         </div>
         
         <!-- Final Report (initially hidden) -->
@@ -378,11 +378,11 @@
         <div class="form-row">
             <div class="input-container">
                 <label for="campTestDate">Test Date:</label>
-                <input type="date" id="campTestDate" value="{{ patient.TestDate }}" class="input">
+                <input type="date" id="campTestDate" class="input">
             </div>
             <div class="input-container">
                 <label for="campReportDate">Report Date:</label>
-                <input type="date" id="campReportDate" value="{{ patient.ReportDate }}" class="input">
+                <input type="date" id="campReportDate" class="input">
             </div>
             <div class="input-container">
                 <label for="campHeartRate">Heart Rate:</label>
@@ -429,30 +429,13 @@
             <input type="text" id="finding" class="input">
         </div>
         
-        <div class="ecg-image-container">
-            <img id="ecgImage" src="{{ patient.image }}" alt="ECG Graph">
-        </div>
-
+        <img id="ecgImage" src="" alt="ECG Graph">
         
         <!-- Generated Report Preview -->
         <div id="report-container" class="report-container">
             <!-- Report will be generated here -->
         </div>
     </div>
-
-    <!-- Add a hidden div to store patient data from Django context -->
-    <!-- <div id="patient-data" 
-        data-patientid="{{ patient.PatientId }}"
-        data-patientname="{{ patient.PatientName }}"
-        data-age="{{ patient.age }}"
-        data-gender="{{ patient.gender }}"
-        data-heartrate="{{ patient.HeartRate }}"
-        data-printerval="{{ patient.PRInterval }}"
-        data-testdate="{{ patient.TestDate }}"
-        data-reportdate="{{ patient.ReportDate }}"
-        data-image="{{ patient.image }}"
-        data-location="{{ patient.location }}">
-    </div> -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.4/jspdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -465,83 +448,22 @@
         document.addEventListener("DOMContentLoaded", function() {
             console.log("🚀 DOM fully loaded and parsed.");
         
-            // Fetch patient data from session storage
-            const patientDataJSON = sessionStorage.getItem('patient_data');
-            let patientData = null;
+            let urlParams = new URLSearchParams(window.location.search);
+            let patientId = urlParams.get("data-patientid");
         
-            if (patientDataJSON) {
-                patientData = JSON.parse(patientDataJSON);
-                console.log("📋 Patient data from sessionStorage:", patientData);
-            } else {
-                console.warn("⚠️ No patient data found in sessionStorage.");
-                // fallback: get from hidden div
-                const div = document.getElementById("patient-data");
-                if (div) {
-                    patientData = {
-                        patientId: div.dataset.patientid,
-                        patientName: div.dataset.patientname,
-                        age: div.dataset.age,
-                        gender: div.dataset.gender,
-                        heartRate: div.dataset.heartrate,
-                        prInterval: div.dataset.printerval,
-                        testDate: div.dataset.testdate,
-                        reportDate: div.dataset.reportdate,
-                        image: div.dataset.image,
-                        location: div.dataset.location
-                    };
-                    console.log("📋 Patient data from hidden div:", patientData);
-                    // optionally save to sessionStorage
-                    sessionStorage.setItem('patient_data', JSON.stringify(patientData));
-                }
-            }
+            console.log("🔍 Extracted Patient ID from URL:", patientId);
         
-            // Update the page
-            if (patientData) {
-                // Set base image if exists
-                const baseImage = document.getElementById("baseImage");
-                if (baseImage && patientData.image) {
-                    baseImage.src = patientData.image;
+            if (patientId) {
+                let base64Image = sessionStorage.getItem("base64_" + patientId);
+        
+                if (base64Image) {
+                    console.log("✅ Base64 Image found in sessionStorage!");
+                    document.getElementById("baseImage").src = base64Image;
                 } else {
-                    console.warn("⚠️ No report image found in patient data.");
+                    console.warn("⚠️ No Base64 image found for Patient ID:", patientId);
                 }
-        
-                // Update Camp ECG form inputs
-                const mapping = {
-                    campPatientName: 'patientName',
-                    campPatientId: 'patientId',
-                    campAge: 'age',
-                    campHeartRate: 'heartRate',
-                    campTestDate: 'testDate',
-                    campReportDate: 'reportDate'
-                };
-        
-                for (const [inputId, key] of Object.entries(mapping)) {
-                    const el = document.getElementById(inputId);
-                    if (el && patientData[key]) {
-                        if (el.type === 'date') {
-                            el.value = formatDateForInput(patientData[key]);
-                        } else {
-                            el.value = patientData[key];
-                        }
-                    }
-                }
-        
-                // Set gender radio button
-                if (patientData.gender) {
-                    const genderRadio = document.querySelector(`input[name="gender"][value="${patientData.gender.toLowerCase()}"]`);
-                    if (genderRadio) genderRadio.checked = true;
-                }
-        
-                // Set ECG image
-                const ecgImage = document.getElementById("ecgImage");
-                if (ecgImage && patientData.image) {        // ✅ use patientData.image
-                    ecgImage.src = patientData.image;
-                }
-                // Report Image
-                const image = document.getElementById("image");
-                if (image && patientData.image) {
-                    image.src = patientData.image;
-                }
+            } else {
+                console.warn("⚠️ No Patient ID found in URL parameters.");
             }
         });
 
@@ -560,7 +482,7 @@
                 prInterval: params.get('data-printerval') || '',
                 testDate: params.get('data-testdate') || '',
                 reportDate: params.get('data-reportdate') || '',
-                image: decodeURIComponent(params.get('data-image') || ''),
+                reportImage: decodeURIComponent(params.get('data-reportimage') || ''),
                 location: decodeURIComponent(params.get('data-location') || '')
             };
         }
@@ -581,25 +503,13 @@
         let isReportFinalized = true;
         
         function updateReportingBotView() {
-            const data = getPatientDataFromSession();
-            if (!data) return;
-        
+            const data = getQueryParams();
             const patientImage = document.getElementById('baseImage');
-            if (patientImage && data.image) {
-                patientImage.src = data.image;
-            }
-        }
-
-        // Helper: fetch patient data from sessionStorage
-        function getPatientDataFromSession() {
-            const data = sessionStorage.getItem('patient_data');
-            return data ? JSON.parse(data) : null;
         }
         
         // Update Camp ECG View
         function updateCampEcgView() {
-            const data = getPatientDataFromSession();
-            if (!data) return;
+            const data = getQueryParams();
             
             // Update camp-ecg form inputs
             document.getElementById('campPatientName').value = data.patientName;
@@ -625,7 +535,7 @@
             }
             
             // Set ECG image
-            document.getElementById('ecgImage').src = data.image;
+            document.getElementById('ecgImage').src = data.reportImage;
             
             // Generate initial report
             generateReport();
@@ -763,19 +673,15 @@
                     </div>
             `;
             // Display ECG image
-            const baseImage = document.getElementById('baseImage');
-            const ecgSrc = baseImage ? baseImage.getAttribute("src") : null;
-            
-            if (ecgSrc) {
+            if (document.getElementById('ecgImage').src) {
                 reportHTML += `
-                    <div class="ecg-image-container">
-                        <img src="${ecgSrc}" alt="ECG Graph">
-                    </div>
+                      <div id="ecgImage" class="ecg-image-container">
+                          <img src="${document.getElementById('ecgImage').src}" alt="ECG Graph">
+                      </div>
+                    </div>  
+                      
                 `;
-            } else {
-                console.warn("⚠️ Base ECG image not found.");
             }
-
             
             // Update report container
             document.getElementById('report-container').innerHTML = reportHTML;
@@ -1203,58 +1109,20 @@
             }
         
             // Extract patient data from URL
-            // function extractDataFromURL() {
-            //     const urlParams = sessionStorage.getItem("patient_data");
-            //     if (!urlParams) {
-            //         console.error("❌ No patient data in sessionStorage.");
-            //         hideLoader();
-            //         showNotification("Error: Patient data missing.");
-            //         return;
-            //     }
-            //     patientData = JSON.parse(urlParams);
-            //     return {
-                    
-            //         patientId : patientData.PatientId,
-            //         patientName : patientData.PatientName,
-            //         testDate : patientData.TestDate,
-            //         reportDate : patientData.ReportDate,
-            //         location : patientData.location,
-            //         // reportImage: reportImag // Extract image URL
-            //         //reportImage: decodeURIComponent(urlParams.get("data-reportimage"))
-            //     };
-            // }
-
-            // Extract patient data from sessionStorage
-            function extractPatientDataFromSession() {
-                const patientDataJSON = sessionStorage.getItem("patient_data");
-                if (!patientDataJSON) {
-                    console.error("❌ No patient data in sessionStorage.");
-                    showNotification("Error: Patient data missing.");
-                    hideLoader();
-                    return null;
-                }
-            
-                let patientData;
-                try {
-                    patientData = JSON.parse(patientDataJSON);
-                } catch (err) {
-                    console.error("❌ Failed to parse patient data:", err);
-                    showNotification("Error: Invalid patient data.");
-                    hideLoader();
-                    return null;
-                }
-            
-                // Ensure required fields exist to avoid .replace() errors
+            function extractDataFromURL() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const params = getQueryParams();
+                let reportImag = params.reportImage;
                 return {
-                    patientId: patientData.patientId || patientData.PatientId || "unknown_id",
-                    patientName: patientData.patientName || patientData.PatientName || "unknown_name",
-                    testDate: patientData.testDate || patientData.TestDate || "",
-                    reportDate: patientData.reportDate || patientData.ReportDate || "",
-                    location: patientData.location || "Unknown",
-                    reportImage: patientData.reportImage || ""
+                    patientId: urlParams.get("data-patientid"),
+                    patientName: urlParams.get("data-patientname"),
+                    testDate: urlParams.get("data-testdate"),
+                    reportDate: urlParams.get("data-reportdate"),
+                    location: urlParams.get("data-location"),
+                    // reportImage: reportImag // Extract image URL
+                    //reportImage: decodeURIComponent(urlParams.get("data-reportimage"))
                 };
             }
-
         
             // Show notification message
             function showNotification(message) {
@@ -1276,16 +1144,8 @@
             }
         
             showLoader();
-            // // Extract data from URL
-            // const { patientId, patientName, testDate, reportDate, location } = extractDataFromURL();
-            // const filename = `${patientId.replace(/\s+/g, "_")}_${patientName.replace(/\s+/g, "_")}.pdf`;
-
-            const patientInfo = extractPatientDataFromSession();
-            if (!patientInfo) return; // Stop if session data is missing
-            
-            const { patientId, patientName, testDate, reportDate, location, reportImage } = patientInfo;
-            
-            // Safe filename
+            // Extract data from URL
+            const { patientId, patientName, testDate, reportDate, location } = extractDataFromURL();
             const filename = `${patientId.replace(/\s+/g, "_")}_${patientName.replace(/\s+/g, "_")}.pdf`;
             
             // Get baseImage from the DOM instead of the URL
@@ -1296,8 +1156,8 @@
                 hideLoader();
                 return;
             }
-            const image = baseImageElement.src;
-            console.log("✅ Using baseImage:", image);
+            const reportImage = baseImageElement.src;
+            console.log("✅ Using baseImage:", reportImage);
 
             const data = document.getElementById("show");
         
@@ -1323,7 +1183,7 @@
         
                     // Load and rotate the image
                     const img = new Image();
-                    img.src = image;
+                    img.src = reportImage;
                     img.crossOrigin = "Anonymous";
         
                     await new Promise((resolve, reject) => {
@@ -1456,7 +1316,7 @@
 
             // Set ECG image in both views
             
-            document.getElementById('ecgImage').src = data.image;
+            document.getElementById('ecgImage').src = data.reportImage;
             initializeEventListeners();
             switchView();
         };
