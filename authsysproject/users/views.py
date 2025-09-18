@@ -613,40 +613,40 @@ def upload_ecg(request):
     return redirect('ecgcoordinator')
 
 
-def open_ecg_report(request, pk):
-    patient = get_object_or_404(PatientDetails, pk=pk)
+# def open_ecg_report(request, pk):
+#     patient = get_object_or_404(PatientDetails, pk=pk)
 
-    # Get presigned URL from query param
-    report_image_url = request.GET.get("img", "")
-    if report_image_url:
-        report_image_url = unquote(report_image_url)  # decode 
+#     # Get presigned URL from query param
+#     report_image_url = request.GET.get("img", "")
+#     if report_image_url:
+#         report_image_url = unquote(report_image_url)  # decode 
 
-    # Instead of using request.session → pass data to template
-    context = {
-        'PatientId': patient.PatientId,
-        'PatientName': patient.PatientName,
-        'age': patient.age,
-        'gender': patient.gender,
-        'HeartRate': patient.HeartRate,
-        'PRInterval': patient.PRInterval,
-        'TestDate': str(patient.TestDate),
-        'ReportDate': str(patient.ReportDate),
-        'image': report_image_url,
-        'location': str(patient.location) if patient.location else ''
-    }
+#     # Instead of using request.session → pass data to template
+#     context = {
+#         'PatientId': patient.PatientId,
+#         'PatientName': patient.PatientName,
+#         'age': patient.age,
+#         'gender': patient.gender,
+#         'HeartRate': patient.HeartRate,
+#         'PRInterval': patient.PRInterval,
+#         'TestDate': str(patient.TestDate),
+#         'ReportDate': str(patient.ReportDate),
+#         'image': report_image_url,
+#         'location': str(patient.location) if patient.location else ''
+#     }
 
-    return render(request, 'users/patient_report.html', context)
+#     return render(request, 'users/patient_report.html', context)
 
 
 
-def patient_report(request):
-    data = request.session.get('patient_data')
+# def patient_report(request):
+#     data = request.session.get('patient_data')
 
-    if not data:
-        # If no session data, redirect back to patient list
-        return redirect('ecgallocation')  # change 'patient_list' to your actual list view
+#     if not data:
+#         # If no session data, redirect back to patient list
+#         return redirect('ecgallocation')  # change 'patient_list' to your actual list view
 
-    return render(request, 'users/patient_report.html', {'patient': data})
+#     return render(request, 'users/patient_report.html', {'patient': data})
 
 
 def upload_files(request):
@@ -9409,8 +9409,8 @@ def all_tb_data(request):
     }
     return render(request, 'users/all_tb_data.html', context)
 
-# def patient_report(request):
-#      return render(request, 'users/patient_report.html')
+def patient_report(request):
+     return render(request, 'users/patient_report.html')
 
     
 
