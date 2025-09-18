@@ -1531,33 +1531,47 @@
     
     /* ---------------------- Utilities ---------------------- */
     
-    function getPatientDataFromSession() {
-      const dataJSON = sessionStorage.getItem('patient_data');
-      if (!dataJSON) {
-        console.error("❌ No patient data in sessionStorage.");
-        return null;
-      }
-      try {
-        const raw = JSON.parse(dataJSON);
-        // Normalize keys (support both camelCase and PascalCase)
-        return {
-          patientId: raw.patientId || raw.PatientId || raw.patient_id || '',
-          patientName: raw.patientName || raw.PatientName || raw.patient_name || '',
-          age: raw.age || raw.Age || '',
-          gender: raw.gender || raw.Gender || 'male',
-          heartRate: raw.heartRate || raw.HeartRate || raw.heartrate || '',
-          prInterval: raw.prInterval || raw.PRInterval || raw.pr_interval || '',
-          testDate: raw.testDate || raw.TestDate || '',
-          reportDate: raw.reportDate || raw.ReportDate || '',
-          image: raw.image || raw.reportImage || raw.reportimage || '',
-          location: raw.location || raw.Location || ''
-        };
-      } catch (err) {
-        console.error("❌ Failed to parse patient data:", err);
-        return null;
-      }
-    }
+    // function getPatientDataFromSession() {
+    //   const dataJSON = sessionStorage.getItem('patient_data');
+    //   if (!dataJSON) {
+    //     console.error("❌ No patient data in sessionStorage.");
+    //     return null;
+    //   }
+    //   try {
+    //     const raw = JSON.parse(dataJSON);
+    //     // Normalize keys (support both camelCase and PascalCase)
+    //     return {
+    //       patientId: raw.patientId || raw.PatientId || raw.patient_id || '',
+    //       patientName: raw.patientName || raw.PatientName || raw.patient_name || '',
+    //       age: raw.age || raw.Age || '',
+    //       gender: raw.gender || raw.Gender || 'male',
+    //       heartRate: raw.heartRate || raw.HeartRate || raw.heartrate || '',
+    //       prInterval: raw.prInterval || raw.PRInterval || raw.pr_interval || '',
+    //       testDate: raw.testDate || raw.TestDate || '',
+    //       reportDate: raw.reportDate || raw.ReportDate || '',
+    //       image: raw.image || raw.reportImage || raw.reportimage || '',
+    //       location: raw.location || raw.Location || ''
+    //     };
+    //   } catch (err) {
+    //     console.error("❌ Failed to parse patient data:", err);
+    //     return null;
+    //   }
+    // }
     
+    function getPatientDataFromSession() {
+        const dataJSON = sessionStorage.getItem('patient_data');
+        if (!dataJSON) {
+            console.error("❌ No patient data in sessionStorage.");
+            return null;
+        }
+        try {
+            return JSON.parse(dataJSON);
+        } catch (err) {
+            console.error("❌ Failed to parse patient data:", err);
+            return null;
+        }
+    }
+
     function formatDateForInput(dateString) {
       if (!dateString) return '';
       if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
