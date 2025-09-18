@@ -588,9 +588,8 @@
                 <td>
                   {% for patient_url in patient_urls %}
                     {% if patient_url.patient.id == patient.id %}
-                      <a href="{% url 'open_ecg_report' patient.pk %}" 
-                        class="btn btn-primary report-btn" 
-                        data-img="{{ patient_url.url|urlencode }}">Report</a>
+                      <a href="{% url 'open_ecg_report' patient.pk %}?img={{ patient_url.url|urlencode }}" 
+                         class="btn btn-primary">Report</a>
                     {% endif %}
                   {% endfor %}
                 </td>
