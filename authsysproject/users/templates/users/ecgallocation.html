@@ -588,7 +588,7 @@
                 <td>
                   {% for patient_url in patient_urls %}
                     {% if patient_url.patient.id == patient.id %}
-                      <a href="{% url 'open_report' patient.pk %}?img={{ patient_url.url|urlencode }}" 
+                      <a href="{% url 'open_ecg_report' patient.pk %}?img={{ patient_url.url|urlencode }}" 
                          class="btn btn-primary">Report</a>
                     {% endif %}
                   {% endfor %}
