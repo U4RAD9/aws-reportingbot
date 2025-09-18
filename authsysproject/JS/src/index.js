@@ -4728,6 +4728,8 @@ pdf.autoTable({
 //   })();
 // }
 
+
+
 UploadDivContentOnPDFWithoutImage() {
   (async () => {
     try {
@@ -4735,16 +4737,16 @@ UploadDivContentOnPDFWithoutImage() {
       const filename = this.createFilename();
       const editorContent = document.getElementsByClassName("ck-editor__editable")[0];
 
-      if (!editorContent) throw new Error('CKEditor content not found');
+      if (!editorContent) throw new Error("CKEditor content not found");
 
       const contentText = editorContent.textContent.toLowerCase();
       const { location, accession, institutionName } = this.extractDataFromURL();
       const tableData = this.extractTableData(editorContent);
 
       const urlParams = new URLSearchParams(window.location.search);
-      const bodyPart = urlParams.get('data-bodypart');
-      const modality = urlParams.get('data-Modality');
-      const gender = urlParams.get('data-gender');
+      const bodyPart = urlParams.get("data-bodypart");
+      const modality = urlParams.get("data-Modality");
+      const gender = urlParams.get("data-gender");
 
       const images = editorContent.querySelectorAll("img");
       const signatureElement = images[1];
@@ -4758,7 +4760,7 @@ UploadDivContentOnPDFWithoutImage() {
         compress: true,
       });
 
-      const topMargin = 140;
+      const topMargin = 160; // leave room for demography table
       const bottomMargin = 65;
       const pageHeight = pdf.internal.pageSize.height;
       let currentYPosition = topMargin;
@@ -4767,55 +4769,48 @@ UploadDivContentOnPDFWithoutImage() {
       let tableContent = [];
       if (Object.keys(tableData).length > 0) {
         const { patientId, patientName, age, gender, testDate, referralDr } = tableData;
-        const reportTime = new Date().toLocaleTimeString('en-GB', { hour12: false });
-        const reportDate = new Date().toISOString().split('T')[0].split('-').reverse().join('-');
+        const reportTime = new Date().toLocaleTimeString("en-GB", { hour12: false });
+        const reportDate = new Date()
+          .toISOString()
+          .split("T")[0]
+          .split("-")
+          .reverse()
+          .join("-");
 
         tableContent = [
           ["Patient Name:", patientName || "N/A", "Patient ID:", patientId || "N/A"],
           ["Patient Age:", age || "N/A", "Patient Gender:", gender || "N/A"],
           ["Test Date:", testDate || "N/A", "Report Date:", reportDate || "N/A"],
-          ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"]
+          ["Referral Dr:", referralDr || "N/A", "Report Time:", reportTime || "N/A"],
         ];
       }
 
-      // ✅ Global didDrawPage to repeat demographics table on every page
-      pdf.setFontSize(10);
-      pdf.autoTable({
-        startY: 40,
-        body: tableContent,
-        theme: "grid",
-        styles: {
-          cellPadding: 3,
-          fontStyle: "bold",
-          textColor: [0, 0, 0],
-          lineColor: [0, 0, 0],
-          lineWidth: 0.2
-        },
-        didDrawPage: (data) => {
-          // Always redraw demographics at the top of each page
-          pdf.autoTable({
-            startY: 40,
-            body: tableContent,
-            theme: "grid",
-            styles: {
-              cellPadding: 3,
-              fontStyle: "bold",
-              fontSize: 10,
-              textColor: [0, 0, 0],
-              lineColor: [0, 0, 0],
-              lineWidth: 0.2
-            },
-            didDrawPage: null // prevent recursion
-          });
-        }
-      });
+      // ✅ Global header row method → ensures table repeats on every page
+      const drawDemography = () => {
+        pdf.autoTable({
+          startY: 40,
+          body: tableContent,
+          theme: "grid",
+          styles: {
+            cellPadding: 3,
+            fontStyle: "bold",
+            fontSize: 10,
+            textColor: [0, 0, 0],
+            lineColor: [0, 0, 0],
+            lineWidth: 0.2,
+          },
+          margin: { top: 40 },
+        });
+      };
 
+      // First draw
+      drawDemography();
       currentYPosition = pdf.previousAutoTable.finalY + 20;
 
       // ---------------- Report Content ----------------
       const content = this.extractContent(editorContent);
       if (content) {
-        const lines = content.split('\n');
+        const lines = content.split("\n");
         for (const line of lines) {
           if (!line.trim()) continue;
 
@@ -4824,8 +4819,8 @@ UploadDivContentOnPDFWithoutImage() {
             const tempDiv = document.createElement("div");
             tempDiv.innerHTML = line.trim();
             const table = tempDiv.querySelector("table");
-            const rows = [...table.querySelectorAll("tr")].map(tr =>
-              [...tr.querySelectorAll("td, th")].map(td => td.innerText.trim())
+            const rows = [...table.querySelectorAll("tr")].map((tr) =>
+              [...tr.querySelectorAll("td, th")].map((td) => td.innerText.trim())
             );
 
             pdf.autoTable({
@@ -4833,7 +4828,16 @@ UploadDivContentOnPDFWithoutImage() {
               head: [rows[0]],
               body: rows.slice(1),
               theme: "grid",
-              styles: { fontSize: 10, cellPadding: 3, lineColor: [0, 0, 0], lineWidth: 0.2 }
+              styles: {
+                fontSize: 10,
+                cellPadding: 3,
+                lineColor: [0, 0, 0],
+                lineWidth: 0.2,
+              },
+              didDrawPage: () => {
+                // ✅ repeat demographics at top of every new page
+                drawDemography();
+              },
             });
 
             currentYPosition = pdf.previousAutoTable.finalY + 20;
@@ -4846,27 +4850,31 @@ UploadDivContentOnPDFWithoutImage() {
           const boldMatches = text.match(/\[BOLD\](.*?)\[\/BOLD\]/g);
           if (boldMatches) {
             isBold = true;
-            text = text.replace(/\[BOLD\](.*?)\[\/BOLD\]/g, '$1');
+            text = text.replace(/\[BOLD\](.*?)\[\/BOLD\]/g, "$1");
           }
 
-          const isBullet = text.startsWith('•');
+          const isBullet = text.startsWith("•");
           if (isBullet) text = text.substring(1).trim();
 
           if (text.includes("Dr.") && signatureUrl) {
             currentYPosition = await this.addSignature(pdf, signatureUrl, currentYPosition);
           }
 
-          pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+          pdf.setFont("helvetica", isBold ? "bold" : "normal");
           pdf.setFontSize(12);
-          const splitText = pdf.splitTextToSize(text, pdf.internal.pageSize.width - (isBullet ? 100 : 80));
+          const splitText = pdf.splitTextToSize(
+            text,
+            pdf.internal.pageSize.width - (isBullet ? 100 : 80)
+          );
 
-          if (currentYPosition + (splitText.length * 15) > pageHeight - bottomMargin) {
+          if (currentYPosition + splitText.length * 15 > pageHeight - bottomMargin) {
             pdf.addPage();
+            drawDemography(); // ✅ redraw demographics on new page
             currentYPosition = topMargin;
           }
 
           if (isBullet) {
-            pdf.text('•', 60, currentYPosition);
+            pdf.text("•", 60, currentYPosition);
             pdf.text(splitText, 80, currentYPosition);
           } else {
             pdf.text(splitText, 40, currentYPosition);
@@ -4880,7 +4888,13 @@ UploadDivContentOnPDFWithoutImage() {
       for (const image of remainingReportImages) {
         const imageUrl = image ? image.src : null;
         if (imageUrl) {
-          currentYPosition = await this.addReportImage(pdf, imageUrl, currentYPosition, topMargin, bottomMargin);
+          currentYPosition = await this.addReportImage(
+            pdf,
+            imageUrl,
+            currentYPosition,
+            topMargin,
+            bottomMargin
+          );
         }
       }
 
@@ -4908,11 +4922,14 @@ UploadDivContentOnPDFWithoutImage() {
 
       // ---------------- Update Patient Status ----------------
       const studyId = urlParams.get("data-study-id");
-      const updateResponse = await fetch(`/api/update_patient_done_status_xray/${studyId}/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-        body: JSON.stringify({ isDone: true }),
-      });
+      const updateResponse = await fetch(
+        `/api/update_patient_done_status_xray/${studyId}/`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+          body: JSON.stringify({ isDone: true }),
+        }
+      );
 
       if (updateResponse.ok) this.setState({ isDone: true }, () => this.handleClick());
       this.showNotification("PDF successfully uploaded!");
@@ -4923,9 +4940,9 @@ UploadDivContentOnPDFWithoutImage() {
       }, 200);
 
       window.addEventListener("popstate", () => {
-        if (window.location.href !== currentURL) setTimeout(() => window.location.reload(true), 200);
+        if (window.location.href !== currentURL)
+          setTimeout(() => window.location.reload(true), 200);
       });
-
     } catch (error) {
       console.error("Error generating PDF:", error);
       this.showNotification("Error uploading PDF. Please try again.");
@@ -4934,6 +4951,7 @@ UploadDivContentOnPDFWithoutImage() {
     }
   })();
 }
+
 
 
 
