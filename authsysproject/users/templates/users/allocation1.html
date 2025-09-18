@@ -1118,6 +1118,7 @@
               <div class="mb-3">
                 <label for="body_part_examined" class="form-label">Body Part Examined:</label>
                 <!-- Search Box Above -->
+                <input type="text" id="searchBox" class="form-control mb-2" placeholder="Search body part...">
                 <select class="form-control selectpicker" 
                         id="body_part_examined" 
                         data-live-search="true">
@@ -1295,11 +1296,19 @@
           $("#body_part_examined").selectpicker('refresh');
         }
       });
+      // ✅ Initialize selectpicker with live search
+      if ($.fn.selectpicker) {
+        $("#body_part_examined").selectpicker({
+          liveSearch: true,
+          liveSearchNormalize: true,
+          noneResultsText: "No match found for {0}"
+        });
+      }
   
     }); // end DOM ready
-    $(document).ready(function () {
-      $('.selectpicker').selectpicker();
-    });
+    // $(document).ready(function () {
+    //   $('.selectpicker').selectpicker();
+    // });
   </script>
 
   <script>
