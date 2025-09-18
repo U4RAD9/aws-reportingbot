@@ -741,7 +741,7 @@
                 reportHTML += `<li><strong>Normal Sinus Rhythm.</strong></li><br>`;
                 reportHTML += `<li><strong>No significant ST-T changes seen.</strong></li>`;
             }
-            
+-
             reportHTML += `
                             </ul>
                         </div>
@@ -1317,8 +1317,11 @@
                 hideLoader();
                 return;
             }
-            const image = baseImageElement.src;
-            console.log("✅ Using baseImage:", image);
+            // const image = baseImageElement.src;
+            // console.log("✅ Using baseImage:", image);
+
+            const image = await getBase64FromImage(baseImageElement);
+            console.log("✅ Using base64 image:", image.substring(0, 50) + "...");
 
             const data = document.getElementById("show");
         
