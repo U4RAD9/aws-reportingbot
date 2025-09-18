@@ -635,7 +635,7 @@ def open_ecg_report(request, pk):
         'location': str(patient.location) if patient.location else ''
     }
 
-    return redirect('patient_report')
+    return render(request, 'users/patient_report.html', context)
 
 
 
