@@ -1501,7 +1501,37 @@
 
     </script> -->
 
+
     <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        // Collect patient data from Django context
+        const patientData = {
+          PatientId: "{{ PatientId }}",
+          PatientName: "{{ PatientName }}",
+          age: "{{ age }}",
+          gender: "{{ gender }}",
+          HeartRate: "{{ HeartRate }}",
+          PRInterval: "{{ PRInterval }}",
+          TestDate: "{{ TestDate }}",
+          ReportDate: "{{ ReportDate }}",
+          image: "{{ image }}",
+          location: "{{ location }}"
+        };
+    
+        // Save to sessionStorage
+        sessionStorage.setItem("patient_data", JSON.stringify(patientData));
+        console.log("✅ Patient data stored in sessionStorage:", patientData);
+    
+        // Example: read it back
+        const saved = JSON.parse(sessionStorage.getItem("patient_data"));
+        console.log("📋 Retrieved from sessionStorage:", saved);
+      });
+    </script>
+
+
+    <script>
+
+        
 
     // Finalize report function - called when Done button is clicked
     function finalizeReport() {

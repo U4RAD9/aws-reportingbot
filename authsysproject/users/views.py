@@ -621,8 +621,8 @@ def open_ecg_report(request, pk):
     if report_image_url:
         report_image_url = unquote(report_image_url)  # decode 
 
-    # store patient info in session (only serializable types)
-    request.session['patient_data'] = {
+    # Instead of using request.session → pass data to template
+    context = {
         'PatientId': patient.PatientId,
         'PatientName': patient.PatientName,
         'age': patient.age,
@@ -632,7 +632,7 @@ def open_ecg_report(request, pk):
         'TestDate': str(patient.TestDate),
         'ReportDate': str(patient.ReportDate),
         'image': report_image_url,
-        'location': str(patient.location) if patient.location else ''  # ✅ FIXED
+        'location': str(patient.location) if patient.location else ''
     }
 
     return redirect('patient_report')
