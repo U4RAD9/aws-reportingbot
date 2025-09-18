@@ -1502,6 +1502,24 @@
     </script> -->
 
     <script>
+
+    // Finalize report function - called when Done button is clicked
+    function finalizeReport() {
+        isReportFinalized = true;
+        
+        // Copy the current report to the final report container
+        const reportHTML = document.getElementById('report-container').innerHTML;
+        const finalReportContainer = document.getElementById('finalReport');
+        //handleDone().catch(console.error);
+        
+        finalReportContainer.innerHTML = reportHTML;
+        finalReportContainer.classList.remove('hidden');
+        
+        // Show final report in reporting-bot view
+        document.getElementById('viewSelect').value = 'reporting-bot';
+        document.getElementById('reporting-bot').style.display = 'block';
+        document.getElementById('camp-ecg').style.display = 'none';
+    }    
     /*
       Complete corrected script — sessionStorage only
       - Replaces all previous inline scripts you posted
