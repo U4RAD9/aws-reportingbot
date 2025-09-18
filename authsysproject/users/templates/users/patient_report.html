@@ -460,16 +460,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script>
-    window.onload = function() {
-        const base64Image = sessionStorage.getItem("ecg_base64");
-        if (base64Image) {
-            document.getElementById("baseImage").src = base64Image;
-        } else {
-            console.error("❌ No base64 image found in sessionStorage.");
-        }
-    };
-    </script>
+
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             console.log("🚀 DOM fully loaded and parsed.");
