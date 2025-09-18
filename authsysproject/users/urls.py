@@ -168,7 +168,7 @@ urlpatterns = [
     path('view-faq/', views.view_faq, name='view_faq'),
     path('upload-patient-ecg/', views.upload_patient_ecg, name="upload_patient"),
     path('patient-success/', lambda r: HttpResponse("Patient uploaded successfully!"), name="patient_success"),
-    path('open-report/<int:pk>/', views.open_ecg_report, name='open_report'),
+    path('open-ecg-report/<int:pk>/', views.open_ecg_report, name='open_ecg_report'),
     # path('ecgreporting/', views.ecg_reporting, name='ecg_reporting'),
 
     
