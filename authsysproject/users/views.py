@@ -2078,12 +2078,19 @@ def allocation1(request):
         current_reported=Count('id', filter=Q(isDone=True)),
         unreported_cases=Count('id', filter=Q(isDone=False, NonReportable=False)),
         unallocated_cases=Count('id', filter=Q(radiologist__isnull=True)),
-        nonreported_cases=Count('id', filter=Q(NonReportable=True))
+        nonreported_cases=Count('id', filter=Q(NonReportable=True)),
+        unreported_with_history_or_notes_unallocated=Count(
+            'id',
+            filter=Q(isDone=False) &
+                   Q(radiologist__isnull=True) &
+                   (Q(history_files__isnull=False) | Q(notes_modified_at__isnull=False)),
+            distinct=True
+        )
     )
 
     # Get radiologists and coordinators
-    radiologist_objects = Group.objects.get(name='radiologist').user_set.filter(personalinfo__isnull=False)
-    corporatecoordinator_objects = Group.objects.get(name='corporatecoordinator').user_set.all()
+    radiologist_objects = Group.objects.get(name='radiologist').user_set.filter(personalinfo__isnull=False).order_by('first_name')
+    corporatecoordinator_objects = Group.objects.get(name='corporatecoordinator').user_set.all().order_by('first_name')
 
     # Pagination
     paginator = Paginator(patients, 200)
@@ -2142,10 +2149,10 @@ def allocation1(request):
     # Get all dropdown options
     #sorted_unique_institution_name = get_cached_options('institution_name', 'all_institutions')
     sorted_unique_institution_name = sorted(get_cached_options('institution_name', 'all_institutions'))
-    sorted_unique_modality = get_cached_options('Modality', 'all_modalities')
-    sorted_unique_dates = get_cached_options('study_date', 'all_dates')
-    sorted_unique_study_description = get_cached_options('study_description', 'all_study_desc')
-    sorted_unique_body_part_examined = get_cached_options('body_part_examined', 'all_body_parts')
+    sorted_unique_modality = sorted(get_cached_options('Modality', 'all_modalities'))
+    sorted_unique_dates = sorted(get_cached_options('study_date', 'all_dates'))
+    sorted_unique_study_description = sorted(get_cached_options('study_description', 'all_study_desc'))
+    sorted_unique_body_part_examined = sorted(get_cached_options('body_part_examined', 'all_body_parts'))
     
     # Get received dates (with annotation)
     received_dates_cache_key = 'all_received_dates'
