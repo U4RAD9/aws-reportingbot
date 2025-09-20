@@ -2149,10 +2149,22 @@ def allocation1(request):
     # Get all dropdown options
     #sorted_unique_institution_name = get_cached_options('institution_name', 'all_institutions')
     sorted_unique_institution_name = sorted(get_cached_options('institution_name', 'all_institutions'))
-    sorted_unique_modality = sorted(get_cached_options('Modality', 'all_modalities'))
-    sorted_unique_dates = sorted(get_cached_options('study_date', 'all_dates'))
-    sorted_unique_study_description = sorted(get_cached_options('study_description', 'all_study_desc'))
-    sorted_unique_body_part_examined = sorted(get_cached_options('body_part_examined', 'all_body_parts'))
+    # sorted_unique_modality = sorted(get_cached_options('Modality', 'all_modalities'))
+    # sorted_unique_dates = sorted(get_cached_options('study_date', 'all_dates'))
+    # sorted_unique_study_description = sorted(get_cached_options('study_description', 'all_study_desc'))
+    # sorted_unique_body_part_examined = sorted(get_cached_options('body_part_examined', 'all_body_parts'))
+    sorted_unique_modality = sorted(
+    [v for v in get_cached_options('Modality', 'all_modalities') if v]
+    )
+    sorted_unique_dates = sorted(
+        [v for v in get_cached_options('study_date', 'all_dates') if v]
+    )
+    sorted_unique_study_description = sorted(
+        [v for v in get_cached_options('study_description', 'all_study_desc') if v]
+    )
+    sorted_unique_body_part_examined = sorted(
+        [v for v in get_cached_options('body_part_examined', 'all_body_parts') if v]
+    )
     
     # Get received dates (with annotation)
     received_dates_cache_key = 'all_received_dates'
