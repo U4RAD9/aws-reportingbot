@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-{% load tz %} {% load static %}
+{% load tz %} {% load static %}{% load url_helpers %}
 
 <head>
   <title>XRAi Allocation</title>
@@ -659,8 +659,8 @@
             <div class="pagination row">
               <span class="step-links col">
                 {% if page_obj.has_previous %}
-                    <a href="?page=1">&laquo; first</a>
-                    <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+                    <a href="?{% param_replace request page=1 %}">&laquo; first</a>
+                    <a href="?{% param_replace request page=page_obj.previous_page_number %}">previous</a>
                 {% endif %}
               
                 <span class="current">
@@ -668,13 +668,19 @@
                 </span>
               
                 {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}">next</a>
-                    <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+                    <a href="?{% param_replace request page=page_obj.next_page_number %}">next</a>
+                    <a href="?{% param_replace request page=page_obj.paginator.num_pages %}">last &raquo;</a>
                 {% endif %}
               </span>
               <!-- Search Page Input -->
               <div class="col">
                 <form action="" method="GET" class="d-flex" onsubmit="return goToPage();">
+                  <!-- Preserve all existing parameters -->
+                  {% for key, value in request.GET.items %}
+                    {% if key != 'page' %}
+                      <input type="hidden" name="{{ key }}" value="{{ value }}">
+                    {% endif %}
+                  {% endfor %}
                   <input type="number" class="form-control me-2" id="pageInput" name="page" 
                          min="1" max="{{ page_obj.paginator.num_pages }}" 
                          placeholder="Enter page no Search" required>
@@ -695,6 +701,12 @@
                        class="form-control me-2" 
                        placeholder="Search all records..." 
                        value="{{ request.GET.q }}">
+                       <!-- Include other filter parameters as hidden fields -->
+                {% for key, value in request.GET.items %}
+                  {% if key != 'q' and key != 'page' %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                  {% endif %}
+                {% endfor %}
                 <button class="btn btn-primary" type="submit">Search</button>
               </form>
             </div>
