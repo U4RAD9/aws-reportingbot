@@ -2089,7 +2089,22 @@ def allocation1(request):
     )
 
     # Get radiologists and coordinators
-    radiologist_objects = Group.objects.get(name='radiologist').user_set.filter(personalinfo__isnull=False).order_by('first_name')
+    # radiologist_objects = Group.objects.get(name='radiologist').user_set.filter(personalinfo__isnull=False).order_by('first_name')
+    def strip_prefix(name):
+        if not name:
+            return ""
+        return re.sub(r"^(Dr\.?\s*)", "", name, flags=re.IGNORECASE).strip()
+    
+    radiologist_objects = (
+        Group.objects.get(name='radiologist')
+        .user_set.filter(personalinfo__isnull=False)
+    )
+    
+    # Convert to list with sorting by name ignoring "Dr."
+    radiologist_sorted = sorted(
+        radiologist_objects,
+        key=lambda u: strip_prefix(u.first_name + " " + u.last_name)
+    )
     corporatecoordinator_objects = Group.objects.get(name='corporatecoordinator').user_set.all().order_by('first_name')
 
     # Pagination
@@ -2196,7 +2211,7 @@ def allocation1(request):
         'Received_on_db': sorted_unique_received_on_db,
         'Study_description': sorted_unique_study_description,
         'body_part_examined': sorted_unique_body_part_examined,
-        'radiologists': radiologist_objects,
+        'radiologists': radiologist_sorted,
         'corporatecoordinators': corporatecoordinator_objects,
         'page_obj': page_obj,
         'status_filter': status_filter,
