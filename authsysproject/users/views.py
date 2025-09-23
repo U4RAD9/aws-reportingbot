@@ -2644,6 +2644,8 @@ def assign_radiologist(request):
                 
                 send_whatsapp_message(
                     phone_number=radiologist.phone,
+                    patient_name="",  # leave empty
+                    patient_id=""     # leave empty
                     
                 )    
                 
