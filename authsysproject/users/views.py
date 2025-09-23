@@ -2642,10 +2642,10 @@ def assign_radiologist(request):
                     patient_list_text += f"{patient.patient_name} (ID: {patient.patient_id})\n"
 
                 if patient_list_text:
-                send_whatsapp_message(
-                    phone_number=radiologist.phone,
-                    message_text=f"You have been assigned the following patients:\n{patient_list_text}"
-                )    
+                    send_whatsapp_message(
+                        phone_number=radiologist.phone,
+                        message_text=f"You have been assigned the following patients:\n{patient_list_text}"
+                    )    
                 
             
                 messages.success(request, f"Radiologist {radiologist} has been successfully assigned to the selected patients.")
