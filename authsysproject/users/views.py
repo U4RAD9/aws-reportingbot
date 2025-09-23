@@ -2644,7 +2644,7 @@ def assign_radiologist(request):
                 
                 send_whatsapp_message(
                     phone_number=radiologist.phone,
-                    message_text=f"You have been assigned the following patients:\n{patient_list_text}"
+                    message_text=f"You have been assigned the following patients:\n"
                 )    
                 
             
