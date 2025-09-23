@@ -2427,8 +2427,7 @@ def send_whatsapp_message(phone_number, patient_name, patient_id):
                 {
                     "type": "body",
                     "parameters": [
-                        {"type": "text", "text": patient_name},
-                        {"type": "text", "text": str(patient_id)}
+                        
                     ]
                 }
             ]
