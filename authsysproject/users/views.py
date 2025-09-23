@@ -2450,6 +2450,134 @@ def send_whatsapp_message(phone_number, patient_name, patient_id):
 
 
 
+# def assign_radiologist(request):
+#     print("I'm in assign radiologist")
+#     if request.method == "POST":
+#         action = request.POST.get('action')
+#         radiologist_id = request.POST.get('radiologist')
+#         corporatecoordinator_id = request.POST.get('corporatecoordinator')
+#         selected_patient_ids = request.POST.getlist('patients')
+
+#         # Check if any of the fields are missing
+#         if not selected_patient_ids:
+#             messages.error(request, "Please select at least one patient.")
+#             return redirect('xraycoordinator')
+
+#         patients = DICOMData.objects.filter(id__in=selected_patient_ids)
+#         if not patients.exists():
+#             messages.error(request, "No valid patients selected.")
+#             return redirect('xraycoordinator')
+
+
+#         # 🚨 Restrict assignment if body_part_examined is missing
+#         invalid_patients = [
+#             f"{p.patient_id} - {p.patient_name}"
+#             for p in patients
+#             if not p.body_part_examined or p.body_part_examined.strip() == ""
+#         ]
+#         if invalid_patients:
+#             messages.error(
+#                 request,
+#                 f"Cannot assign radiologist because body part is missing for: {', '.join(invalid_patients)}"
+#             )
+#             return redirect('xraycoordinator')    
+
+#         # Radiologist Assignment Logic
+#         if action in ["assign", "replace"] and radiologist_id:
+#             try:
+#                 radiologist = PersonalInfoModel.objects.get(user_id=radiologist_id)
+#             except PersonalInfoModel.DoesNotExist:
+#                 messages.error(request, "Selected radiologist not found.")
+#                 return redirect('xraycoordinator')
+
+#             # 🚨 Restriction Check
+#             for patient in patients:
+#                 restriction_exists = RadiologistInstitutionRestriction.objects.filter(
+#                     radiologist=radiologist,  # radiologist is a PersonalInfo (FK → User)
+#                     institutions__name=patient.institution_name
+#                 ).exists()
+
+#                 if restriction_exists:
+#                     messages.error(
+#                         request,
+#                         f"Can't assign radiologist {radiologist.user.username} "
+#                         f"to institution {patient.institution_name}."
+#                     )
+#                     return redirect('xraycoordinator')  # ❌ abort assignment
+
+#             # ✅ If no restrictions found, proceed
+#             blocked_patients = []
+#             updated_patients = []
+#             if action == "assign":
+#                 for patient in patients:
+#                     patient.radiologist.add(radiologist)
+#                       # 🚨 WhatsApp notification
+#                     send_whatsapp_message(
+#                         phone_number=radiologist.phone,
+#                         patient_name=patient.patient_name,
+#                         patient_id=patient.patient_id
+#                     )
+#                 messages.success(request, f"Radiologist {radiologist} has been successfully assigned to the selected patients.")
+#             elif action == "replace":
+#                 # for patient in patients:
+#                 #     patient.radiologist.clear()
+#                 #     patient.radiologist.add(radiologist)
+
+#                 # messages.success(request, f"Radiologist {radiologist} has been successfully replaced for the selected patients.")
+#                 for patient in patients:
+#                     if patient.isDone:  # Reported
+#                         blocked_patients.append(f"{patient.patient_id} - {patient.patient_name}")
+#                     else:  # Unreported
+#                         patient.radiologist.clear()
+#                         patient.radiologist.add(radiologist)
+#                          # 🚨 WhatsApp notification
+#                         send_whatsapp_message(
+#                             phone_number=radiologist.phone,
+#                             patient_name=patient.patient_name,
+#                             patient_id=patient.patient_id
+#                         )
+#                         updated_patients.append(patient.patient_id)
+
+#                 if updated_patients:
+#                     messages.success(
+#                         request,
+#                         f"Radiologist {radiologist} replaced for patients: {', '.join(updated_patients)}"
+#                     )
+#                 if blocked_patients:
+#                     messages.warning(
+#                         request,
+#                         f"Cannot replace radiologist for reported patients: {', '.join(blocked_patients)}. "
+#                         "You may assign instead."
+#                     )
+
+#         # Corporate Coordinator Assignment Logic
+#         elif action in ["assign_corporate", "replace_corporate"] and corporatecoordinator_id:
+#             try:
+#                 corporatecoordinator = CorporateCoordinator.objects.get(user_id=corporatecoordinator_id)
+#             except CorporateCoordinator.DoesNotExist:
+#                 messages.error(request, "Selected corporate coordinator not found.")
+#                 return redirect('xraycoordinator')
+
+#             if action == "assign_corporate":
+#                 for patient in patients:
+#                     patient.corporatecoordinator.add(corporatecoordinator)
+#                 messages.success(request, f"Corporate Coordinator {corporatecoordinator} has been successfully assigned to the selected patients.")
+#             elif action == "replace_corporate":
+#                 for patient in patients:
+#                     patient.corporatecoordinator.clear()
+#                     patient.corporatecoordinator.add(corporatecoordinator)
+#                 messages.success(request, f"Corporate Coordinator {corporatecoordinator} has been successfully replaced for the selected patients.")
+#         else:
+#             messages.error(request, "Please select a valid action and coordinator.")
+#             return redirect('xraycoordinator')
+
+#         return redirect('xraycoordinator')
+
+#     # Handle case if the form is not submitted (GET method)
+#     return redirect('xraycoordinator')
+
+
+
 def assign_radiologist(request):
     print("I'm in assign radiologist")
     if request.method == "POST":
@@ -2511,12 +2639,14 @@ def assign_radiologist(request):
             if action == "assign":
                 for patient in patients:
                     patient.radiologist.add(radiologist)
-                      # 🚨 WhatsApp notification
+                    patient_list_text += f"{patient.patient_name} (ID: {patient.patient_id})\n"
+                
+                
                     send_whatsapp_message(
-                        phone_number=radiologist.phone,
-                        patient_name=patient.patient_name,
-                        patient_id=patient.patient_id
-                    )
+        phone_number=radiologist.phone,
+        patient_name=f"You have been assigned the following patients:\n{patient_list_text}",
+        patient_id=""  # optional, can leave empty
+    )
                 messages.success(request, f"Radiologist {radiologist} has been successfully assigned to the selected patients.")
             elif action == "replace":
                 # for patient in patients:
@@ -2530,13 +2660,20 @@ def assign_radiologist(request):
                     else:  # Unreported
                         patient.radiologist.clear()
                         patient.radiologist.add(radiologist)
-                         # 🚨 WhatsApp notification
-                        send_whatsapp_message(
-                            phone_number=radiologist.phone,
-                            patient_name=patient.patient_name,
-                            patient_id=patient.patient_id
-                        )
+                        patient_list_text += f"{patient.patient_name} (ID: {patient.patient_id})\n"
+                        
+
                         updated_patients.append(patient.patient_id)
+                    
+
+
+                
+    if patient_list_text:
+        send_whatsapp_message(
+            phone_number=radiologist.phone,
+            patient_name=f"You have been assigned/replaced for the following patients:\n{patient_list_text}",
+            patient_id=""
+        )
 
                 if updated_patients:
                     messages.success(
@@ -2575,7 +2712,6 @@ def assign_radiologist(request):
 
     # Handle case if the form is not submitted (GET method)
     return redirect('xraycoordinator')
-
 
 
 
