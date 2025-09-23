@@ -2640,13 +2640,14 @@ def assign_radiologist(request):
                 for patient in patients:
                     patient.radiologist.add(radiologist)
                     patient_list_text += f"{patient.patient_name} (ID: {patient.patient_id})\n"
+
+                if patient_list_text:
+                send_whatsapp_message(
+                    phone_number=radiologist.phone,
+                    message_text=f"You have been assigned the following patients:\n{patient_list_text}"
+                )    
                 
-                
-                    send_whatsapp_message(
-        phone_number=radiologist.phone,
-        patient_name=f"You have been assigned the following patients:\n{patient_list_text}",
-        patient_id=""  # optional, can leave empty
-    )
+            
                 messages.success(request, f"Radiologist {radiologist} has been successfully assigned to the selected patients.")
             elif action == "replace":
                 # for patient in patients:
@@ -2668,13 +2669,13 @@ def assign_radiologist(request):
 
 
                 
-    if patient_list_text:
-        send_whatsapp_message(
-            phone_number=radiologist.phone,
-            patient_name=f"You have been assigned/replaced for the following patients:\n{patient_list_text}",
-            patient_id=""
-        )
-
+                if patient_list_text:
+                    send_whatsapp_message(
+                        phone_number=radiologist.phone,
+                        patient_name=f"You have been assigned/replaced for the following patients:\n{patient_list_text}",
+                        patient_id=""
+                    )
+            
                 if updated_patients:
                     messages.success(
                         request,
