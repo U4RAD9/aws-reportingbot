@@ -2663,7 +2663,7 @@ def assign_radiologist(request):
                     else:  # Unreported
                         patient.radiologist.clear()
                         patient.radiologist.add(radiologist)
-                        patient_list_text += f"{patient.patient_name} (ID: {patient.patient_id})\n"
+                    
                         
 
                         updated_patients.append(patient.patient_id)
@@ -2671,10 +2671,10 @@ def assign_radiologist(request):
 
 
                 
-                if patient_list_text:
+                
                     send_whatsapp_message(
                         phone_number=radiologist.phone,
-                        patient_name=f"You have been assigned/replaced for the following patients:\n{patient_list_text}",
+                        patient_name= "",
                         patient_id=""
                     )
             
