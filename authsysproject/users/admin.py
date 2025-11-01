@@ -39,7 +39,7 @@ from .models.RadiologistInstitutionRestriction import RadiologistInstitutionRest
 from .models.StudyReport import StudyReport
 from .models.CKEditorTemplate import CKEditorTemplate
 from .models.ecgclient import ECGClient
-
+from .models.rsnatemplate import RSNATemplate
 from .models.faq import FAQ
 
 
@@ -82,6 +82,7 @@ admin.site.register(DentalPatientInfo)
 admin.site.register(DoctorPatientInfo)
 admin.site.register(CKEditorTemplate)
 admin.site.register(RadiologistInstitutionRestriction)
+admin.site.register(RSNATemplate)
 
 # Register your models here.
 class DICOMFileInline(admin.TabularInline):
