@@ -3218,7 +3218,8 @@ UploadDivContentOnPDFWithoutImage() {
         'victoria health clinic',
         'VICTORIA HEALTH CLINIC',
         'Victoria Health Clinic',
-        'Hitachi Medical Hospital'
+        'Hitachi Medical Hospital',
+        'VICTORIA HEALTH CLINIC'
       ];
 
       const isVictoriaClinic = victoriaInstitutions.some(name => rawLocation?.trim() === name);
@@ -3409,8 +3410,8 @@ UploadDivContentOnPDFWithoutImage() {
         compress: true,
       });
 
-      const topMargin = isVictoriaClinic ? 143 : 200; // Reduced spacing for Victoria clinics
-      const demographicsStartY = isVictoriaClinic ? 58: 180;
+      const topMargin = isVictoriaClinic ? 175 : 200; // Reduced spacing for Victoria clinics
+      const demographicsStartY = isVictoriaClinic ? 90 : 180;
       const bottomMargin = 90;
       const pageHeight = pdf.internal.pageSize.height;
       let currentYPosition = topMargin;
