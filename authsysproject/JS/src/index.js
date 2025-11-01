@@ -3409,7 +3409,7 @@ UploadDivContentOnPDFWithoutImage() {
         compress: true,
       });
 
-      const topMargin = isVictoriaClinic ? 140 : 200; // Reduced spacing for Victoria clinics
+      const topMargin = isVictoriaClinic ? 90 : 200; // Reduced spacing for Victoria clinics
       const demographicsStartY = isVictoriaClinic ? 120 : 180;
       const bottomMargin = 90;
       const pageHeight = pdf.internal.pageSize.height;
