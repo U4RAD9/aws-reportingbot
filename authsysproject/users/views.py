@@ -5902,6 +5902,7 @@ def download_pdf_with_logo(request, pdf_id):
         # Client-specific header/footer layout
         if client.user.email == "victoria@u4rad.com":
             # Victoria Health Clinic: Use full banner header
+            
             use_victoria_header = True
 
             header_width = page_width - 80  # Leave 40pt margin on both sides
@@ -5969,7 +5970,11 @@ def download_pdf_with_logo(request, pdf_id):
                 
                 c.save()
                 overlay_pdf_path = overlay_temp.name
-
+            # --- Move Victoria Health Clinic report content slightly down for clean spacing ---
+            if client.user.email == "victoria@u4rad.com":
+                # Shift report text/table down by 25 points (~9 mm)
+                page.add_transformation([1, 0, 0, 1, 0, -25])
+            # ------------------------------------------------------------------------------
             # Merge overlay with page
             overlay = PdfReader(overlay_pdf_path)
             page.merge_page(overlay.pages[0])
