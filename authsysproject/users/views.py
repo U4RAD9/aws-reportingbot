@@ -5899,27 +5899,29 @@ def download_pdf_with_logo(request, pdf_id):
         page_height = letter[1]  # 792 points
 
         # For Victoria Health Clinic - specific positioning
+        # Client-specific header/footer layout
         if client.user.email == "victoria@u4rad.com":
-            # Victoria Health Clinic specific dimensions
-            logo_display_height = 80  # Slightly larger for better visibility
+            # Victoria Health Clinic: Use full banner header
+            use_victoria_header = True
+
+            header_width = page_width - 80  # Leave 40pt margin on both sides
+            header_height = 150  # Adjust depending on your image
+            header_x = 40
+            header_y = page_height - header_height - 20
+
+            footer_x = 50
+            footer_y = 20
             footer_display_height = 50
-            
-            # Calculate centered positions
-            logo_x = 50  # Left margin
-            logo_y = page_height - logo_display_height - 20  # 20px from top
-            
-            footer_x = 50  # Left margin
-            footer_y = 20  # 20px from bottom
 
         else:
-            # Default dimensions for other clients
+            # Default layout for all other clients
+            use_victoria_header = False
+
             logo_display_height = 60
             footer_display_height = 40
             
-            # Calculate centered positions
-            logo_x = (page_width - 200) / 2  # Assuming 200px width
+            logo_x = (page_width - 200) / 2
             logo_y = page_height - logo_display_height - 10
-            
             footer_x = (page_width - 200) / 2
             footer_y = 10
 
@@ -5930,15 +5932,29 @@ def download_pdf_with_logo(request, pdf_id):
                 c = canvas.Canvas(overlay_temp.name, pagesize=letter)
                 
                 # Add client's custom logo
-                c.drawImage(
-                    logo_path,
-                    x=logo_x,
-                    y=logo_y,
-                    width=200,  # Fixed width for consistency
-                    height=logo_display_height,
-                    preserveAspectRatio=True,
-                    mask='auto'
-                )
+                if use_victoria_header:
+                    # Draw Victoria Health Clinic full header banner
+                    c.drawImage(
+                        logo_path,
+                        x=header_x,
+                        y=header_y,
+                        width=header_width,
+                        height=header_height,
+                        preserveAspectRatio=True,
+                        mask='auto'
+                    )
+                else:
+                    # Default logo placement for all other clients
+                    c.drawImage(
+                        logo_path,
+                        x=logo_x,
+                        y=logo_y,
+                        width=200,
+                        height=logo_display_height,
+                        preserveAspectRatio=True,
+                        mask='auto'
+                    )
+
                 
                 # Add client's custom footer
                 c.drawImage(
