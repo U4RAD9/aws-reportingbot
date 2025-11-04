@@ -5932,13 +5932,17 @@ def download_pdf_with_logo(request, pdf_id):
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
                 c = canvas.Canvas(overlay_temp.name, pagesize=letter)
                 
+                if use_victoria_header:
+                    margin_height = 180 # Extra space for Victoria header
+                    c.setFillColorRGB(1, 1, 1)  # White color
+                    c.rect(0, page_height - margin_height, page_width, margin_height, fill=1, stroke=0)
                 # Add client's custom logo
                 if use_victoria_header:
                     # Draw Victoria Health Clinic full header banner
                     c.drawImage(
                         logo_path,
                         x=header_x,
-                        y=header_y,
+                        y=page_height - header_height, # Adjusted y to fit within page
                         width=header_width,
                         height=header_height,
                         preserveAspectRatio=True,
@@ -5973,7 +5977,7 @@ def download_pdf_with_logo(request, pdf_id):
             # --- Move Victoria Health Clinic report content slightly down for clean spacing ---
             if client.user.email == "victoria@u4rad.com":
                 # Shift report text/table down by 25 points (~9 mm)
-                page.add_transformation([1, 0, 0, 1, 0, -70])
+                page.add_transformation([1, 0, 0, 1, 0, -90])
             # ------------------------------------------------------------------------------
             # Merge overlay with page
             overlay = PdfReader(overlay_pdf_path)
