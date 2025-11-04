@@ -5932,17 +5932,13 @@ def download_pdf_with_logo(request, pdf_id):
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as overlay_temp:
                 c = canvas.Canvas(overlay_temp.name, pagesize=letter)
                 
-                if use_victoria_header:
-                    margin_height = 180 # Extra space for Victoria header
-                    c.setFillColorRGB(1, 1, 1)  # White color
-                    c.rect(0, page_height - margin_height, page_width, margin_height, fill=1, stroke=0)
                 # Add client's custom logo
                 if use_victoria_header:
                     # Draw Victoria Health Clinic full header banner
                     c.drawImage(
                         logo_path,
                         x=header_x,
-                        y=page_height - header_height, # Adjusted y to fit within page
+                        y=header_y,
                         width=header_width,
                         height=header_height,
                         preserveAspectRatio=True,
