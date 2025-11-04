@@ -5973,7 +5973,7 @@ def download_pdf_with_logo(request, pdf_id):
             # --- Move Victoria Health Clinic report content slightly down for clean spacing ---
             if client.user.email == "victoria@u4rad.com":
                 # Shift report text/table down by 25 points (~9 mm)
-                page.add_transformation([1, 0, 0, 1, 0, -90])
+                page.add_transformation([1, 0, 0, 1, 0, -105])
             # ------------------------------------------------------------------------------
             # Merge overlay with page
             overlay = PdfReader(overlay_pdf_path)
