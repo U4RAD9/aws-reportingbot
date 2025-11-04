@@ -5908,7 +5908,7 @@ def download_pdf_with_logo(request, pdf_id):
             header_width = page_width - 80  # Leave 40pt margin on both sides
             header_height = 150  # Adjust depending on your image
             header_x = 40
-            header_y = page_height - header_height + 10
+            header_y = page_height - header_height + 20
 
             footer_x = 50
             footer_y = 20
