@@ -3211,19 +3211,7 @@ UploadDivContentOnPDFWithoutImage() {
       const bodyPart = urlParams.get("data-bodypart");
       const modality = urlParams.get("data-Modality");
       const gender = urlParams.get("data-gender");
-      const rawLocation = urlParams.get("data-institution_name");
-          // Check if institution is Victoria Health Clinic (handle multiple variations)
-      const victoriaInstitutions = [
-        '????',
-        'victoria health clinic',
-        'VICTORIA HEALTH CLINIC',
-        'Victoria Health Clinic',
-        'Hitachi Medical Hospital',
-        'VICTORIA HEALTH CLINIC'
-      ];
-
-      const isVictoriaClinic = victoriaInstitutions.some(name => rawLocation?.trim() === name);
-
+      
 
       
 //     // Track bypassed scenarios
@@ -3410,8 +3398,7 @@ UploadDivContentOnPDFWithoutImage() {
         compress: true,
       });
 
-      const topMargin = isVictoriaClinic ? 175 : 200; // Reduced spacing for Victoria clinics
-      const demographicsStartY = isVictoriaClinic ? 90 : 180;
+      const topMargin = 200; // leave room for demography table
       const bottomMargin = 90;
       const pageHeight = pdf.internal.pageSize.height;
       let currentYPosition = topMargin;
@@ -3439,8 +3426,8 @@ UploadDivContentOnPDFWithoutImage() {
       // ✅ Global header row method → ensures table repeats on every page
       const drawDemography = () => {
         pdf.autoTable({
-          // startY: 180,
-          startY: demographicsStartY,
+          startY: 180,
+          // startY: demographicsStartY,
           body: tableContent,
           theme: "grid",
           styles: {
@@ -3451,8 +3438,8 @@ UploadDivContentOnPDFWithoutImage() {
             lineColor: [0, 0, 0],
             lineWidth: 0.2,
           },
-          // margin: { top: 180 },
-          margin: { top: demographicsStartY },
+          margin: { top: 180 },
+          // margin: { top: demographicsStartY },
         });
       };
 
