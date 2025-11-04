@@ -3398,7 +3398,7 @@ UploadDivContentOnPDFWithoutImage() {
         compress: true,
       });
 
-      const topMargin = 200; // leave room for demography table
+      const topMargin = 250; // leave room for demography table
       const bottomMargin = 90;
       const pageHeight = pdf.internal.pageSize.height;
       let currentYPosition = topMargin;
