@@ -151,6 +151,7 @@ from django.http import HttpResponseBadRequest
 
 from django.core.mail import EmailMessage
 from django.http import HttpResponseBadRequest
+from .forms import DICOMDataFormFOREIGNCLIENT, PatientHistoryFileFormSet
 
 
 def login(request):
@@ -10419,3 +10420,30 @@ def get_rsnatemplate(request, template_id):
 
 
 
+
+
+
+def create_dicom_entry(request):
+    if request.method == "POST":
+        form = DICOMDataFormFOREIGNCLIENT(request.POST)
+        formset = PatientHistoryFileFormSet(request.POST, request.FILES)
+
+        if form.is_valid() and formset.is_valid():
+            dicom_obj = form.save()   # Save DICOMData first
+            
+            history_files = formset.save(commit=False)
+            for history in history_files:
+                history.dicom_data = dicom_obj   # Link to DICOM entry
+                history.save()
+            
+            messages.success(request, "Patient created successfully")
+            return redirect("create_dicom_entry")  # Redirect after successful submission
+
+    else:
+        form = DICOMDataFormFOREIGNCLIENT()
+        formset = PatientHistoryFileFormSet()
+
+    return render(request, "users/create_dicom_entry.html", {
+        "form": form,
+        "formset": formset
+    })
