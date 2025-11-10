@@ -101,16 +101,15 @@ class DICOMDataFormFOREIGNCLIENT(forms.ModelForm):
         widget=forms.TextInput(attrs={
             'list': 'body_part_examined_list',
             'class': 'form-control',
-            'placeholder': 'Select or type Institution Name'
+            'placeholder': 'Select or type Body Part Examined'
         })
     )
-    
 
     class Meta:
         model = DICOMData
         fields = [
             "patient_name", "patient_id", "age", "gender", "study_date", "study_time",
-            "Modality", "study_description", "body_part_examined",
+            "Modality", "study_id", "study_description", "body_part_examined",
             "institution_name", "notes"
         ]
         widgets = {
@@ -122,7 +121,13 @@ class DICOMDataFormFOREIGNCLIENT(forms.ModelForm):
             "study_description": forms.TextInput(attrs={'class': 'form-control'}),
             "body_part_examined": forms.TextInput(attrs={'class': 'form-control'}),
             "notes": forms.Textarea(attrs={'class': 'form-control'}),
+            "study_id": forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['study_id'].initial = "123"
+        self.fields['study_id'].disabled = True  # Cannot change in UI
 
 
 # Inline Formset for multiple history files
