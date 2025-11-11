@@ -12,6 +12,7 @@ from .models.DICOMData import DICOMData, PatientHistoryFile
 from django.forms import inlineformset_factory
 from django.forms.widgets import DateInput, TimeInput
 import random
+from django.core.validators import RegexValidator
 
 class DICOMDataForm(forms.ModelForm):
     dicom_file = MultiFileField(min_num=1, max_num=10, max_file_size=1024 * 1024 * 25)
@@ -147,17 +148,16 @@ class DICOMDataFormFOREIGNCLIENT(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-select'})
     )
 
-    # Change date format to DD/MM/YYYY
-    study_date = forms.DateField(
-        input_formats=['%d/%m/%Y'],
-        widget=forms.DateInput(
-            format='%d/%m/%Y',
-            attrs={
-                'class': 'form-control',
-                'placeholder': 'DD/MM/YYYY'
-            }
-        )
-    )
+    study_date = forms.CharField(
+    validators=[RegexValidator(
+        r'^\d{2}/\d{2}/\d{4}$',
+        message="Enter date in DD/MM/YYYY format."
+    )],
+    widget=forms.TextInput(attrs={
+        'class': 'form-control',
+        'placeholder': 'DD/MM/YYYY'
+    })
+)
 
     Modality = forms.CharField(
         widget=forms.TextInput(attrs={
