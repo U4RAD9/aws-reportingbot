@@ -11,6 +11,7 @@ from .models.patientdetails import PatientDetails
 from .models.DICOMData import DICOMData, PatientHistoryFile
 from django.forms import inlineformset_factory
 from django.forms.widgets import DateInput, TimeInput
+import random
 
 class DICOMDataForm(forms.ModelForm):
     dicom_file = MultiFileField(min_num=1, max_num=10, max_file_size=1024 * 1024 * 25)
@@ -41,7 +42,7 @@ class PersonalInfoForm(forms.ModelForm):
 
 class ECGUploadForm(forms.Form):
     ecg_file = MultiFileField(min_num=1, max_num=50, max_file_size=1024 * 1024 * 5)
-    location = forms.ModelChoiceField(queryset=Location.objects.all(), label="Select Location", required=True)
+    location = forms.ModelChoiceField(queryset=Location.objects.all(), label="Select Location", required=True)
 
 
 
@@ -71,14 +72,91 @@ class PatientDetailsForm(forms.ModelForm):
         }
 
 
-# ----------------------------------------------
-# UPDATED FOREIGN CLIENT FORM (REQUESTED CHANGE)
-# ----------------------------------------------
+# # ----------------------------------------------
+# # UPDATED FOREIGN CLIENT FORM (REQUESTED CHANGE)
+# # ----------------------------------------------
+# class DICOMDataFormFOREIGNCLIENT(forms.ModelForm):
+
+#     gender = forms.ChoiceField(
+#         choices=[("Male", "Male"), ("Female", "Female"), ("Other", "Other")],
+#         widget=forms.Select(attrs={'class': 'form-select'})
+#     )
+
+#     Modality = forms.CharField(
+#         widget=forms.TextInput(attrs={
+#             'list': 'modality_list',
+#             'class': 'form-control',
+#             'placeholder': 'Select or type Modality'
+#         })
+#     )
+
+#     institution_name = forms.CharField(
+#         widget=forms.TextInput(attrs={
+#             'list': 'institution_list',
+#             'class': 'form-control',
+#             'placeholder': 'Select or type Institution Name'
+#         })
+#     )
+
+#     body_part_examined = forms.CharField(
+#         widget=forms.TextInput(attrs={
+#             'list': 'body_part_examined_list',
+#             'class': 'form-control',
+#             'placeholder': 'Select or type Body Part Examined'
+#         })
+#     )
+
+#     class Meta:
+#         model = DICOMData
+#         fields = [
+#             "patient_name", "patient_id", "age", "gender", "study_date", "study_time",
+#             "Modality", "study_id", "study_description", "body_part_examined",
+#             "institution_name", "notes"
+#         ]
+#         widgets = {
+#             "study_date": DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+#             "study_time": TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+#             "patient_name": forms.TextInput(attrs={'class': 'form-control'}),
+#             "patient_id": forms.TextInput(attrs={'class': 'form-control'}),
+#             "age": forms.NumberInput(attrs={'class': 'form-control'}),
+#             "study_description": forms.TextInput(attrs={'class': 'form-control'}),
+#             "body_part_examined": forms.TextInput(attrs={'class': 'form-control'}),
+#             "notes": forms.Textarea(attrs={'class': 'form-control'}),
+#             "study_id": forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
+#         }
+
+
+# # Inline Formset for multiple history files
+# PatientHistoryFileFormSet = inlineformset_factory(
+#     DICOMData,
+#     PatientHistoryFile,
+#     fields=["history_file"],
+#     extra=3,
+#     can_delete=False
+# )
+
+
+
+
+
+
 class DICOMDataFormFOREIGNCLIENT(forms.ModelForm):
 
     gender = forms.ChoiceField(
         choices=[("Male", "Male"), ("Female", "Female"), ("Other", "Other")],
         widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    # Change date format to DD/MM/YYYY
+    study_date = forms.DateField(
+        input_formats=['%d/%m/%Y'],
+        widget=forms.DateInput(
+            format='%d/%m/%Y',
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'DD/MM/YYYY'
+            }
+        )
     )
 
     Modality = forms.CharField(
@@ -113,7 +191,6 @@ class DICOMDataFormFOREIGNCLIENT(forms.ModelForm):
             "institution_name", "notes"
         ]
         widgets = {
-            "study_date": DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             "study_time": TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             "patient_name": forms.TextInput(attrs={'class': 'form-control'}),
             "patient_id": forms.TextInput(attrs={'class': 'form-control'}),
@@ -124,13 +201,17 @@ class DICOMDataFormFOREIGNCLIENT(forms.ModelForm):
             "study_id": forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['study_id'].initial = "123"
-        self.fields['study_id'].disabled = True  # Cannot change in UI
+    # Auto-generate study_id here (no model change)
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if not instance.study_id:
+            instance.study_id = str(random.randint(10000000, 99999999))  # random 8-digit
+        if commit:
+            instance.save()
+        return instance
 
 
-# Inline Formset for multiple history files
+# Inline Formset (no change)
 PatientHistoryFileFormSet = inlineformset_factory(
     DICOMData,
     PatientHistoryFile,
