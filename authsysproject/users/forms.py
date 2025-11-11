@@ -73,72 +73,6 @@ class PatientDetailsForm(forms.ModelForm):
         }
 
 
-# # ----------------------------------------------
-# # UPDATED FOREIGN CLIENT FORM (REQUESTED CHANGE)
-# # ----------------------------------------------
-# class DICOMDataFormFOREIGNCLIENT(forms.ModelForm):
-
-#     gender = forms.ChoiceField(
-#         choices=[("Male", "Male"), ("Female", "Female"), ("Other", "Other")],
-#         widget=forms.Select(attrs={'class': 'form-select'})
-#     )
-
-#     Modality = forms.CharField(
-#         widget=forms.TextInput(attrs={
-#             'list': 'modality_list',
-#             'class': 'form-control',
-#             'placeholder': 'Select or type Modality'
-#         })
-#     )
-
-#     institution_name = forms.CharField(
-#         widget=forms.TextInput(attrs={
-#             'list': 'institution_list',
-#             'class': 'form-control',
-#             'placeholder': 'Select or type Institution Name'
-#         })
-#     )
-
-#     body_part_examined = forms.CharField(
-#         widget=forms.TextInput(attrs={
-#             'list': 'body_part_examined_list',
-#             'class': 'form-control',
-#             'placeholder': 'Select or type Body Part Examined'
-#         })
-#     )
-
-#     class Meta:
-#         model = DICOMData
-#         fields = [
-#             "patient_name", "patient_id", "age", "gender", "study_date", "study_time",
-#             "Modality", "study_id", "study_description", "body_part_examined",
-#             "institution_name", "notes"
-#         ]
-#         widgets = {
-#             "study_date": DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-#             "study_time": TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-#             "patient_name": forms.TextInput(attrs={'class': 'form-control'}),
-#             "patient_id": forms.TextInput(attrs={'class': 'form-control'}),
-#             "age": forms.NumberInput(attrs={'class': 'form-control'}),
-#             "study_description": forms.TextInput(attrs={'class': 'form-control'}),
-#             "body_part_examined": forms.TextInput(attrs={'class': 'form-control'}),
-#             "notes": forms.Textarea(attrs={'class': 'form-control'}),
-#             "study_id": forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
-#         }
-
-
-# # Inline Formset for multiple history files
-# PatientHistoryFileFormSet = inlineformset_factory(
-#     DICOMData,
-#     PatientHistoryFile,
-#     fields=["history_file"],
-#     extra=3,
-#     can_delete=False
-# )
-
-
-
-
 
 
 class DICOMDataFormFOREIGNCLIENT(forms.ModelForm):
@@ -147,17 +81,17 @@ class DICOMDataFormFOREIGNCLIENT(forms.ModelForm):
         choices=[("Male", "Male"), ("Female", "Female"), ("Other", "Other")],
         widget=forms.Select(attrs={'class': 'form-select'})
     )
-
     study_date = forms.CharField(
     validators=[RegexValidator(
-        r'^\d{2}/\d{2}/\d{4}$',
-        message="Enter date in DD/MM/YYYY format."
+        r'^\d{2}-\d{2}-\d{4}$',
+        message="Enter date in DD-MM-YYYY format."
     )],
     widget=forms.TextInput(attrs={
         'class': 'form-control',
-        'placeholder': 'DD/MM/YYYY'
+        'placeholder': 'DD-MM-YYYY'
     })
 )
+
 
     Modality = forms.CharField(
         widget=forms.TextInput(attrs={
