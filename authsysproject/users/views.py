@@ -154,7 +154,7 @@ from django.core.mail import EmailMessage
 from django.http import HttpResponseBadRequest
 from .forms import DICOMDataFormFOREIGNCLIENT, PatientHistoryFileFormSet
 from .forms import DICOMExcelUploadForm
-
+import uuid
 
 def login(request):
     if request.method == 'POST':
