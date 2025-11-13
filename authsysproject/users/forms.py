@@ -13,6 +13,7 @@ from django.forms import inlineformset_factory
 from django.forms.widgets import DateInput, TimeInput
 import random
 from django.core.validators import RegexValidator
+import os
 
 class DICOMDataForm(forms.ModelForm):
     dicom_file = MultiFileField(min_num=1, max_num=10, max_file_size=1024 * 1024 * 25)
@@ -153,3 +154,12 @@ PatientHistoryFileFormSet = inlineformset_factory(
     extra=3,
     can_delete=False
 )
+
+
+
+
+class DICOMExcelUploadForm(forms.Form):
+    excel_file = forms.FileField(
+        label="Upload Excel File",
+        widget=forms.FileInput(attrs={'class': 'form-control'})
+    )
