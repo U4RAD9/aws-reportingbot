@@ -10596,6 +10596,103 @@ def create_dicom_entry(request):
 
 
 
+# def upload_dicom_excel(request):
+#     if request.method == "POST":
+#         form = DICOMExcelUploadForm(request.POST, request.FILES)
+#         if form.is_valid():
+#             excel_file = request.FILES["excel_file"]
+#             ext = os.path.splitext(excel_file.name)[1].lower()
+
+#             # Read Excel safely
+#             df = None
+#             try:
+#                 if ext in [".xlsx", ".xlsm"]:
+#                     df = pd.read_excel(excel_file, engine="openpyxl")
+#                 elif ext == ".xls":
+#                     df = pd.read_excel(excel_file, engine="xlrd")
+#                 else:
+#                     # Try reading anyway
+#                     try:
+#                         df = pd.read_excel(excel_file, engine="openpyxl")
+#                     except Exception:
+#                         df = pd.read_excel(excel_file, engine="xlrd")
+#             except Exception as e:
+#                 messages.error(request, f"❌ Invalid Excel file: {e}")
+#                 return redirect("upload_dicom_excel")
+
+#             # Normalize column names
+#             df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
+
+#             created_count = 0
+#             for _, row in df.iterrows():
+#                 try:
+#                     random_study_id = str(uuid.uuid4())[:8]  # 8-character Study ID
+
+#                     # Sanitize age
+#                     age_value = row.get("age") or row.get("patient_age")
+#                     if pd.isna(age_value):
+#                         age_value = None
+#                     elif isinstance(age_value, str):
+#                         match = re.search(r"\d+", age_value)
+#                         age_value = int(match.group()) if match else None
+#                     else:
+#                         age_value = int(age_value)
+
+#                     # Parse study_date and format as dd-mm-yyyy
+#                     study_date_value = row.get("study_date") or row.get("date")
+#                     if pd.notna(study_date_value):
+#                         if isinstance(study_date_value, pd.Timestamp):
+#                             # Convert to dd-mm-yyyy string
+#                             study_date_value = study_date_value.strftime("%d-%m-%Y")
+#                         elif isinstance(study_date_value, str):
+#                             try:
+#                                 # Try parsing string like 2025-11-12
+#                                 dt = datetime.strptime(study_date_value.split()[0], "%Y-%m-%d")
+#                                 study_date_value = dt.strftime("%d-%m-%Y")
+#                             except Exception:
+#                                 try:
+#                                     # Try parsing as mm/dd/yyyy
+#                                     dt = datetime.strptime(study_date_value.split()[0], "%m/%d/%Y")
+#                                     study_date_value = dt.strftime("%d-%m-%Y")
+#                                 except Exception:
+#                                     study_date_value = None
+#                     else:
+#                         study_date_value = None
+
+#                     # Create entry with only available data
+#                     dicom_entry = DICOMData.objects.create(
+#                         study_id=random_study_id,
+#                         patient_name=row.get("patient_name"),
+#                         patient_id=row.get("patient_id"),
+#                         age=age_value,
+#                         gender=row.get("gender") or row.get("sex"),
+#                         study_date=study_date_value,
+#                         study_time=row.get("study_time"),
+#                         Modality=row.get("modality"),
+#                         study_description=row.get("study_description") or row.get("description"),
+#                         body_part_examined=row.get("body_part_examined") or row.get("body_part"),
+#                         institution_name=row.get("institution_name") or row.get("customer"),
+#                         notes=row.get("notes") or row.get("study_comments"),
+#                     )
+#                     created_count += 1
+
+#                 except Exception as e:
+#                     print(f"❌ Error saving row (skipped): {row.to_dict()} | Error: {e}")
+#                     continue
+
+#             messages.success(
+#                 request,
+#                 f"✅ {created_count} DICOM entries created successfully with auto-generated Study IDs."
+#             )
+#             return redirect("upload_dicom_excel")
+#     else:
+#         form = DICOMExcelUploadForm()
+
+#     return render(request, "users/upload_dicom_excel.html", {"form": form})
+
+
+
+
 def upload_dicom_excel(request):
     if request.method == "POST":
         form = DICOMExcelUploadForm(request.POST, request.FILES)
@@ -10611,7 +10708,6 @@ def upload_dicom_excel(request):
                 elif ext == ".xls":
                     df = pd.read_excel(excel_file, engine="xlrd")
                 else:
-                    # Try reading anyway
                     try:
                         df = pd.read_excel(excel_file, engine="openpyxl")
                     except Exception:
@@ -10628,30 +10724,27 @@ def upload_dicom_excel(request):
                 try:
                     random_study_id = str(uuid.uuid4())[:8]  # 8-character Study ID
 
-                    # Sanitize age
+                    # ------------------ AGE CLEANING ------------------
                     age_value = row.get("age") or row.get("patient_age")
                     if pd.isna(age_value):
-                        age_value = None
+                        age_clean = ""
                     elif isinstance(age_value, str):
                         match = re.search(r"\d+", age_value)
-                        age_value = int(match.group()) if match else None
+                        age_clean = match.group() if match else ""
                     else:
-                        age_value = int(age_value)
+                        age_clean = str(int(age_value))
 
-                    # Parse study_date and format as dd-mm-yyyy
+                    # ------------------ DATE CLEANING ------------------
                     study_date_value = row.get("study_date") or row.get("date")
                     if pd.notna(study_date_value):
                         if isinstance(study_date_value, pd.Timestamp):
-                            # Convert to dd-mm-yyyy string
                             study_date_value = study_date_value.strftime("%d-%m-%Y")
                         elif isinstance(study_date_value, str):
                             try:
-                                # Try parsing string like 2025-11-12
                                 dt = datetime.strptime(study_date_value.split()[0], "%Y-%m-%d")
                                 study_date_value = dt.strftime("%d-%m-%Y")
                             except Exception:
                                 try:
-                                    # Try parsing as mm/dd/yyyy
                                     dt = datetime.strptime(study_date_value.split()[0], "%m/%d/%Y")
                                     study_date_value = dt.strftime("%d-%m-%Y")
                                 except Exception:
@@ -10659,21 +10752,52 @@ def upload_dicom_excel(request):
                     else:
                         study_date_value = None
 
-                    # Create entry with only available data
+                    # ------------------ AUTO-GENERATED NOTES ------------------
+
+
+                    # Gender
+                    sex_raw = (row.get("gender") or row.get("sex") or "").strip().upper()
+                    sex_clean = "male" if sex_raw == "M" else "female"
+
+                    summary = str(row.get("study_comments") or row.get("reason_for_order") or "").strip()
+                    summary = re.sub(r"\d+\s*-?\s*year-old.*?(male|female)\s*", "", summary, flags=re.IGNORECASE)
+                    summary = summary.rstrip(". ")
+                    desc = str(row.get("description") or row.get("study_description") or "")
+                    parts = desc.split()
+
+
+                    study_type = parts[0] if len(parts) > 0 else ""
+                    region = parts[1].lower() if len(parts) > 1 else ""
+
+                    side = None
+                    for p in parts:
+                        if p.upper() in ["RIGHT", "LEFT", "BILATERAL"]:
+                            side = p.lower()
+
+                    study_str = f"{study_type} {region}" + (f", {side}" if side else "")
+
+                    # Build final formatted note
+                    auto_notes = (
+                         f"{age_clean}-year-old {sex_clean} with {summary}. "
+                         
+                    )
+
+                    # ------------------ DATABASE ENTRY ------------------
                     dicom_entry = DICOMData.objects.create(
                         study_id=random_study_id,
                         patient_name=row.get("patient_name"),
                         patient_id=row.get("patient_id"),
-                        age=age_value,
-                        gender=row.get("gender") or row.get("sex"),
+                        age=age_clean,
+                        gender=sex_raw,
                         study_date=study_date_value,
                         study_time=row.get("study_time"),
                         Modality=row.get("modality"),
                         study_description=row.get("study_description") or row.get("description"),
                         body_part_examined=row.get("body_part_examined") or row.get("body_part"),
                         institution_name=row.get("institution_name") or row.get("customer"),
-                        notes=row.get("notes") or row.get("study_comments"),
+                        notes=auto_notes,  # ⬅️ AUTO GENERATED FORMAT
                     )
+
                     created_count += 1
 
                 except Exception as e:
@@ -10682,9 +10806,10 @@ def upload_dicom_excel(request):
 
             messages.success(
                 request,
-                f"✅ {created_count} DICOM entries created successfully with auto-generated Study IDs."
+                f"✅ {created_count} DICOM entries created successfully with auto-generated Report Notes."
             )
             return redirect("upload_dicom_excel")
+
     else:
         form = DICOMExcelUploadForm()
 

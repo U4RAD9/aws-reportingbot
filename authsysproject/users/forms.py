@@ -76,23 +76,15 @@ class PatientDetailsForm(forms.ModelForm):
 
 
 
+# ----------------------------------------------
+# UPDATED FOREIGN CLIENT FORM (REQUESTED CHANGE)
+# ----------------------------------------------
 class DICOMDataFormFOREIGNCLIENT(forms.ModelForm):
 
     gender = forms.ChoiceField(
         choices=[("Male", "Male"), ("Female", "Female"), ("Other", "Other")],
         widget=forms.Select(attrs={'class': 'form-select'})
     )
-    study_date = forms.CharField(
-    validators=[RegexValidator(
-        r'^\d{2}-\d{2}-\d{4}$',
-        message="Enter date in DD-MM-YYYY format."
-    )],
-    widget=forms.TextInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'DD-MM-YYYY'
-    })
-)
-
 
     Modality = forms.CharField(
         widget=forms.TextInput(attrs={
@@ -114,18 +106,20 @@ class DICOMDataFormFOREIGNCLIENT(forms.ModelForm):
         widget=forms.TextInput(attrs={
             'list': 'body_part_examined_list',
             'class': 'form-control',
-            'placeholder': 'Select or type Body Part Examined'
+            'placeholder': 'Select or type Institution Name'
         })
     )
+    
 
     class Meta:
         model = DICOMData
         fields = [
             "patient_name", "patient_id", "age", "gender", "study_date", "study_time",
-            "Modality", "study_id", "study_description", "body_part_examined",
+            "Modality", "study_description", "body_part_examined",
             "institution_name", "notes"
         ]
         widgets = {
+            "study_date": DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             "study_time": TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             "patient_name": forms.TextInput(attrs={'class': 'form-control'}),
             "patient_id": forms.TextInput(attrs={'class': 'form-control'}),
@@ -133,20 +127,10 @@ class DICOMDataFormFOREIGNCLIENT(forms.ModelForm):
             "study_description": forms.TextInput(attrs={'class': 'form-control'}),
             "body_part_examined": forms.TextInput(attrs={'class': 'form-control'}),
             "notes": forms.Textarea(attrs={'class': 'form-control'}),
-            "study_id": forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
         }
 
-    # Auto-generate study_id here (no model change)
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        if not instance.study_id:
-            instance.study_id = str(random.randint(10000000, 99999999))  # random 8-digit
-        if commit:
-            instance.save()
-        return instance
 
-
-# Inline Formset (no change)
+# Inline Formset for multiple history files
 PatientHistoryFileFormSet = inlineformset_factory(
     DICOMData,
     PatientHistoryFile,
@@ -158,7 +142,12 @@ PatientHistoryFileFormSet = inlineformset_factory(
 
 
 
+
 class DICOMExcelUploadForm(forms.Form):
+    excel_file = forms.FileField(
+        label="Upload Excel File",
+        widget=forms.FileInput(attrs={'class': 'form-control'})
+    )
     excel_file = forms.FileField(
         label="Upload Excel File",
         widget=forms.FileInput(attrs={'class': 'form-control'})
