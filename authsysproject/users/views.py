@@ -10751,31 +10751,33 @@ def upload_dicom_excel(request):
                                     study_date_value = None
                     else:
                         study_date_value = None
-                        sex_raw = (row.get("gender") or row.get("sex") or "").strip().upper()
-                        sex_clean = "male" if sex_raw == "M" else "female"
-                        
-                        summary = str(row.get("study_comments") or row.get("reason_for_order") or "").strip()
-                        summary = re.sub(r"\d+\s*-?\s*year-old.*?(male|female)\s*", "", summary, flags=re.IGNORECASE)
-                        summary = summary.rstrip(". ")
-                        
-                        desc = str(row.get("description") or row.get("study_description") or "")
-                        parts = desc.split()
-                        
-                        study_type = parts[0] if len(parts) > 0 else ""
-                        region = parts[1].lower() if len(parts) > 1 else ""
-                        
-                        side = None
-                        for p in parts:
-                            if p.upper() in ["RIGHT", "LEFT", "BILATERAL"]:
-                                side = p.lower()
-                        
-                        study_str = f"{study_type}/{region}" + (f"/{side}" if side else "")
-                        
-                        # Build final formatted note
-                        auto_notes = (
-                            f"{row.get('patient_name')} — {row.get('age')}-year-old {sex_clean} presenting with {summary}. (Study: {study_str})"
-                        )
-                        
+
+                    # ------------------ AUTO-GENERATED NOTES ------------------
+
+                    sex_raw = (row.get("gender") or row.get("sex") or "").strip().upper()
+                    sex_clean = "male" if sex_raw == "M" else "female"
+                    
+                    summary = str(row.get("study_comments") or row.get("reason_for_order") or "").strip()
+                    summary = re.sub(r"\d+\s*-?\s*year-old.*?(male|female)\s*", "", summary, flags=re.IGNORECASE)
+                    summary = summary.rstrip(". ")
+                    
+                    desc = str(row.get("description") or row.get("study_description") or "")
+                    parts = desc.split()
+                    
+                    study_type = parts[0] if len(parts) > 0 else ""
+                    region = parts[1].lower() if len(parts) > 1 else ""
+                    
+                    side = None
+                    for p in parts:
+                        if p.upper() in ["RIGHT", "LEFT", "BILATERAL"]:
+                            side = p.lower()
+                    
+                    study_str = f"{study_type}/{region}" + (f"/{side}" if side else "")
+                    
+                    # Build final formatted note
+                    auto_notes = (
+                        f"{row.get('patient_name')} — {row.get('age')}-year-old {sex_clean} presenting with {summary}. (Study: {study_str})"
+                    )
 
                     # ------------------ DATABASE ENTRY ------------------
                     dicom_entry = DICOMData.objects.create(
