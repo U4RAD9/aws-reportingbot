@@ -10792,7 +10792,8 @@ def upload_dicom_excel(request):
                         study_description=row.get("study_description") or row.get("description"),
                         body_part_examined=row.get("body_part_examined") or row.get("body_part"),
                         institution_name=row.get("institution_name") or row.get("customer"),
-                        notes=auto_notes,  # ⬅️ AUTO GENERATED FORMAT
+                        # notes=auto_notes,  
+                         notes=row.get("study_comments"),
                     )
 
                     created_count += 1
